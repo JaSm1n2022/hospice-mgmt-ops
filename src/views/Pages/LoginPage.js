@@ -47,6 +47,7 @@ export default function LoginPage() {
                 color="rose"
               >
                 <h4 className={classes.cardTitle}>Log in</h4>
+                {/*
                 <div className={classes.socialLine}>
                   {[
                     "fab fa-facebook-square",
@@ -65,8 +66,15 @@ export default function LoginPage() {
                     );
                   })}
                 </div>
+                */}
               </CardHeader>
               <CardBody>
+                <span>
+                  <strong>Secure Magic Link Login:</strong> Enter your email and
+                  we'll send you a one-time secure login link. No password
+                  needed.
+                </span>
+                {/*
                 <CustomInput
                   labelText="First Name.."
                   id="firstname"
@@ -81,6 +89,7 @@ export default function LoginPage() {
                     ),
                   }}
                 />
+                */}
                 <CustomInput
                   labelText="Email..."
                   id="email"
@@ -95,6 +104,7 @@ export default function LoginPage() {
                     ),
                   }}
                 />
+                {/*
                 <CustomInput
                   labelText="Password"
                   id="password"
@@ -113,6 +123,7 @@ export default function LoginPage() {
                     autoComplete: "off",
                   }}
                 />
+                */}
               </CardBody>
               <CardFooter className={classes.justifyContentCenter}>
                 <Button color="rose" simple size="lg" block>

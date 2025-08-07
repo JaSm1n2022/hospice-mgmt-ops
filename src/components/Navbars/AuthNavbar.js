@@ -14,6 +14,7 @@ import ListItem from "@material-ui/core/ListItem";
 import ListItemText from "@material-ui/core/ListItemText";
 
 // @material-ui/icons
+import About from "@material-ui/icons/InfoOutlined";
 import Dashboard from "@material-ui/icons/Dashboard";
 import Menu from "@material-ui/icons/Menu";
 import PersonAdd from "@material-ui/icons/PersonAdd";
@@ -45,15 +46,16 @@ export default function AuthNavbar(props) {
   var list = (
     <List className={classes.list}>
       <ListItem className={classes.listItem}>
-        <NavLink to={"/admin/dashboard"} className={classes.navLink}>
-          <Dashboard className={classes.listItemIcon} />
+        <NavLink to={"/auth/about-page"} className={classes.navLink}>
+          <About className={classes.listItemIcon} />
           <ListItemText
-            primary={"Dashboard"}
+            primary={"About"}
             disableTypography={true}
             className={classes.listItemText}
           />
         </NavLink>
       </ListItem>
+      {/*
       <ListItem className={classes.listItem}>
         <NavLink
           to={"/auth/pricing-page"}
@@ -69,6 +71,7 @@ export default function AuthNavbar(props) {
           />
         </NavLink>
       </ListItem>
+        */}
       <ListItem className={classes.listItem}>
         <NavLink
           to={"/auth/register-page"}
@@ -99,6 +102,7 @@ export default function AuthNavbar(props) {
           />
         </NavLink>
       </ListItem>
+      {/*
       <ListItem className={classes.listItem}>
         <NavLink
           to={"/auth/lock-screen-page"}
@@ -114,6 +118,7 @@ export default function AuthNavbar(props) {
           />
         </NavLink>
       </ListItem>
+        */}
     </List>
   );
   return (
@@ -129,7 +134,7 @@ export default function AuthNavbar(props) {
         <Hidden mdUp>
           <div className={classes.flex}>
             <Button href="#" className={classes.title} color="transparent">
-              MD Pro React
+              Hospice Management System
             </Button>
           </div>
         </Hidden>

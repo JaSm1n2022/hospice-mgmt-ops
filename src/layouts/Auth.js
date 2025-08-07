@@ -52,6 +52,8 @@ export default function Pages(props) {
   const getBgImage = () => {
     if (window.location.pathname.indexOf("/auth/register-page") !== -1) {
       return register;
+    } else if (window.location.pathname.indexOf("/auth/about-page") !== -1) {
+      return register;
     } else if (window.location.pathname.indexOf("/auth/login-page") !== -1) {
       return login;
     } else if (window.location.pathname.indexOf("/auth/pricing-page") !== -1) {

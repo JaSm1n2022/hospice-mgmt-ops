@@ -17,6 +17,7 @@ import PricingPage from "views/Pages/PricingPage.js";
 import RTLSupport from "views/Pages/RTLSupport.js";
 import ReactTables from "views/Tables/ReactTables.js";
 import RegisterPage from "views/Pages/RegisterPage.js";
+import AboutPage from "views/Pages/AboutPage.js";
 import RegularForms from "views/Forms/RegularForms.js";
 import RegularTables from "views/Tables/RegularTables.js";
 import SweetAlert from "views/Components/SweetAlert.js";
@@ -83,7 +84,7 @@ var dashRoutes = [
       },
       {
         path: "/login-page",
-        name: "Login Page",
+        name: "Hospice Management System",
         rtlName: "هعذاتسجيل الدخول",
         mini: "L",
         rtlMini: "هعذا",
@@ -92,11 +93,20 @@ var dashRoutes = [
       },
       {
         path: "/register-page",
-        name: "Register Page",
+        name: "Hospice Management System",
         rtlName: "تسجيل",
         mini: "R",
         rtlMini: "صع",
         component: RegisterPage,
+        layout: "/auth",
+      },
+      {
+        path: "/about-page",
+        name: "Hospice Management System",
+        rtlName: "تسجيل",
+        mini: "R",
+        rtlMini: "صع",
+        component: AboutPage,
         layout: "/auth",
       },
       {
