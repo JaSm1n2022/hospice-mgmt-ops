@@ -1,37 +1,55 @@
-/*!
-
-=========================================================
-* Material Dashboard PRO React - v1.10.0
-=========================================================
-
-* Product Page: https://www.creative-tim.com/product/material-dashboard-pro-react
-* Copyright 2021 Creative Tim (https://www.creative-tim.com)
-
-* Coded by Creative Tim
-
-=========================================================
-
-* The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-*/
 import React from "react";
 import ReactDOM from "react-dom";
-import { BrowserRouter, Route, Switch, Redirect } from "react-router-dom";
+import { createStore, applyMiddleware, compose } from "redux";
+import { Provider } from "react-redux";
+import { BrowserRouter } from "react-router-dom";
+import createSagaMiddleware from "redux-saga";
 
-import AuthLayout from "layouts/Auth.js";
-import RtlLayout from "layouts/RTL.js";
-import AdminLayout from "layouts/Admin.js";
+import logger from "redux-logger";
+import { rootSaga } from "./store/sagas/rootSaga";
+import reducers from "./store/reducers";
+// import { createRoot } from 'react-dom/client';
 
-import "assets/scss/material-dashboard-pro-react.scss?v=1.10.0";
+import registerServiceWorker from "./registerServiceWorker";
+import App from "./App";
 
-ReactDOM.render(
-  <BrowserRouter>
-    <Switch>
-      <Route path="/rtl" component={RtlLayout} />
-      <Route path="/auth" component={AuthLayout} />
-      <Route path="/admin" component={AdminLayout} />
-      <Redirect from="/" to="/auth" />
-    </Switch>
-  </BrowserRouter>,
-  document.getElementById("root")
+const composeEnhancers =
+  (process.env.NODE_ENV === "development"
+    ? window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__
+    : null) || compose;
+
+const sagaMiddleware = createSagaMiddleware();
+
+const store = createStore(
+  reducers,
+  composeEnhancers(applyMiddleware(sagaMiddleware, logger))
 );
+
+sagaMiddleware.run(rootSaga);
+
+const IntlContext = React.createContext();
+const app = (
+  <Provider store={store}>
+    <BrowserRouter>
+      <IntlContext.Provider>
+        <App />
+      </IntlContext.Provider>
+    </BrowserRouter>
+  </Provider>
+);
+
+// const container =  (app,document.getElementById('root'));
+// const root = createRoot(container);
+// root.render(root)
+
+const root = document.getElementById("root");
+if (root) {
+  // Set up the browser history with the updated location (minus the # sign)
+  const path = (/#!(\/.*)$/.exec(window.location.hash) || [])[1];
+  if (path) {
+    // window.location.replace(path);
+  }
+
+  ReactDOM.render(app, root);
+  registerServiceWorker();
+}

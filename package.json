@@ -17,11 +17,20 @@
     "react-chartist": "0.14.4",
     "react-datetime": "^3.3.1",
     "react-dom": "17.0.2",
+    "react-redux": "^7.2.6",
     "react-jvectormap": "0.0.16",
     "react-router-dom": "5.2.0",
     "react-swipeable-views": "^0.14.0",
+    "@supabase/supabase-js": "^2.21.0",
     "react-table": "7.7.0",
-    "react-tagsinput": "^3.20.0"
+    "react-tagsinput": "^3.20.0",
+    "redux": "^4.1.2",
+    "redux-logger": "^3.0.6",
+    "redux-mock-store": "^1.5.4",
+    "redux-saga": "^0.16.2",
+    "reselect": "^4.1.5",
+    "react-toast-notifications": "^2.5.1",
+    "axios": "^0.16.2"
   },
   "scripts": {
     "start": "react-app-rewired start",

@@ -4,7 +4,7 @@ import React from "react";
 import { makeStyles } from "@material-ui/core/styles";
 import InputAdornment from "@material-ui/core/InputAdornment";
 import Icon from "@material-ui/core/Icon";
-
+import TOAST from "../../modules/toastManager";
 // @material-ui/icons
 import Face from "@material-ui/icons/Face";
 import Email from "@material-ui/icons/Email";
@@ -21,11 +21,47 @@ import CardHeader from "components/Card/CardHeader.js";
 import CardFooter from "components/Card/CardFooter.js";
 
 import styles from "assets/jss/material-dashboard-pro-react/views/loginPageStyle.js";
+import { supabaseClient } from "config/SupabaseClient";
 
 const useStyles = makeStyles(styles);
 
 export default function LoginPage() {
   const [cardAnimaton, setCardAnimation] = React.useState("cardHidden");
+  const [loginEmail, setloginEmail] = React.useState("");
+  const [loginEmailState, setloginEmailState] = React.useState("");
+
+  const verifyEmail = (value) => {
+    var emailRex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    if (emailRex.test(value)) {
+      return true;
+    }
+    return false;
+  };
+
+  const handleLogin = async () => {
+    try {
+      if (loginEmailState === "error") {
+        TOAST.ok("MUST BE VALID EMAIL");
+        return;
+      }
+      console.log("[WHAT IS MY LOGIN]", loginEmail);
+      const { error } = await supabaseClient.auth.signInWithOtp({
+        email: loginEmail,
+      });
+
+      if (error) throw error;
+      TOAST.ok("Please check your email");
+    } catch (error) {
+      console.log("[error login]", error.toString());
+      TOAST.error("Failed to sign in", loginEmail, error);
+    } finally {
+      const user = supabaseClient.auth.getUser();
+      if (user) {
+        console.log("user->>>", user);
+      }
+    }
+  };
+
   React.useEffect(() => {
     let id = setTimeout(function () {
       setCardAnimation("");
@@ -90,20 +126,37 @@ export default function LoginPage() {
                   }}
                 />
                 */}
-                <CustomInput
-                  labelText="Email..."
-                  id="email"
-                  formControlProps={{
-                    fullWidth: true,
-                  }}
-                  inputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <Email className={classes.inputAdornmentIcon} />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
+                <form>
+                  <CustomInput
+                    success={loginEmailState === "success"}
+                    error={loginEmailState === "error"}
+                    labelText="Email Address *"
+                    id="loginemail"
+                    formControlProps={{
+                      fullWidth: true,
+                    }}
+                    inputProps={{
+                      onChange: (event) => {
+                        if (verifyEmail(event.target.value)) {
+                          setloginEmailState("success");
+                        } else {
+                          setloginEmailState("error");
+                        }
+                        setloginEmail(event.target.value);
+                      },
+                      type: "email",
+                    }}
+                  />
+
+                  <div className={classes.formCategory}>
+                    <small>*</small> Required fields
+                  </div>
+                  <div className={classes.center}>
+                    <Button color="rose" onClick={handleLogin}>
+                      Login
+                    </Button>
+                  </div>
+                </form>
                 {/*
                 <CustomInput
                   labelText="Password"
@@ -125,11 +178,19 @@ export default function LoginPage() {
                 />
                 */}
               </CardBody>
+              {/*
               <CardFooter className={classes.justifyContentCenter}>
-                <Button color="rose" simple size="lg" block>
+                <Button
+                  color="rose"
+                  simple
+                  size="lg"
+                  block
+                  onChange={() => handleLogin()}
+                >
                   Let{"'"}s Go
                 </Button>
               </CardFooter>
+             */}
             </Card>
           </form>
         </GridItem>
