@@ -9,7 +9,7 @@ import logger from "redux-logger";
 import { rootSaga } from "./store/sagas/rootSaga";
 import reducers from "./store/reducers";
 // import { createRoot } from 'react-dom/client';
-
+import { supabaseClient } from "./config/SupabaseClient";
 import registerServiceWorker from "./registerServiceWorker";
 import App from "./App";
 
@@ -19,6 +19,7 @@ const composeEnhancers =
     : null) || compose;
 
 const sagaMiddleware = createSagaMiddleware();
+await supabaseClient.auth.getSession();
 
 const store = createStore(
   reducers,

@@ -8,7 +8,8 @@ import { makeStyles } from "@material-ui/core/styles";
 import AuthNavbar from "components/Navbars/AuthNavbar.js";
 import Footer from "components/Footer/Footer.js";
 
-import routes from "routes.js";
+import mainRoutes from "routes.js";
+import disciplineRoutes from "disciplineRoutes";
 
 import styles from "assets/jss/material-dashboard-pro-react/layouts/authStyle.js";
 
@@ -17,10 +18,11 @@ import login from "assets/img/login.jpeg";
 import lock from "assets/img/lock.jpeg";
 import error from "assets/img/clint-mckoy.jpg";
 import pricing from "assets/img/bg-pricing.jpeg";
-
+import { connect } from "react-redux";
+import { profileListStateSelector } from "store/selectors/profileSelector";
+let routes = [];
 const useStyles = makeStyles(styles);
-
-export default function Pages(props) {
+function Pages(props) {
   const { ...rest } = props;
   // ref for the wrapper div
   const wrapper = React.createRef();
@@ -31,6 +33,16 @@ export default function Pages(props) {
     // Specify how to clean up after this effect:
     return function cleanup() {};
   });
+  React.useEffect(() => {
+    routes =
+      props.profileState &&
+      Array.isArray(props.profileState?.data) &&
+      props.profileState?.data?.length &&
+      props.profileState.data[0].companyId &&
+      props.profileState.data[0].role === "clinician"
+        ? disciplineRoutes
+        : mainRoutes;
+  }, [props.profileState]);
   const getRoutes = (routes) => {
     return routes.map((prop, key) => {
       if (prop.collapse) {
@@ -51,8 +63,6 @@ export default function Pages(props) {
   };
   const getBgImage = () => {
     if (window.location.pathname.indexOf("/auth/register-page") !== -1) {
-      return register;
-    } else if (window.location.pathname.indexOf("/auth/about-page") !== -1) {
       return register;
     } else if (window.location.pathname.indexOf("/auth/login-page") !== -1) {
       return login;
@@ -102,3 +112,8 @@ export default function Pages(props) {
     </div>
   );
 }
+const mapStateToProps = (store) => ({
+  profileState: profileListStateSelector(store),
+});
+
+export default connect(mapStateToProps, null)(Pages);

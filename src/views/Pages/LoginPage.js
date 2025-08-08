@@ -19,17 +19,21 @@ import Card from "components/Card/Card.js";
 import CardBody from "components/Card/CardBody.js";
 import CardHeader from "components/Card/CardHeader.js";
 import CardFooter from "components/Card/CardFooter.js";
-
+import Snackbar from "components/Snackbar/Snackbar.js";
+import AddAlert from "@material-ui/icons/AddAlert";
 import styles from "assets/jss/material-dashboard-pro-react/views/loginPageStyle.js";
 import { supabaseClient } from "config/SupabaseClient";
+import SnackbarContent from "components/Snackbar/SnackbarContent";
 
 const useStyles = makeStyles(styles);
 
 export default function LoginPage() {
   const [cardAnimaton, setCardAnimation] = React.useState("cardHidden");
-  const [loginEmail, setloginEmail] = React.useState("");
+  const [email, setEmail] = React.useState("");
+  const [message, setMessage] = React.useState("");
+  const [color, setColor] = React.useState("rose");
   const [loginEmailState, setloginEmailState] = React.useState("");
-
+  const [tc, setTC] = React.useState(false);
   const verifyEmail = (value) => {
     var emailRex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
     if (emailRex.test(value)) {
@@ -41,19 +45,24 @@ export default function LoginPage() {
   const handleLogin = async () => {
     try {
       if (loginEmailState === "error") {
-        TOAST.ok("MUST BE VALID EMAIL");
+        setColor("rose");
+        setMessage("Invalid email address.");
+        showNotification("tc");
         return;
       }
-      console.log("[WHAT IS MY LOGIN]", loginEmail);
-      const { error } = await supabaseClient.auth.signInWithOtp({
-        email: loginEmail,
-      });
-
+      const { error } = await supabaseClient.auth.signInWithOtp({ email });
       if (error) throw error;
-      TOAST.ok("Please check your email");
+      setColor("success");
+      setMessage(
+        "We’ve emailed you a magic link. Give it a click and you’re in!"
+      );
+      showNotification("tc");
     } catch (error) {
-      console.log("[error login]", error.toString());
-      TOAST.error("Failed to sign in", loginEmail, error);
+      setColor("rose");
+      setMessage(
+        "Oops! We couldn’t sign you in. Please verify your email address or reach out to support."
+      );
+      showNotification("tc");
     } finally {
       const user = supabaseClient.auth.getUser();
       if (user) {
@@ -71,6 +80,22 @@ export default function LoginPage() {
       window.clearTimeout(id);
     };
   });
+
+  const showNotification = (place) => {
+    switch (place) {
+      case "tc":
+        if (!tc) {
+          setTC(true);
+          setTimeout(function () {
+            setTC(false);
+          }, 6000);
+        }
+        break;
+      default:
+        break;
+    }
+  };
+
   const classes = useStyles();
   return (
     <div className={classes.container}>
@@ -105,6 +130,16 @@ export default function LoginPage() {
                 */}
               </CardHeader>
               <CardBody>
+                {tc && (
+                  <div style={{ paddingTop: 10 }}>
+                    <SnackbarContent
+                      message={message}
+                      close
+                      color={color}
+                      icon={AddAlert}
+                    />
+                  </div>
+                )}
                 <span>
                   <strong>Secure Magic Link Login:</strong> Enter your email and
                   we'll send you a one-time secure login link. No password
@@ -142,7 +177,7 @@ export default function LoginPage() {
                         } else {
                           setloginEmailState("error");
                         }
-                        setloginEmail(event.target.value);
+                        setEmail(event.target.value);
                       },
                       type: "email",
                     }}

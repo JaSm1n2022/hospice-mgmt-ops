@@ -1,117 +1,153 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState, createContext } from "react";
 import {
   BrowserRouter as Router,
   Switch,
   Route,
-  withRouter,
   Redirect,
 } from "react-router-dom";
 import {
   ToastProvider,
   DefaultToastContainer,
 } from "react-toast-notifications";
-import Admin from "layouts/Admin.js";
-import Role from "layouts/Role.js";
-import AuthLayout from "layouts/Auth.js";
-import Login from "views/Pages/LoginPage";
-import RTL from "layouts/RTL.js";
-import { supabaseClient } from "./config/SupabaseClient";
-import "assets/css/material-dashboard-pro-react.css?v=1.10.0";
-import { useState } from "react";
-import { profileListStateSelector } from "store/selectors/profileSelector";
-import { attemptToFetchProfile } from "store/actions/profileAction";
 import { connect } from "react-redux";
+
+import Admin from "layouts/Admin.js";
+import Role from "views/Pages/RolePage";
+import AuthLayout from "layouts/Auth.js";
+
+import { supabaseClient } from "./config/SupabaseClient";
 import { ACTION_STATUSES } from "utils/constants";
+
+import "assets/css/material-dashboard-pro-react.css?v=1.10.0";
+import { profileListStateSelector } from "store/selectors/profileSelector";
+import { employeeListStateSelector } from "store/selectors/employeeSelector";
+import { attemptToFetchProfile } from "store/actions/profileAction";
 import { resetFetchProfileState } from "store/actions/profileAction";
+import { attemptToFetchEmployee } from "store/actions/employeeAction";
+import { resetFetchEmployeeState } from "store/actions/employeeAction";
 
 export const CustomToastContainer = (props) => (
   <DefaultToastContainer {...props} style={{ zIndex: 9999 }} />
 );
-let userProfile = {};
-function App(props) {
+
+export const SupaContext = createContext();
+
+function App({
+  profileState,
+  employeeState,
+  fetchProfile,
+  resetProfiles,
+  listEmployee,
+  resetListEmployee,
+}) {
   const [session, setSession] = useState(null);
   const [signedIn, setSignedIn] = useState(true);
-  const [requestor, setRequestor] = useState("");
+  const [userProfile, setUserProfile] = useState(undefined);
+  const [employeeProfile, setEmployeeProfile] = useState(undefined);
 
+  // Initialize session and auth listener
   useEffect(() => {
-    supabaseClient.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-    });
+    const getSession = async () => {
+      const { data } = await supabaseClient.auth.getSession();
+      setSession(data.session);
+      setSignedIn(!!data.session);
+    };
 
-    supabaseClient.auth.onAuthStateChange((event, session) => {
-      console.log("[application]", event, session);
-      if (event === "SIGNED_OUT") {
-        setSignedIn(false);
-      } else {
-        setSignedIn(true);
-      }
-    });
-  }, []);
+    getSession();
 
-  useEffect(() => {
-    //	props.onTryAutoSignup();
-    supabaseClient.auth.onAuthStateChange((event, session) => {
-      console.log("[application]", event, session);
-      if (event === "SIGNED_OUT") {
-        setSignedIn(false);
-      } else {
-        //  setRequestor(session.user.email);
-        if (session) {
-          props.fetchProfile({ email: session.user.email });
+    const { data: authListener } = supabaseClient.auth.onAuthStateChange(
+      (_event, newSession) => {
+        setSession(newSession);
+        setSignedIn(!!newSession);
+        if (newSession?.user?.email) {
+          fetchProfile({ email: newSession.user.email });
         }
-        //    setSignedIn(true);
       }
-    });
-  }, [session]);
-  if (
-    props.profileState &&
-    props.profileState.status === ACTION_STATUSES.SUCCEED
-  ) {
-    userProfile = props.profileState.data[0];
-    //props.resetProfiles();
-  }
-  console.log("[signed/session]", signedIn, session);
-  console.log("[Profile]", props.profileState, userProfile);
-  return (
-    <ToastProvider components={{ ToastContainer: CustomToastContainer }}>
-      {userProfile && userProfile.companyId && userProfile.role === "admin" ? (
+    );
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [fetchProfile]);
+
+  // Fetch profile and employee info
+  useEffect(() => {
+    if (profileState.status === ACTION_STATUSES.SUCCEED && !userProfile) {
+      resetProfiles();
+
+      const profile = profileState?.data?.[0];
+      setUserProfile(profile);
+      if (profile) {
+        listEmployee({
+          email: profile.username,
+          companyId: profile.companyId,
+        });
+      } else {
+        setSignedIn(false);
+      }
+    }
+  }, [profileState, userProfile, listEmployee, resetProfiles]);
+
+  useEffect(() => {
+    if (employeeState.status === ACTION_STATUSES.SUCCEED && !employeeProfile) {
+      const employee = employeeState?.data?.[0];
+      setEmployeeProfile(employee);
+      resetListEmployee();
+    }
+  }, [employeeState, employeeProfile, resetListEmployee]);
+
+  // Determine routes based on user role
+  const renderRoutes = () => {
+    if (!signedIn || !session) {
+      return (
+        <Switch>
+          <Route path="/auth" component={AuthLayout} />
+          <Redirect from="/" to="/auth" />
+        </Switch>
+      );
+    }
+
+    if (userProfile?.companyId) {
+      return userProfile.role === "admin" ? (
         <Switch>
           <Route path="/admin" component={Admin} />
-          <Route path="/rtl" component={RTL} />
           <Redirect from="/" to="/admin/dashboard" />
         </Switch>
-      ) : userProfile &&
-        userProfile.companyId &&
-        userProfile.role !== "admin" ? (
+      ) : (
         <Switch>
           <Route path="/role" component={Role} />
           <Redirect from="/" to="/role" />
         </Switch>
-      ) : !signedIn ? (
-        <Switch>
-          <Route path="/auth" component={AuthLayout} />
-        </Switch>
-      ) : signedIn && !session ? (
-        <Switch>
-          <Route path="/auth" component={AuthLayout} />
-          <Redirect from="/" to="/auth" />
-        </Switch>
-      ) : (
-        <Switch>
-          <Route path="/auth" component={AuthLayout} />
-          <Redirect from="/" to="/auth" />
-        </Switch>
-      )}
+      );
+    }
+
+    return (
+      <Switch>
+        <Route path="/auth" component={AuthLayout} />
+        <Redirect from="/" to="/auth" />
+      </Switch>
+    );
+  };
+
+  return (
+    <ToastProvider components={{ ToastContainer: CustomToastContainer }}>
+      <SupaContext.Provider value={{ userProfile, employeeProfile }}>
+        {renderRoutes()}
+      </SupaContext.Provider>
     </ToastProvider>
   );
 }
 
 const mapStateToProps = (store) => ({
   profileState: profileListStateSelector(store),
+  employeeState: employeeListStateSelector(store),
 });
 
 const mapDispatchToProps = (dispatch) => ({
   fetchProfile: (data) => dispatch(attemptToFetchProfile(data)),
   resetProfiles: () => dispatch(resetFetchProfileState()),
+  listEmployee: (data) => dispatch(attemptToFetchEmployee(data)),
+  resetListEmployee: () => dispatch(resetFetchEmployeeState()),
 });
+
 export default connect(mapStateToProps, mapDispatchToProps)(App);

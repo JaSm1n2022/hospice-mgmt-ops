@@ -14,15 +14,18 @@ import Footer from "components/Footer/Footer.js";
 import Sidebar from "components/Sidebar/Sidebar.js";
 import FixedPlugin from "components/FixedPlugin/FixedPlugin.js";
 
-import routes from "routes.js";
+import mainRoutes from "routes.js";
+import disciplineRoutes from "disciplineRoutes.js";
 
 import styles from "assets/jss/material-dashboard-pro-react/layouts/adminStyle.js";
+import { profileListStateSelector } from "store/selectors/profileSelector";
+import { connect } from "react-redux";
 
 var ps;
-
+let routes = [];
 const useStyles = makeStyles(styles);
 
-export default function Dashboard(props) {
+function Dashboard(props) {
   const { ...rest } = props;
   // states and functions
   const [mobileOpen, setMobileOpen] = React.useState(false);
@@ -50,6 +53,16 @@ export default function Dashboard(props) {
   // ref for main panel div
   const mainPanel = React.createRef();
   // effect instead of componentDidMount, componentDidUpdate and componentWillUnmount
+  React.useEffect(() => {
+    routes =
+      props.profileState &&
+      Array.isArray(props.profileState?.data) &&
+      props.profileState?.data?.length &&
+      props.profileState.data[0].companyId &&
+      props.profileState.data[0].role === "clinician"
+        ? disciplineRoutes
+        : mainRoutes;
+  }, [props.profileState]);
   React.useEffect(() => {
     if (navigator.platform.indexOf("Win") > -1) {
       ps = new PerfectScrollbar(mainPanel.current, {
@@ -148,7 +161,7 @@ export default function Dashboard(props) {
     <div className={classes.wrapper}>
       <Sidebar
         routes={routes}
-        logoText={"Creative Tim"}
+        logoText={"Hospice Mgmt"}
         logo={logo}
         image={image}
         handleDrawerToggle={handleDrawerToggle}
@@ -201,3 +214,8 @@ export default function Dashboard(props) {
     </div>
   );
 }
+const mapStateToProps = (store) => ({
+  profileState: profileListStateSelector(store),
+});
+
+export default connect(mapStateToProps, null)(Dashboard);

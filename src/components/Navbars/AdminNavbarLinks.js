@@ -25,6 +25,7 @@ import CustomInput from "components/CustomInput/CustomInput.js";
 import Button from "components/CustomButtons/Button.js";
 
 import styles from "assets/jss/material-dashboard-pro-react/components/adminNavbarLinksStyle.js";
+import { supabaseClient } from "config/SupabaseClient";
 
 const useStyles = makeStyles(styles);
 
@@ -48,8 +49,18 @@ export default function HeaderLinks(props) {
       setOpenProfile(event.currentTarget);
     }
   };
+  const logout = async () => {
+    const { error } = await supabaseClient.auth.signOut();
+    if (error) {
+      console.error("Error signing out:", error.message);
+    } else {
+      // Optional: Clear your app state if you're using Redux, context, etc.
+      console.log("User signed out.");
+    }
+  };
   const handleCloseProfile = () => {
     setOpenProfile(null);
+    logout();
   };
   const classes = useStyles();
   const { rtlActive } = props;
