@@ -12,7 +12,7 @@ var dashRoutes = [
     rtlName: "لوحة القيادة",
     icon: DashboardIcon,
     component: Dashboard,
-    layout: "/admin",
+    layout: "/discipline",
   },
   {
     path: "/routesheet",
@@ -20,7 +20,7 @@ var dashRoutes = [
     rtlName: "ورقة الطريق",
     icon: AssignmentIcon,
     component: Routesheet,
-    layout: "/admin",
+    layout: "/discipline",
   },
 ];
 export default dashRoutes;

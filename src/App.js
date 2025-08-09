@@ -12,6 +12,7 @@ import {
 import { connect } from "react-redux";
 
 import Admin from "layouts/Admin.js";
+import Discipline from "layouts/Discipline";
 import Role from "views/Pages/RolePage";
 import AuthLayout from "layouts/Auth.js";
 
@@ -42,6 +43,10 @@ function App({
 }) {
   const [session, setSession] = useState(null);
   const [signedIn, setSignedIn] = useState(true);
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" && window.innerWidth < 1024
+  );
+
   const [userProfile, setUserProfile] = useState(undefined);
   const [employeeProfile, setEmployeeProfile] = useState(undefined);
 
@@ -69,6 +74,24 @@ function App({
       authListener.subscription.unsubscribe();
     };
   }, [fetchProfile]);
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 1024);
+    }
+
+    if (typeof window !== "undefined") {
+      handleResize();
+    }
+
+    window.addEventListener("resize", handleResize);
+    return () => {
+      // remove event listener when the component is unmounted to not cause any memory leaks
+      // otherwise the event listener will continue to be active
+      window.removeEventListener("resize", handleResize);
+    };
+    // add `isMobile` state variable as a dependency so that
+    // it is called every time the window is resized
+  }, [isMobile]);
 
   // Fetch profile and employee info
   useEffect(() => {
@@ -113,6 +136,11 @@ function App({
           <Route path="/admin" component={Admin} />
           <Redirect from="/" to="/admin/dashboard" />
         </Switch>
+      ) : userProfile.role === "clinician" ? (
+        <Switch>
+          <Route path="/discipline" component={Discipline} />
+          <Redirect from="/" to="/discipline/dashboard" />
+        </Switch>
       ) : (
         <Switch>
           <Route path="/role" component={Role} />
@@ -131,7 +159,7 @@ function App({
 
   return (
     <ToastProvider components={{ ToastContainer: CustomToastContainer }}>
-      <SupaContext.Provider value={{ userProfile, employeeProfile }}>
+      <SupaContext.Provider value={{ userProfile, employeeProfile, isMobile }}>
         {renderRoutes()}
       </SupaContext.Provider>
     </ToastProvider>

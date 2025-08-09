@@ -22,7 +22,7 @@ import { profileListStateSelector } from "store/selectors/profileSelector";
 import { connect } from "react-redux";
 
 var ps;
-let routes = [];
+let routes = disciplineRoutes;
 const useStyles = makeStyles(styles);
 
 function Dashboard(props) {
@@ -53,16 +53,7 @@ function Dashboard(props) {
   // ref for main panel div
   const mainPanel = React.createRef();
   // effect instead of componentDidMount, componentDidUpdate and componentWillUnmount
-  React.useEffect(() => {
-    routes =
-      props.profileState &&
-      Array.isArray(props.profileState?.data) &&
-      props.profileState?.data?.length &&
-      props.profileState.data[0].companyId &&
-      props.profileState.data[0].role === "clinician"
-        ? disciplineRoutes
-        : mainRoutes;
-  }, [props.profileState]);
+
   React.useEffect(() => {
     if (navigator.platform.indexOf("Win") > -1) {
       ps = new PerfectScrollbar(mainPanel.current, {
@@ -135,7 +126,7 @@ function Dashboard(props) {
       if (prop.collapse) {
         return getRoutes(prop.views);
       }
-      if (prop.layout === "/admin") {
+      if (prop.layout === "/discipline") {
         return (
           <Route
             path={prop.layout + prop.path}
@@ -185,7 +176,7 @@ function Dashboard(props) {
             <div className={classes.container}>
               <Switch>
                 {getRoutes(routes)}
-                <Redirect from="/admin" to="/admin/dashboard" />
+                <Redirect from="/discipline" to="/discipline" />
               </Switch>
             </div>
           </div>
@@ -193,7 +184,7 @@ function Dashboard(props) {
           <div className={classes.map}>
             <Switch>
               {getRoutes(routes)}
-              <Redirect from="/admin" to="/admin/dashboard" />
+              <Redirect from="/discipline" to="/discipline" />
             </Switch>
           </div>
         )}
