@@ -2,34 +2,29 @@ import React, { useContext, useEffect, useRef, useState } from "react";
 // react component plugin for creating a beautiful datetime dropdown picker
 import Datetime from "react-datetime";
 // react component plugin for creating beatiful tags on an input
-import TagsInput from "react-tagsinput";
+
 // plugin that creates slider
-import Slider from "nouislider";
 
 // @material-ui/core components
 import Button from "components/CustomButtons/Button.js";
 import { makeStyles } from "@material-ui/core/styles";
 import FormControl from "@material-ui/core/FormControl";
-import FormControlLabel from "@material-ui/core/FormControlLabel";
+
 import InputLabel from "@material-ui/core/InputLabel";
-import Switch from "@material-ui/core/Switch";
+
 import Select from "@material-ui/core/Select";
 import MenuItem from "@material-ui/core/MenuItem";
 import Slide from "@material-ui/core/Slide";
 import NavPills from "components/NavPills/NavPills.js";
 // @material-ui/icons
-import Today from "@material-ui/icons/Today";
-import LibraryBooks from "@material-ui/icons/LibraryBooks";
-import AvTimer from "@material-ui/icons/AvTimer";
+
 import AddAlert from "@material-ui/icons/AddAlert";
 import Close from "@material-ui/icons/Close";
-import Instruction from "components/Instruction/Instruction.js";
+
 // core components
 import GridContainer from "components/Grid/GridContainer.js";
 import GridItem from "components/Grid/GridItem.js";
-import CustomDropdown from "components/CustomDropdown/CustomDropdown.js";
-import CustomLinearProgress from "components/CustomLinearProgress/CustomLinearProgress.js";
-import ImageUpload from "components/CustomUpload/ImageUpload.js";
+
 import Card from "components/Card/Card.js";
 import CardHeader from "components/Card/CardHeader.js";
 import CardIcon from "components/Card/CardIcon.js";
@@ -41,8 +36,7 @@ import DialogActions from "@material-ui/core/DialogActions";
 import styles from "../../../assets/jss/material-dashboard-pro-react/views/extendedFormsStyle.js";
 import styles2 from "../../../assets/jss/material-dashboard-pro-react/views/notificationsStyle.js";
 import dayjs from "dayjs";
-import noticeModal1 from "assets/img/card-1.jpeg";
-import noticeModal2 from "assets/img/card-2.jpeg";
+
 import { SupaContext } from "App.js";
 import {
   AddAlertOutlined,
@@ -120,9 +114,15 @@ function Routesheet(props) {
     message: "",
   });
   const [dos, setDos] = useState(dayjs(new Date()));
-  const [timeIn, setTimeIn] = useState(dayjs(new Date()).format("HH:mm"));
+  const [dosStart, setDosStart] = useState(
+    dayjs(new Date()).format("YYYY-MM-DD HH:mm")
+  );
+  const [dosEnd, setDosEnd] = useState(
+    dayjs(new Date()).add(1, "hour").format("YYYY-MM-DD HH:mm")
+  );
+  const [timeIn, setTimeIn] = useState(dayjs(new Date()).format("YYYY-MM-DD"));
   const [timeOut, setTimeOut] = useState(
-    dayjs(new Date()).add(1, "hour").format("HH:mm")
+    dayjs(new Date()).add(1, "hour").format("YYYY-MM-DD")
   );
   const [anchorEl, setAnchorEl] = useState(null);
   const [otherService, setOtherService] = useState("");
@@ -317,9 +317,7 @@ function Routesheet(props) {
   const clearHandler = () => {
     //clear
     setClient("");
-    if (clients?.length === 1) {
-      setClient(clients[0]);
-    }
+
     setIsMileageRate(false);
     setMileage(0);
     setClientService("");
@@ -332,6 +330,7 @@ function Routesheet(props) {
   };
 
   const inputHandler = ({ target }) => {
+    console.log("[IN]", target?.value);
     if (target.name === "notes") {
       setNotes(target.value);
     } else if (target.name === "otherService") {
@@ -348,7 +347,7 @@ function Routesheet(props) {
       setMileage(target.value);
     } else if (target.name === "client") {
       setClientError({ isError: false, message: "" });
-      console.log("[CLIENT]", target.value, contractList);
+
       const m = contractList.find(
         (c) => c.serviceType === clientService && c.patientCd === target.value
       );
@@ -366,6 +365,7 @@ function Routesheet(props) {
 
       setPatientInfo(assignPatient?.patient);
       //if specific
+
       setClient(target.value);
     } else if (target.name === "clientService") {
       setClientError({ isError: false, message: "" });
@@ -391,8 +391,6 @@ function Routesheet(props) {
   };
 
   const saveHandler = () => {
-    console.log("[TIME IN/OUT]", timeIn, timeOut, dos);
-
     const signImg = sigCanvas.current?.getCanvas().toDataURL("image/png");
     console.log("[SIGNATURE]", signImg, sigCanvas.current?.getCanvas());
     setClientError({ isError: false, message: "" });
@@ -400,20 +398,28 @@ function Routesheet(props) {
     let isValid = true;
     if (isClientRequiredHandler() && !client) {
       setClientError({ isError: true, message: "Client is required." });
+      console.log("[IS INVALID CLIENT]");
       isValid = false;
     }
     if (!isSigned) {
       setSignatureError({ isError: true, message: "Signature is required." });
+      console.log("[IS INVALID SIGNATURE]");
       isValid = false;
     }
-    if (clientService && !otherService) {
+    if (
+      clientService &&
+      clientService?.toLowerCase() === "other" &&
+      !otherService
+    ) {
       setOtherServiceError({ isError: true, message: "Field is required." });
+      console.log("[IS INVALID CLIENT SERVICE]");
       isValid = false;
     } else {
       setOtherServiceError({ isError: false, message: "" });
     }
 
     if (!isValid) {
+      alert("IS INVALID");
       return;
     }
     const params = {
@@ -430,8 +436,6 @@ function Routesheet(props) {
         date: new Date(),
       },
       signature_based: signImg,
-      timeIn,
-      timeOut,
       requestor: context.employeeProfile.name,
       requestorId: context.employeeProfile.id,
       requestorTitle: context.employeeProfile.position,
@@ -445,8 +449,11 @@ function Routesheet(props) {
         ? parseFloat(contractRate?.mileageRate * mileage)
         : 0,
 
-      dos: dayjs(new Date(dos)).format("YYYY-MM-DD"),
+      //  dos: dayjs(new Date(dos)).format("YYYY-MM-DD"),
+      dosStart: dayjs(new Date(dosStart)).format("YYYY-MM-DD HH:mm"),
+      dosEnd: dayjs(new Date(dosEnd)).format("YYYY-MM-DD HH:mm"),
     };
+
     params.totalMileageReimbursement =
       params.mileageCost > params.mileageMaxReimbursement
         ? params.mileageMaxReimbursement
@@ -465,8 +472,8 @@ function Routesheet(props) {
       params.serviceCd = serviceInfo?.code || "";
     }
     params.patientCd = client;
-    props.createRoutesheet(params);
     console.log("[Params]", params);
+    props.createRoutesheet(params);
   };
 
   const refreshHandler = () => {
@@ -476,6 +483,10 @@ function Routesheet(props) {
   const dateInputHandler = (name, value) => {
     if (name === "dos") {
       setDos(new Date(value));
+    } else if (name === "dosStart") {
+      setDosStart(new Date(value));
+    } else if (name === "dosEnd") {
+      setDosEnd(new Date(value));
     }
   };
 
@@ -613,11 +624,13 @@ function Routesheet(props) {
                         fullWidth: true,
                       }}
                       inputProps={{
-                        placeholder: "other servie here",
+                        placeholder: "other service here",
                         name: "otherService",
+                        onChange: (event) => {
+                          inputHandler(event);
+                        },
+                        value: otherService,
                       }}
-                      value={mileage}
-                      onChange={inputHandler}
                     />
                   </FormControl>
                   {otherServiceError.isError && (
@@ -846,6 +859,56 @@ function Routesheet(props) {
             {clientService && (
               <GridItem xs={12} sm={12} md={12}>
                 <GridContainer>
+                  <GridItem xs={12} sm={12} md={12}>
+                    <Card>
+                      <CardHeader color="success" icon>
+                        <CardIcon color="success">
+                          <EventOutlined />
+                        </CardIcon>
+                        <h4 className={classes.cardIconTitle}>
+                          Date of Service
+                        </h4>
+                      </CardHeader>
+                      <CardBody>
+                        <GridContainer>
+                          <GridItem xs={12} sm={12} md={6}>
+                            <h4>Time In</h4>
+                            <FormControl fullWidth>
+                              <Datetime
+                                inputProps={{
+                                  placeholder: "Date Here",
+                                  name: "dosStart",
+                                }}
+                                value={dosStart || dayjs(new Date())}
+                                onChange={(e) =>
+                                  dateInputHandler("dosStart", e)
+                                }
+                              />
+                            </FormControl>
+                          </GridItem>
+                          <GridItem xs={12} sm={12} md={6}>
+                            <h4>Time Out</h4>
+                            <FormControl fullWidth>
+                              <Datetime
+                                inputProps={{
+                                  placeholder: "Date Here",
+                                  name: "dosEnd",
+                                }}
+                                value={dosEnd || dayjs(new Date())}
+                                onChange={(e) => dateInputHandler("dosEnd", e)}
+                              />
+                            </FormControl>
+                          </GridItem>
+                        </GridContainer>
+                      </CardBody>
+                    </Card>
+                  </GridItem>
+                </GridContainer>
+              </GridItem>
+            )}
+            {/*clientService && (
+              <GridItem xs={12} sm={12} md={12}>
+                <GridContainer>
                   <GridItem xs={12} sm={12} md={4}>
                     <Card>
                       <CardHeader color="success" icon>
@@ -919,7 +982,7 @@ function Routesheet(props) {
                   </GridItem>
                 </GridContainer>
               </GridItem>
-            )}
+                          )*/}
             <GridContainer>
               {isMileageRate && (
                 <GridItem xs={12} sm={12} md={4}>
@@ -937,12 +1000,16 @@ function Routesheet(props) {
                           formControlProps={{
                             fullWidth: true,
                           }}
+                          onChange={inputHandler}
                           inputProps={{
                             placeholder: "mileage here",
                             name: "mileage",
+                            onChange: (event) => {
+                              inputHandler(event);
+                            },
+                            type: "number",
+                            value: mileage,
                           }}
-                          value={mileage}
-                          onChange={inputHandler}
                         />
                       </FormControl>
                     </CardBody>

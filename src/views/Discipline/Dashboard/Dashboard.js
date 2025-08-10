@@ -73,7 +73,7 @@ import Assignment from "@material-ui/icons/Assignment";
 import { attemptToFetchContract } from "store/actions/contractAction";
 import { resetFetchContractState } from "store/actions/contractAction";
 import { contractCreateStateSelector } from "store/selectors/contractSelector";
-
+import dayjs from "dayjs";
 const us_flag = require("assets/img/flags/US.png").default;
 const de_flag = require("assets/img/flags/DE.png").default;
 const au_flag = require("assets/img/flags/AU.png").default;
@@ -240,7 +240,7 @@ function Dashboard(props) {
 
       if ((i + 1) % 2 === 0) {
         c = [
-          d.dos,
+          dayjs(d.dosStart).format("YYYY-MM-DD HH:mm"),
           d.patientCd,
           d.service,
           d.estimatedPayment
@@ -250,7 +250,7 @@ function Dashboard(props) {
       } else {
         c.color = colors[colorInt];
         c.data = [
-          d.dos,
+          dayjs(d.dosStart).format("YYYY-MM-DD HH:mm"),
           d.patientCd,
           d.service,
           d.estimatedPayment

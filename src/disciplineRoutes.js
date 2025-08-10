@@ -1,5 +1,7 @@
 import Dashboard from "views/Discipline/Dashboard/Dashboard.js";
 import Routesheet from "views/Discipline/Routesheet/Routesheet.js";
+import Pickup from "views/Discipline/Pickup/Pickup.js";
+import Delivery from "views/Discipline/Delivery/Delivery.js";
 // @material-ui/icons
 import Apps from "@material-ui/icons/Apps";
 import DashboardIcon from "@material-ui/icons/Dashboard";
@@ -25,22 +27,25 @@ var dashRoutes = [
     component: Routesheet,
     layout: "/discipline",
   },
+
   {
-    path: "/routesheet",
+    path: "/pickup",
     name: "Pickup",
     rtlName: "ورقة الطريق",
     icon: PickupIcon,
-    component: Routesheet,
+    component: Pickup,
     layout: "/discipline",
   },
+
   {
-    path: "/routesheet",
+    path: "/delivery",
     name: "Delivery",
     rtlName: "ورقة الطريق",
     icon: DeliveryIcon,
-    component: Routesheet,
+    component: Delivery,
     layout: "/discipline",
   },
+  /*
   {
     path: "/routesheet",
     name: "Employee Handbook",
@@ -57,5 +62,6 @@ var dashRoutes = [
     component: Routesheet,
     layout: "/discipline",
   },
+  */
 ];
 export default dashRoutes;

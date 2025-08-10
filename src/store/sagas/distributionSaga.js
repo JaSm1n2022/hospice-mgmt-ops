@@ -96,7 +96,6 @@ function* deliveryQuery(filter) {
       .eq("companyId", filter.payload.companyId)
       .eq("requestor_id", filter.payload.requestor)
       .is("actualDeliveredDt", null)
-      .eq("patient_id", filter.payload.patientId)
       .order("record_id", { ascending: false });
 
     if (error && status !== 406) {

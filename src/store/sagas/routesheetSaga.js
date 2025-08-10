@@ -26,8 +26,8 @@ export function* listRoutesheet(action) {
       .from("routesheets")
       .select("*")
       .eq("companyId", companyId)
-      .gte("dos", `${action.payload.from} 00:00`)
-      .lt("dos", `${action.payload.to} 23:59`);
+      .gte("dosStart", `${action.payload.from} 00:00`)
+      .lt("dosStart", `${action.payload.to} 23:59`);
 
     if (discipline) {
       query = query.eq("requestorId", discipline); // fixed the ":" bug

@@ -34,7 +34,10 @@ export default function CustomTable(props) {
     <div className={classes.tableResponsive}>
       <Table className={classes.table}>
         {tableHead !== undefined ? (
-          <TableHead className={classes[tableHeaderColor]}>
+          <TableHead
+            className={classes[tableHeaderColor]}
+            style={{ fontSize: "9pt", fontWeight: "bold" }}
+          >
             <TableRow className={classes.tableRow + " " + classes.tableRowHead}>
               {tableHead.map((prop, key) => {
                 const tableCellClasses =
