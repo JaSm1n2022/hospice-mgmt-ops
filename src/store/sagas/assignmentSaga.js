@@ -14,26 +14,35 @@ import {
 } from "../actions/assignmentAction";
 import { supabaseClient } from "../../config/SupabaseClient";
 
-function* listAssignment(filter) {
+export function* listAssignment(action) {
   try {
-    console.log("[Filter]", filter.payload);
-    let { data, error, status } = yield supabaseClient
+    const { companyId, discipline } = action.payload || {};
+
+    if (!companyId) {
+      throw new Error("companyId is required");
+    }
+
+    // Build the query
+    let query = supabaseClient
       .from("assignments")
-      .select()
-      .eq("companyId", filter.payload.companyId);
+      .select("*")
+      .eq("companyId", companyId);
+
+    if (discipline) {
+      query = query.contains("disciplines", [discipline]);
+    }
+
+    // Execute the query
+    const { data, error, status } = yield query;
 
     if (error && status !== 406) {
-      console.log(error.toString());
       throw error;
     }
 
-    if (data) {
-      console.log("[got me]", data);
-      yield put(setFetchAssignmentSucceed(data));
-    }
-  } catch (error) {
-    yield put(setFetchAssignmentFailure(error));
-    TOAST.error(`Assignment Failed:${error.toString()}`);
+    yield put(setFetchAssignmentSucceed(data || []));
+  } catch (err) {
+    yield put(setFetchAssignmentFailure(err));
+    TOAST?.error?.(`Employee fetch failed: ${err.message || err.toString()}`);
   }
 }
 

@@ -14,29 +14,37 @@ import {
 } from "../actions/employeeAction";
 import { supabaseClient } from "../../config/SupabaseClient";
 
-function* listEmployee(filter) {
+export function* listEmployee(action) {
   try {
-    console.log("[Filter employee]", filter.payload);
-    let { data, error, status } = yield supabaseClient
+    const { companyId, email } = action.payload || {};
+
+    if (!companyId) {
+      throw new Error("companyId is required");
+    }
+
+    // Build the query
+    let query = supabaseClient
       .from("employees")
-      .select()
-      .eq("companyId", filter.payload.companyId);
+      .select("*")
+      .eq("companyId", companyId);
+
+    if (email) {
+      query = query.eq("email", email); // fixed the ":" bug
+    }
+
+    // Execute the query
+    const { data, error, status } = yield query;
 
     if (error && status !== 406) {
-      console.log(error.toString());
       throw error;
     }
 
-    if (data) {
-      console.log("[got me]", data);
-      yield put(setFetchEmployeeSucceed(data));
-    }
-  } catch (error) {
-    yield put(setFetchEmployeeFailure(error));
-    TOAST.error(`Employee Failed:${error.toString()}`);
+    yield put(setFetchEmployeeSucceed(data || []));
+  } catch (err) {
+    yield put(setFetchEmployeeFailure(err));
+    TOAST?.error?.(`Employee fetch failed: ${err.message || err.toString()}`);
   }
 }
-
 function* createEmployee(rqst) {
   try {
     console.log("[createEmployees]", rqst.payload);

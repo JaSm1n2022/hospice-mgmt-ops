@@ -1,5 +1,5 @@
 /*eslint-disable*/
-import React from "react";
+import React, { useContext } from "react";
 import PropTypes from "prop-types";
 // javascript plugin used to create scrollbars on windows
 import PerfectScrollbar from "perfect-scrollbar";
@@ -21,7 +21,8 @@ import AdminNavbarLinks from "components/Navbars/AdminNavbarLinks.js";
 
 import sidebarStyle from "assets/jss/material-dashboard-pro-react/components/sidebarStyle.js";
 
-import avatar from "assets/img/faces/avatar.jpg";
+import avatar from "assets/img/default-avatar.png";
+import { SupaContext } from "App";
 
 const useStyles = makeStyles(sidebarStyle);
 
@@ -57,6 +58,7 @@ function SidebarWrapper({ className, user, headerLinks, links }) {
 
 function Sidebar(props) {
   const classes = useStyles();
+  const context = useContext(SupaContext);
   const [miniActive, setMiniActive] = React.useState(true);
   // to check for active links and opened collapses
   let location = useLocation();
@@ -332,7 +334,11 @@ function Sidebar(props) {
   var user = (
     <div className={userWrapperClass}>
       <div className={photo}>
-        <img src={avatar} className={classes.avatarImg} alt="..." />
+        <img
+          src={context.userProfile?.avatar || avatar}
+          className={classes.avatarImg}
+          alt="..."
+        />
       </div>
       <List className={classes.list}>
         <ListItem className={classes.item + " " + classes.userItem}>
@@ -342,7 +348,7 @@ function Sidebar(props) {
             onClick={() => setOpenAvatar(!openAvatar)}
           >
             <ListItemText
-              primary={rtlActive ? "تانيا أندرو" : "Tania Andrew"}
+              primary={context.userProfile?.name || ""}
               secondary={
                 <b
                   className={

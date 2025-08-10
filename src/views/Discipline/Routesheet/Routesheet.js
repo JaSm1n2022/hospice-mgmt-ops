@@ -45,6 +45,7 @@ import noticeModal1 from "assets/img/card-1.jpeg";
 import noticeModal2 from "assets/img/card-2.jpeg";
 import { SupaContext } from "App.js";
 import {
+  AddAlertOutlined,
   AssignmentIndOutlined,
   ClearOutlined,
   DriveEta,
@@ -110,7 +111,14 @@ function Routesheet(props) {
   const [isContractCollection, setIsContractCollection] = useState(true);
   const [isRoutesheetCollection, setIsRoutesheetCollection] = useState(true);
   const [contractRate, setContractRate] = useState(undefined);
-  const [isClientError, setIsClientError] = useState(false);
+  const [clientError, setClientError] = useState({
+    isError: false,
+    message: "",
+  });
+  const [signatureError, setSignatureError] = useState({
+    isError: false,
+    message: "",
+  });
   const [dos, setDos] = useState(dayjs(new Date()));
   const [timeIn, setTimeIn] = useState(dayjs(new Date()).format("HH:mm"));
   const [timeOut, setTimeOut] = useState(
@@ -254,7 +262,7 @@ function Routesheet(props) {
 
   const onBeginHandler = () => {
     isSigned = true;
-    setIsSignRequired(false);
+    setSignatureError({ isError: false, message: "" });
     setIsRefresh(!isRefresh);
   };
   const clearSignatureHandler = () => {
@@ -331,12 +339,15 @@ function Routesheet(props) {
       if (target.value) {
         setOtherServiceError({ isError: false, message: "" });
       } else {
-        setOtherServiceError({ isError: true, message: "Field is required." });
+        setOtherServiceError({
+          isError: true,
+          message: "Other service is required.",
+        });
       }
     } else if (target.name === "mileage") {
       setMileage(target.value);
     } else if (target.name === "client") {
-      setIsClientError(false);
+      setClientError({ isError: false, message: "" });
       console.log("[CLIENT]", target.value, contractList);
       const m = contractList.find(
         (c) => c.serviceType === clientService && c.patientCd === target.value
@@ -357,6 +368,8 @@ function Routesheet(props) {
       //if specific
       setClient(target.value);
     } else if (target.name === "clientService") {
+      setClientError({ isError: false, message: "" });
+      setOtherServiceError({ isError: false, message: "" });
       if (target.value === "Attendance") {
         setTimeIn(dayjs(new Date()).set("hour", 8).set("minute", 0));
         setTimeOut(dayjs(new Date()).set("hour", 17).set("minute", 0));
@@ -382,18 +395,20 @@ function Routesheet(props) {
 
     const signImg = sigCanvas.current?.getCanvas().toDataURL("image/png");
     console.log("[SIGNATURE]", signImg, sigCanvas.current?.getCanvas());
-    setIsSignRequired(false);
+    setClientError({ isError: false, message: "" });
+    setSignatureError({ isError: false, message: "" });
     let isValid = true;
     if (isClientRequiredHandler() && !client) {
-      setIsClientError(true);
+      setClientError({ isError: true, message: "Client is required." });
       isValid = false;
     }
     if (!isSigned) {
-      setIsSignRequired(true);
+      setSignatureError({ isError: true, message: "Signature is required." });
       isValid = false;
     }
     if (clientService && !otherService) {
       setOtherServiceError({ isError: true, message: "Field is required." });
+      isValid = false;
     } else {
       setOtherServiceError({ isError: false, message: "" });
     }
@@ -415,8 +430,8 @@ function Routesheet(props) {
         date: new Date(),
       },
       signature_based: signImg,
-      timeIn: dayjs(timeIn.$d).format("HH:mm"),
-      timeOut: dayjs(timeOut.$d).format("HH:mm"),
+      timeIn,
+      timeOut,
       requestor: context.employeeProfile.name,
       requestorId: context.employeeProfile.id,
       requestorTitle: context.employeeProfile.position,
@@ -430,12 +445,17 @@ function Routesheet(props) {
         ? parseFloat(contractRate?.mileageRate * mileage)
         : 0,
 
-      dos: dayjs(dos.$d).format("YYYY-MM-DD"),
+      dos: dayjs(new Date(dos)).format("YYYY-MM-DD"),
     };
     params.totalMileageReimbursement =
       params.mileageCost > params.mileageMaxReimbursement
         ? params.mileageMaxReimbursement
         : params.mileageCost;
+    params.estimatedPayment = parseFloat(
+      parseFloat(params.totalMileageReimbursement) +
+        parseFloat(params.serviceRate)
+    ).toFixed(2);
+    params.approvedPayment = params.estimatedPayment;
     if (clientService?.toLowerCase() === "other") {
       params.service = otherService || "Other";
       params.serviceCd = "Other";
@@ -469,8 +489,9 @@ function Routesheet(props) {
   const isClientRequiredHandler = () => {
     if (!clientService) {
       return false;
-    }
-    if (serviceList.find((s) => s.name === clientService)) {
+    } else if (clientService?.toLowerCase() === "other") {
+      return true;
+    } else if (serviceList.find((s) => s.name === clientService)) {
       return serviceList.find((s) => s.name === clientService)
         ?.isClientRequired;
     }
@@ -531,250 +552,297 @@ function Routesheet(props) {
             <h4 className={classes.cardIconTitle}>Service Route Sheet</h4>
           </CardHeader>
           <CardBody>
-            <GridItem xs={12} sm={6} md={12} lg={12}>
-              <FormControl fullWidth className={classes.selectFormControl}>
-                <InputLabel
-                  htmlFor="client-service"
-                  className={classes.selectLabel}
-                >
-                  Select Service
-                </InputLabel>
-                <Select
-                  MenuProps={{
-                    className: classes.selectMenu,
-                  }}
-                  classes={{
-                    select: classes.select,
-                  }}
-                  onChange={inputHandler}
-                  inputProps={{
-                    name: "clientService",
-                    id: "client-service",
-                  }}
-                  value={clientService}
-                >
-                  <MenuItem
-                    disabled
-                    classes={{
-                      root: classes.selectMenuItem,
-                    }}
+            <GridContainer>
+              <GridItem
+                xs={12}
+                sm={6}
+                md={clientService?.toLowerCase() === "other" ? 4 : 6}
+                lg={clientService?.toLowerCase() === "other" ? 4 : 6}
+              >
+                <FormControl fullWidth className={classes.selectFormControl}>
+                  <InputLabel
+                    htmlFor="client-service"
+                    className={classes.selectLabel}
                   >
-                    Choose Service
-                  </MenuItem>
-                  {serviceList.map((item, index) => (
+                    Select Service
+                  </InputLabel>
+                  <Select
+                    MenuProps={{
+                      className: classes.selectMenu,
+                    }}
+                    classes={{
+                      select: classes.select,
+                    }}
+                    onChange={inputHandler}
+                    inputProps={{
+                      name: "clientService",
+                      id: "client-service",
+                    }}
+                    value={clientService}
+                  >
                     <MenuItem
+                      disabled
                       classes={{
                         root: classes.selectMenuItem,
-                        selected: classes.selectMenuItemSelected,
                       }}
-                      key={index}
-                      value={item.name}
                     >
-                      {item.name}
+                      Choose Service
                     </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </GridItem>
-            <GridItem
-              xs={12}
-              sm={6}
-              md={12}
-              lg={12}
-              style={{ display: isClientRequiredHandler() ? "" : "none" }}
-            >
-              <div
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  width: "100%",
-                }}
-              >
-                {/* Left side: Select */}
-                <div style={{ flex: client ? "0 0 90%" : "100%" }}>
-                  <FormControl fullWidth className={classes.selectFormControl}>
-                    <InputLabel
-                      htmlFor="select-client"
-                      className={classes.selectLabel}
-                    >
-                      Select Client
-                    </InputLabel>
-                    <Select
-                      MenuProps={{
-                        className: classes.selectMenu,
+                    {serviceList.map((item, index) => (
+                      <MenuItem
+                        classes={{
+                          root: classes.selectMenuItem,
+                          selected: classes.selectMenuItemSelected,
+                        }}
+                        key={index}
+                        value={item.name}
+                      >
+                        {item.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </GridItem>
+
+              {clientService === "Other" && (
+                <GridItem xs={12} sm={12} md={4} lg={4}>
+                  <FormControl fullWidth>
+                    <CustomInput
+                      id="otherService"
+                      formControlProps={{
+                        fullWidth: true,
                       }}
-                      classes={{
-                        select: classes.select,
-                      }}
-                      onChange={inputHandler}
                       inputProps={{
-                        name: "client",
-                        id: "select-client",
+                        placeholder: "other servie here",
+                        name: "otherService",
                       }}
-                      value={client}
-                      name="client"
-                    >
-                      {clients.map((item, index) => (
-                        <MenuItem key={index} value={item}>
-                          {item}
-                        </MenuItem>
-                      ))}
-                      {/* ...MenuItems... */}
-                    </Select>
+                      value={mileage}
+                      onChange={inputHandler}
+                    />
                   </FormControl>
-                </div>
-                {clients?.length === 0 &&
-                  isProcessDone &&
-                  isClientRequiredHandler() && (
-                    <div
-                      style={{
-                        width: "100%",
-                      }}
-                    >
-                      <div
-                        align="left"
-                        style={{ paddingLeft: 16, paddingTop: 5 }}
-                      >
-                        <Typography variant="h6">
-                          No client has been assigned to your service. Please
-                          contact the administrator to request an assignment.
-                        </Typography>
-                      </div>
-                    </div>
+                  {otherServiceError.isError && (
+                    <SnackbarContent
+                      message={otherServiceError.message}
+                      color="rose"
+                      close
+                      icon={AddAlertOutlined}
+                    />
                   )}
-                {/* Right side: Clear Icon */}
-                {client && (
-                  <div style={{ flex: "0 0 5%", textAlign: "right" }}>
-                    <Tooltip title="View Client Information">
-                      <Button
-                        justIcon
-                        round
-                        color="twitter"
-                        onClick={() => setNoticeModal(true)}
-                      >
-                        <i className={"fas fa-info"} />
-                      </Button>
-                    </Tooltip>
-                    <Dialog
-                      classes={{
-                        paper: classes2.modal,
-                      }}
-                      open={noticeModal}
-                      TransitionComponent={Transition}
-                      keepMounted
-                      onClose={() => setNoticeModal(false)}
-                      aria-labelledby="notice-modal-slide-title"
-                      aria-describedby="notice-modal-slide-description"
+                </GridItem>
+              )}
+
+              <GridItem
+                xs={12}
+                sm={12}
+                md={clientService?.toLowerCase() === "other" ? 4 : 6}
+                lg={clientService?.toLowerCase() === "other" ? 4 : 6}
+                style={{ display: isClientRequiredHandler() ? "" : "none" }}
+              >
+                <div
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    width: "100%",
+                  }}
+                >
+                  {/* Left side: Select */}
+                  <div style={{ flex: client ? "0 0 90%" : "100%" }}>
+                    <FormControl
+                      fullWidth
+                      className={classes.selectFormControl}
                     >
-                      <DialogTitle
-                        id="notice-modal-slide-title"
-                        disableTypography
-                        className={classes2.modalHeader}
+                      <InputLabel
+                        htmlFor="select-client"
+                        className={classes.selectLabel}
                       >
+                        Select Client
+                      </InputLabel>
+                      <Select
+                        MenuProps={{
+                          className: classes.selectMenu,
+                        }}
+                        classes={{
+                          select: classes.select,
+                        }}
+                        onChange={inputHandler}
+                        inputProps={{
+                          name: "client",
+                          id: "select-client",
+                        }}
+                        value={client}
+                        name="client"
+                      >
+                        {clients.map((item, index) => (
+                          <MenuItem key={index} value={item}>
+                            {item}
+                          </MenuItem>
+                        ))}
+                        {/* ...MenuItems... */}
+                      </Select>
+                    </FormControl>
+                    {clientError.isError && (
+                      <SnackbarContent
+                        message={clientError.message}
+                        color="rose"
+                        close
+                        icon={AddAlertOutlined}
+                      />
+                    )}
+                  </div>
+                  {clients?.length === 0 &&
+                    isProcessDone &&
+                    isClientRequiredHandler() && (
+                      <div
+                        style={{
+                          width: "100%",
+                        }}
+                      >
+                        <div
+                          align="left"
+                          style={{ paddingLeft: 16, paddingTop: 5 }}
+                        >
+                          <Typography variant="h6">
+                            No client has been assigned to your service. Please
+                            contact the administrator to request an assignment.
+                          </Typography>
+                        </div>
+                      </div>
+                    )}
+                  {/* Right side: Clear Icon */}
+                  {client && (
+                    <div style={{ flex: "0 0 5%", textAlign: "right" }}>
+                      <Tooltip title="View Client Information">
                         <Button
                           justIcon
-                          className={classes2.modalCloseButton}
-                          key="close"
-                          aria-label="Close"
-                          color="transparent"
-                          onClick={() => setNoticeModal(false)}
-                        >
-                          <Close className={classes2.modalClose} />
-                        </Button>
-                        <div align="center">
-                          <h4 className={classes2.modalTitle}>{client}</h4>
-                        </div>
-                      </DialogTitle>
-                      <DialogContent id="notice-modal-slide-description">
-                        <Card>
-                          <CardBody>
-                            <NavPills
-                              color="warning"
-                              tabs={[
-                                {
-                                  tabButton: "Client Info",
-                                  tabContent: (
-                                    <span>
-                                      <p>
-                                        <strong>Address :</strong>
-                                        {patientInfo?.address || "Call Agency"}
-                                      </p>
-
-                                      <p>
-                                        <strong>Contact Person :</strong>
-                                        {patientInfo?.contactPerson ||
-                                          "Call Agency"}
-                                      </p>
-
-                                      <p>
-                                        <strong>Contact Number :</strong>
-                                        {patientInfo?.contactNumber ||
-                                          "Call Agency"}
-                                      </p>
-                                    </span>
-                                  ),
-                                },
-                                {
-                                  tabButton: "Service Info",
-                                  tabContent: (
-                                    <span>
-                                      <p>
-                                        <strong>Visit Frequency: </strong>
-                                        {clientInformationFrequencyHandler()}
-                                      </p>
-
-                                      <p>
-                                        <strong>Day/Time :</strong>
-                                        {clientInformationDayHandler()}
-                                      </p>
-                                    </span>
-                                  ),
-                                },
-                                {
-                                  tabButton: "Contracted Rate",
-                                  tabContent: (
-                                    <span>
-                                      <p>
-                                        <strong>Service Rate: </strong>
-                                        {contractRate?.serviceRate
-                                          ? `$${contractRate?.serviceRate}/${
-                                              contractRate?.serviceRateType ||
-                                              ""
-                                            }`
-                                          : "Call Agency"}
-                                      </p>
-                                      <p>
-                                        <strong>Mileage Rate: </strong>
-                                        {`$${contractRate?.mileageRate}/mile`}
-                                      </p>
-                                    </span>
-                                  ),
-                                },
-                              ]}
-                            />
-                          </CardBody>
-                        </Card>
-                      </DialogContent>
-                      <DialogActions
-                        className={
-                          classes2.modalFooter +
-                          " " +
-                          classes2.modalFooterCenter
-                        }
-                      >
-                        <Button
-                          onClick={() => setNoticeModal(false)}
-                          color="info"
                           round
+                          color="twitter"
+                          onClick={() => setNoticeModal(true)}
                         >
-                          Sounds Good
+                          <i className={"fas fa-info"} />
                         </Button>
-                      </DialogActions>
-                    </Dialog>
-                  </div>
-                )}
-              </div>
-            </GridItem>
+                      </Tooltip>
+                      <Dialog
+                        classes={{
+                          paper: classes2.modal,
+                        }}
+                        open={noticeModal}
+                        TransitionComponent={Transition}
+                        keepMounted
+                        onClose={() => setNoticeModal(false)}
+                        aria-labelledby="notice-modal-slide-title"
+                        aria-describedby="notice-modal-slide-description"
+                      >
+                        <DialogTitle
+                          id="notice-modal-slide-title"
+                          disableTypography
+                          className={classes2.modalHeader}
+                        >
+                          <Button
+                            justIcon
+                            className={classes2.modalCloseButton}
+                            key="close"
+                            aria-label="Close"
+                            color="transparent"
+                            onClick={() => setNoticeModal(false)}
+                          >
+                            <Close className={classes2.modalClose} />
+                          </Button>
+                          <div align="center">
+                            <h4 className={classes2.modalTitle}>{client}</h4>
+                          </div>
+                        </DialogTitle>
+                        <DialogContent id="notice-modal-slide-description">
+                          <Card>
+                            <CardBody>
+                              <NavPills
+                                color="warning"
+                                tabs={[
+                                  {
+                                    tabButton: "Client Info",
+                                    tabContent: (
+                                      <span>
+                                        <p>
+                                          <strong>Address :</strong>
+                                          {patientInfo?.address ||
+                                            "Call Agency"}
+                                        </p>
+
+                                        <p>
+                                          <strong>Contact Person :</strong>
+                                          {patientInfo?.contactPerson ||
+                                            "Call Agency"}
+                                        </p>
+
+                                        <p>
+                                          <strong>Contact Number :</strong>
+                                          {patientInfo?.contactNumber ||
+                                            "Call Agency"}
+                                        </p>
+                                      </span>
+                                    ),
+                                  },
+                                  {
+                                    tabButton: "Service Info",
+                                    tabContent: (
+                                      <span>
+                                        <p>
+                                          <strong>Visit Frequency: </strong>
+                                          {clientInformationFrequencyHandler()}
+                                        </p>
+
+                                        <p>
+                                          <strong>Day/Time :</strong>
+                                          {clientInformationDayHandler()}
+                                        </p>
+                                      </span>
+                                    ),
+                                  },
+                                  {
+                                    tabButton: "Contracted Rate",
+                                    tabContent: (
+                                      <span>
+                                        <p>
+                                          <strong>Service Rate: </strong>
+                                          {contractRate?.serviceRate
+                                            ? `$${contractRate?.serviceRate}/${
+                                                contractRate?.serviceRateType ||
+                                                ""
+                                              }`
+                                            : "Call Agency"}
+                                        </p>
+                                        <p>
+                                          <strong>Mileage Rate: </strong>
+                                          {`$${contractRate?.mileageRate}/mile`}
+                                        </p>
+                                      </span>
+                                    ),
+                                  },
+                                ]}
+                              />
+                            </CardBody>
+                          </Card>
+                        </DialogContent>
+                        <DialogActions
+                          className={
+                            classes2.modalFooter +
+                            " " +
+                            classes2.modalFooterCenter
+                          }
+                        >
+                          <Button
+                            onClick={() => setNoticeModal(false)}
+                            color="info"
+                            round
+                          >
+                            Sounds Good
+                          </Button>
+                        </DialogActions>
+                      </Dialog>
+                    </div>
+                  )}
+                </div>
+              </GridItem>
+            </GridContainer>
             {clientService && (
               <GridItem xs={12} sm={12} md={12}>
                 <GridContainer>
@@ -785,7 +853,7 @@ function Routesheet(props) {
                           <EventOutlined />
                         </CardIcon>
                         <h4 className={classes.cardIconTitle}>
-                          Date of Service
+                          Date of Service Time In
                         </h4>
                       </CardHeader>
                       <CardBody>
@@ -852,128 +920,133 @@ function Routesheet(props) {
                 </GridContainer>
               </GridItem>
             )}
-            {isMileageRate && (
-              <GridItem xs={12} sm={12} md={12}>
-                <Card>
-                  <CardHeader color="danger" icon>
-                    <CardIcon color="danger">
-                      <DriveEta />
-                    </CardIcon>
-                    <h4 className={classes.cardIconTitle}>Log Mileage</h4>
-                  </CardHeader>
-                  <CardBody>
-                    <FormControl fullWidth>
-                      <CustomInput
-                        id="mileage"
-                        formControlProps={{
-                          fullWidth: true,
+            <GridContainer>
+              {isMileageRate && (
+                <GridItem xs={12} sm={12} md={4}>
+                  <Card>
+                    <CardHeader color="danger" icon>
+                      <CardIcon color="danger">
+                        <DriveEta />
+                      </CardIcon>
+                      <h4 className={classes.cardIconTitle}>Log Mileage</h4>
+                    </CardHeader>
+                    <CardBody>
+                      <FormControl fullWidth>
+                        <CustomInput
+                          id="mileage"
+                          formControlProps={{
+                            fullWidth: true,
+                          }}
+                          inputProps={{
+                            placeholder: "mileage here",
+                            name: "mileage",
+                          }}
+                          value={mileage}
+                          onChange={inputHandler}
+                        />
+                      </FormControl>
+                    </CardBody>
+                  </Card>
+                </GridItem>
+              )}
+              {clientService && (
+                <GridItem xs={12} sm={12} md={isMileageRate ? 4 : 6}>
+                  <Card>
+                    <CardHeader color="warning" icon>
+                      <CardIcon color="warning">
+                        <NotesOutlined />
+                      </CardIcon>
+                      <h4 className={classes.cardIconTitle}>Notes</h4>
+                    </CardHeader>
+                    <CardBody>
+                      <TextareaAutosize
+                        aria-label="empty textarea"
+                        minRows={4}
+                        rows={4}
+                        value={notes}
+                        placeholder="notes here"
+                        name={"notes"}
+                        style={{ width: "100%", border: 0 }}
+                        className="form-control"
+                        onKeyPress={(ev) => {
+                          if (ev.key === "Enter") {
+                            // Do code here
+                            ev.preventDefault();
+                          }
                         }}
-                        inputProps={{
-                          placeholder: "mileage here",
-                          name: "mileage",
-                        }}
-                        value={mileage}
                         onChange={inputHandler}
                       />
-                    </FormControl>
-                  </CardBody>
-                </Card>
-              </GridItem>
-            )}
-            {clientService && (
-              <GridItem xs={12} sm={12} md={12}>
-                <Card>
-                  <CardHeader color="warning" icon>
-                    <CardIcon color="warning">
-                      <NotesOutlined />
-                    </CardIcon>
-                    <h4 className={classes.cardIconTitle}>Notes</h4>
-                  </CardHeader>
-                  <CardBody>
-                    <TextareaAutosize
-                      aria-label="empty textarea"
-                      minRows={3}
-                      rows={3}
-                      value={notes}
-                      placeholder="notes here"
-                      name={"notes"}
-                      style={{ width: "100%", border: 0 }}
-                      className="form-control"
-                      onKeyPress={(ev) => {
-                        if (ev.key === "Enter") {
-                          // Do code here
-                          ev.preventDefault();
-                        }
-                      }}
-                      onChange={inputHandler}
-                    />
-                  </CardBody>
-                </Card>
-              </GridItem>
-            )}
-            {clientService && (
-              <GridItem xs={12} sm={12} md={12}>
-                <Card>
-                  <CardHeader color="info" icon>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        width: "100%",
-                      }}
-                    >
-                      <div style={{ flex: "0 0 90%" }}>
-                        <div style={{ display: "inline-flex" }}>
-                          <CardIcon color="info">
-                            <Gesture />
-                          </CardIcon>
+                    </CardBody>
+                  </Card>
+                </GridItem>
+              )}
+              {clientService && (
+                <GridItem xs={12} sm={12} md={isMileageRate ? 4 : 6}>
+                  <Card>
+                    <CardHeader color="info" icon>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          width: "100%",
+                        }}
+                      >
+                        <div style={{ flex: "0 0 90%" }}>
+                          <div style={{ display: "inline-flex" }}>
+                            <CardIcon color="info">
+                              <Gesture />
+                            </CardIcon>
 
-                          <h4 className={classes.cardIconTitle}>Signature</h4>
+                            <h4 className={classes.cardIconTitle}>Signature</h4>
+                          </div>
                         </div>
+                        <Tooltip title="Clear Signature">
+                          <ClearOutlined
+                            style={{ color: "red" }}
+                            onClick={clearSignatureHandler}
+                          />
+                        </Tooltip>
                       </div>
-                      <Tooltip title="Clear Signature">
-                        <ClearOutlined
-                          style={{ color: "red" }}
-                          onClick={clearSignatureHandler}
+                    </CardHeader>
+                    <CardBody>
+                      <ReactSignatureCanvas
+                        penColor="green"
+                        onBegin={(e) => onBeginHandler(e)}
+                        ref={(ref) => {
+                          sigCanvas.current = ref;
+                        }}
+                        canvasProps={{
+                          height: 60,
+                          width: 500,
+                          background: "white",
+                          className: "sigCanvas",
+                        }}
+                      />
+                      {signatureError.isError && (
+                        <SnackbarContent
+                          message={signatureError.message}
+                          color="rose"
+                          close
+                          icon={AddAlertOutlined}
                         />
-                      </Tooltip>
-                    </div>
-                  </CardHeader>
-                  <CardBody>
-                    <ReactSignatureCanvas
-                      penColor="green"
-                      onBegin={(e) => onBeginHandler(e)}
-                      ref={(ref) => {
-                        sigCanvas.current = ref;
-                      }}
-                      canvasProps={{
-                        height: 80,
-                        width: 500,
-                        background: "white",
-                        className: "sigCanvas",
-                      }}
-                    />
-                    {isSignRequired && (
-                      <Typography variant="body1" style={{ color: "red" }}>
-                        Signature is required.
-                      </Typography>
-                    )}
-                  </CardBody>
-                </Card>
-              </GridItem>
-            )}
-            {clientService && (
-              <GridItem xs={12} sm={12} md={5}>
-                <Button
-                  color="primary"
-                  round
-                  className={classes.marginRight}
-                  onClick={() => saveHandler()}
-                >
-                  <Favorite className={classes.icons} /> Submit
-                </Button>
-              </GridItem>
-            )}
+                      )}
+                    </CardBody>
+                  </Card>
+                </GridItem>
+              )}
+              {clientService && (
+                <GridItem xs={12} sm={12} md={5}>
+                  <Button
+                    color="primary"
+                    round
+                    className={classes.marginRight}
+                    onClick={() => saveHandler()}
+                  >
+                    <Favorite className={classes.icons} /> Submit
+                  </Button>
+                </GridItem>
+              )}
+            </GridContainer>
           </CardBody>
         </Card>
       </GridItem>

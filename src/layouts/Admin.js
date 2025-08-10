@@ -38,7 +38,7 @@ function Dashboard(props) {
   // const [hasImage, setHasImage] = React.useState(true);
   const [fixedClasses, setFixedClasses] = React.useState("dropdown");
   const [logo, setLogo] = React.useState(
-    require("assets/img/logo-white.svg").default
+    require("assets/img/logo-h.svg").default
   );
   // styles
   const classes = useStyles();

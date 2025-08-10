@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useContext, useEffect, useState } from "react";
 // react plugin for creating charts
 import ChartistGraph from "react-chartist";
 // react plugin for creating vector maps
@@ -48,6 +48,31 @@ import styles from "assets/jss/material-dashboard-pro-react/views/dashboardStyle
 import priceImage1 from "assets/img/card-2.jpeg";
 import priceImage2 from "assets/img/card-3.jpeg";
 import priceImage3 from "assets/img/card-1.jpeg";
+import { assignmentListStateSelector } from "store/selectors/assignmentSelector";
+import { contractListStateSelector } from "store/selectors/contractSelector";
+import { patientListStateSelector } from "store/selectors/patientSelector";
+import { attemptToFetchAssignment } from "store/actions/assignmentAction";
+import { resetFetchAssignmentState } from "store/actions/assignmentAction";
+import { attemptToFetchPatient } from "store/actions/patientAction";
+import { resetFetchPatientState } from "store/actions/patientAction";
+import { connect } from "react-redux";
+import { SupaContext } from "App";
+import { ACTION_STATUSES } from "utils/constants";
+import {
+  EventAvailableOutlined,
+  MonetizationOnOutlined,
+  PeopleAltOutlined,
+  TodayOutlined,
+} from "@material-ui/icons";
+import { attemptToFetchRoutesheet } from "store/actions/routesheetAction";
+import { resetFetchRoutesheetState } from "store/actions/routesheetAction";
+import { routesheetListStateSelector } from "store/selectors/routesheetSelector";
+import { CircularProgress } from "@material-ui/core";
+import Helper from "utils/helper";
+import Assignment from "@material-ui/icons/Assignment";
+import { attemptToFetchContract } from "store/actions/contractAction";
+import { resetFetchContractState } from "store/actions/contractAction";
+import { contractCreateStateSelector } from "store/selectors/contractSelector";
 
 const us_flag = require("assets/img/flags/US.png").default;
 const de_flag = require("assets/img/flags/DE.png").default;
@@ -69,497 +94,340 @@ var mapData = {
   RU: 300,
   US: 2920,
 };
-
+let isAssignmentDone = false;
+let isRoutesheetDone = false;
+let assignmentList = [];
+let routesheetList = [];
+let contractList = [];
+let isProcessDone = false;
+let isContractDone = false;
+let assignFrequencyVisit = [];
 const useStyles = makeStyles(styles);
 
-export default function Dashboard() {
+function Dashboard(props) {
+  const context = useContext(SupaContext);
+  const [scheduledVisit, setScheduledVisit] = useState(0);
+  const [completedVisit, setCompletedVisit] = useState(0);
+  const [estimatedPayment, setEstimatedPayment] = useState(0);
+  const [isAssignmentCollection, setIsAssignmentCollection] = useState(true);
+  const [isRoutesheetCollection, setIsRouteSheetCollection] = useState(true);
+  const [isContractCollection, setIsContractCollection] = useState(true);
+  const [routesheetData, setRoutesheetData] = useState([]);
+  const [totalServicePayment, setTotalServicePayment] = useState(0);
   const classes = useStyles();
+  useEffect(() => {
+    const dates = Helper.formatDateRangeByCriteriaV2("thisWeek");
+    if (context.userProfile?.companyId) {
+      props.listAssignments({
+        companyId: context.userProfile.companyId,
+        discipline: context.employeeProfile.id,
+      });
+
+      props.listRoutesheets({
+        companyId: context.userProfile.companyId,
+        discipline: context.employeeProfile.id,
+        from: dates.from,
+        to: dates.to,
+      });
+    }
+  }, []);
+  useEffect(() => {
+    if (
+      !isAssignmentCollection &&
+      props.assignmentState?.status === ACTION_STATUSES.SUCCEED
+    ) {
+      isAssignmentDone = true;
+      props.resetListAssignment();
+      setIsAssignmentCollection(true);
+      assignmentList = props.assignmentState?.data || [];
+      setScheduledVisit(clientInformationFrequencyHandler(assignmentList));
+
+      isContractDone = false;
+      const uniqueList = Array.from(
+        new Set(assignmentList?.map((m) => m.patientCd) || [])
+      );
+      props.listContracts({
+        companyId: context.userProfile.companyId,
+        discipline: context.employeeProfile.id,
+        // patientIds: uniqueList,
+      });
+      isAssignmentDone = true;
+      // collect contracts of patients
+    }
+    if (
+      !isRoutesheetCollection &&
+      props.routesheetState?.status === ACTION_STATUSES.SUCCEED
+    ) {
+      props.resetListRoutesheet();
+      setIsRouteSheetCollection(true);
+      routesheetList = props.routesheetState.data || [];
+      setCompletedVisit(routesheetList?.length);
+      setRoutesheetData(createTableDataHandler(routesheetList));
+      isRoutesheetDone = true;
+    }
+    if (
+      !isContractCollection &&
+      props.contracts?.status === ACTION_STATUSES.SUCCEED
+    ) {
+      contractList = props.contracts.data || [];
+      setEstimatedPayment(calculateEstimatedPaymentHandler(contractList));
+      props.resetListContracts();
+      setIsContractCollection(true);
+
+      console.log(
+        "[Contract List]",
+        contractList,
+        assignmentList,
+        scheduledVisit
+      );
+      isContractDone = true;
+      //setRoutesheetData(createTableDataHandler(routesheetList));
+    }
+  }, [isAssignmentCollection, isRoutesheetCollection, isContractCollection]);
+  if (
+    isAssignmentCollection &&
+    props.assignmentState?.status === ACTION_STATUSES.SUCCEED
+  ) {
+    setIsAssignmentCollection(false);
+  }
+  if (
+    isRoutesheetCollection &&
+    props.routesheetState?.status === ACTION_STATUSES.SUCCEED
+  ) {
+    setIsRouteSheetCollection(false);
+  }
+  if (
+    isContractCollection &&
+    props.contracts?.status === ACTION_STATUSES.SUCCEED
+  ) {
+    setIsContractCollection(false);
+  }
+  const calculateEstimatedPaymentHandler = (data) => {
+    let cost = 0;
+    let cntrRate;
+    if (assignmentList?.length) {
+      assignmentList.forEach((a) => {
+        cntrRate = data.find(
+          (d) =>
+            a.patientCd?.toString() === d.patientCd &&
+            d.serviceType?.toLowerCase() === "regular visit"
+        );
+        if (!cntrRate) {
+          cntrRate = data.find(
+            (d) => d.serviceType?.toLowerCase() === "regular visit"
+          );
+          console.log("[FOUND]", cntrRate);
+        }
+
+        if (cntrRate) {
+          const frequencyVisit = clientInformationFrequencyHandler([a]);
+          cost += cntrRate.serviceRate * (frequencyVisit || 0);
+        }
+      });
+    }
+    return cost;
+  };
+  console.log("[ASSIGNMENT]", assignmentList);
+  const createTableDataHandler = (data) => {
+    const colors = ["success", "info", "warning", "danger"];
+    const tables = [];
+    let grandTotal = 0.0;
+    let colorInt = 0;
+    for (let i = 0; i < data.length; i++) {
+      const d = data[i];
+      grandTotal += d.estimatedPayment;
+      let c = {};
+
+      if ((i + 1) % 2 === 0) {
+        c = [
+          d.dos,
+          d.patientCd,
+          d.service,
+          d.estimatedPayment
+            ? `$${parseFloat(d.estimatedPayment).toFixed(2)}`
+            : 0,
+        ];
+      } else {
+        c.color = colors[colorInt];
+        c.data = [
+          d.dos,
+          d.patientCd,
+          d.service,
+          d.estimatedPayment
+            ? `$${parseFloat(d.estimatedPayment).toFixed(2)}`
+            : 0,
+        ];
+        colorInt++;
+      }
+
+      if (colorInt === 4) {
+        colorInt = 0;
+      }
+      tables.push(c);
+    }
+    setTotalServicePayment(parseFloat(grandTotal).toFixed(2));
+    return tables;
+  };
+  const clientInformationFrequencyHandler = (data) => {
+    let totalVisit = 0;
+    data.forEach((cls) => {
+      if (cls?.cnaId === context.employeeProfile.id) {
+        totalVisit += parseInt(cls.cnaFreqVisit || 0);
+      } else if (cls.rnId === context.employeeProfile.id) {
+        totalVisit += parseInt(cls.rnFreqVisit || 0);
+      } else if (cls.lpnId === context.employeeProfile.id) {
+        totalVisit += parseInt(cls.lpnFreqVisit || 0);
+      } else if (cls.mswId === context.employeeProfile.id) {
+        totalVisit += parseInt(cls.mswFreqVisit || 0);
+      } else if (cls.chaplainId === context.employeeProfile.id) {
+        totalVisit += parseInt(cls.chaplainFreqVisit || 0);
+      }
+    });
+    return totalVisit;
+  };
+  isProcessDone = isAssignmentDone && isRoutesheetDone && isContractDone;
+  console.log("[ROUTESHEET]", routesheetData);
   return (
-    <div>
-      <GridContainer>
-        <GridItem xs={12} sm={6} md={6} lg={3}>
-          <Card>
-            <CardHeader color="warning" stats icon>
-              <CardIcon color="warning">
-                <Icon>content_copy</Icon>
-              </CardIcon>
-              <p className={classes.cardCategory}>Active Patients</p>
-              <h3 className={classes.cardTitle}>6</h3>
-            </CardHeader>
-            <CardFooter stats>
-              <div className={classes.stats}>As of Today</div>
-            </CardFooter>
-          </Card>
-        </GridItem>
-        <GridItem xs={12} sm={6} md={6} lg={3}>
-          <Card>
-            <CardHeader color="success" stats icon>
-              <CardIcon color="success">
-                <Store />
-              </CardIcon>
-              <p className={classes.cardCategory}>Assigned # of Visit</p>
-              <h3 className={classes.cardTitle}>12</h3>
-            </CardHeader>
-            <CardFooter stats>
-              <div className={classes.stats}>
-                <DateRange />
-                This Week
-              </div>
-            </CardFooter>
-          </Card>
-        </GridItem>
-        <GridItem xs={12} sm={6} md={6} lg={3}>
-          <Card>
-            <CardHeader color="danger" stats icon>
-              <CardIcon color="danger">
-                <Icon>info_outline</Icon>
-              </CardIcon>
-              <p className={classes.cardCategory}>Remaining # of Visit</p>
-              <h3 className={classes.cardTitle}>75</h3>
-            </CardHeader>
-            <CardFooter stats>
-              <div className={classes.stats}>
-                <LocalOffer />
-                This Week
-              </div>
-            </CardFooter>
-          </Card>
-        </GridItem>
-        <GridItem xs={12} sm={6} md={6} lg={3}>
-          <Card>
-            <CardHeader color="info" stats icon>
-              <CardIcon color="info">
-                <i className="fab fa-twitter" />
-              </CardIcon>
-              <p className={classes.cardCategory}>Estimated Payroll</p>
-              <h3 className={classes.cardTitle}>$300</h3>
-            </CardHeader>
-            <CardFooter stats>
-              <div className={classes.stats}>
-                <Update />
-                08/30/2025
-              </div>
-            </CardFooter>
-          </Card>
-        </GridItem>
-      </GridContainer>
-      <GridContainer>
-        <GridItem xs={12}>
-          <Card>
-            <CardHeader color="success" icon>
-              <CardIcon color="success">
-                <Language />
-              </CardIcon>
-              <h4 className={classes.cardIconTitle}>
-                Global Sales by Top Locations
-              </h4>
-            </CardHeader>
-            <CardBody>
-              <GridContainer justify="space-between">
-                <GridItem xs={12} sm={12} md={5}>
+    <>
+      {isProcessDone ? (
+        <div>
+          <GridContainer>
+            <GridItem xs={12} sm={6} md={6} lg={3}>
+              <Card>
+                <CardHeader color="warning" stats icon>
+                  <CardIcon color="warning">
+                    <PeopleAltOutlined />
+                  </CardIcon>
+                  <p className={classes.cardCategory}>Assigned Patients</p>
+                  <h3 className={classes.cardTitle}>
+                    {assignmentList?.length}
+                  </h3>
+                </CardHeader>
+                <CardFooter stats>
+                  <div className={classes.stats}>As of Today</div>
+                </CardFooter>
+              </Card>
+            </GridItem>
+            <GridItem xs={12} sm={6} md={6} lg={3}>
+              <Card>
+                <CardHeader color="danger" stats icon>
+                  <CardIcon color="danger">
+                    <TodayOutlined />
+                  </CardIcon>
+                  <p className={classes.cardCategory}>Scheduled Visits</p>
+                  <h3 className={classes.cardTitle}>{scheduledVisit}</h3>
+                </CardHeader>
+                <CardFooter stats>
+                  <div className={classes.stats}>
+                    <TodayOutlined />
+                    This Week
+                  </div>
+                </CardFooter>
+              </Card>
+            </GridItem>
+            <GridItem xs={12} sm={6} md={6} lg={3}>
+              <Card>
+                <CardHeader color="success" stats icon>
+                  <CardIcon color="success">
+                    <EventAvailableOutlined />
+                  </CardIcon>
+                  <p className={classes.cardCategory}>Completed Visits</p>
+                  <h3 className={classes.cardTitle}>{completedVisit}</h3>
+                </CardHeader>
+                <CardFooter stats>
+                  <div className={classes.stats}>
+                    <TodayOutlined />
+                    This Week
+                  </div>
+                </CardFooter>
+              </Card>
+            </GridItem>
+            <GridItem xs={12} sm={6} md={6} lg={3}>
+              <Card>
+                <CardHeader color="info" stats icon>
+                  <CardIcon color="info">
+                    <MonetizationOnOutlined />
+                  </CardIcon>
+                  <p className={classes.cardCategory}>Est. Visit Payment</p>
+                  <h3
+                    className={classes.cardTitle}
+                  >{`$${estimatedPayment}`}</h3>
+                </CardHeader>
+                <CardFooter stats>
+                  <div className={classes.stats}>
+                    <TodayOutlined />
+                    This Week
+                  </div>
+                </CardFooter>
+              </Card>
+            </GridItem>
+          </GridContainer>
+          <GridContainer>
+            <GridItem xs={12}>
+              <Card>
+                <CardHeader color="rose" icon>
+                  <CardIcon color="rose">
+                    <Assignment />
+                  </CardIcon>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <h4 className={classes.cardIconTitle}>
+                      This Week’s Routesheet Overview
+                    </h4>
+                  </div>
+                </CardHeader>
+                <CardBody className={classes.customCardContentClass}>
+                  <div align="right">
+                    <h4
+                      style={{ fontWeight: "bold" }}
+                    >{`Total Service Payment: $${totalServicePayment}`}</h4>
+                  </div>
                   <Table
-                    tableData={[
-                      [
-                        <img src={us_flag} alt="us_flag" key={"flag"} />,
-                        "USA",
-                        "2.920",
-                        "53.23%",
-                      ],
-                      [
-                        <img src={de_flag} alt="us_flag" key={"flag"} />,
-                        "Germany",
-                        "1.300",
-                        "20.43%",
-                      ],
-                      [
-                        <img src={au_flag} alt="us_flag" key={"flag"} />,
-                        "Australia",
-                        "760",
-                        "10.35%",
-                      ],
-                      [
-                        <img src={gb_flag} alt="us_flag" key={"flag"} />,
-                        "United Kingdom",
-                        "690",
-                        "7.87%",
-                      ],
-                      [
-                        <img src={ro_flag} alt="us_flag" key={"flag"} />,
-                        "Romania",
-                        "600",
-                        "5.94%",
-                      ],
-                      [
-                        <img src={br_flag} alt="us_flag" key={"flag"} />,
-                        "Brasil",
-                        "550",
-                        "4.34%",
-                      ],
+                    hover
+                    tableHead={[
+                      "Date",
+                      "Client",
+                      "Service",
+                      "Estimated Payment",
                     ]}
+                    tableData={
+                      Array.isArray(routesheetData) && routesheetData?.length
+                        ? routesheetData
+                        : []
+                    }
                   />
-                </GridItem>
-                <GridItem xs={12} sm={12} md={6}>
-                  <VectorMap
-                    map={"world_mill"}
-                    backgroundColor="transparent"
-                    zoomOnScroll={false}
-                    containerStyle={{
-                      width: "100%",
-                      height: "280px",
-                    }}
-                    containerClassName="map"
-                    regionStyle={{
-                      initial: {
-                        fill: "#e4e4e4",
-                        "fill-opacity": 0.9,
-                        stroke: "none",
-                        "stroke-width": 0,
-                        "stroke-opacity": 0,
-                      },
-                    }}
-                    series={{
-                      regions: [
-                        {
-                          values: mapData,
-                          scale: ["#AAAAAA", "#444444"],
-                          normalizeFunction: "polynomial",
-                        },
-                      ],
-                    }}
-                  />
-                </GridItem>
-              </GridContainer>
-            </CardBody>
-          </Card>
-        </GridItem>
-      </GridContainer>
-      <GridContainer>
-        <GridItem xs={12} sm={12} md={4}>
-          <Card chart className={classes.cardHover}>
-            <CardHeader color="info" className={classes.cardHeaderHover}>
-              <ChartistGraph
-                className="ct-chart-white-colors"
-                data={dailySalesChart.data}
-                type="Line"
-                options={dailySalesChart.options}
-                listener={dailySalesChart.animation}
-              />
-            </CardHeader>
-            <CardBody>
-              <div className={classes.cardHoverUnder}>
-                <Tooltip
-                  id="tooltip-top"
-                  title="Refresh"
-                  placement="bottom"
-                  classes={{ tooltip: classes.tooltip }}
-                >
-                  <Button simple color="info" justIcon>
-                    <Refresh className={classes.underChartIcons} />
-                  </Button>
-                </Tooltip>
-                <Tooltip
-                  id="tooltip-top"
-                  title="Change Date"
-                  placement="bottom"
-                  classes={{ tooltip: classes.tooltip }}
-                >
-                  <Button color="transparent" simple justIcon>
-                    <Edit className={classes.underChartIcons} />
-                  </Button>
-                </Tooltip>
-              </div>
-              <h4 className={classes.cardTitle}>Daily Sales</h4>
-              <p className={classes.cardCategory}>
-                <span className={classes.successText}>
-                  <ArrowUpward className={classes.upArrowCardCategory} /> 55%
-                </span>{" "}
-                increase in today sales.
-              </p>
-            </CardBody>
-            <CardFooter chart>
-              <div className={classes.stats}>
-                <AccessTime /> updated 4 minutes ago
-              </div>
-            </CardFooter>
-          </Card>
-        </GridItem>
-        <GridItem xs={12} sm={12} md={4}>
-          <Card chart className={classes.cardHover}>
-            <CardHeader color="warning" className={classes.cardHeaderHover}>
-              <ChartistGraph
-                className="ct-chart-white-colors"
-                data={emailsSubscriptionChart.data}
-                type="Bar"
-                options={emailsSubscriptionChart.options}
-                responsiveOptions={emailsSubscriptionChart.responsiveOptions}
-                listener={emailsSubscriptionChart.animation}
-              />
-            </CardHeader>
-            <CardBody>
-              <div className={classes.cardHoverUnder}>
-                <Tooltip
-                  id="tooltip-top"
-                  title="Refresh"
-                  placement="bottom"
-                  classes={{ tooltip: classes.tooltip }}
-                >
-                  <Button simple color="info" justIcon>
-                    <Refresh className={classes.underChartIcons} />
-                  </Button>
-                </Tooltip>
-                <Tooltip
-                  id="tooltip-top"
-                  title="Change Date"
-                  placement="bottom"
-                  classes={{ tooltip: classes.tooltip }}
-                >
-                  <Button color="transparent" simple justIcon>
-                    <Edit className={classes.underChartIcons} />
-                  </Button>
-                </Tooltip>
-              </div>
-              <h4 className={classes.cardTitle}>Email Subscriptions</h4>
-              <p className={classes.cardCategory}>Last Campaign Performance</p>
-            </CardBody>
-            <CardFooter chart>
-              <div className={classes.stats}>
-                <AccessTime /> campaign sent 2 days ago
-              </div>
-            </CardFooter>
-          </Card>
-        </GridItem>
-        <GridItem xs={12} sm={12} md={4}>
-          <Card chart className={classes.cardHover}>
-            <CardHeader color="danger" className={classes.cardHeaderHover}>
-              <ChartistGraph
-                className="ct-chart-white-colors"
-                data={completedTasksChart.data}
-                type="Line"
-                options={completedTasksChart.options}
-                listener={completedTasksChart.animation}
-              />
-            </CardHeader>
-            <CardBody>
-              <div className={classes.cardHoverUnder}>
-                <Tooltip
-                  id="tooltip-top"
-                  title="Refresh"
-                  placement="bottom"
-                  classes={{ tooltip: classes.tooltip }}
-                >
-                  <Button simple color="info" justIcon>
-                    <Refresh className={classes.underChartIcons} />
-                  </Button>
-                </Tooltip>
-                <Tooltip
-                  id="tooltip-top"
-                  title="Change Date"
-                  placement="bottom"
-                  classes={{ tooltip: classes.tooltip }}
-                >
-                  <Button color="transparent" simple justIcon>
-                    <Edit className={classes.underChartIcons} />
-                  </Button>
-                </Tooltip>
-              </div>
-              <h4 className={classes.cardTitle}>Completed Tasks</h4>
-              <p className={classes.cardCategory}>Last Campaign Performance</p>
-            </CardBody>
-            <CardFooter chart>
-              <div className={classes.stats}>
-                <AccessTime /> campaign sent 2 days ago
-              </div>
-            </CardFooter>
-          </Card>
-        </GridItem>
-      </GridContainer>
-      <h3>Manage Listings</h3>
-      <br />
-      <GridContainer>
-        <GridItem xs={12} sm={12} md={4}>
-          <Card product className={classes.cardHover}>
-            <CardHeader image className={classes.cardHeaderHover}>
-              <a href="#pablo" onClick={(e) => e.preventDefault()}>
-                <img src={priceImage1} alt="..." />
-              </a>
-            </CardHeader>
-            <CardBody>
-              <div className={classes.cardHoverUnder}>
-                <Tooltip
-                  id="tooltip-top"
-                  title="View"
-                  placement="bottom"
-                  classes={{ tooltip: classes.tooltip }}
-                >
-                  <Button color="transparent" simple justIcon>
-                    <ArtTrack className={classes.underChartIcons} />
-                  </Button>
-                </Tooltip>
-                <Tooltip
-                  id="tooltip-top"
-                  title="Edit"
-                  placement="bottom"
-                  classes={{ tooltip: classes.tooltip }}
-                >
-                  <Button color="success" simple justIcon>
-                    <Refresh className={classes.underChartIcons} />
-                  </Button>
-                </Tooltip>
-                <Tooltip
-                  id="tooltip-top"
-                  title="Remove"
-                  placement="bottom"
-                  classes={{ tooltip: classes.tooltip }}
-                >
-                  <Button color="danger" simple justIcon>
-                    <Edit className={classes.underChartIcons} />
-                  </Button>
-                </Tooltip>
-              </div>
-              <h4 className={classes.cardProductTitle}>
-                <a href="#pablo" onClick={(e) => e.preventDefault()}>
-                  Cozy 5 Stars Apartment
-                </a>
-              </h4>
-              <p className={classes.cardProductDesciprion}>
-                The place is close to Barceloneta Beach and bus stop just 2 min
-                by walk and near to {'"'}Naviglio{'"'} where you can enjoy the
-                main night life in Barcelona.
-              </p>
-            </CardBody>
-            <CardFooter product>
-              <div className={classes.price}>
-                <h4>$899/night</h4>
-              </div>
-              <div className={`${classes.stats} ${classes.productStats}`}>
-                <Place /> Barcelona, Spain
-              </div>
-            </CardFooter>
-          </Card>
-        </GridItem>
-        <GridItem xs={12} sm={12} md={4}>
-          <Card product className={classes.cardHover}>
-            <CardHeader image className={classes.cardHeaderHover}>
-              <a href="#pablo" onClick={(e) => e.preventDefault()}>
-                <img src={priceImage2} alt="..." />
-              </a>
-            </CardHeader>
-            <CardBody>
-              <div className={classes.cardHoverUnder}>
-                <Tooltip
-                  id="tooltip-top"
-                  title="View"
-                  placement="bottom"
-                  classes={{ tooltip: classes.tooltip }}
-                >
-                  <Button color="transparent" simple justIcon>
-                    <ArtTrack className={classes.underChartIcons} />
-                  </Button>
-                </Tooltip>
-                <Tooltip
-                  id="tooltip-top"
-                  title="Edit"
-                  placement="bottom"
-                  classes={{ tooltip: classes.tooltip }}
-                >
-                  <Button color="success" simple justIcon>
-                    <Refresh className={classes.underChartIcons} />
-                  </Button>
-                </Tooltip>
-                <Tooltip
-                  id="tooltip-top"
-                  title="Remove"
-                  placement="bottom"
-                  classes={{ tooltip: classes.tooltip }}
-                >
-                  <Button color="danger" simple justIcon>
-                    <Edit className={classes.underChartIcons} />
-                  </Button>
-                </Tooltip>
-              </div>
-              <h4 className={classes.cardProductTitle}>
-                <a href="#pablo" onClick={(e) => e.preventDefault()}>
-                  Office Studio
-                </a>
-              </h4>
-              <p className={classes.cardProductDesciprion}>
-                The place is close to Metro Station and bus stop just 2 min by
-                walk and near to {'"'}Naviglio{'"'} where you can enjoy the
-                night life in London, UK.
-              </p>
-            </CardBody>
-            <CardFooter product>
-              <div className={classes.price}>
-                <h4>$1.119/night</h4>
-              </div>
-              <div className={`${classes.stats} ${classes.productStats}`}>
-                <Place /> London, UK
-              </div>
-            </CardFooter>
-          </Card>
-        </GridItem>
-        <GridItem xs={12} sm={12} md={4}>
-          <Card product className={classes.cardHover}>
-            <CardHeader image className={classes.cardHeaderHover}>
-              <a href="#pablo" onClick={(e) => e.preventDefault()}>
-                <img src={priceImage3} alt="..." />
-              </a>
-            </CardHeader>
-            <CardBody>
-              <div className={classes.cardHoverUnder}>
-                <Tooltip
-                  id="tooltip-top"
-                  title="View"
-                  placement="bottom"
-                  classes={{ tooltip: classes.tooltip }}
-                >
-                  <Button color="transparent" simple justIcon>
-                    <ArtTrack className={classes.underChartIcons} />
-                  </Button>
-                </Tooltip>
-                <Tooltip
-                  id="tooltip-top"
-                  title="Edit"
-                  placement="bottom"
-                  classes={{ tooltip: classes.tooltip }}
-                >
-                  <Button color="success" simple justIcon>
-                    <Refresh className={classes.underChartIcons} />
-                  </Button>
-                </Tooltip>
-                <Tooltip
-                  id="tooltip-top"
-                  title="Remove"
-                  placement="bottom"
-                  classes={{ tooltip: classes.tooltip }}
-                >
-                  <Button color="danger" simple justIcon>
-                    <Edit className={classes.underChartIcons} />
-                  </Button>
-                </Tooltip>
-              </div>
-              <h4 className={classes.cardProductTitle}>
-                <a href="#pablo" onClick={(e) => e.preventDefault()}>
-                  Beautiful Castle
-                </a>
-              </h4>
-              <p className={classes.cardProductDesciprion}>
-                The place is close to Metro Station and bus stop just 2 min by
-                walk and near to {'"'}Naviglio{'"'} where you can enjoy the main
-                night life in Milan.
-              </p>
-            </CardBody>
-            <CardFooter product>
-              <div className={classes.price}>
-                <h4>$459/night</h4>
-              </div>
-              <div className={`${classes.stats} ${classes.productStats}`}>
-                <Place /> Milan, Italy
-              </div>
-            </CardFooter>
-          </Card>
-        </GridItem>
-      </GridContainer>
-    </div>
+                </CardBody>
+              </Card>
+            </GridItem>
+          </GridContainer>
+        </div>
+      ) : (
+        <div>
+          <CircularProgress></CircularProgress>Loading...
+        </div>
+      )}
+    </>
   );
 }
+const mapStateToProps = (store) => ({
+  assignmentState: assignmentListStateSelector(store),
+  contracts: contractListStateSelector(store),
+  patients: patientListStateSelector(store),
+  routesheetState: routesheetListStateSelector(store),
+});
+const mapDispatchToProps = (dispatch) => ({
+  listAssignments: (data) => dispatch(attemptToFetchAssignment(data)),
+  resetListAssignment: () => dispatch(resetFetchAssignmentState()),
+  listContracts: (data) => dispatch(attemptToFetchContract(data)),
+  resetListContracts: () => dispatch(resetFetchContractState()),
+  listPatients: (data) => dispatch(attemptToFetchPatient(data)),
+  resetListPatients: () => dispatch(resetFetchPatientState()),
+  listRoutesheets: (data) => dispatch(attemptToFetchRoutesheet(data)),
+  resetListRoutesheet: () => dispatch(resetFetchRoutesheetState()),
+});
+export default connect(mapStateToProps, mapDispatchToProps)(Dashboard);

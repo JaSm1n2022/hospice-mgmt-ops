@@ -55,7 +55,9 @@ export default function HeaderLinks(props) {
       console.error("Error signing out:", error.message);
     } else {
       // Optional: Clear your app state if you're using Redux, context, etc.
+
       console.log("User signed out.");
+      window.location.href = "/auth/login-page";
     }
   };
   const handleCloseProfile = () => {

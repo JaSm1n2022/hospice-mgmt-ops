@@ -121,7 +121,12 @@ export const CLIENT_SERVICES = [
       "Chaplain",
     ],
   },
-  { code: "O", name: "Orientation", isClientRequired: true, permission: ["*"] },
+  {
+    code: "O",
+    name: "Orientation",
+    isClientRequired: true,
+    permission: ["*"],
+  },
   {
     code: "VV",
     name: "Volunteer Visit",

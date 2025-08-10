@@ -101,6 +101,7 @@ function App({
       const profile = profileState?.data?.[0];
       setUserProfile(profile);
       if (profile) {
+        console.log("[EMPLOYEE MUST]", profile);
         listEmployee({
           email: profile.username,
           companyId: profile.companyId,
@@ -130,7 +131,7 @@ function App({
       );
     }
 
-    if (userProfile?.companyId) {
+    if (userProfile?.companyId && employeeProfile?.id) {
       return userProfile.role === "admin" ? (
         <Switch>
           <Route path="/admin" component={Admin} />

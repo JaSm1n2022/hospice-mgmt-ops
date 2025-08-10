@@ -4,7 +4,10 @@ import Routesheet from "views/Discipline/Routesheet/Routesheet.js";
 import Apps from "@material-ui/icons/Apps";
 import DashboardIcon from "@material-ui/icons/Dashboard";
 import AssignmentIcon from "@material-ui/icons/Assignment";
-
+import PickupIcon from "@material-ui/icons/LocalShippingOutlined";
+import DeliveryIcon from "@material-ui/icons/LocalShippingRounded";
+import HandbookIcon from "@material-ui/icons/LibraryBooksOutlined";
+import CalendarIcon from "@material-ui/icons/CalendarTodayOutlined";
 var dashRoutes = [
   {
     path: "/dashboard",
@@ -19,6 +22,38 @@ var dashRoutes = [
     name: "Routesheet",
     rtlName: "ورقة الطريق",
     icon: AssignmentIcon,
+    component: Routesheet,
+    layout: "/discipline",
+  },
+  {
+    path: "/routesheet",
+    name: "Pickup",
+    rtlName: "ورقة الطريق",
+    icon: PickupIcon,
+    component: Routesheet,
+    layout: "/discipline",
+  },
+  {
+    path: "/routesheet",
+    name: "Delivery",
+    rtlName: "ورقة الطريق",
+    icon: DeliveryIcon,
+    component: Routesheet,
+    layout: "/discipline",
+  },
+  {
+    path: "/routesheet",
+    name: "Employee Handbook",
+    rtlName: "ورقة الطريق",
+    icon: HandbookIcon,
+    component: Routesheet,
+    layout: "/discipline",
+  },
+  {
+    path: "/routesheet",
+    name: "Calendar",
+    rtlName: "ورقة الطريق",
+    icon: CalendarIcon,
     component: Routesheet,
     layout: "/discipline",
   },

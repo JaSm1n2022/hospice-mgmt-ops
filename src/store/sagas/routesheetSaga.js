@@ -13,29 +13,37 @@ import {
   setUpdateRoutesheetSucceed,
 } from "../actions/routesheetAction";
 import { supabaseClient } from "../../config/SupabaseClient";
-
-function* listRoutesheet(filter) {
+export function* listRoutesheet(action) {
   try {
-    console.log("[Filter routesheet]", filter.payload);
-    let { data, error, status } = yield supabaseClient
+    const { companyId, discipline } = action.payload || {};
+
+    if (!companyId) {
+      throw new Error("companyId is required");
+    }
+
+    // Build the query
+    let query = supabaseClient
       .from("routesheets")
-      .select()
-      .eq("companyId", filter.payload.companyId)
-      .gte("dos", `${filter.payload.from} 00:00`)
-      .lt("dos", `${filter.payload.to} 23:59`);
+      .select("*")
+      .eq("companyId", companyId)
+      .gte("dos", `${action.payload.from} 00:00`)
+      .lt("dos", `${action.payload.to} 23:59`);
+
+    if (discipline) {
+      query = query.eq("requestorId", discipline); // fixed the ":" bug
+    }
+
+    // Execute the query
+    const { data, error, status } = yield query;
 
     if (error && status !== 406) {
-      console.log(error.toString());
       throw error;
     }
 
-    if (data) {
-      console.log("[got me]", data);
-      yield put(setFetchRoutesheetSucceed(data));
-    }
-  } catch (error) {
-    yield put(setFetchRoutesheetFailure(error));
-    TOAST.error(`Routesheet Failed:${error.toString()}`);
+    yield put(setFetchRoutesheetSucceed(data || []));
+  } catch (err) {
+    yield put(setFetchRoutesheetFailure(err));
+    TOAST?.error?.(`Routesheet fetch failed: ${err.message || err.toString()}`);
   }
 }
 

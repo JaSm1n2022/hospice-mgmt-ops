@@ -37,8 +37,39 @@ function* standardQuery(filter) {
   }
 }
 
-function* listContract(filter) {
-  yield standardQuery(filter);
+function* listContract(action) {
+  try {
+    const { companyId, discipline, patientIds } = action.payload || {};
+
+    if (!companyId) {
+      throw new Error("companyId is required");
+    }
+
+    // Build the query
+    let query = supabaseClient
+      .from("contracts")
+      .select("*")
+      .eq("companyId", companyId);
+
+    if (discipline) {
+      query = query.eq("employeeId", discipline); // fixed the ":" bug
+    }
+    if (patientIds?.length > 0) {
+      query = query.in("patientCd", patientIds);
+    }
+    query = query.order("employeeName", { ascending: false });
+    // Execute the query
+    const { data, error, status } = yield query;
+
+    if (error && status !== 406) {
+      throw error;
+    }
+
+    yield put(setFetchContractSucceed(data || []));
+  } catch (err) {
+    yield put(setFetchContractFailure(err));
+    TOAST?.error?.(`Employee fetch failed: ${err.message || err.toString()}`);
+  }
 }
 
 function* CreateContract(rqst) {
