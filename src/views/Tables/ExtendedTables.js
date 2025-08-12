@@ -289,177 +289,71 @@ export default function ExtendedTables() {
             <CardIcon color="rose">
               <Assignment />
             </CardIcon>
-            <h4 className={classes.cardIconTitle}>Shopping Cart Table</h4>
+            <h4 className={classes.cardIconTitle}>Services & Earnings</h4>
           </CardHeader>
           <CardBody>
             <Table
-              tableHead={[
-                "",
-                "PRODUCT",
-                "COLOR",
-                "SIZE",
-                "PRICE",
-                "QTY",
-                "AMOUNT",
-                "",
-              ]}
               tableData={[
                 [
-                  <div className={classes.imgContainer} key="key">
-                    <img src={product1} alt="..." className={classes.img} />
-                  </div>,
-                  <span key="key">
-                    <a href="#jacket" className={classes.tdNameAnchor}>
-                      Spring Jacket
-                    </a>
-                    <br />
-                    <small className={classes.tdNameSmall}>
-                      by Dolce&amp;Gabbana
-                    </small>
-                  </span>,
-                  "Red",
-                  "M",
-                  <span key="key">
-                    <small className={classes.tdNumberSmall}>€</small> 549
-                  </span>,
-                  <span key="key">
-                    1{` `}
-                    <div className={classes.buttonGroup}>
-                      <Button
-                        color="info"
-                        size="sm"
-                        round
-                        className={classes.firstButton}
-                      >
-                        <Remove className={classes.icon} />
-                      </Button>
-                      <Button
-                        color="info"
-                        size="sm"
-                        round
-                        className={classes.lastButton}
-                      >
-                        <Add className={classes.icon} />
-                      </Button>
+                  <div
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      width: "100%",
+                    }}
+                  >
+                    <div style={{ flex: "50%" }}>
+                      <span key="key">
+                        <small className={classes.tdNameAnchor}>
+                          Robert, J
+                        </small>
+                        <br />
+                        <small className={classes.tdNameSmall}>
+                          08/20/2025 11:30PM
+                        </small>
+                      </span>
                     </div>
-                  </span>,
-                  <span key="key">
-                    <small className={classes.tdNumberSmall}>€</small> 549
-                  </span>,
-                  <Button simple className={classes.actionButton} key="key">
-                    <Close className={classes.icon} />
-                  </Button>,
+                    <div style={{ flex: "50%" }}>
+                      <span key="key">
+                        <small className={classes.tdNameAnchor}>
+                          Regular Visit
+                        </small>
+                        <br />
+                        <h5 style={{ fontWeight: "bold" }}>$35.00</h5>
+                      </span>
+                    </div>
+                  </div>,
                 ],
                 [
-                  <div className={classes.imgContainer} key="key">
-                    <img src={product2} alt="..." className={classes.img} />
-                  </div>,
-                  <span key="key">
-                    <a href="#jacket" className={classes.tdNameAnchor}>
-                      Short Pants{" "}
-                    </a>
-                    <br />
-                    <small className={classes.tdNameSmall}>by Pucci</small>
-                  </span>,
-                  "Purple",
-                  "M",
-                  <span key="key">
-                    <small className={classes.tdNumberSmall}>€</small> 499
-                  </span>,
-                  <span key="key">
-                    2{` `}
-                    <div className={classes.buttonGroup}>
-                      <Button
-                        color="info"
-                        size="sm"
-                        round
-                        className={classes.firstButton}
-                      >
-                        <Remove className={classes.icon} />
-                      </Button>
-                      <Button
-                        color="info"
-                        size="sm"
-                        round
-                        className={classes.lastButton}
-                      >
-                        <Add className={classes.icon} />
-                      </Button>
+                  <div
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      width: "100%",
+                    }}
+                  >
+                    <div style={{ flex: "50%" }}>
+                      <span key="key">
+                        <small className={classes.tdNameAnchor}>
+                          Robert, J
+                        </small>
+                        <br />
+                        <small className={classes.tdNameSmall}>
+                          08/20/2025 11:30PM
+                        </small>
+                      </span>
                     </div>
-                  </span>,
-                  <span key="key">
-                    <small className={classes.tdNumberSmall}>€</small> 998
-                  </span>,
-                  <Button simple className={classes.actionButton} key="key">
-                    <Close className={classes.icon} />
-                  </Button>,
-                ],
-                [
-                  <div className={classes.imgContainer} key="key">
-                    <img src={product3} alt="..." className={classes.img} />
-                  </div>,
-                  <span key="key">
-                    <a href="#jacket" className={classes.tdNameAnchor}>
-                      Pencil Skirt
-                    </a>
-                    <br />
-                    <small className={classes.tdNameSmall}>by Valentino</small>
-                  </span>,
-                  "White",
-                  "XL",
-                  <span key="key">
-                    <small className={classes.tdNumberSmall}>€</small> 799
-                  </span>,
-                  <span key="key">
-                    1{` `}
-                    <div className={classes.buttonGroup}>
-                      <Button
-                        color="info"
-                        size="sm"
-                        round
-                        className={classes.firstButton}
-                      >
-                        <Remove className={classes.icon} />
-                      </Button>
-                      <Button
-                        color="info"
-                        size="sm"
-                        round
-                        className={classes.lastButton}
-                      >
-                        <Add className={classes.icon} />
-                      </Button>
+                    <div style={{ flex: "50%" }}>
+                      <span key="key">
+                        <small className={classes.tdNameAnchor}>
+                          Regular Visit
+                        </small>
+                        <br />
+                        <h4>$35.00</h4>
+                      </span>
                     </div>
-                  </span>,
-                  <span key="key">
-                    <small className={classes.tdNumberSmall}>€</small> 799
-                  </span>,
-                  <Button simple className={classes.actionButton} key="key">
-                    <Close className={classes.icon} />
-                  </Button>,
+                  </div>,
                 ],
-                {
-                  total: true,
-                  colspan: "5",
-                  amount: (
-                    <span key="key">
-                      <small>€</small>2,346
-                    </span>
-                  ),
-                },
-                {
-                  purchase: true,
-                  colspan: "6",
-                  col: {
-                    colspan: 2,
-                    text: (
-                      <Button color="info" round>
-                        Complete Purchase{" "}
-                        <KeyboardArrowRight className={classes.icon} />
-                      </Button>
-                    ),
-                  },
-                },
               ]}
               tableShopping
               customHeadCellClasses={[

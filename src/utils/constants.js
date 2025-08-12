@@ -38,8 +38,20 @@ export const CLIENT_SERVICES = [
     permission: ["Case Manager", "Registered Nurse", "Director of Nurse"],
   },
   {
-    code: "IDT",
-    name: "IDT Meeting",
+    code: "IDT-PH",
+    name: "IDT Meeting Via Phone",
+    isClientRequired: false,
+    permission: ["*"],
+  },
+  {
+    code: "IDT-PH",
+    name: "IDT Meeting In Person",
+    isClientRequired: false,
+    permission: ["*"],
+  },
+  {
+    code: "IDT-PH",
+    name: "IDT Meeting Thru Notes",
     isClientRequired: false,
     permission: ["*"],
   },
@@ -74,12 +86,7 @@ export const CLIENT_SERVICES = [
     isClientRequired: true,
     permission: ["MSW"],
   },
-  {
-    code: "INS",
-    name: "Inservice Meeting",
-    isClientRequired: true,
-    permission: ["*"],
-  },
+
   {
     code: "RV",
     name: "Regular Visit",
@@ -124,7 +131,7 @@ export const CLIENT_SERVICES = [
   {
     code: "O",
     name: "Orientation",
-    isClientRequired: true,
+    isClientRequired: false,
     permission: ["*"],
   },
   {

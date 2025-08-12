@@ -72,22 +72,33 @@ import Helper from "utils/helper";
 import Assignment from "@material-ui/icons/Assignment";
 import { attemptToFetchContract } from "store/actions/contractAction";
 import { resetFetchContractState } from "store/actions/contractAction";
-import { contractCreateStateSelector } from "store/selectors/contractSelector";
 import dayjs from "dayjs";
-
-let earnings = [];
 
 let isAssignmentDone = false;
 let isRoutesheetDone = false;
 let assignmentList = [];
 let routesheetList = [];
 let contractList = [];
+let earnings = [];
 let isProcessDone = false;
 let isContractDone = false;
-let assignFrequencyVisit = [];
 const useStyles = makeStyles(styles);
+const services = [
+  {
+    name: "Robert, J",
+    date: "08/20/2025 11:30PM",
+    service: "Regular Visit",
+    amount: "$35.00",
+  },
+  {
+    name: "Jane Doe",
+    date: "08/21/2025 10:00AM",
+    service: "Follow-up Visit",
+    amount: "$40.00",
+  },
+];
 
-function Dashboard(props) {
+function Earning(props) {
   const context = useContext(SupaContext);
   const [scheduledVisit, setScheduledVisit] = useState(0);
   const [completedVisit, setCompletedVisit] = useState(0);
@@ -97,6 +108,7 @@ function Dashboard(props) {
   const [isContractCollection, setIsContractCollection] = useState(true);
   const [routesheetData, setRoutesheetData] = useState([]);
   const [totalServicePayment, setTotalServicePayment] = useState(0);
+
   const classes = useStyles();
   useEffect(() => {
     const dates = Helper.formatDateRangeByCriteriaV2("thisWeek");
@@ -243,7 +255,7 @@ function Dashboard(props) {
           d.service,
           d.estimatedPayment
             ? `$${parseFloat(d.estimatedPayment).toFixed(2)}`
-            : `$0`,
+            : 0,
         ];
       } else {
         c.color = colors[colorInt];
@@ -253,7 +265,7 @@ function Dashboard(props) {
           d.service,
           d.estimatedPayment
             ? `$${parseFloat(d.estimatedPayment).toFixed(2)}`
-            : `$0.00`,
+            : 0,
         ];
         colorInt++;
       }
@@ -283,6 +295,7 @@ function Dashboard(props) {
     });
     return totalVisit;
   };
+
   const tableData = earnings?.map((item, index) => [
     <div
       key={index}
@@ -308,8 +321,10 @@ function Dashboard(props) {
       </div>
     </div>,
   ]);
+
   isProcessDone = isAssignmentDone && isRoutesheetDone && isContractDone;
   console.log("[ROUTESHEET]", routesheetData);
+
   return (
     <>
       {isProcessDone ? (
@@ -492,4 +507,4 @@ const mapDispatchToProps = (dispatch) => ({
   listRoutesheets: (data) => dispatch(attemptToFetchRoutesheet(data)),
   resetListRoutesheet: () => dispatch(resetFetchRoutesheetState()),
 });
-export default connect(mapStateToProps, mapDispatchToProps)(Dashboard);
+export default connect(mapStateToProps, mapDispatchToProps)(Earning);
