@@ -419,7 +419,6 @@ function Routesheet(props) {
     }
 
     if (!isValid) {
-      alert("IS INVALID");
       return;
     }
     const params = {

@@ -50,14 +50,19 @@ export default function HeaderLinks(props) {
     }
   };
   const logout = async () => {
-    const { error } = await supabaseClient.auth.signOut();
-    if (error) {
-      console.error("Error signing out:", error.message);
-    } else {
-      // Optional: Clear your app state if you're using Redux, context, etc.
+    // Try to get a session first
+    const { data } = await supabaseClient.auth.getSession();
 
-      console.log("User signed out.");
-      window.location.href = "/auth/login-page";
+    if (data.session) {
+      // Prefer global to revoke tokens across devices
+      const { error } = await supabaseClient.auth.signOut({ scope: "global" });
+      if (error) {
+        // Fallback to local if the server rejects (e.g., token already invalid)
+        await supabaseClient.auth.signOut({ scope: "local" });
+      }
+    } else {
+      // No session in memory: just clear local state
+      await supabaseClient.auth.signOut({ scope: "local" });
     }
   };
   const handleCloseProfile = () => {
@@ -305,7 +310,3 @@ export default function HeaderLinks(props) {
     </div>
   );
 }
-
-HeaderLinks.propTypes = {
-  rtlActive: PropTypes.bool,
-};
