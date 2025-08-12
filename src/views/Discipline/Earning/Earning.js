@@ -111,14 +111,17 @@ function Earning(props) {
   const [routesheetData, setRoutesheetData] = useState([]);
   const [totalServicePayment, setTotalServicePayment] = useState(0);
   const [dosStart, setDosStart] = useState(
-    dayjs(new Date()).format("YYYY-MM-DD")
+    dayjs(new Date()).format("MM/DD/YYYY")
   );
   const [dosEnd, setDosEnd] = useState(
-    dayjs(new Date()).add(1, "hour").format("YYYY-MM-DD")
+    dayjs(new Date()).add(1, "hour").format("MM/DD/YYYY")
   );
   const classes = useStyles();
   useEffect(() => {
     const dates = Helper.formatDateRangeByCriteriaV2("thisWeek");
+    console.log("[Dates]", dates);
+    setDosStart(dates.from);
+    setDosEnd(dates.to);
     if (context.userProfile?.companyId) {
       props.listAssignments({
         companyId: context.userProfile.companyId,
@@ -247,11 +250,11 @@ function Earning(props) {
   };
   const dateInputHandler = (name, value) => {
     if (name === "dos") {
-      setDos(new Date(value));
+      setDos(value);
     } else if (name === "dosStart") {
-      setDosStart(new Date(value));
+      setDosStart(value);
     } else if (name === "dosEnd") {
-      setDosEnd(new Date(value));
+      setDosEnd(value);
     }
   };
   const createTableDataHandler = (data) => {
@@ -311,6 +314,19 @@ function Earning(props) {
     });
     return totalVisit;
   };
+  const applyHandler = () => {
+    console.log("[APPLY HANDLER]", dosStart);
+    console.log("[APPLY HANDLER1]", dosEnd);
+    const start = dayjs(new Date(dosStart)).format("YYYY-MM-DD");
+    const end = dayjs(new Date(dosEnd)).format("YYYY-MM-DD");
+    console.log("[APPLY HANDLER2]", start, end);
+    props.listRoutesheets({
+      companyId: context.userProfile.companyId,
+      discipline: context.employeeProfile.id,
+      from: start,
+      to: end,
+    });
+  };
 
   const tableData = earnings?.map((item, index) => [
     <div
@@ -365,10 +381,11 @@ function Earning(props) {
                         width: "100%",
                       }}
                     >
-                      <div style={{ flex: "0 0 30%" }}>
+                      <div style={{ flex: "0 0 28%" }} align="right">
                         <span>Date Start:</span>
                       </div>
-                      <div style={{ flex: "0 0 30%" }} align="right">
+                      <div style={{ flex: "0 0 2%" }} align="right" />
+                      <div style={{ flex: "0 0 20%" }} align="left">
                         <Datetime
                           timeFormat={false}
                           inputProps={{
@@ -379,18 +396,12 @@ function Earning(props) {
                           onChange={(e) => dateInputHandler("dosStart", e)}
                         />
                       </div>
-                    </div>
-                    <div
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        width: "100%",
-                      }}
-                    >
-                      <div style={{ flex: "0 0 30%" }}>
+
+                      <div style={{ flex: "0 0 28%" }} align="right">
                         <span>Date End:</span>
                       </div>
-                      <div style={{ flex: "0 0 30%" }} align="right">
+                      <div style={{ flex: "0 0 2%" }} align="right" />
+                      <div style={{ flex: "0 0 20%" }} align="right">
                         <Datetime
                           timeFormat={false}
                           inputProps={{
@@ -402,6 +413,17 @@ function Earning(props) {
                         />
                       </div>
                     </div>
+                    <div style={{ flex: "0 0 30%" }}>
+                      <Button
+                        color="info"
+                        size={"small"}
+                        round
+                        onClick={() => applyHandler()}
+                      >
+                        Apply
+                      </Button>
+                    </div>
+
                     <div style={{ paddingTop: 4 }}>
                       <div
                         style={{
@@ -466,11 +488,76 @@ function Earning(props) {
                     </div>
                   </CardHeader>
                   <CardBody className={classes.customCardContentClass}>
-                    <div align="right">
-                      <h4
-                        style={{ fontWeight: "bold" }}
-                      >{`Total Earnings: $${totalServicePayment}`}</h4>
+                    <div
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        width: "100%",
+                        paddingLeft: "30px",
+                      }}
+                    >
+                      <div style={{ flex: "0 0 10%" }} align="right">
+                        <span style={{ fontWeight: "bold" }}>Date Start:</span>
+                      </div>
+                      <div style={{ flex: "0 0 1%" }} />
+                      <div style={{ flex: "0 0 10%" }} align="right">
+                        <Datetime
+                          timeFormat={false}
+                          inputProps={{
+                            placeholder: "Date Here",
+                            name: "dosStart",
+                          }}
+                          value={dosStart || dayjs(new Date())}
+                          onChange={(e) => dateInputHandler("dosStart", e)}
+                        />
+                      </div>
+                      <div style={{ flex: "0 0 0%" }} />
+                      <div style={{ flex: "0 0 10%" }} align="right">
+                        <span style={{ fontWeight: "bold" }}>Date End:</span>
+                      </div>
+                      <div style={{ flex: "0 0 1%" }} />
+                      <div style={{ flex: "0 0 10%" }} align="right">
+                        <Datetime
+                          timeFormat={false}
+                          inputProps={{
+                            placeholder: "Date Here",
+                            name: "dosEnd",
+                          }}
+                          value={dosEnd || dayjs(new Date())}
+                          onChange={(e) => dateInputHandler("dosEnd", e)}
+                        />
+                      </div>
+                      <div style={{ flex: "0 0 10%" }} align="right">
+                        <Button
+                          color="info"
+                          round
+                          size={"small"}
+                          onClick={() => applyHandler()}
+                        >
+                          Apply
+                        </Button>
+                      </div>
                     </div>
+                    <div style={{ paddingTop: 4 }}>
+                      <div
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          width: "100%",
+                        }}
+                      >
+                        {/* Left side: Select */}
+                        <div style={{ flex: "0 0 30%" }}>
+                          <h5 style={{ fontWeight: "bold" }}>Details</h5>
+                        </div>
+                        <div style={{ flex: "0 0 70%" }} align="right">
+                          <h5
+                            style={{ fontWeight: "bold" }}
+                          >{`Earnings: $${totalServicePayment}`}</h5>
+                        </div>
+                      </div>
+                    </div>
+
                     <Table
                       hover
                       tableHead={[

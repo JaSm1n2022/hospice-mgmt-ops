@@ -46,7 +46,7 @@ class Helper {
 
     dateFrom = moment(`${dateFrom}T00:00:00.000Z`);
     dateTo = moment(`${dateTo}T00:00:00.000Z`);
-    const fmt = "YYYY-MM-DD"; // do not change as backend accepts this format
+    const fmt = "MM/DD/YYYY"; // do not change as backend accepts this format
     let date1 = null;
     let date2 = null;
     if (mode === "created") {

@@ -59,6 +59,7 @@ import { connect } from "react-redux";
 import { SupaContext } from "App";
 import { ACTION_STATUSES } from "utils/constants";
 import {
+  Event,
   EventAvailableOutlined,
   MonetizationOnOutlined,
   PeopleAltOutlined,
@@ -97,6 +98,9 @@ function Dashboard(props) {
   const [isContractCollection, setIsContractCollection] = useState(true);
   const [routesheetData, setRoutesheetData] = useState([]);
   const [totalServicePayment, setTotalServicePayment] = useState(0);
+  const [visitData, setVisitData] = useState([]);
+  const [visits, setVisits] = useState([]);
+
   const classes = useStyles();
   useEffect(() => {
     const dates = Helper.formatDateRangeByCriteriaV2("thisWeek");
@@ -124,7 +128,7 @@ function Dashboard(props) {
       setIsAssignmentCollection(true);
       assignmentList = props.assignmentState?.data || [];
       setScheduledVisit(clientInformationFrequencyHandler(assignmentList));
-
+      setVisitData(createVisitDataHandler(assignmentList));
       isContractDone = false;
       const uniqueList = Array.from(
         new Set(assignmentList?.map((m) => m.patientCd) || [])
@@ -146,6 +150,7 @@ function Dashboard(props) {
       routesheetList = props.routesheetState.data || [];
       setCompletedVisit(routesheetList?.length);
       setRoutesheetData(createTableDataHandler(routesheetList));
+
       earnings = setEarningsHandler(routesheetList);
       isRoutesheetDone = true;
     }
@@ -211,7 +216,7 @@ function Dashboard(props) {
     }
     return cost;
   };
-  console.log("[ASSIGNMENT]", assignmentList);
+  console.log("[assignment]", assignmentList);
   const setEarningsHandler = (data) => {
     const less = [];
     data.forEach((d) => {
@@ -283,6 +288,82 @@ function Dashboard(props) {
     });
     return totalVisit;
   };
+  const createVisitDataHandler = (data) => {
+    const colors = ["success", "info", "warning", "danger"];
+    const tables = [];
+    const visitList = [];
+    let grandTotal = 0.0;
+    let colorInt = 0;
+    for (let i = 0; i < data.length; i++) {
+      const cls = data[i];
+      let vis = {};
+      if (cls?.cnaId === context.employeeProfile.id) {
+        vis = {
+          patient: cls.patientCd,
+          frequencyVisit: cls.cnaFreqVisit
+            ? `${parseInt(cls.cnaFreqVisit || 0)}x/${cls.cnaFreqVisitType}`
+            : "",
+          time: cls.cnaTime || "Open",
+          days: cls.cnaWeek?.length ? cls.cnaWeek.toString() : "N/A",
+        };
+      } else if (cls.rnId === context.employeeProfile.id) {
+        vis = {
+          patient: cls.patientCd,
+          frequencyVisit: cls.rnFreqVisit
+            ? `${parseInt(cls.rnFreqVisit || 0)}x/${cls.rnFreqVisitType}`
+            : "",
+          time: cls.rnTime || "Open",
+          days: cls.rnWeek?.length ? cls.rnWeek.toString() : "N/A",
+        };
+      } else if (cls.lpnId === context.employeeProfile.id) {
+        vis = {
+          patient: cls.patientCd,
+          frequencyVisit: cls.lpnFreqVisit
+            ? `${parseInt(cls.lpnFreqVisit || 0)}x/${cls.lpnFreqVisitType}`
+            : "",
+          time: cls.lpnTime || "Open",
+          days: cls.lpnWeek?.length ? cls.lpnWeek.toString() : "N/A",
+        };
+      } else if (cls.mswId === context.employeeProfile.id) {
+        vis = {
+          patient: cls.patientCd,
+          frequencyVisit: cls.mswFreqVisit
+            ? `${parseInt(cls.mswFreqVisit || 0)}x/${cls.mswFreqVisitType}`
+            : "",
+          time: cls.mswTime || "Open",
+          days: cls.mswWeek?.length ? cls.mswWeek.toString() : "N/A",
+        };
+      } else if (cls.chaplainId === context.employeeProfile.id) {
+        vis = {
+          patient: cls.patientCd,
+          frequencyVisit: cls.chaplainFreqVisit
+            ? `${parseInt(cls.chaplainFreqVisit || 0)}x/${
+                cls.chaplainFreqVisitType
+              }`
+            : "",
+          time: cls.chaplainTime || "Open",
+          days: cls.chaplainWeek?.length ? cls.chaplainWeek.toString() : "N/A",
+        };
+      }
+      visitList.push(vis);
+      let c = {};
+
+      if ((i + 1) % 2 === 0) {
+        c = [vis.patient, vis.frequencyVisit, vis.days, vis.time];
+      } else {
+        c.color = colors[colorInt];
+        c.data = [vis.patient, vis.frequencyVisit, vis.days, vis.time];
+        colorInt++;
+      }
+
+      if (colorInt === 4) {
+        colorInt = 0;
+      }
+      tables.push(c);
+    }
+    setVisits(visitList);
+    return tables;
+  };
   const tableData = earnings?.map((item, index) => [
     <div
       key={index}
@@ -304,6 +385,31 @@ function Dashboard(props) {
           <small>{item.date}</small>
 
           <h5 style={{ fontWeight: "bold" }}>{item.amount}</h5>
+        </span>
+      </div>
+    </div>,
+  ]);
+
+  const visitTableData = visits?.map((item, index) => [
+    <div
+      key={index}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        width: "100%",
+      }}
+    >
+      <div style={{ flex: "60%" }}>
+        <span>
+          <small className={classes.tdNameAnchor}>{item.patient}</small>
+
+          <h6 className={classes.tdNameSmall}>{item.frequencyVisit}</h6>
+        </span>
+      </div>
+      <div style={{ flex: "40%" }}>
+        <span>
+          <h5 style={{ fontWeight: "bold" }}>{item.days}</h5>
+          <small>{item.time}</small>
         </span>
       </div>
     </div>,
@@ -463,6 +569,88 @@ function Dashboard(props) {
                       tableData={
                         Array.isArray(routesheetData) && routesheetData?.length
                           ? routesheetData
+                          : []
+                      }
+                    />
+                  </CardBody>
+                </Card>
+              </GridItem>
+            )}
+          </GridContainer>
+          {/* Scheduled Visits Assignment */}
+          <GridContainer>
+            {context.isMobile ? (
+              <GridItem xs={12}>
+                <Card>
+                  <CardHeader color="warning" icon>
+                    <CardIcon color="warning">
+                      <Event />
+                    </CardIcon>
+                    <h4 className={classes.cardIconTitle}>
+                      Scheduled Visit Details
+                      <br></br>
+                      <h6
+                        style={{ fontWeight: "bold" }}
+                      >{`Total Visit: ${scheduledVisit}`}</h6>
+                    </h4>
+                  </CardHeader>
+                  <CardBody>
+                    <Table
+                      tableData={visitTableData || []}
+                      tableShopping
+                      customHeadCellClasses={[
+                        classes.center,
+                        classes.description,
+                        classes.description,
+                        classes.right,
+                        classes.right,
+                        classes.right,
+                      ]}
+                      customHeadClassesForCells={[0, 2, 3, 4, 5, 6]}
+                      customCellClasses={[
+                        classes.tdName,
+                        classes.customFont,
+                        classes.customFont,
+                        classes.tdNumber,
+                        classes.tdNumber + " " + classes.tdNumberAndButtonGroup,
+                        classes.tdNumber,
+                      ]}
+                      customClassesForCells={[1, 2, 3, 4, 5, 6]}
+                    />
+                  </CardBody>
+                </Card>
+              </GridItem>
+            ) : (
+              <GridItem xs={12}>
+                <Card>
+                  <CardHeader color="warning" icon>
+                    <CardIcon color="warning">
+                      <Event />
+                    </CardIcon>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <h4 className={classes.cardIconTitle}>
+                        Scheduled Visit Details
+                      </h4>
+                    </div>
+                  </CardHeader>
+                  <CardBody className={classes.customCardContentClass}>
+                    <div align="right">
+                      <h4
+                        style={{ fontWeight: "bold" }}
+                      >{`Total Visit: ${scheduledVisit}`}</h4>
+                    </div>
+                    <Table
+                      hover
+                      tableHead={["Patient", "Frequency", "Days", "Time"]}
+                      tableData={
+                        Array.isArray(visitData) && visitData?.length
+                          ? visitData
                           : []
                       }
                     />
