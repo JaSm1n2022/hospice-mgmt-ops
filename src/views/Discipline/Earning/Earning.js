@@ -3,7 +3,7 @@ import React, { useContext, useEffect, useState } from "react";
 import ChartistGraph from "react-chartist";
 // react plugin for creating vector maps
 import { VectorMap } from "react-jvectormap";
-
+import Datetime from "react-datetime";
 // @material-ui/core components
 import { makeStyles } from "@material-ui/core/styles";
 import Tooltip from "@material-ui/core/Tooltip";
@@ -60,6 +60,7 @@ import { SupaContext } from "App";
 import { ACTION_STATUSES } from "utils/constants";
 import {
   EventAvailableOutlined,
+  EventOutlined,
   MonetizationOnOutlined,
   PeopleAltOutlined,
   TodayOutlined,
@@ -67,12 +68,13 @@ import {
 import { attemptToFetchRoutesheet } from "store/actions/routesheetAction";
 import { resetFetchRoutesheetState } from "store/actions/routesheetAction";
 import { routesheetListStateSelector } from "store/selectors/routesheetSelector";
-import { CircularProgress } from "@material-ui/core";
+import { CircularProgress, FormControl } from "@material-ui/core";
 import Helper from "utils/helper";
 import Assignment from "@material-ui/icons/Assignment";
 import { attemptToFetchContract } from "store/actions/contractAction";
 import { resetFetchContractState } from "store/actions/contractAction";
 import dayjs from "dayjs";
+import AttachMoneyOutlined from "@material-ui/icons/AttachMoneyOutlined";
 
 let isAssignmentDone = false;
 let isRoutesheetDone = false;
@@ -108,7 +110,12 @@ function Earning(props) {
   const [isContractCollection, setIsContractCollection] = useState(true);
   const [routesheetData, setRoutesheetData] = useState([]);
   const [totalServicePayment, setTotalServicePayment] = useState(0);
-
+  const [dosStart, setDosStart] = useState(
+    dayjs(new Date()).format("YYYY-MM-DD")
+  );
+  const [dosEnd, setDosEnd] = useState(
+    dayjs(new Date()).add(1, "hour").format("YYYY-MM-DD")
+  );
   const classes = useStyles();
   useEffect(() => {
     const dates = Helper.formatDateRangeByCriteriaV2("thisWeek");
@@ -238,6 +245,15 @@ function Earning(props) {
     });
     return less;
   };
+  const dateInputHandler = (name, value) => {
+    if (name === "dos") {
+      setDos(new Date(value));
+    } else if (name === "dosStart") {
+      setDosStart(new Date(value));
+    } else if (name === "dosEnd") {
+      setDosEnd(new Date(value));
+    }
+  };
   const createTableDataHandler = (data) => {
     const colors = ["success", "info", "warning", "danger"];
     const tables = [];
@@ -330,89 +346,81 @@ function Earning(props) {
       {isProcessDone ? (
         <div>
           <GridContainer>
-            <GridItem xs={12} sm={6} md={6} lg={3}>
-              <Card>
-                <CardHeader color="warning" stats icon>
-                  <CardIcon color="warning">
-                    <PeopleAltOutlined />
-                  </CardIcon>
-                  <p className={classes.cardCategory}>Assigned Patients</p>
-                  <h3 className={classes.cardTitle}>
-                    {assignmentList?.length}
-                  </h3>
-                </CardHeader>
-                <CardFooter stats>
-                  <div className={classes.stats}>As of Today</div>
-                </CardFooter>
-              </Card>
-            </GridItem>
-            <GridItem xs={12} sm={6} md={6} lg={3}>
-              <Card>
-                <CardHeader color="danger" stats icon>
-                  <CardIcon color="danger">
-                    <TodayOutlined />
-                  </CardIcon>
-                  <p className={classes.cardCategory}>Scheduled Visits</p>
-                  <h3 className={classes.cardTitle}>{scheduledVisit}</h3>
-                </CardHeader>
-                <CardFooter stats>
-                  <div className={classes.stats}>
-                    <TodayOutlined />
-                    This Week
-                  </div>
-                </CardFooter>
-              </Card>
-            </GridItem>
-            <GridItem xs={12} sm={6} md={6} lg={3}>
-              <Card>
-                <CardHeader color="success" stats icon>
-                  <CardIcon color="success">
-                    <EventAvailableOutlined />
-                  </CardIcon>
-                  <p className={classes.cardCategory}>Completed Visits</p>
-                  <h3 className={classes.cardTitle}>{completedVisit}</h3>
-                </CardHeader>
-                <CardFooter stats>
-                  <div className={classes.stats}>
-                    <TodayOutlined />
-                    This Week
-                  </div>
-                </CardFooter>
-              </Card>
-            </GridItem>
-            <GridItem xs={12} sm={6} md={6} lg={3}>
-              <Card>
-                <CardHeader color="info" stats icon>
-                  <CardIcon color="info">
-                    <MonetizationOnOutlined />
-                  </CardIcon>
-                  <p className={classes.cardCategory}>Est. Visit Payment</p>
-                  <h3
-                    className={classes.cardTitle}
-                  >{`$${estimatedPayment}`}</h3>
-                </CardHeader>
-                <CardFooter stats>
-                  <div className={classes.stats}>
-                    <TodayOutlined />
-                    This Week
-                  </div>
-                </CardFooter>
-              </Card>
-            </GridItem>
-          </GridContainer>
-          <GridContainer>
             {context.isMobile ? (
               <GridItem xs={12}>
                 <Card>
-                  <CardHeader color="rose" icon>
-                    <CardIcon color="rose">
-                      <Assignment />
+                  <CardHeader color="success" icon>
+                    <CardIcon color="success">
+                      <AttachMoneyOutlined />
                     </CardIcon>
                     <h4 className={classes.cardIconTitle}>
                       Services & Earnings
                     </h4>
                   </CardHeader>
                   <CardBody>
+                    <div
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        width: "100%",
+                      }}
+                    >
+                      <div style={{ flex: "0 0 30%" }}>
+                        <span>Date Start:</span>
+                      </div>
+                      <div style={{ flex: "0 0 30%" }} align="right">
+                        <Datetime
+                          timeFormat={false}
+                          inputProps={{
+                            placeholder: "Date Here",
+                            name: "dosStart",
+                          }}
+                          value={dosStart || dayjs(new Date())}
+                          onChange={(e) => dateInputHandler("dosStart", e)}
+                        />
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        width: "100%",
+                      }}
+                    >
+                      <div style={{ flex: "0 0 30%" }}>
+                        <span>Date End:</span>
+                      </div>
+                      <div style={{ flex: "0 0 30%" }} align="right">
+                        <Datetime
+                          timeFormat={false}
+                          inputProps={{
+                            placeholder: "Date Here",
+                            name: "dosEnd",
+                          }}
+                          value={dosEnd || dayjs(new Date())}
+                          onChange={(e) => dateInputHandler("dosEnd", e)}
+                        />
+                      </div>
+                    </div>
+                    <div style={{ paddingTop: 4 }}>
+                      <div
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          width: "100%",
+                        }}
+                      >
+                        {/* Left side: Select */}
+                        <div style={{ flex: "0 0 30%" }}>
+                          <h5 style={{ fontWeight: "bold" }}>Details</h5>
+                        </div>
+                        <div style={{ flex: "0 0 70%" }} align="right">
+                          <h5
+                            style={{ fontWeight: "bold" }}
+                          >{`Earnings: $${totalServicePayment}`}</h5>
+                        </div>
+                      </div>
+                    </div>
                     <Table
                       tableData={tableData || []}
                       tableShopping
@@ -441,9 +449,9 @@ function Earning(props) {
             ) : (
               <GridItem xs={12}>
                 <Card>
-                  <CardHeader color="rose" icon>
-                    <CardIcon color="rose">
-                      <Assignment />
+                  <CardHeader color="success" icon>
+                    <CardIcon color="success">
+                      <AttachMoneyOutlined />
                     </CardIcon>
                     <div
                       style={{
@@ -453,7 +461,7 @@ function Earning(props) {
                       }}
                     >
                       <h4 className={classes.cardIconTitle}>
-                        This Week’s Routesheet Overview
+                        Services & Earnings
                       </h4>
                     </div>
                   </CardHeader>
@@ -461,7 +469,7 @@ function Earning(props) {
                     <div align="right">
                       <h4
                         style={{ fontWeight: "bold" }}
-                      >{`Total Service Payment: $${totalServicePayment}`}</h4>
+                      >{`Total Earnings: $${totalServicePayment}`}</h4>
                     </div>
                     <Table
                       hover

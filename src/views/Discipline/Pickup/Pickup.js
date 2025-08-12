@@ -597,8 +597,8 @@ const Pickup = (props) => {
         </GridItem>
         <GridItem xs={12} sm={12} md={12}>
           <Card>
-            <CardHeader color="success" icon>
-              <CardIcon color="success">
+            <CardHeader color="danger" icon>
+              <CardIcon color="danger">
                 <PickupIcon />
               </CardIcon>
               <h4 className={classes.cardIconTitle}>
