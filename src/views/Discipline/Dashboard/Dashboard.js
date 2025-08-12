@@ -394,7 +394,7 @@ function Dashboard(props) {
                       <Assignment />
                     </CardIcon>
                     <h4 className={classes.cardIconTitle}>
-                      Services & Earnings
+                      This Week’s Earnings
                       <br></br>
                       <h6
                         style={{ fontWeight: "bold" }}
@@ -442,7 +442,7 @@ function Dashboard(props) {
                       }}
                     >
                       <h4 className={classes.cardIconTitle}>
-                        This Week’s Routesheet Overview
+                        This Week’s Earnings Overview
                       </h4>
                     </div>
                   </CardHeader>
@@ -450,7 +450,7 @@ function Dashboard(props) {
                     <div align="right">
                       <h4
                         style={{ fontWeight: "bold" }}
-                      >{`Total Service Payment: $${totalServicePayment}`}</h4>
+                      >{`Total Earnings: $${totalServicePayment}`}</h4>
                     </div>
                     <Table
                       hover

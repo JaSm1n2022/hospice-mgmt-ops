@@ -86,12 +86,13 @@ var dashRoutes = [
   },
   {
     path: "/earnings",
-    name: "Earnings",
+    name: "Services & Earnings",
     rtlName: "ورقة الطريق",
     icon: MoneyIcon,
     component: Earning,
     layout: "/discipline",
   },
+  /*
   {
     collapse: true,
     name: "Tables",
@@ -128,6 +129,7 @@ var dashRoutes = [
       },
     ],
   },
+  */
   /*
   {
     path: "/routesheet",
