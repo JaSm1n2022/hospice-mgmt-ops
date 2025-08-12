@@ -395,6 +395,10 @@ function Dashboard(props) {
                     </CardIcon>
                     <h4 className={classes.cardIconTitle}>
                       Services & Earnings
+                      <br></br>
+                      <h6
+                        style={{ fontWeight: "bold" }}
+                      >{`Total Earnings: $${totalServicePayment}`}</h6>
                     </h4>
                   </CardHeader>
                   <CardBody>
