@@ -401,15 +401,19 @@ function Dashboard(props) {
     >
       <div style={{ flex: "60%" }}>
         <span>
-          <small className={classes.tdNameAnchor}>{item.patient}</small>
+          <h6 className={classes.tdNameAnchor}>{item.patient}</h6>
 
-          <h6 className={classes.tdNameSmall}>{item.frequencyVisit}</h6>
+          <small className={classes.tdNameSmall}>{item.days}</small>
         </span>
       </div>
       <div style={{ flex: "40%" }}>
         <span>
-          <h5 style={{ fontWeight: "bold" }}>{item.days}</h5>
-          <small>{item.time}</small>
+          <h6 className={classes.tdNameAnchor}>{item.frequencyVisit}</h6>
+          <small>
+            {item.time && item.time?.toLowerCase() !== "open"
+              ? item.time
+              : "No fixed time"}
+          </small>
         </span>
       </div>
     </div>,

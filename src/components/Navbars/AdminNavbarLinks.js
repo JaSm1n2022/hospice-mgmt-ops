@@ -60,9 +60,11 @@ export default function HeaderLinks(props) {
         // Fallback to local if the server rejects (e.g., token already invalid)
         await supabaseClient.auth.signOut({ scope: "local" });
       }
+      window.location.href = "/auth/login-page";
     } else {
       // No session in memory: just clear local state
       await supabaseClient.auth.signOut({ scope: "local" });
+      window.location.href = "/auth/login-page";
     }
   };
   const handleCloseProfile = () => {
