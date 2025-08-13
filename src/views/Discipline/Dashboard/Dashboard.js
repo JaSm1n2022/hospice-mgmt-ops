@@ -244,7 +244,7 @@ function Dashboard(props) {
       if ((i + 1) % 2 === 0) {
         c = [
           dayjs(d.dosStart).format("YYYY-MM-DD HH:mm"),
-          d.patientCd,
+          d.patientCd || "N/A",
           d.service,
           d.estimatedPayment
             ? `$${parseFloat(d.estimatedPayment).toFixed(2)}`
@@ -254,7 +254,7 @@ function Dashboard(props) {
         c.color = colors[colorInt];
         c.data = [
           dayjs(d.dosStart).format("YYYY-MM-DD HH:mm"),
-          d.patientCd,
+          d.patientCd || "N/A",
           d.service,
           d.estimatedPayment
             ? `$${parseFloat(d.estimatedPayment).toFixed(2)}`
@@ -303,7 +303,7 @@ function Dashboard(props) {
           frequencyVisit: cls.cnaFreqVisit
             ? `${parseInt(cls.cnaFreqVisit || 0)}x/${cls.cnaFreqVisitType}`
             : "",
-          time: cls.cnaTime || "Open",
+          time: cls.cnaTime || "No fixed time",
           days: cls.cnaWeek?.length ? cls.cnaWeek.toString() : "N/A",
         };
       } else if (cls.rnId === context.employeeProfile.id) {
@@ -312,7 +312,7 @@ function Dashboard(props) {
           frequencyVisit: cls.rnFreqVisit
             ? `${parseInt(cls.rnFreqVisit || 0)}x/${cls.rnFreqVisitType}`
             : "",
-          time: cls.rnTime || "Open",
+          time: cls.rnTime || "No fixed time",
           days: cls.rnWeek?.length ? cls.rnWeek.toString() : "N/A",
         };
       } else if (cls.lpnId === context.employeeProfile.id) {
@@ -321,7 +321,7 @@ function Dashboard(props) {
           frequencyVisit: cls.lpnFreqVisit
             ? `${parseInt(cls.lpnFreqVisit || 0)}x/${cls.lpnFreqVisitType}`
             : "",
-          time: cls.lpnTime || "Open",
+          time: cls.lpnTime || "No fixed time",
           days: cls.lpnWeek?.length ? cls.lpnWeek.toString() : "N/A",
         };
       } else if (cls.mswId === context.employeeProfile.id) {
@@ -330,7 +330,7 @@ function Dashboard(props) {
           frequencyVisit: cls.mswFreqVisit
             ? `${parseInt(cls.mswFreqVisit || 0)}x/${cls.mswFreqVisitType}`
             : "",
-          time: cls.mswTime || "Open",
+          time: cls.mswTime || "No fixed time",
           days: cls.mswWeek?.length ? cls.mswWeek.toString() : "N/A",
         };
       } else if (cls.chaplainId === context.employeeProfile.id) {
@@ -341,7 +341,7 @@ function Dashboard(props) {
                 cls.chaplainFreqVisitType
               }`
             : "",
-          time: cls.chaplainTime || "Open",
+          time: cls.chaplainTime || "No fixed time",
           days: cls.chaplainWeek?.length ? cls.chaplainWeek.toString() : "N/A",
         };
       }

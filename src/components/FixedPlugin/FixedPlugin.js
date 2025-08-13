@@ -46,6 +46,7 @@ export default function FixedPlugin(props) {
   const classesObj = useStyles();
   return (
     <div
+      style={{ display: "none" }}
       className={"fixed-plugin" + (props.rtlActive ? " fixed-plugin-rtl" : "")}
     >
       <div id="fixedPluginClasses" className={props.fixedClasses}>

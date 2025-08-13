@@ -51,6 +51,7 @@ export default function HeaderLinks(props) {
   };
   const logout = async () => {
     // Try to get a session first
+    setOpenProfile(null);
     const { data } = await supabaseClient.auth.getSession();
 
     if (data.session) {
@@ -69,7 +70,6 @@ export default function HeaderLinks(props) {
   };
   const handleCloseProfile = () => {
     setOpenProfile(null);
-    logout();
   };
   const classes = useStyles();
   const { rtlActive } = props;
@@ -296,10 +296,7 @@ export default function HeaderLinks(props) {
                       {rtlActive ? "الإعدادات" : "Settings"}
                     </MenuItem>
                     <Divider light />
-                    <MenuItem
-                      onClick={handleCloseProfile}
-                      className={dropdownItem}
-                    >
+                    <MenuItem onClick={logout} className={dropdownItem}>
                       {rtlActive ? "الخروج" : "Log out"}
                     </MenuItem>
                   </MenuList>
