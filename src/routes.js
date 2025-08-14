@@ -1,7 +1,8 @@
 import Buttons from "views/Components/Buttons.js";
 import Calendar from "views/Calendar/Calendar.js";
 import Charts from "views/Charts/Charts.js";
-import Dashboard from "views/Dashboard/Dashboard.js";
+import Dashboard from "views/Administrator/Dashboard/Dashboard.js";
+import Contract from "views/Administrator/PayrollManagement/Contract/index.js";
 import ErrorPage from "views/Pages/ErrorPage.js";
 import ExtendedForms from "views/Forms/ExtendedForms.js";
 import ExtendedTables from "views/Tables/ExtendedTables.js";
@@ -38,6 +39,7 @@ import Image from "@material-ui/icons/Image";
 import Place from "@material-ui/icons/Place";
 import Timeline from "@material-ui/icons/Timeline";
 import WidgetsIcon from "@material-ui/icons/Widgets";
+import PaymentIcon from "@material-ui/icons/PaymentOutlined";
 
 var dashRoutes = [
   {
@@ -47,6 +49,25 @@ var dashRoutes = [
     icon: DashboardIcon,
     component: Dashboard,
     layout: "/admin",
+  },
+
+  {
+    collapse: true,
+    name: "Payroll Management",
+    rtlName: "إدارة الرواتب",
+    icon: PaymentIcon,
+    state: "pageCollapse",
+    views: [
+      {
+        path: "/contract",
+        name: "Contract",
+        rtlName: "عالتسعير",
+        mini: "CC",
+        rtlMini: "ع",
+        component: Contract,
+        layout: "/admin",
+      },
+    ],
   },
 
   {

@@ -121,6 +121,14 @@ function App({
   }, [employeeState, employeeProfile, resetListEmployee]);
 
   // Determine routes based on user role
+  console.log(
+    "[SIGN IN]",
+    signedIn,
+    session,
+    userProfile,
+    employeeState,
+    employeeProfile
+  );
   const renderRoutes = () => {
     if (!signedIn || !session) {
       return (
