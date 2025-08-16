@@ -3,20 +3,26 @@ import CustomTextField from "components/TextField/CustomTextField";
 import { QUANTITY_UOM } from "utils/constants";
 import { SUPPLY_CATEGORY } from "utils/constants";
 import CustomSingleAutoComplete from "components/AutoComplete/CustomSingleAutoComplete";
-import { Button, Card, Grid, Modal, Typography } from "@material-ui/core";
+import { Card, Grid, Modal, Typography } from "@material-ui/core";
 import { DEFAULT_ITEM } from "utils/constants";
 import CardBody from "components/Card/CardBody";
+import CardText from "components/Card/CardText";
 import { makeStyles } from "@material-ui/core";
 import CustomDatePicker from "components/Date/CustomDatePicker";
 import CustomSelect from "components/Select/CustomSelect";
 import TOAST from "modules/toastManager";
 import HeaderModal from "components/Modal/HeaderModal";
-
+import GridContainer from "components/Grid/GridContainer.js";
+import GridItem from "components/Grid/GridItem.js";
 import { useTheme } from "@material-ui/core";
 import { EMPLOYEE_SERVICE_TYPE } from "utils/constants";
 import CustomCheckbox from "components/Checkbox/CustomCheckbox";
 import { RATE_TYPE } from "utils/constants";
+import Table from "components/Table/Table.js";
+import CardHeader from "components/Card/CardHeader.js";
 
+import CardFooter from "components/Card/CardFooter.js";
+import Button from "components/CustomButtons/Button.js";
 let categoryList = [];
 let uoms = [];
 QUANTITY_UOM.forEach((item, index) => {
@@ -359,107 +365,97 @@ function ContractForm(props) {
       aria-describedby="contractmodal"
     >
       <div style={modalStyle} className={classes.paper}>
-        <HeaderModal title={titleHandler()} onClose={clearModalHandler} />
-
-        <Grid xs={12} sm={12} md={12}>
-          <Card plain>
-            <CardBody>
-              <Grid
-                style={{ paddingTop: 10 }}
-                container
-                spacing={1}
-                direction="row"
-              >
-                <Grid item xs={12} />
-                {general.map((item) => {
-                  return (
-                    <Grid
-                      item
-                      xs={12}
-                      md={item.cols ? item.cols : 3}
-                      sm={12}
-                      style={{ paddingBottom: 2 }}
-                    >
-                      {item.component === "textfield" ? (
-                        <React.Fragment>
-                          <CustomTextField
-                            {...item}
-                            value={generalForm[item.name]}
-                            onChange={inputGeneralHandler}
-                          />
-                        </React.Fragment>
-                      ) : item.component === "datepicker" ? (
-                        <React.Fragment>
-                          <CustomDatePicker
-                            {...item}
-                            value={generalForm[item.name]}
-                            onChange={dateInputHandler}
-                          />
-                        </React.Fragment>
-                      ) : item.component === "singlecomplete" ? (
-                        <React.Fragment>
-                          <CustomSingleAutoComplete
-                            {...item}
-                            value={generalForm[item.name]}
-                            onSelectHandler={autoCompleteGeneralInputHander}
-                            onChangeHandler={onChangeGeneralInputHandler}
-                          />
-                        </React.Fragment>
-                      ) : item.component === "select" ? (
-                        <React.Fragment>
-                          <CustomSelect
-                            {...item}
-                            onChange={inputGeneralHandler}
-                            value={generalForm[item.name]}
-                          />
-                        </React.Fragment>
-                      ) : null}
-                    </Grid>
-                  );
-                })}
-                <Grid item xs={12}>
-                  <CustomCheckbox
-                    label="Allow Mileage Rate?"
-                    isChecked={isMileageRate}
-                    name={"isMileageRate"}
-                    onChange={onChangeMileageRateHandler}
-                  />
-                </Grid>
-                {isMileageRate && (
-                  <Grid item xs={3}>
+        <GridContainer spacing={2}>
+          <GridItem xs={12} sm={12} md={12}>
+            <HeaderModal
+              title={titleHandler()}
+              onClose={clearModalHandler}
+              color="rose"
+            />
+          </GridItem>
+          {general.map((item) => {
+            return (
+              <GridItem item xs={12} md={item.cols ? item.cols : 3} sm={12}>
+                {item.component === "textfield" ? (
+                  <React.Fragment>
                     <CustomTextField
-                      type="number"
-                      placeholder="Rate per mile"
-                      name={"mileageRate"}
-                      value={mileageRate}
-                      onChange={onChangeMileageRateHandler}
+                      {...item}
+                      value={generalForm[item.name]}
+                      onChange={inputGeneralHandler}
                     />
-                  </Grid>
-                )}
-                {isMileageRate && (
-                  <Grid item xs={4}>
-                    <CustomTextField
-                      type="number"
-                      name={"maxReimbursement"}
-                      value={maxReimbursement}
-                      placeholder="Max Reimbursement e.q $25"
-                      onChange={onChangeMileageRateHandler}
+                  </React.Fragment>
+                ) : item.component === "datepicker" ? (
+                  <React.Fragment>
+                    <CustomDatePicker
+                      {...item}
+                      value={generalForm[item.name]}
+                      onChange={dateInputHandler}
                     />
-                  </Grid>
-                )}
-              </Grid>
-              <div style={{ paddingTop: 10 }}>
-                <Button
-                  variant="contained"
-                  onClick={() => validateFormHandler()}
-                >
-                  Submit
-                </Button>
-              </div>
-            </CardBody>
-          </Card>
-          <br />
-        </Grid>
+                  </React.Fragment>
+                ) : item.component === "singlecomplete" ? (
+                  <React.Fragment>
+                    <CustomSingleAutoComplete
+                      {...item}
+                      value={generalForm[item.name]}
+                      onSelectHandler={autoCompleteGeneralInputHander}
+                      onChangeHandler={onChangeGeneralInputHandler}
+                    />
+                  </React.Fragment>
+                ) : item.component === "select" ? (
+                  <React.Fragment>
+                    <CustomSelect
+                      {...item}
+                      onChange={inputGeneralHandler}
+                      value={generalForm[item.name]}
+                    />
+                  </React.Fragment>
+                ) : null}
+              </GridItem>
+            );
+          })}
+          <GridItem item xs={12}>
+            <div style={{ paddingBottom: 10, paddingTop: 10 }}>
+              <CustomCheckbox
+                label="Allow Mileage Rate?"
+                isChecked={isMileageRate}
+                name={"isMileageRate"}
+                onChange={onChangeMileageRateHandler}
+              />
+            </div>
+          </GridItem>
+          {isMileageRate && (
+            <GridItem item xs={3}>
+              <CustomTextField
+                type="number"
+                placeholder="Rate per mile"
+                name={"mileageRate"}
+                value={mileageRate}
+                onChange={onChangeMileageRateHandler}
+              />
+            </GridItem>
+          )}
+          {isMileageRate && (
+            <GridItem item xs={4}>
+              <CustomTextField
+                type="number"
+                name={"maxReimbursement"}
+                value={maxReimbursement}
+                placeholder="Max Reimbursement e.q $25"
+                onChange={onChangeMileageRateHandler}
+              />
+            </GridItem>
+          )}
+        </GridContainer>
+        <div style={{ paddingTop: 10 }}>
+          <Button
+            color="info"
+            round
+            className={classes.marginRight}
+            onClick={() => validateFormHandler()}
+          >
+            Submit
+          </Button>
+        </div>
       </div>
     </Modal>
   );

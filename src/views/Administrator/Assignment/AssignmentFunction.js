@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 // @material-ui/core components
 import { makeStyles } from "@material-ui/core/styles";
 // core components
@@ -8,7 +8,7 @@ import Table from "components/Table/Table.js";
 import Card from "components/Card/Card.js";
 import CardHeader from "components/Card/CardHeader.js";
 import CardBody from "components/Card/CardBody.js";
-
+import Button from "components/CustomButtons/Button.js";
 import AssignmentHandler from "./components/AssignmentHandler";
 import { connect } from "react-redux";
 import { productListStateSelector } from "store/selectors/productSelector";
@@ -28,9 +28,9 @@ import { assignmentUpdateStateSelector } from "store/selectors/assignmentSelecto
 import PropTypes from "prop-types";
 import ActionsFunction from "components/Actions/ActionsFunction";
 import { ACTION_STATUSES } from "utils/constants";
-import { Button, CircularProgress, Grid } from "@material-ui/core";
+import { CircularProgress, Grid } from "@material-ui/core";
 import AddIcon from "@material-ui/icons/Add";
-
+import { SupaContext } from "App";
 import HospiceTable from "components/Table/HospiceTable";
 import { ImportExport } from "@material-ui/icons";
 import Helper from "utils/helper";
@@ -48,6 +48,7 @@ import { employeeListStateSelector } from "store/selectors/employeeSelector";
 import { v4 as uuidv4 } from "uuid";
 import { profileListStateSelector } from "store/selectors/profileSelector";
 import IDTForm from "./components/IDTForm";
+import { handleExport } from "utils/XlsxHelper";
 const styles = {
   cardCategoryWhite: {
     "&,& a,& a:hover,& a:focus": {
@@ -88,8 +89,9 @@ let isProcessDone = true;
 let isPatientListDone = true;
 let isAssignmentListDone = true;
 let isEmployeeListDone = true;
-let userProfile = {};
+
 function AssignmentFunction(props) {
+  const context = useContext(SupaContext);
   const classes = useStyles();
   const { main } = props;
   const [dataSource, setDataSource] = useState([]);
@@ -185,31 +187,21 @@ function AssignmentFunction(props) {
   ]);
   useEffect(() => {
     console.log("list assignments", props.main);
-    if (
-      props.profileState &&
-      props.profileState.data &&
-      props.profileState.data.length
-    ) {
-      userProfile = props.profileState.data[0];
+    if (context.userProfile?.companyId) {
       isAssignmentListDone = false;
 
-      props.listAssignments({ companyId: userProfile.companyId });
+      props.listAssignments({ companyId: context.userProfile?.companyId });
     }
   }, []);
   useEffect(() => {
     console.log("[Props.main]", props.main);
     if (props.main) {
-      if (
-        props.profileState &&
-        props.profileState.data &&
-        props.profileState.data.length
-      ) {
-        userProfile = props.profileState.data[0];
+      if (context.userProfile?.companyId) {
         isPatientListDone = false;
         isEmployeeListDone = false;
-        console.log("[List Patients]");
-        props.listEmployees({ companyId: userProfile.companyId });
-        props.listPatients({ companyId: userProfile.companyId });
+
+        props.listEmployees({ companyId: context.userProfile?.companyId });
+        props.listPatients({ companyId: context.userProfile?.companyId });
       }
     } else {
       isPatientListDone = true;
@@ -332,13 +324,13 @@ function AssignmentFunction(props) {
       chaplainFreqVisitType: payload?.chaplainVisitType?.name,
 
       createdUser: {
-        name: userProfile.name,
-        userId: userProfile.id,
+        name: context.userProfile?.name,
+        userId: context.userProfile?.id,
       },
-      companyId: userProfile.companyId,
+      companyId: context.userProfile?.companyId,
       updatedUser: {
-        name: userProfile.name,
-        userId: userProfile.id,
+        name: context.userProfile?.name,
+        userId: context.userProfile?.id,
         date: new Date(),
       },
     };
@@ -362,8 +354,8 @@ function AssignmentFunction(props) {
     if (mode === "create") {
       console.log("[Mode]", params);
       params.createdUser = {
-        name: userProfile.name,
-        userId: userProfile.id,
+        name: context.userProfile?.name,
+        userId: context.userProfile?.id,
         date: new Date(),
       };
       props.createAssignment(params);
@@ -382,7 +374,7 @@ function AssignmentFunction(props) {
     isAssignmentListDone = true;
     setIsCreateAssignmentCollection(false);
     TOAST.ok("Assignment successfully created.");
-    props.listAssignments({ companyId: userProfile.companyId });
+    props.listAssignments({ companyId: context.userProfile?.companyId });
   }
   if (
     isUpdateAssignmentCollection &&
@@ -391,7 +383,7 @@ function AssignmentFunction(props) {
   ) {
     TOAST.ok("Assignment successfully updated.");
     setIsUpdateAssignmentCollection(false);
-    props.listAssignments({ companyId: userProfile.companyId });
+    props.listAssignments({ companyId: context.userProfile?.companyId });
   }
   console.log(
     "[isDeleteAssignment]",
@@ -406,7 +398,7 @@ function AssignmentFunction(props) {
     TOAST.ok("Assignment successfully deleted.");
     setIsDeleteAssignmentCollection(false);
 
-    props.listAssignments({ companyId: userProfile.companyId });
+    props.listAssignments({ companyId: context.userProfile?.companyId });
   }
 
   if (
@@ -483,22 +475,7 @@ function AssignmentFunction(props) {
     let fileName = `assignment_list_batch_${new Date().getTime()}`;
 
     if (excelData && excelData.length) {
-      import(/* webpackChunkName: 'json2xls' */ "json2xls")
-        .then((json2xls) => {
-          // let fileName = fname + '_' + new Date().getTime();
-          const xls =
-            typeof json2xls === "function"
-              ? json2xls(excel)
-              : json2xls.default(excel);
-          const buffer = Buffer.from(xls, "binary");
-          // let buffer = Buffer.from(excelBuffer);
-          const data = new Blob([buffer], { type: fileType });
-          FileSaver.saveAs(data, fileName + fileExtension);
-        })
-        .catch((err) => {
-          // Handle failure
-          console.log(err);
-        });
+      handleExport(excelData, fileName);
     }
   };
   const onPressEnterKeyHandler = (value) => {
@@ -540,83 +517,53 @@ function AssignmentFunction(props) {
             <GridContainer>
               <GridItem xs={12} sm={12} md={12}>
                 <Card>
-                  <CardHeader color="success">
+                  <CardHeader color="rose">
                     <Grid container justifyContent="space-between">
                       <h4 className={classes.cardTitleWhite}>IDT Assignment</h4>
-                      <h4 className={classes.cardTitleWhite}>{`$${parseFloat(
-                        grandTotal || 0
-                      ).toFixed(2)}`}</h4>
                     </Grid>
                   </CardHeader>
                   <CardBody>
-                    <Grid
-                      container
-                      justifyContent="space-between"
-                      style={{ paddingBottom: 4 }}
-                    >
-                      <div
-                        style={{
-                          display: "inline-flex",
-                          gap: 10,
-                        }}
-                      >
-                        <Button
-                          onClick={() => createFormHandler()}
-                          variant="contained"
+                    <GridContainer>
+                      <GridItem xs={12} md={12}>
+                        <div
                           style={{
-                            border: "solid 1px #2196f3",
-                            color: "white",
-                            background: "#2196f3",
-                            fontFamily: "Roboto",
-                            fontSize: "12px",
-                            fontWeight: 500,
-                            fontStretch: "normal",
-                            fontStyle: "normal",
-                            lineHeight: 1.71,
-                            letterSpacing: "0.4px",
-                            textAlign: "left",
-                            cursor: "pointer",
+                            display: "inline-flex",
+                            gap: 10,
                           }}
-                          component="span"
-                          startIcon={<AddIcon />}
                         >
-                          ADD Assignment
-                        </Button>
-                        {isAddGroupButtons && (
                           <Button
-                            onClick={() => exportToExcelHandler()}
-                            variant="outlined"
-                            style={{
-                              fontFamily: "Roboto",
-                              fontSize: "12px",
-                              fontWeight: 500,
-                              fontStretch: "normal",
-                              fontStyle: "normal",
-                              lineHeight: 1.71,
-                              letterSpacing: "0.4px",
-                              textAlign: "left",
-                              cursor: "pointer",
-                            }}
-                            component="span"
-                            startIcon={<ImportExport />}
+                            color="info"
+                            className={classes.marginRight}
+                            onClick={() => createFormHandler()}
                           >
-                            {" "}
-                            Export Excel{" "}
+                            <AddIcon className={classes.icons} /> Add Assignment
                           </Button>
-                        )}
-                      </div>
 
-                      <SearchCustomTextField
-                        background={"white"}
-                        onChange={inputHandler}
-                        placeholder={"Search Item"}
-                        label={"Search Item"}
-                        name={"keywordValue"}
-                        onPressEnterKeyHandler={onPressEnterKeyHandler}
-                        isAllowEnterKey={true}
-                        value={keywordValue}
-                      />
-                    </Grid>
+                          {isAddGroupButtons && (
+                            <Button
+                              color="success"
+                              className={classes.marginRight}
+                              onClick={() => exportToExcelHandler()}
+                            >
+                              <ImportExport className={classes.icons} /> Export
+                              Excel
+                            </Button>
+                          )}
+                        </div>
+                      </GridItem>
+                      <GridItem xs={12}>
+                        <SearchCustomTextField
+                          background={"white"}
+                          onChange={inputHandler}
+                          placeholder={"Search Item"}
+                          label={"Search Item"}
+                          name={"keywordValue"}
+                          onPressEnterKeyHandler={onPressEnterKeyHandler}
+                          isAllowEnterKey={true}
+                          value={keywordValue}
+                        />
+                      </GridItem>
+                    </GridContainer>
                     <HospiceTable
                       columns={columns}
                       main={true}
@@ -673,7 +620,6 @@ function AssignmentFunction(props) {
     </>
   );
 }
-
 const mapStateToProps = (store) => ({
   patients: patientListStateSelector(store),
   employees: employeeListStateSelector(store),
@@ -683,7 +629,6 @@ const mapStateToProps = (store) => ({
   deleteAssignmentState: assignmentDeleteStateSelector(store),
   profileState: profileListStateSelector(store),
 });
-
 const mapDispatchToProps = (dispatch) => ({
   listEmployees: (data) => dispatch(attemptToFetchEmployee(data)),
   resetListEmployees: () => dispatch(resetFetchEmployeeState()),

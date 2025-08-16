@@ -29,7 +29,7 @@ import ValidationForms from "views/Forms/ValidationForms.js";
 import VectorMap from "views/Maps/VectorMap.js";
 import Widgets from "views/Widgets/Widgets.js";
 import Wizard from "views/Forms/Wizard.js";
-
+import IdtAssignment from "views/Administrator/Assignment/AssignmentMain.js";
 // @material-ui/icons
 import Apps from "@material-ui/icons/Apps";
 import DashboardIcon from "@material-ui/icons/Dashboard";
@@ -49,6 +49,42 @@ var dashRoutes = [
     icon: DashboardIcon,
     component: Dashboard,
     layout: "/admin",
+  },
+  {
+    collapse: true,
+    name: "Operations Mgmt.",
+    rtlName: "إدارة الرواتب",
+    icon: PaymentIcon,
+    state: "pageCollapse",
+    views: [
+      {
+        path: "/idt",
+        name: "IDT Assignment",
+        rtlName: "عالتسعير",
+        mini: "OM",
+        rtlMini: "ع",
+        component: IdtAssignment,
+        layout: "/admin",
+      },
+      {
+        path: "/contract",
+        name: "Onboarding Checklist",
+        rtlName: "عالتسعير",
+        mini: "OM",
+        rtlMini: "ع",
+        component: Contract,
+        layout: "/admin",
+      },
+      {
+        path: "/contract",
+        name: "Medicare Cap Mgmt.",
+        rtlName: "عالتسعير",
+        mini: "OM",
+        rtlMini: "ع",
+        component: Contract,
+        layout: "/admin",
+      },
+    ],
   },
 
   {

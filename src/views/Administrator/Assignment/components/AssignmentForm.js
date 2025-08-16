@@ -682,7 +682,19 @@ function AssignmentForm(props) {
     >
       <div style={modalStyle} className={classes.paper}>
         <HeaderModal title={titleHandler()} onClose={clearModalHandler} />
-
+        <Grid xs={12} sm={12} md={12}>
+          <Card plain>
+            <CardBody>
+              <Grid
+                style={{ paddingTop: 10 }}
+                container
+                spacing={1}
+                direction="row"
+              ></Grid>
+            </CardBody>
+          </Card>
+        </Grid>
+        {/*
         <Grid xs={12} sm={12} md={12}>
           <Card plain>
             <CardBody>
@@ -776,6 +788,7 @@ function AssignmentForm(props) {
           </Card>
           <br />
         </Grid>
+                */}
       </div>
     </Modal>
   );

@@ -46,6 +46,7 @@ import { resetFetchPatientState } from "store/actions/patientAction";
 import { patientListStateSelector } from "store/selectors/patientSelector";
 import { exportToXlsx } from "utils/XlsxHelper";
 import { SupaContext } from "App";
+import { handleExport } from "utils/XlsxHelper";
 const styles = {
   cardCategoryWhite: {
     "&,& a,& a:hover,& a:focus": {
@@ -81,7 +82,6 @@ let employeeList = [];
 let patientList = [];
 
 let originalSource = undefined;
-let userProfile = {};
 
 let isContractListDone = false;
 let isEmployeeListDone = false;
@@ -235,7 +235,7 @@ function ContractFunction(props) {
   const createContractHandler = (payload, mode) => {
     console.log("[Create Contract Handler]", payload, mode);
     const params = {
-      companyId: userProfile.companyId,
+      companyId: context.userProfile?.companyId,
       employeeId: payload.employee?.id,
       employeeName: payload.employee?.name,
       employeeTitle: payload.employee?.position,
@@ -251,16 +251,16 @@ function ContractFunction(props) {
       maxReimbursement: payload.maxReimbursement || 0,
       mileageRate: payload.mileageRate || 0,
       updatedUser: {
-        name: userProfile.name,
-        userId: userProfile.id,
+        name: context.userProfile?.name,
+        userId: context.userProfile?.id,
         date: new Date(),
       },
     };
     if (mode === "create") {
       params.created_at = new Date();
       params.createdUser = {
-        name: userProfile.name,
-        userId: userProfile.id,
+        name: context.userProfile?.name,
+        userId: context.userProfile?.id,
         date: new Date(),
       };
       props.createContract(params);
@@ -278,7 +278,7 @@ function ContractFunction(props) {
   ) {
     setIsCreateContractCollection(false);
     TOAST.ok("Contract successfully created.");
-    props.listContracts({ companyId: userProfile.companyId });
+    props.listContracts({ companyId: context.userProfile?.companyId });
   }
   if (
     isUpdateContractCollection &&
@@ -287,7 +287,7 @@ function ContractFunction(props) {
   ) {
     TOAST.ok("Contract successfully updated.");
     setIsUpdateContractCollection(false);
-    props.listContracts({ companyId: userProfile.companyId });
+    props.listContracts({ companyId: context.userProfile?.companyId });
   }
   console.log(
     "[isDeleteContract]",
@@ -302,7 +302,7 @@ function ContractFunction(props) {
     TOAST.ok("Contract successfully deleted.");
     setIsDeleteContractCollection(false);
 
-    props.listContracts({ companyId: userProfile.companyId });
+    props.listContracts({ companyId: context.userProfile?.companyId });
   }
 
   const filterRecordHandler = (keyword) => {
@@ -350,12 +350,7 @@ function ContractFunction(props) {
     originalSource = [...dtSource];
     setDataSource(dtSource);
   };
-  const handleExport = (excelData, fname) => {
-    exportToXlsx({
-      rows: excelData, // was excel / excelData in your code
-      fileName: `${fname}_${Date.now()}`,
-    });
-  };
+
   const exportToExcelHandler = () => {
     const excelData = dataSource.filter((r) => r.isChecked);
     const headers = columns;

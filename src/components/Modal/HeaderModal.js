@@ -6,21 +6,29 @@ import CardHeader from "components/Card/CardHeader";
 export default function HeaderModal(props) {
   return (
     <div style={{ paddingLeft: 10, paddingRight: 10 }}>
-      <Card>
-        <CardHeader plain color="success">
-          <Grid container justifyContent="space-between">
-            <div>
+      <Card plain>
+        <CardHeader plain color={props.color || "success"}>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              width: "100%",
+            }}
+          >
+            {/* Left side: Select */}
+
+            <div style={{ flex: "0 0 90%" }}>
               <Typography variant="h6" style={{ fontWeight: "bold" }}>
                 {props.title}
               </Typography>
             </div>
-            <div style={{ paddinTop: 12 }}>
+            <div style={{ flex: "0 0 10%" }}>
               <Clear
                 style={{ cursor: "pointer" }}
                 onClick={() => props.onClose()}
               />
             </div>
-          </Grid>
+          </div>
         </CardHeader>
       </Card>
     </div>

@@ -5,7 +5,12 @@ import { saveAs } from "file-saver";
 const fileType =
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
 const fileExtension = ".xlsx";
-
+export function handleExport(excelData, fname) {
+  exportToXlsx({
+    rows: excelData, // was excel / excelData in your code
+    fileName: `${fname}_${Date.now()}`,
+  });
+}
 export function exportToXlsx({
   rows, // your excelData array of objects
   fileName, // e.g. "patients"
