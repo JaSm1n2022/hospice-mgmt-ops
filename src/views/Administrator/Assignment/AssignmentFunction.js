@@ -32,7 +32,7 @@ import { CircularProgress, Grid } from "@material-ui/core";
 import AddIcon from "@material-ui/icons/Add";
 import { SupaContext } from "App";
 import HospiceTable from "components/Table/HospiceTable";
-import { ImportExport } from "@material-ui/icons";
+import { AddAlert, ImportExport } from "@material-ui/icons";
 import Helper from "utils/helper";
 import * as FileSaver from "file-saver";
 import SearchCustomTextField from "components/TextField/SearchCustomTextField";
@@ -47,8 +47,9 @@ import { resetFetchEmployeeState } from "store/actions/employeeAction";
 import { employeeListStateSelector } from "store/selectors/employeeSelector";
 import { v4 as uuidv4 } from "uuid";
 import { profileListStateSelector } from "store/selectors/profileSelector";
-import IDTForm from "./components/IDTForm";
+import Snackbar from "components/Snackbar/Snackbar.js";
 import { handleExport } from "utils/XlsxHelper";
+import IDGForm from "./components/Form";
 const styles = {
   cardCategoryWhite: {
     "&,& a,& a:hover,& a:focus": {
@@ -89,12 +90,16 @@ let isProcessDone = true;
 let isPatientListDone = true;
 let isAssignmentListDone = true;
 let isEmployeeListDone = true;
-
+let currentPatientId = 0;
+let currentPatientTeam = [];
 function AssignmentFunction(props) {
   const context = useContext(SupaContext);
   const classes = useStyles();
   const { main } = props;
   const [dataSource, setDataSource] = useState([]);
+  const [message, setMessage] = useState("");
+  const [tc, setTC] = useState(false);
+  const [color, setColor] = useState("success");
   const [columns, setColumns] = useState(AssignmentHandler.columns(main));
   const [isAssignmentsCollection, setIsAssignmentsCollection] = useState(true);
   const [
@@ -112,6 +117,7 @@ function AssignmentFunction(props) {
   const [isProductCollection, setIsProductCollection] = useState(true);
   const [isFormModal, setIsFormModal] = useState(false);
   const [item, setItem] = useState(undefined);
+  const [isRefresh, setIsRefresh] = useState(false);
   const [mode, setMode] = useState("create");
   const [isAddGroupButtons, setIsAddGroupButtons] = useState(false);
   const [keywordValue, setKeywordValue] = useState("");
@@ -122,6 +128,7 @@ function AssignmentFunction(props) {
     setIsFormModal(true);
   };
   const closeFormModalHandler = () => {
+    currentPatientTeam = [];
     setIsFormModal(false);
   };
 
@@ -147,6 +154,7 @@ function AssignmentFunction(props) {
       props.createAssignmentState &&
       props.createAssignmentState.status === ACTION_STATUSES.SUCCEED
     ) {
+      showNotification("tc", "success", "Assignment successfully created.");
       props.resetCreateAssignment();
 
       setIsCreateAssignmentCollection(true);
@@ -174,7 +182,6 @@ function AssignmentFunction(props) {
       props.products &&
       props.products.status === ACTION_STATUSES.SUCCEED
     ) {
-      console.log("[change me to true]");
       props.resetListProducts();
       setIsProductCollection(true);
     }
@@ -209,6 +216,22 @@ function AssignmentFunction(props) {
     }
   }, [props.main]);
   console.log("[props.Assignments]", props.assignments, props.patients);
+  const showNotification = (place, color, msg) => {
+    setMessage(msg);
+    switch (place) {
+      case "tc":
+        if (!tc) {
+          setTC(true);
+          setColor(color);
+          setTimeout(function () {
+            setTC(false);
+          }, 6000);
+        }
+        break;
+      default:
+        break;
+    }
+  };
   const sortByWorth = (items) => {
     items.sort((a, b) => {
       const tempA = !a.worth ? 0 : parseFloat(a.worth);
@@ -265,64 +288,38 @@ function AssignmentFunction(props) {
     originalSource = [...source];
     source = sortByWorth(source);
     setDataSource(source);
+    if (isFormModal && currentPatientId) {
+      console.log("[What is new List]", source);
+      currentPatientTeam = [...source].filter(
+        (s) => s.patientId === currentPatientId
+      );
+    }
     setIsAssignmentsCollection(false);
   }
   const deleteRecordItemHandler = (id) => {
     console.log("[delete Assignment id]", id);
     props.deleteAssignment(id);
   };
+  const patientSelectionHandler = (id) => {
+    if (isFormModal) {
+      currentPatientTeam = [...dataSource].filter((s) => s.patientId === id);
+    }
+    setIsRefresh(!isRefresh);
+  };
   const createAssignmentHandler = (payload, mode) => {
     console.log("[Create Assignment Handler]", payload, mode);
+    currentPatientId = payload.patientId;
     const params = {
       created_at: new Date(),
-      patientId: payload.patient.id,
-      patientCd: payload.patient.patientCd,
-      patientLocation: `${payload.patient.careType} - ${payload.patient.locationCd}`,
-      cnaId: payload.cna?.id,
-      cnaName: payload.cna?.name,
-      cnaWeek: payload.cnaWeek?.length
-        ? payload.cnaWeek?.map((map) => map.name)
-        : undefined,
-      cnaFreqVisitType: payload?.cnaVisitType?.name,
-      cnaFreqVisit: parseInt(payload.cnaFreqVisit || 0),
-      cnaTime: payload?.cnaTime,
-
-      lpnId: payload.lpn?.id || undefined,
-      lpnName: payload?.lpn?.name,
-      lpnTime: payload?.lpnTime,
-      lpnFreqVisit: parseInt(payload.lpnFreqVisit || 0),
-      lpnWeek: payload.lpnWeek?.length
-        ? payload.lpnWeek?.map((map) => map.name)
-        : undefined,
-      lpnFreqVisitType: payload?.lpnVisitType?.name,
-
-      rnId: payload.rn?.id,
-      rnName: payload.rn?.name,
-      rnTime: payload.rnTime,
-      rnFreqVisit: parseInt(payload.rnFreqVisit || 0),
-      rnWeek: payload.rnWeek?.length
-        ? payload.rnWeek?.map((map) => map.name)
-        : undefined,
-      rnFreqVisitType: payload?.rnVisitType?.name,
-
-      mswId: payload.msw?.id,
-      mswName: payload.msw?.name,
-      mswTime: payload?.mswTime,
-      mswFreqVisit: parseInt(payload.mswFreqVisit || 0),
-      mswWeek: payload.mswWeek?.length
-        ? payload.mswWeek?.map((map) => map.name)
-        : undefined,
-      mswFreqVisitType: payload?.mswVisitType?.name,
-
-      chaplainId: payload.chaplain?.id,
-      chaplainName: payload.chaplain?.name,
-      chaplainTime: payload?.chaplainTime,
-      chaplainFreqVisit: parseInt(payload.chaplainFreqVisit || 0),
-      chaplainWeek: payload.chaplainWeek
-        ? payload.chaplainWeek?.map((map) => map.name)
-        : undefined,
-      chaplainFreqVisitType: payload?.chaplainVisitType?.name,
-
+      patientId: payload.patientId,
+      patientCd: payload.patientCd,
+      disciplineId: payload.disciplineId,
+      disciplineName: payload.disciplineName,
+      disciplinePosition: payload.disciplinePosition,
+      frequencyVisit: payload.frequencyVisit,
+      visitType: payload.visitType,
+      dayOfTheWeek: payload.dayOfTheWeek,
+      timeOfVisit: payload.timeOfVisit,
       createdUser: {
         name: context.userProfile?.name,
         userId: context.userProfile?.id,
@@ -334,22 +331,6 @@ function AssignmentFunction(props) {
         date: new Date(),
       },
     };
-    params.disciplines = [];
-    if (payload.lpn?.id) {
-      params.disciplines.push(payload.lpn?.id);
-    }
-    if (payload.rn?.id) {
-      params.disciplines.push(payload.rn?.id);
-    }
-    if (payload.cna?.id) {
-      params.disciplines.push(payload.cna?.id);
-    }
-    if (payload.msw?.id) {
-      params.disciplines.push(payload.msw?.id);
-    }
-    if (payload.chaplain?.id) {
-      params.disciplines.push(payload.chaplain?.id);
-    }
 
     if (mode === "create") {
       console.log("[Mode]", params);
@@ -363,7 +344,7 @@ function AssignmentFunction(props) {
       params.id = payload.id;
       props.updateAssignment(params);
     }
-    closeFormModalHandler();
+    // closeFormModalHandler();
   };
   console.log("[Is Create Assignment Collection]", props.createAssignmentState);
   if (
@@ -373,7 +354,8 @@ function AssignmentFunction(props) {
   ) {
     isAssignmentListDone = true;
     setIsCreateAssignmentCollection(false);
-    TOAST.ok("Assignment successfully created.");
+    // TOAST.ok("Assignment successfully created.");
+
     props.listAssignments({ companyId: context.userProfile?.companyId });
   }
   if (
@@ -381,7 +363,8 @@ function AssignmentFunction(props) {
     props.updateAssignmentState &&
     props.updateAssignmentState.status === ACTION_STATUSES.SUCCEED
   ) {
-    TOAST.ok("Assignment successfully updated.");
+    //  TOAST.ok("Assignment successfully updated.");
+    // showNotification("tc", "success", "Assignment successfully created.");
     setIsUpdateAssignmentCollection(false);
     props.listAssignments({ companyId: context.userProfile?.companyId });
   }
@@ -395,7 +378,7 @@ function AssignmentFunction(props) {
     props.deleteAssignmentState &&
     props.deleteAssignmentState.status === ACTION_STATUSES.SUCCEED
   ) {
-    TOAST.ok("Assignment successfully deleted.");
+    //  TOAST.ok("Assignment successfully deleted.");
     setIsDeleteAssignmentCollection(false);
 
     props.listAssignments({ companyId: context.userProfile?.companyId });
@@ -515,6 +498,19 @@ function AssignmentFunction(props) {
         <div>
           {main ? (
             <GridContainer>
+              {tc && (
+                <div style={{ paddingTop: 10 }}>
+                  <Snackbar
+                    place="tc"
+                    color={color}
+                    icon={AddAlert}
+                    message={message}
+                    open={tc}
+                    closeNotification={() => setTC(false)}
+                    close
+                  />
+                </div>
+              )}
               <GridItem xs={12} sm={12} md={12}>
                 <Card>
                   <CardHeader color="rose">
@@ -604,17 +600,19 @@ function AssignmentFunction(props) {
         </div>
       )}
       {isFormModal && (
-        <IDTForm
+        <IDGForm
           filterRecordHandler={filterRecordHandler}
           employeeList={employeeList}
+          patientSelectionHandler={patientSelectionHandler}
           dataSource={dataSource}
           createAssignmentHandler={createAssignmentHandler}
           mode={mode}
           isOpen={isFormModal}
           isEdit={false}
+          patientTeam={currentPatientTeam || []}
           item={item}
           patientList={patientList}
-          closeFormModalHandler={closeFormModalHandler}
+          onClose={closeFormModalHandler}
         />
       )}
     </>
