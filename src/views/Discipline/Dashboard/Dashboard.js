@@ -274,16 +274,8 @@ function Dashboard(props) {
   const clientInformationFrequencyHandler = (data) => {
     let totalVisit = 0;
     data.forEach((cls) => {
-      if (cls?.cnaId === context.employeeProfile.id) {
-        totalVisit += parseInt(cls.cnaFreqVisit || 0);
-      } else if (cls.rnId === context.employeeProfile.id) {
-        totalVisit += parseInt(cls.rnFreqVisit || 0);
-      } else if (cls.lpnId === context.employeeProfile.id) {
-        totalVisit += parseInt(cls.lpnFreqVisit || 0);
-      } else if (cls.mswId === context.employeeProfile.id) {
-        totalVisit += parseInt(cls.mswFreqVisit || 0);
-      } else if (cls.chaplainId === context.employeeProfile.id) {
-        totalVisit += parseInt(cls.chaplainFreqVisit || 0);
+      if (cls?.disciplineId === context.employeeProfile.id) {
+        totalVisit += parseInt(cls.frequencyVisit || 0);
       }
     });
     return totalVisit;
@@ -297,52 +289,14 @@ function Dashboard(props) {
     for (let i = 0; i < data.length; i++) {
       const cls = data[i];
       let vis = {};
-      if (cls?.cnaId === context.employeeProfile.id) {
+      if (cls?.disciplineId === context.employeeProfile.id) {
         vis = {
           patient: cls.patientCd,
-          frequencyVisit: cls.cnaFreqVisit
-            ? `${parseInt(cls.cnaFreqVisit || 0)}x/${cls.cnaFreqVisitType}`
+          frequencyVisit: cls.frequencyVisit
+            ? `${parseInt(cls.frequencyVisit || 0)}x/${cls.visitType}`
             : "",
-          time: cls.cnaTime || "No fixed time",
-          days: cls.cnaWeek?.length ? cls.cnaWeek.toString() : "N/A",
-        };
-      } else if (cls.rnId === context.employeeProfile.id) {
-        vis = {
-          patient: cls.patientCd,
-          frequencyVisit: cls.rnFreqVisit
-            ? `${parseInt(cls.rnFreqVisit || 0)}x/${cls.rnFreqVisitType}`
-            : "",
-          time: cls.rnTime || "No fixed time",
-          days: cls.rnWeek?.length ? cls.rnWeek.toString() : "N/A",
-        };
-      } else if (cls.lpnId === context.employeeProfile.id) {
-        vis = {
-          patient: cls.patientCd,
-          frequencyVisit: cls.lpnFreqVisit
-            ? `${parseInt(cls.lpnFreqVisit || 0)}x/${cls.lpnFreqVisitType}`
-            : "",
-          time: cls.lpnTime || "No fixed time",
-          days: cls.lpnWeek?.length ? cls.lpnWeek.toString() : "N/A",
-        };
-      } else if (cls.mswId === context.employeeProfile.id) {
-        vis = {
-          patient: cls.patientCd,
-          frequencyVisit: cls.mswFreqVisit
-            ? `${parseInt(cls.mswFreqVisit || 0)}x/${cls.mswFreqVisitType}`
-            : "",
-          time: cls.mswTime || "No fixed time",
-          days: cls.mswWeek?.length ? cls.mswWeek.toString() : "N/A",
-        };
-      } else if (cls.chaplainId === context.employeeProfile.id) {
-        vis = {
-          patient: cls.patientCd,
-          frequencyVisit: cls.chaplainFreqVisit
-            ? `${parseInt(cls.chaplainFreqVisit || 0)}x/${
-                cls.chaplainFreqVisitType
-              }`
-            : "",
-          time: cls.chaplainTime || "No fixed time",
-          days: cls.chaplainWeek?.length ? cls.chaplainWeek.toString() : "N/A",
+          time: cls.timeOfVisit || "No fixed time",
+          days: cls.dayOfTheWeek?.length ? cls.dayOfTheWeek.toString() : "N/A",
         };
       }
       visitList.push(vis);

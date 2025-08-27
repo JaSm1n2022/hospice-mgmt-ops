@@ -25,6 +25,7 @@ import AssignmentHandler from "./AssignmentHandler";
 import Button from "components/CustomButtons/Button.js";
 import { IDT_POSITION } from "utils/constants";
 import { VISIT_TYPE } from "utils/constants";
+import ActionsFunction from "./ActionsFunction";
 let categoryList = [];
 let uoms = [];
 let positionList = [];
@@ -146,11 +147,33 @@ function IDGForm(props) {
   const [employeeList, setEmployeeList] = useState([]);
   const [modalStyle] = React.useState(getModalStyle);
   const [comps, setComps] = useState();
+  const [columns, setColumns] = useState([]);
   const [patientList, setPatientList] = useState([]);
   const [patientTeam, setPatientTeam] = useState([]);
   const [isRefresh, setIsRefresh] = useState(false);
   const { isOpen } = props;
   useEffect(() => {
+    const cols = AssignmentHandler.columns(true).map((col, index) => {
+      if (col.name === "action") {
+        return {
+          ...col,
+          editable: () => false,
+          render: (cellProps) => (
+            <ActionsFunction
+              data={{ ...cellProps.data }}
+              onEdit={editHandler}
+              onDelete={deleteHandler}
+            />
+          ),
+        };
+      }
+
+      return {
+        ...col,
+        editable: () => false,
+      };
+    });
+    setColumns(cols);
     setPatientTeam(props.patientTeam);
   }, [props.patientTeam]);
   useEffect(() => {
@@ -238,6 +261,15 @@ function IDGForm(props) {
     }
   };
 
+  const deleteHandler = (item) => {
+    console.log("[DELETE ITEM]", item);
+    props.deleteRecordItemHandler(item.id);
+  };
+
+  const editHandler = (item) => {
+    console.log("[EDIT ITEM]", item);
+    // props.deleteRecordItemHandler(item.id);
+  };
   const selectAllHandler = (isAll, options) => {
     console.log("[SELECT ALL]", options);
 
@@ -596,7 +628,7 @@ function IDGForm(props) {
                     </GridItem>
                     <GridItem xs={12} md={12}>
                       <HospiceTable
-                        columns={AssignmentHandler.columns()}
+                        columns={columns}
                         dataSource={patientTeam}
                       />
                     </GridItem>

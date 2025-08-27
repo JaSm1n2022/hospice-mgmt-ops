@@ -100,7 +100,7 @@ function AssignmentFunction(props) {
   const [message, setMessage] = useState("");
   const [tc, setTC] = useState(false);
   const [color, setColor] = useState("success");
-  const [columns, setColumns] = useState(AssignmentHandler.columns(main));
+  const [columns, setColumns] = useState(AssignmentHandler.columns(false));
   const [isAssignmentsCollection, setIsAssignmentsCollection] = useState(true);
   const [
     isCreateAssignmentCollection,
@@ -264,7 +264,7 @@ function AssignmentFunction(props) {
       });
     }
 
-    const cols = AssignmentHandler.columns(main).map((col, index) => {
+    const cols = AssignmentHandler.columns(false).map((col, index) => {
       if (col.name === "actions") {
         return {
           ...col,
@@ -303,6 +303,7 @@ function AssignmentFunction(props) {
   const patientSelectionHandler = (id) => {
     if (isFormModal) {
       currentPatientTeam = [...dataSource].filter((s) => s.patientId === id);
+      currentPatientId = id;
     }
     setIsRefresh(!isRefresh);
   };
@@ -606,6 +607,7 @@ function AssignmentFunction(props) {
           patientSelectionHandler={patientSelectionHandler}
           dataSource={dataSource}
           createAssignmentHandler={createAssignmentHandler}
+          deleteRecordItemHandler={deleteRecordItemHandler}
           mode={mode}
           isOpen={isFormModal}
           isEdit={false}

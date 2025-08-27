@@ -1,8 +1,20 @@
 import moment from "moment";
 
 class AssignmentHandler {
-  static columns(main) {
+  static columns(isCreate) {
     return [
+      {
+        width: 100,
+        visible: isCreate ? true : false,
+        name: "action",
+        header: "Actions",
+      },
+      {
+        width: 100,
+        visible: isCreate ? false : true,
+        name: "patientCd",
+        header: "Patient",
+      },
       {
         defaultFlex: 1,
         minWidth: 140,

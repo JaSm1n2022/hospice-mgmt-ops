@@ -206,7 +206,7 @@ function Routesheet(props) {
       const arr = props.assignmentState?.data || [];
       assignmentList = [];
       arr.forEach((e) => {
-        if (e.disciplines?.find((e) => e && e === context.employeeProfile.id)) {
+        if (e.disciplineId === context.employeeProfile.id) {
           console.log("[contezt 1]", e);
           assignmentList.push(e);
         }
@@ -286,22 +286,19 @@ function Routesheet(props) {
     }
   };
   const clientInformationFrequencyHandler = () => {
-    const cls = assignmentList.find((a) => a.patientCd === client);
-    if (cls?.cnaId === context.employeeProfile.id) {
-      console.log("[CLS]", cls);
-      return `${cls.cnaFreqVisit}x/${cls.cnaFreqVisitType}`;
-    } else if (cls.rnId === context.employeeProfile.id) {
-      return `${cls.rnFreqVisit}x/${cls.rnFreqVisitType}`;
-    } else if (cls.lpnId === context.employeeProfile.id) {
-      return `${cls.lpnFreqVisit}x/${cls.lpnFreqVisitType}`;
-    } else if (cls.mswId === context.employeeProfile.id) {
-      return `${cls.mswFreqVisit}x/${cls.mswFreqVisitType}`;
-    } else if (cls.chaplainId === context.employeeProfile.id) {
-      return `${cls.chaplainFreqVisit}x/${cls.chaplainFreqVisitType}`;
-    }
+    const cls = assignmentList.find(
+      (a) =>
+        a.patientCd === client && a.disciplineId === context.employeeProfile.id
+    );
+    return cls ? `${cls.frequencyVisit}x/${cls.visitType}` : "";
   };
   const clientInformationDayHandler = () => {
-    const cls = assignmentList.find((a) => a.patientCd === client);
+    const cls = assignmentList.find(
+      (a) =>
+        a.patientCd === client && a.disciplineId === context.employeeProfile.id
+    );
+    return cls ? `${cls.dayOfTheWeek} - ${cls.timeOfVisit}` : "";
+    /*
     if (cls?.cnaId === context.employeeProfile.id) {
       return `${cls.cnaWeek} - ${cls.cnaTime}`;
     } else if (cls?.rnId === context.employeeProfile.id) {
@@ -313,6 +310,7 @@ function Routesheet(props) {
     } else if (cls?.chaplainId === context.employeeProfile.id) {
       return `${cls.chaplainWeek} - ${cls.chaplainTime}`;
     }
+    */
   };
   const clearHandler = () => {
     //clear

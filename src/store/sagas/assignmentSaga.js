@@ -29,7 +29,7 @@ export function* listAssignment(action) {
       .eq("companyId", companyId);
 
     if (discipline) {
-      query = query.contains("disciplines", [discipline]);
+      query = query.eq("disciplineId", discipline);
     }
 
     // Execute the query
