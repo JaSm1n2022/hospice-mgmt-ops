@@ -50,6 +50,11 @@ import { profileListStateSelector } from "store/selectors/profileSelector";
 import Snackbar from "components/Snackbar/Snackbar.js";
 import { handleExport } from "utils/XlsxHelper";
 import IDGForm from "./components/Form";
+import Dialog from "@material-ui/core/Dialog";
+import DialogTitle from "@material-ui/core/DialogTitle";
+import DialogContent from "@material-ui/core/DialogContent";
+import DialogActions from "@material-ui/core/DialogActions";
+
 const styles = {
   cardCategoryWhite: {
     "&,& a,& a:hover,& a:focus": {
@@ -174,6 +179,7 @@ function AssignmentFunction(props) {
       props.deleteAssignmentState.status === ACTION_STATUSES.SUCCEED
     ) {
       console.log("[change me to true]");
+      showNotification("tc", "success", "Assignment successfully deleted.");
       props.resetDeleteAssignment();
       setIsDeleteAssignmentCollection(true);
     }
@@ -600,6 +606,7 @@ function AssignmentFunction(props) {
           )}
         </div>
       )}
+
       {isFormModal && (
         <IDGForm
           filterRecordHandler={filterRecordHandler}

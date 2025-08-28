@@ -160,6 +160,7 @@ function IDGForm(props) {
           editable: () => false,
           render: (cellProps) => (
             <ActionsFunction
+              id={{ ...cellProps.data.id }}
               data={{ ...cellProps.data }}
               onEdit={editHandler}
               onDelete={deleteHandler}
@@ -268,7 +269,7 @@ function IDGForm(props) {
 
   const editHandler = (item) => {
     console.log("[EDIT ITEM]", item);
-    // props.deleteRecordItemHandler(item.id);
+    props.createAssignmentHandler(item, "edit");
   };
   const selectAllHandler = (isAll, options) => {
     console.log("[SELECT ALL]", options);

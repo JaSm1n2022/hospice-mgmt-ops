@@ -31,13 +31,13 @@ class AssignmentHandler {
       {
         defaultFlex: 1,
         minWidth: 100,
-        name: "frequencyVisit",
+        name: "numberOfVisit",
         header: "Frequency",
       },
       {
         defaultFlex: 1,
         minWidth: 160,
-        name: "dayOfTheWeek",
+        name: "days",
         header: "Day of Week",
       },
       {
@@ -51,8 +51,8 @@ class AssignmentHandler {
   static mapData(items) {
     items.forEach((item) => {
       console.log("[ITEM]", item);
-      item.dayOfTheWeek = item.dayOfTheWeek?.join(",");
-      item.frequencyVisit = item.frequencyVisit
+      item.days = item.dayOfTheWeek?.join(",");
+      item.numberOfVisit = item.frequencyVisit
         ? `${item.frequencyVisit}/${item.visitType}`
         : "N/A";
     });
