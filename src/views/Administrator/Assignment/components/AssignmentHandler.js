@@ -5,7 +5,7 @@ class AssignmentHandler {
     return [
       {
         width: 100,
-        visible: isCreate ? true : false,
+        visible: isCreate ? true : true,
         name: "action",
         header: "Actions",
       },

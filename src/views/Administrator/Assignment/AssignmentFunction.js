@@ -50,10 +50,6 @@ import { profileListStateSelector } from "store/selectors/profileSelector";
 import Snackbar from "components/Snackbar/Snackbar.js";
 import { handleExport } from "utils/XlsxHelper";
 import IDGForm from "./components/Form";
-import Dialog from "@material-ui/core/Dialog";
-import DialogTitle from "@material-ui/core/DialogTitle";
-import DialogContent from "@material-ui/core/DialogContent";
-import DialogActions from "@material-ui/core/DialogActions";
 
 const styles = {
   cardCategoryWhite: {
@@ -271,24 +267,24 @@ function AssignmentFunction(props) {
     }
 
     const cols = AssignmentHandler.columns(false).map((col, index) => {
-      if (col.name === "actions") {
+      if (col.name === "action") {
         return {
           ...col,
           editable: () => false,
           render: (cellProps) => (
             <ActionsFunction
-              deleteRecordItemHandler={deleteRecordItemHandler}
-              createFormHandler={createFormHandler}
               data={{ ...cellProps.data }}
+              onEdit={editHandler}
+              onDelete={deleteHandler}
             />
           ),
         };
-      } else {
-        return {
-          ...col,
-          editable: () => false,
-        };
       }
+
+      return {
+        ...col,
+        editable: () => false,
+      };
     });
     setColumns(cols);
     originalSource = [...source];
@@ -305,6 +301,15 @@ function AssignmentFunction(props) {
   const deleteRecordItemHandler = (id) => {
     console.log("[delete Assignment id]", id);
     props.deleteAssignment(id);
+  };
+  const deleteHandler = (item) => {
+    console.log("[DELETE ITEM]", item);
+    deleteRecordItemHandler(item.id);
+  };
+
+  const editHandler = (item) => {
+    console.log("[EDIT ITEM]", item);
+    createAssignmentHandler(item, "edit");
   };
   const patientSelectionHandler = (id) => {
     if (isFormModal) {
