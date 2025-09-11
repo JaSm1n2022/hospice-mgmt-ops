@@ -61,7 +61,7 @@ class ContractHandler {
   static mapData(items, products) {
     items.forEach((item) => {
       if (!item.patientCd) {
-        if (item.employeeTitle.toLowerCase() === "office manager") {
+        if (item.employeeTitle?.toLowerCase() === "office manager") {
           item.patientCd = "Not Applicable";
         } else {
           item.patientCd = "ALL";

@@ -26,7 +26,7 @@ import { attemptToDeleteAssignment } from "store/actions/assignmentAction";
 import { resetDeleteAssignmentState } from "store/actions/assignmentAction";
 import { assignmentUpdateStateSelector } from "store/selectors/assignmentSelector";
 import PropTypes from "prop-types";
-import ActionsFunction from "components/Actions/ActionsFunction";
+
 import { ACTION_STATUSES } from "utils/constants";
 import { CircularProgress, Grid } from "@material-ui/core";
 import AddIcon from "@material-ui/icons/Add";
@@ -50,6 +50,7 @@ import { profileListStateSelector } from "store/selectors/profileSelector";
 import Snackbar from "components/Snackbar/Snackbar.js";
 import { handleExport } from "utils/XlsxHelper";
 import IDGForm from "./components/Form";
+import ActionsFunction from "./components/ActionsFunction";
 
 const styles = {
   cardCategoryWhite: {
@@ -426,10 +427,10 @@ function AssignmentFunction(props) {
           (data.patientCd &&
             data.patientCd.toLowerCase().indexOf(keyword.toLowerCase()) !==
               -1) ||
-          (data.cnaName &&
-            data.cnaName.toLowerCase().indexOf(keyword.toLowerCase()) !== -1) ||
-          (data.rnName &&
-            data.rnName.toLowerCase().indexOf(keyword.toLowerCase()) !== -1)
+          (data.disciplineName &&
+            data.disciplineName
+              ?.toLowerCase()
+              .indexOf(keyword.toLowerCase()) !== -1)
       );
 
       setDataSource(found);
@@ -461,18 +462,14 @@ function AssignmentFunction(props) {
   };
   const exportToExcelHandler = () => {
     const excelData = dataSource.filter((r) => r.isChecked);
-    const headers = columns;
-    const excel = Helper.formatExcelReport(headers, excelData);
-    console.log("headers", excel);
-    const fileType =
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
-    const fileExtension = ".xlsx";
+    const excel = Helper.formatExcelReport(columns, excelData);
     let fileName = `assignment_list_batch_${new Date().getTime()}`;
 
-    if (excelData && excelData.length) {
-      handleExport(excelData, fileName);
+    if (excel && excel.length) {
+      handleExport(excel, fileName);
     }
   };
+
   const onPressEnterKeyHandler = (value) => {
     filterRecordHandler(value);
     setKeywordValue(value);

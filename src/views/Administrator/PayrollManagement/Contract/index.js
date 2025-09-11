@@ -317,10 +317,10 @@ function ContractFunction(props) {
           data.employeeName?.toLowerCase().indexOf(keyword.toLowerCase()) !==
             -1 ||
           (data.patientCd &&
-            data.patientCd.toLowerCase().indexOf(keyword.toLowerCase()) !==
+            data.patientCd?.toLowerCase().indexOf(keyword.toLowerCase()) !==
               -1) ||
           (data.serviceType &&
-            data.serviceType.toLowerCase().indexOf(keyword.toLowerCase()) !==
+            data.serviceType?.toLowerCase().indexOf(keyword.toLowerCase()) !==
               -1)
       );
 
@@ -353,16 +353,11 @@ function ContractFunction(props) {
 
   const exportToExcelHandler = () => {
     const excelData = dataSource.filter((r) => r.isChecked);
-    const headers = columns;
-    const excel = Helper.formatExcelReport(headers, excelData);
-    console.log("headers", excel);
-    const fileType =
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
-    const fileExtension = ".xlsx";
+    const excel = Helper.formatExcelReport(columns, excelData);
     let fileName = `contract_list_batch_${new Date().getTime()}`;
 
-    if (excelData && excelData.length) {
-      handleExport(excelData, fileName);
+    if (excel && excel.length) {
+      handleExport(excel, fileName);
     }
   };
   const onPressEnterKeyHandler = (value) => {

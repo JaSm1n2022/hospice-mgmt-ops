@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 // @material-ui/core components
 import { makeStyles } from "@material-ui/core/styles";
 // core components
@@ -27,19 +27,23 @@ import { resetDeleteStockState } from "store/actions/stockAction";
 import { stockUpdateStateSelector } from "store/selectors/stockSelector";
 import PropTypes from "prop-types";
 import ActionsFunction from "components/Actions/ActionsFunction";
+import UploadIcon from "@material-ui/icons/CloudUpload";
 import { ACTION_STATUSES } from "utils/constants";
-import { Button, CircularProgress, Grid, Typography } from "@material-ui/core";
+import { CircularProgress, Grid, Typography } from "@material-ui/core";
 import AddIcon from "@material-ui/icons/Add";
-
+import Button from "components/CustomButtons/Button.js";
 import HospiceTable from "components/Table/HospiceTable";
-import { ImportExport } from "@material-ui/icons";
+import { AddAlert, ImportExport } from "@material-ui/icons";
 import Helper from "utils/helper";
 import * as FileSaver from "file-saver";
 import SearchCustomTextField from "components/TextField/SearchCustomTextField";
 import StockForm from "./components/StockForm";
 import { attemptToUpdateStock } from "store/actions/stockAction";
-import TOAST from "modules/toastManager";
+import Snackbar from "components/Snackbar/Snackbar.js";
 import { profileListStateSelector } from "store/selectors/profileSelector";
+import { SupaContext } from "App";
+import { handleExport } from "utils/XlsxHelper";
+import ModalFooter from "components/Modal/ModalFooter/ModalFooter";
 const styles = {
   cardCategoryWhite: {
     "&,& a,& a:hover,& a:focus": {
@@ -74,11 +78,12 @@ const useStyles = makeStyles(styles);
 let productList = [];
 let grandTotal = 0.0;
 let originalSource = undefined;
-let userProfile = {};
+
 let isProductListDone = false;
 let isStockListDone = false;
 function StockRoomFunction(props) {
   const classes = useStyles();
+  const context = useContext(SupaContext);
   const { main } = props;
   const [dataSource, setDataSource] = useState([]);
   const [columns, setColumns] = useState(StockRoomHandler.columns(main));
@@ -89,6 +94,9 @@ function StockRoomFunction(props) {
   const [isProductCollection, setIsProductCollection] = useState(true);
   const [isFormModal, setIsFormModal] = useState(false);
   const [item, setItem] = useState(undefined);
+  const [message, setMessage] = useState("");
+  const [tc, setTC] = useState(false);
+  const [color, setColor] = useState("success");
   const [mode, setMode] = useState("create");
   const [isAddGroupButtons, setIsAddGroupButtons] = useState(false);
   const [keywordValue, setKeywordValue] = useState("");
@@ -164,14 +172,10 @@ function StockRoomFunction(props) {
   ]);
   useEffect(() => {
     console.log("list stocks");
-    if (
-      props.profileState &&
-      props.profileState.data &&
-      props.profileState.data.length
-    ) {
-      userProfile = props.profileState.data[0];
-      props.listProducts({ companyId: userProfile.companyId });
-      props.listStocks({ companyId: userProfile.companyId });
+
+    if (context.userProfile?.companyId) {
+      props.listProducts({ companyId: context.userProfile?.companyId });
+      props.listStocks({ companyId: context.userProfile?.companyId });
     }
   }, []);
 
@@ -251,6 +255,22 @@ function StockRoomFunction(props) {
     isStockListDone = true;
     setIsStocksCollection(false);
   }
+  const showNotification = (place, color, msg) => {
+    setMessage(msg);
+    switch (place) {
+      case "tc":
+        if (!tc) {
+          setTC(true);
+          setColor(color);
+          setTimeout(function () {
+            setTC(false);
+          }, 6000);
+        }
+        break;
+      default:
+        break;
+    }
+  };
   const deleteRecordItemHandler = (id) => {
     console.log("[delete stock id]", id);
     props.deleteStock(id);
@@ -268,6 +288,7 @@ function StockRoomFunction(props) {
       incoming_order_at: payload.projectedDate,
       productId: payload.productId,
       category: payload.category,
+
       category_id: payload.category_id,
       subCategory_id: payload.subCategory_id,
       subCategory: payload.subCategory,
@@ -275,18 +296,18 @@ function StockRoomFunction(props) {
       comments: payload.comments,
       vendor: payload.vendor,
       manufacturer: payload.manufacturer,
-      companyId: userProfile.companyId,
+      companyId: context.userProfile?.companyId,
       updatedUser: {
-        name: userProfile.name,
-        userId: userProfile.id,
+        name: context.userProfile?.name,
+        userId: context.userProfile?.id,
         date: new Date(),
       },
     };
     if (mode === "create") {
       params.created_at = new Date();
       params.createdUser = {
-        name: userProfile.name,
-        userId: userProfile.id,
+        name: context.userProfile?.name,
+        userId: context.userProfile?.id,
         date: new Date(),
       };
       props.createStock(params);
@@ -303,17 +324,18 @@ function StockRoomFunction(props) {
     props.createStockState.status === ACTION_STATUSES.SUCCEED
   ) {
     setIsCreateStockCollection(false);
-    TOAST.ok("Stock successfully created.");
-    props.listStocks({ companyId: userProfile.companyId });
+    // TOAST.ok("Stock successfully created.");
+    showNotification("tc", "success", "Stock successfully created.");
+    props.listStocks({ companyId: context.userProfile?.companyId });
   }
   if (
     isUpdateStockCollection &&
     props.updateStockState &&
     props.updateStockState.status === ACTION_STATUSES.SUCCEED
   ) {
-    TOAST.ok("Stock successfully updated.");
+    showNotification("tc", "success", "Stock successfully updated.");
     setIsUpdateStockCollection(false);
-    props.listStocks({ companyId: userProfile.companyId });
+    props.listStocks({ companyId: context.userProfile?.companyId });
   }
   console.log(
     "[isDeleteStock]",
@@ -325,10 +347,10 @@ function StockRoomFunction(props) {
     props.deleteStockState &&
     props.deleteStockState.status === ACTION_STATUSES.SUCCEED
   ) {
-    TOAST.ok("Stock successfully deleted.");
+    showNotification("tc", "success", "Stock successfully deleted.");
     setIsDeleteStockCollection(false);
 
-    props.listStocks({ companyId: userProfile.companyId });
+    props.listStocks({ companyId: context.userProfile?.companyId });
   }
 
   const filterRecordHandler = (keyword) => {
@@ -389,31 +411,11 @@ function StockRoomFunction(props) {
   };
   const exportToExcelHandler = () => {
     const excelData = dataSource.filter((r) => r.isChecked);
-    const headers = columns;
-    const excel = Helper.formatExcelReport(headers, excelData);
-    console.log("headers", excel);
-    const fileType =
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
-    const fileExtension = ".xlsx";
+    const excel = Helper.formatExcelReport(columns, excelData);
     let fileName = `stock_list_batch_${new Date().getTime()}`;
 
-    if (excelData && excelData.length) {
-      import(/* webpackChunkName: 'json2xls' */ "json2xls")
-        .then((json2xls) => {
-          // let fileName = fname + '_' + new Date().getTime();
-          const xls =
-            typeof json2xls === "function"
-              ? json2xls(excel)
-              : json2xls.default(excel);
-          const buffer = Buffer.from(xls, "binary");
-          // let buffer = Buffer.from(excelBuffer);
-          const data = new Blob([buffer], { type: fileType });
-          FileSaver.saveAs(data, fileName + fileExtension);
-        })
-        .catch((err) => {
-          // Handle failure
-          console.log(err);
-        });
+    if (excel && excel.length) {
+      handleExport(excel, fileName);
     }
   };
   const onPressEnterKeyHandler = (value) => {
@@ -435,17 +437,41 @@ function StockRoomFunction(props) {
         </div>
       ) : main ? (
         <GridContainer>
+          {tc && (
+            <div style={{ paddingTop: 10 }}>
+              <Snackbar
+                place="tc"
+                color={color}
+                icon={AddAlert}
+                message={message}
+                open={tc}
+                closeNotification={() => setTC(false)}
+                close
+              />
+            </div>
+          )}
           <GridItem xs={12} sm={12} md={12}>
             <Card>
               <CardHeader color="success">
-                <Grid container justifyContent="space-between">
-                  <h4 className={classes.cardTitleWhite}>
-                    Stock Room Management
-                  </h4>
-                  <h4 className={classes.cardTitleWhite}>{`$${parseFloat(
-                    grandTotal || 0
-                  ).toFixed(2)}`}</h4>
-                </Grid>
+                <div
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    width: "100%",
+                  }}
+                >
+                  {/* Left side: Select */}
+                  <div style={{ flex: "0 0 90%" }}>
+                    <h4 className={classes.cardTitleWhite}>
+                      Stock Room Management
+                    </h4>
+                  </div>
+                  <div align="right" style={{ flex: "0 0 10%" }}>
+                    <h4 className={classes.cardTitleWhite}>{`$${parseFloat(
+                      grandTotal || 0
+                    ).toFixed(2)}`}</h4>
+                  </div>
+                </div>
               </CardHeader>
               <CardBody>
                 <Grid
@@ -460,61 +486,37 @@ function StockRoomFunction(props) {
                     }}
                   >
                     <Button
+                      color="info"
+                      size={"sm"}
+                      className={classes.marginRight}
                       onClick={() => createFormHandler()}
-                      variant="contained"
-                      style={{
-                        border: "solid 1px #2196f3",
-                        color: "white",
-                        background: "#2196f3",
-                        fontFamily: "Roboto",
-                        fontSize: "12px",
-                        fontWeight: 500,
-                        fontStretch: "normal",
-                        fontStyle: "normal",
-                        lineHeight: 1.71,
-                        letterSpacing: "0.4px",
-                        textAlign: "left",
-                        cursor: "pointer",
-                      }}
-                      component="span"
-                      startIcon={<AddIcon />}
                     >
-                      ADD STOCK
+                      <AddIcon className={classes.icons} /> Add Stock
                     </Button>
+
                     {isAddGroupButtons && (
                       <Button
+                        color="success"
                         onClick={() => exportToExcelHandler()}
-                        variant="outlined"
-                        style={{
-                          fontFamily: "Roboto",
-                          fontSize: "12px",
-                          fontWeight: 500,
-                          fontStretch: "normal",
-                          fontStyle: "normal",
-                          lineHeight: 1.71,
-                          letterSpacing: "0.4px",
-                          textAlign: "left",
-                          cursor: "pointer",
-                        }}
-                        component="span"
-                        startIcon={<ImportExport />}
+                        className={classes.marginRight}
                       >
-                        {" "}
-                        Export Excel{" "}
+                        <UploadIcon className={classes.icons} /> Export Excel
                       </Button>
                     )}
                   </div>
-
-                  <SearchCustomTextField
-                    background={"white"}
-                    onChange={inputHandler}
-                    placeholder={"Search Item"}
-                    label={"Search Item"}
-                    name={"keywordValue"}
-                    onPressEnterKeyHandler={onPressEnterKeyHandler}
-                    isAllowEnterKey={true}
-                    value={keywordValue}
-                  />
+                  <div style={{ paddingTop: 4, width: "300px" }}>
+                    <SearchCustomTextField
+                      background={"white"}
+                      onChange={inputHandler}
+                      placeholder={"Search Item"}
+                      height={36}
+                      label={"Search Item"}
+                      name={"keywordValue"}
+                      onPressEnterKeyHandler={onPressEnterKeyHandler}
+                      isAllowEnterKey={true}
+                      value={keywordValue}
+                    />
+                  </div>
                 </Grid>
                 <HospiceTable
                   columns={columns}

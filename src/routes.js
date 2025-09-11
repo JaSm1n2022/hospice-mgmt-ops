@@ -30,6 +30,7 @@ import VectorMap from "views/Maps/VectorMap.js";
 import Widgets from "views/Widgets/Widgets.js";
 import Wizard from "views/Forms/Wizard.js";
 import IdtAssignment from "views/Administrator/Assignment/AssignmentMain.js";
+import Distribution from "views/Administrator/Logistics/Distribution/Distribution.js";
 // @material-ui/icons
 import Apps from "@material-ui/icons/Apps";
 import DashboardIcon from "@material-ui/icons/Dashboard";
@@ -39,7 +40,9 @@ import Image from "@material-ui/icons/Image";
 import Place from "@material-ui/icons/Place";
 import Timeline from "@material-ui/icons/Timeline";
 import WidgetsIcon from "@material-ui/icons/Widgets";
+
 import PaymentIcon from "@material-ui/icons/PaymentOutlined";
+import StockRoomMain from "views/Administrator/Logistics/StockRoom/StockRoomMain";
 
 var dashRoutes = [
   {
@@ -66,22 +69,31 @@ var dashRoutes = [
         component: IdtAssignment,
         layout: "/admin",
       },
+    ],
+  },
+  {
+    collapse: true,
+    name: "Inventory & Logistics",
+    rtlName: "إدارة الرواتب",
+    icon: WidgetsIcon,
+    state: "pageCollapse",
+    views: [
       {
-        path: "/contract",
-        name: "Onboarding Checklist",
+        path: "/distribution",
+        name: "Distribution",
         rtlName: "عالتسعير",
-        mini: "OM",
+        mini: "IL",
         rtlMini: "ع",
-        component: Contract,
+        component: Distribution,
         layout: "/admin",
       },
       {
-        path: "/contract",
-        name: "Medicare Cap Mgmt.",
+        path: "/stockroom",
+        name: "Stockroom",
         rtlName: "عالتسعير",
-        mini: "OM",
+        mini: "IL",
         rtlMini: "ع",
-        component: Contract,
+        component: StockRoomMain,
         layout: "/admin",
       },
     ],

@@ -48,9 +48,7 @@ export default function ActionsFunction(props) {
       setCurrentItem(props.data);
     }
   }, [props.data]);
-  const openEditModalHandler = () => {
-    props.createFormHandler(currentItem, "edit");
-  };
+
   const printRecordHandler = () => {
     props.printHandler(currentItem);
   };
@@ -60,7 +58,7 @@ export default function ActionsFunction(props) {
   const noDeleteHandler = () => {
     setIsRowForDelete(false);
   };
-  const deleteRowHandler = (mode) => {
+  const clickRowHandler = (mode) => {
     if (mode === "Delete") {
       props.onDelete(currentItem);
     } else if (mode === "Edit") {
@@ -134,7 +132,7 @@ export default function ActionsFunction(props) {
         color={prop.color}
         className={classes.actionButton}
         key={key}
-        onClick={() => deleteRowHandler(prop.mode)}
+        onClick={() => clickRowHandler(prop.mode)}
       >
         <prop.icon className={classes.icon} />
       </Button>
