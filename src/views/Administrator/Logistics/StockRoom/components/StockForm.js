@@ -3,16 +3,22 @@ import CustomTextField from "components/TextField/CustomTextField";
 import { QUANTITY_UOM } from "utils/constants";
 import { SUPPLY_CATEGORY } from "utils/constants";
 import CustomSingleAutoComplete from "components/AutoComplete/CustomSingleAutoComplete";
-import { Button, Card, Grid, Modal, Typography } from "@material-ui/core";
+import { Button, Grid, Modal, Typography } from "@material-ui/core";
 import { DEFAULT_ITEM } from "utils/constants";
 import CardBody from "components/Card/CardBody";
+import Card from "components/Card/Card";
 import { makeStyles } from "@material-ui/core";
 import CustomDatePicker from "components/Date/CustomDatePicker";
 import CustomSelect from "components/Select/CustomSelect";
 import TOAST from "modules/toastManager";
 import HeaderModal from "components/Modal/HeaderModal";
-
+import CardHeader from "components/Card/CardHeader";
 import { useTheme } from "@material-ui/core";
+import { AddAlertOutlined, Clear } from "@material-ui/icons";
+import GridContainer from "components/Grid/GridContainer";
+import GridItem from "components/Grid/GridItem";
+import SnackbarContent from "components/Snackbar/SnackbarContent.js";
+import ModalFooter from "components/Modal/ModalFooter/ModalFooter";
 
 let categoryList = [];
 let uoms = [];
@@ -82,6 +88,8 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
+const ITEM_ERROR =
+  "This item already exists in the record. Please use the Edit function to update the product information";
 function StockForm(props) {
   const classes = useStyles();
   const theme = useTheme();
@@ -89,6 +97,7 @@ function StockForm(props) {
   const [searchItem, setSearchItem] = useState(DEFAULT_ITEM);
   const [isSubmitDisabled, setIsSubmitDisabled] = useState(true);
   const [isExistingItem, setIsExistingItem] = useState(false);
+  const [snackbarMsg, setSnackbarMsg] = useState(ITEM_ERROR);
   const [modalStyle] = React.useState(getModalStyle);
   const { isOpen } = props;
 
@@ -228,7 +237,16 @@ function StockForm(props) {
     }
   }, [props.item]);
   const validateFormHandler = () => {
-    props.createStockHandler(generalForm, props.mode);
+    if (!searchItem?.name || isExistingItem) {
+      if (!searchItem) {
+        setSnackbarMsg("Please select One");
+      } else {
+        setSnackbarMsg(ITEM_ERROR);
+      }
+      setIsExistingItem(true);
+    } else {
+      props.createStockHandler(generalForm, props.mode);
+    }
   };
 
   const inputSearchHandler = (e) => {
@@ -236,6 +254,27 @@ function StockForm(props) {
       setSearchItem(DEFAULT_ITEM);
     }
   };
+
+  const footerActions = [
+    {
+      title: props.distribution ? "Apply" : "Save",
+      type: "primary",
+      event: "submit",
+      callback: () => {
+        validateFormHandler();
+      },
+    },
+
+    {
+      title: "Cancel",
+      type: "default",
+      event: "cancel",
+      callback: () => {
+        console.log("[Cancel me]");
+        clearModalHandler();
+      },
+    },
+  ];
   const autoCompleteInputSearchHandler = (item) => {
     console.log(
       "[Item]",
@@ -244,10 +283,11 @@ function StockForm(props) {
       props.dataSource.find((data) => data.productId === item.id)
     );
     if (props.dataSource.find((data) => data.productId === item.id)) {
-      TOAST.error(
-        "Item already in existing record. Please use Edit function to update stock product information"
-      );
+      // TOAST.error(
+      // "Item already in existing record. Please use Edit function to update stock product information"
+      //);
       setIsSubmitDisabled(true);
+      setSnackbarMsg(ITEM_ERROR);
       setIsExistingItem(true);
       return;
     }
@@ -329,110 +369,118 @@ function StockForm(props) {
       aria-describedby="stockmodal"
     >
       <div style={modalStyle} className={classes.paper}>
-        <HeaderModal title={titleHandler()} onClose={clearModalHandler} />
+        <CardHeader color="rose">
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              width: "100%",
+            }}
+          >
+            <div style={{ flex: "0 0 98%" }}>
+              <Typography variant="h6" style={{ fontWeight: "bold" }}>
+                {titleHandler()}
+              </Typography>
+            </div>
+            <div style={{ flex: "0 0 2%" }}>
+              <Clear
+                style={{ cursor: "pointer" }}
+                onClick={() => clearModalHandler()}
+              />
+            </div>
+          </div>
+        </CardHeader>
 
-        <Grid xs={12} sm={12} md={12}>
-          <Card plain>
-            <CardBody>
-              <Grid
-                style={{ paddingTop: 10 }}
-                container
-                spacing={1}
-                direction="row"
-              >
-                <Grid item xs={10}>
-                  <CustomSingleAutoComplete
-                    placeholder={"Search Item"}
-                    label={"Search Item"}
-                    name={"searchItem"}
-                    options={props.productList || []}
-                    disabled={
-                      props.mode &&
-                      (props.mode === "view" || props.mode === "edit")
-                        ? true
-                        : false
-                    }
-                    value={searchItem || DEFAULT_ITEM}
-                    onSelectHandler={autoCompleteInputSearchHandler}
-                    onChangeHandler={inputSearchHandler}
-                  />
-                  {isExistingItem && (
-                    <Typography variant="body2" style={{ color: "red" }}>
-                      Item already in existing record. Please use Edit function
-                      to update stock product information
-                    </Typography>
-                  )}
-                </Grid>
-                <Grid item xs={12} />
-                {general.map((item) => {
-                  return (
-                    <Grid
-                      item
-                      xs={12}
-                      md={item.cols ? item.cols : 3}
-                      sm={12}
-                      style={{ paddingBottom: 2 }}
-                    >
-                      {item.component === "textfield" ? (
-                        <React.Fragment>
-                          <CustomTextField
-                            {...item}
-                            value={generalForm[item.name]}
-                            onChange={inputGeneralHandler}
-                          />
-                        </React.Fragment>
-                      ) : item.component === "datepicker" ? (
-                        <React.Fragment>
-                          <CustomDatePicker
-                            {...item}
-                            value={generalForm[item.name]}
-                            onChange={dateInputHandler}
-                          />
-                        </React.Fragment>
-                      ) : item.component === "singlecomplete" ? (
-                        <React.Fragment>
-                          <CustomSingleAutoComplete
-                            {...item}
-                            value={generalForm[item.name]}
-                            onSelectHandler={autoCompleteGeneralInputHander}
-                            onChangeHandler={onChangeGeneralInputHandler}
-                          />
-                        </React.Fragment>
-                      ) : item.component === "select" ? (
-                        <React.Fragment>
-                          <CustomSelect
-                            {...item}
-                            onChange={inputGeneralHandler}
-                            value={generalForm[item.name]}
-                          />
-                        </React.Fragment>
-                      ) : null}
-                    </Grid>
-                  );
-                })}
-              </Grid>
-              <div style={{ paddingTop: 10 }}>
-                <Button
-                  disabled={
-                    generalForm.description &&
-                    generalForm.description.replace("-", "").length === 0
-                  }
-                  variant="contained"
-                  color={
-                    generalForm.description &&
-                    generalForm.description.replace("-", "").length === 0
-                      ? "default"
-                      : "primary"
-                  }
-                  onClick={() => validateFormHandler()}
-                >
-                  Submit
-                </Button>
-              </div>
-            </CardBody>
-          </Card>
-          <br />
-        </Grid>
+        <Card plain>
+          <CardBody>
+            <GridContainer>
+              <GridItem xs={12} sm={12} md={12}>
+                <GridContainer container spacing={1} direction="row">
+                  <GridItem item xs={12} md={10} sm={12}>
+                    <CustomSingleAutoComplete
+                      placeholder={"Search Item"}
+                      label={"Search Item"}
+                      name={"searchItem"}
+                      options={props.productList || []}
+                      disabled={
+                        props.mode &&
+                        (props.mode === "view" || props.mode === "edit")
+                          ? true
+                          : false
+                      }
+                      value={searchItem || DEFAULT_ITEM}
+                      onSelectHandler={autoCompleteInputSearchHandler}
+                      onChangeHandler={inputSearchHandler}
+                    />
+                    {isExistingItem && (
+                      <SnackbarContent
+                        message={snackbarMsg}
+                        height={12}
+                        color={"rose"}
+                        //item.stockStatus.indexOf("In Stock") !== -1
+                        //? "info"
+                        //: "rose"
+
+                        icon={AddAlertOutlined}
+                      />
+                    )}
+                  </GridItem>
+
+                  {general.map((item) => {
+                    return (
+                      <GridItem
+                        item
+                        xs={12}
+                        md={item.cols ? item.cols : 3}
+                        sm={12}
+                        style={{ paddingBottom: 2 }}
+                      >
+                        {item.component === "textfield" ? (
+                          <React.Fragment>
+                            <CustomTextField
+                              {...item}
+                              value={generalForm[item.name]}
+                              onChange={inputGeneralHandler}
+                            />
+                          </React.Fragment>
+                        ) : item.component === "datepicker" ? (
+                          <React.Fragment>
+                            <CustomDatePicker
+                              {...item}
+                              value={generalForm[item.name]}
+                              onChange={dateInputHandler}
+                            />
+                          </React.Fragment>
+                        ) : item.component === "singlecomplete" ? (
+                          <React.Fragment>
+                            <CustomSingleAutoComplete
+                              {...item}
+                              value={generalForm[item.name]}
+                              onSelectHandler={autoCompleteGeneralInputHander}
+                              onChangeHandler={onChangeGeneralInputHandler}
+                            />
+                          </React.Fragment>
+                        ) : item.component === "select" ? (
+                          <React.Fragment>
+                            <CustomSelect
+                              {...item}
+                              onChange={inputGeneralHandler}
+                              value={generalForm[item.name]}
+                            />
+                          </React.Fragment>
+                        ) : null}
+                      </GridItem>
+                    );
+                  })}
+                </GridContainer>
+              </GridItem>
+            </GridContainer>
+          </CardBody>
+        </Card>
+        <ModalFooter
+          actions={footerActions}
+          isSubmitDisabled={isSubmitDisabled}
+        />
       </div>
     </Modal>
   );

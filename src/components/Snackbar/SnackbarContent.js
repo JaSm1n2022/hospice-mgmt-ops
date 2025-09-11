@@ -44,10 +44,21 @@ export default function SnackbarContent(props) {
   });
   return (
     <Snack
+      style={{
+        height: props.height || "",
+        fontWeight: props.fontWeight || "bold",
+      }}
       message={
-        <div>
-          {icon !== undefined ? <props.icon className={iconClasses} /> : null}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            width: "100%",
+          }}
+        >
           <span className={messageClasses}>{message}</span>
+          {icon !== undefined ? <props.icon className={iconClasses} /> : null}
         </div>
       }
       classes={{

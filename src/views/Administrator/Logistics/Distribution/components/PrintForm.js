@@ -2,7 +2,7 @@ import HeaderModal from "components/Modal/HeaderModal";
 
 import React from "react";
 import ReactModal from "react-modal";
-import PrintComponent from "views/Document/PrintComponent";
+import PrintComponent from "views/Administrator/Document/PrintComponent";
 
 import styles from "./distribution.module.css";
 function PrintForm(props) {

@@ -22,7 +22,7 @@ export default function HeaderModal(props) {
                 {props.title}
               </Typography>
             </div>
-            <div style={{ flex: "0 0 10%" }}>
+            <div align="right" style={{ flex: "0 0 10%" }}>
               <Clear
                 style={{ cursor: "pointer" }}
                 onClick={() => props.onClose()}

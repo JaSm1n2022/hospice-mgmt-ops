@@ -17,8 +17,6 @@ import { makeStyles } from "@material-ui/core/styles";
 import DocumentHandler from "./DocumentHandler";
 import PrintTable from "./PrintTable";
 import moment from "moment";
-import { profileListStateSelector } from "store/selectors/profileSelector";
-import { connect } from "react-redux";
 
 const useStyles = makeStyles({
   tableRow: {
@@ -31,7 +29,7 @@ const useStyles = makeStyles({
     padding: "0",
   },
 });
-let items = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
+
 const TemplateMultiplePrint = (props) => {
   const [multiplePatients, setMultiplePatients] = useState([]);
   const [prepared, setPrepared] = useState("");
@@ -140,30 +138,47 @@ const TemplateMultiplePrint = (props) => {
                       </div>
                       */}
                     </div>
-                    <div align="center" style={{ width: "800px" }}>
+                    <div align="center" style={{ width: "820px" }}>
                       <Typography variant="h6">
                         SUPPLIES DELIVERY RECORDS
                       </Typography>
-
                       <div
                         style={{
+                          display: "inline-flex",
+                          alignItems: "left",
+                          width: "100%",
                           paddingLeft: 10,
                           paddingRight: 50,
-                          paddingBottom: 20,
                         }}
                       >
-                        <Grid
-                          container
-                          direction="row"
-                          justifyContent="space-between"
+                        {/* Left side: Select */}
+                        <div
+                          style={{
+                            flex: "0 0 50%",
+                          }}
+                          align="left"
                         >
-                          <div
-                            style={{
-                              display: "inline-flex",
-                              gap: 4,
-                            }}
-                          >
+                          <div style={{ display: "inline-flex", gap: 4 }}>
                             <Typography>Patient Name :</Typography>
+                            <TextField
+                              variant="standard"
+                              inputProps={{
+                                style: {
+                                  height: 16,
+                                  padding: "0 14px",
+                                  width: "200px",
+                                },
+                              }}
+                              value={patientName}
+                              name="patientName"
+                              onChange={inputHandler}
+                            />
+                          </div>
+                        </div>
+
+                        <div align="right" style={{ flex: "0 0 50%" }}>
+                          <div style={{ display: "inline-flex", gap: 4 }}>
+                            <Typography>Date Prepared :</Typography>
                             <TextField
                               variant="standard"
                               inputProps={{
@@ -172,161 +187,58 @@ const TemplateMultiplePrint = (props) => {
                                   padding: "0 14px",
                                 },
                               }}
-                              value={patientName}
-                              name="patientName"
+                              value={
+                                prepared ||
+                                moment(new Date()).format("YYYY-MM-DD")
+                              }
+                              name="prepared"
                               onChange={inputHandler}
                             />
                           </div>
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "left",
+                          width: "100%",
+                          paddingLeft: 10,
+                          paddingRight: 50,
+                        }}
+                      >
+                        {/* Left side: Select */}
+                        <div style={{ flex: "0 0 50%" }} align="left">
                           <div style={{ display: "inline-flex", gap: 4 }}>
-                            <Typography>Date Prepared :</Typography>
-                            <div style={{ paddingTop: 6 }}>
-                              <Typography>
-                                <TextField
-                                  variant="standard"
-                                  inputProps={{
-                                    style: {
-                                      height: 16,
-                                      padding: "0 14px",
-                                    },
-                                  }}
-                                  value={
-                                    prepared ||
-                                    moment(new Date()).format("YYYY-MM-DD")
-                                  }
-                                  name="prepared"
-                                  onChange={inputHandler}
-                                />
-                              </Typography>
-                            </div>
-                          </div>
-                        </Grid>
-                        <Grid
-                          container
-                          direction="row"
-                          justifyContent="space-between"
-                        >
-                          <div
-                            style={{
-                              display: "inline-flex",
-                              gap: 4,
-                              borderBottom: "1px solid black",
-                            }}
-                          >
                             <Typography>Facility/POS :</Typography>
                             <Typography>
-                              {item.general.facility ||
-                                item.general.patient.location}
+                              {item.general?.facility ||
+                                item.general?.patient?.location}
                             </Typography>
                           </div>
+                        </div>
+
+                        <div align="right" style={{ flex: "0 0 50%" }}>
                           <div style={{ display: "inline-flex", gap: 4 }}>
                             <Typography>Date Pickup :</Typography>
-                            <div style={{ paddingTop: 6 }}>
-                              <Typography>
-                                <TextField
-                                  variant="standard"
-                                  inputProps={{
-                                    style: {
-                                      height: 16,
-                                      padding: "0 14px",
-                                    },
-                                  }}
-                                  value={
-                                    pickup ||
-                                    moment(new Date()).format("YYYY-MM-DD")
-                                  }
-                                  name="pickup"
-                                  onChange={inputHandler}
-                                />
-                              </Typography>
-                            </div>
+                            <TextField
+                              variant="standard"
+                              inputProps={{
+                                style: {
+                                  height: 16,
+                                  padding: "0 14px",
+                                },
+                              }}
+                              value={
+                                pickup ||
+                                moment(new Date()).format("YYYY-MM-DD")
+                              }
+                              name="pickup"
+                              onChange={inputHandler}
+                            />
                           </div>
-                        </Grid>
-                        {/*
-                        <Table sx={{ minWidth: 650 }} aria-label="simple table">
-                          <TableBody>
-                            <TableRow className={classes.tableRow2}>
-                              <TableCell
-                                className={classes.tableCell}
-                                style={{
-                                  height: "auto !important",
-                                  border: "solid 1px black",
-                                  width: "50%",
-                                }}
-                                component="th"
-                                scope="row"
-                              >
-                                Patient Name : {item.general.patientName || ""}
-                              </TableCell>
-                              <TableCell
-                                className={classes.tableCell}
-                                style={{
-                                  height: "auto !important",
-                                  border: "solid 1px black",
-                                }}
-                                component="th"
-                                scope="row"
-                              >
-                                <div style={{ display: "inline-flex" }}>
-                                  <Typography variant="bold1">{`Date Prepared : `}</Typography>
-                                  <TextField
-                                    variant="standard"
-                                    inputProps={{
-                                      style: {
-                                        height: 16,
-                                        padding: "0 14px",
-                                      },
-                                    }}
-                                    value={prepared}
-                                    name="prepared"
-                                    onChange={inputHandler}
-                                  />
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                            <TableRow className={classes.tableRow2}>
-                              <TableCell
-                                className={classes.tableCell}
-                                style={{
-                                  height: "auto !important",
-                                  border: "solid 1px black",
-                                }}
-                                component="th"
-                                scope="row"
-                              >
-                                Facility/POS : {item.general.facility || ""}
-                              </TableCell>
-                              <TableCell
-                                className={classes.tableCell}
-                                style={{
-                                  height: "auto !important",
-                                  border: "solid 1px black",
-                                }}
-                                component="th"
-                                scope="row"
-                              >
-                                <div style={{ display: "inline-flex" }}>
-                                  <Typography variant="bold1">
-                                    Date Pickup :{" "}
-                                  </Typography>
-                                  <TextField
-                                    variant="standard"
-                                    inputProps={{
-                                      style: {
-                                        height: 16,
-                                        padding: "0 14px",
-                                      },
-                                    }}
-                                    value={pickup}
-                                    name="pickup"
-                                    onChange={inputHandler}
-                                  />
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          </TableBody>
-                        </Table>
-                                  */}
+                        </div>
                       </div>
+
                       <div
                         style={{
                           paddingLeft: 10,
@@ -404,186 +316,93 @@ const TemplateMultiplePrint = (props) => {
                     spacing={2}
                     style={{ paddingTop: 60 }}
                   >
-                    <div align="center" style={{ width: "800px" }}>
+                    <div align="center" style={{ width: "820px" }}>
                       <Typography variant="h6">
                         SUPPLIES DELIVERY RECORDS
                       </Typography>
-
                       <div
                         style={{
+                          display: "inline-flex",
+                          alignItems: "left",
+                          width: "100%",
                           paddingLeft: 10,
                           paddingRight: 50,
-                          paddingBottom: 30,
                         }}
                       >
-                        <Grid
-                          container
-                          direction="row"
-                          justifyContent="space-between"
-                        >
-                          <div
-                            style={{
-                              display: "inline-flex",
-                              gap: 4,
-                              borderBottom: "1px solid black",
-                            }}
-                          >
+                        {/* Left side: Select */}
+                        <div style={{ flex: "0 0 50%" }} align="left">
+                          <div style={{ display: "inline-flex", gap: 4 }}>
                             <Typography>Patient Name :</Typography>
                             <Typography>
-                              {item.general.patientName ||
-                                item.general.patient.name}
+                              {item.general?.patientName ||
+                                item.general?.patient.name}
                             </Typography>
                           </div>
+                        </div>
+
+                        <div align="right" style={{ flex: "0 0 50%" }}>
                           <div style={{ display: "inline-flex", gap: 4 }}>
                             <Typography>Date Prepared :</Typography>
-                            <div style={{ paddingTop: 6 }}>
-                              <Typography>
-                                <TextField
-                                  variant="standard"
-                                  inputProps={{
-                                    style: {
-                                      height: 16,
-                                      padding: "0 14px",
-                                    },
-                                  }}
-                                  value={
-                                    prepared ||
-                                    moment(new Date()).format("YYYY-MM-DD")
-                                  }
-                                  name="prepared"
-                                  onChange={inputHandler}
-                                />
-                              </Typography>
-                            </div>
+                            <TextField
+                              variant="standard"
+                              inputProps={{
+                                style: {
+                                  height: 16,
+                                  padding: "0 14px",
+                                },
+                              }}
+                              value={
+                                prepared ||
+                                moment(new Date()).format("YYYY-MM-DD")
+                              }
+                              name="prepared"
+                              onChange={inputHandler}
+                            />
                           </div>
-                        </Grid>
-                        <Grid
-                          container
-                          direction="row"
-                          justifyContent="space-between"
-                        >
-                          <div
-                            style={{
-                              display: "inline-flex",
-                              gap: 4,
-                              borderBottom: "1px solid black",
-                            }}
-                          >
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "left",
+                          width: "100%",
+                          paddingLeft: 10,
+                          paddingRight: 50,
+                        }}
+                      >
+                        {/* Left side: Select */}
+                        <div style={{ flex: "0 0 50%" }} align="left">
+                          <div style={{ display: "inline-flex", gap: 4 }}>
                             <Typography>Facility/POS :</Typography>
                             <Typography>
-                              {item.general.facility ||
-                                item.general.patient.location}
+                              {item.general?.facility ||
+                                item.general?.patient?.location}
                             </Typography>
                           </div>
+                        </div>
+
+                        <div align="right" style={{ flex: "0 0 50%" }}>
                           <div style={{ display: "inline-flex", gap: 4 }}>
                             <Typography>Date Pickup :</Typography>
-                            <div style={{ paddingTop: 6 }}>
-                              <Typography>
-                                <TextField
-                                  variant="standard"
-                                  inputProps={{
-                                    style: {
-                                      height: 16,
-                                      padding: "0 14px",
-                                    },
-                                  }}
-                                  value={
-                                    pickup ||
-                                    moment(new Date()).format("YYYY-MM-DD")
-                                  }
-                                  name="pickup"
-                                  onChange={inputHandler}
-                                />
-                              </Typography>
-                            </div>
+                            <TextField
+                              variant="standard"
+                              inputProps={{
+                                style: {
+                                  height: 16,
+                                  padding: "0 14px",
+                                },
+                              }}
+                              value={
+                                pickup ||
+                                moment(new Date()).format("YYYY-MM-DD")
+                              }
+                              name="pickup"
+                              onChange={inputHandler}
+                            />
                           </div>
-                        </Grid>
-                        {/*
-                        <Table sx={{ minWidth: 650 }} aria-label="simple table">
-                          <TableBody>
-                            <TableRow className={classes.tableRow2}>
-                              <TableCell
-                                className={classes.tableCell}
-                                style={{
-                                  height: "auto !important",
-                                  border: "solid 1px black",
-                                  width: "50%",
-                                }}
-                                component="th"
-                                scope="row"
-                              >
-                                Patient Name : {item.general.patientName || ""}
-                              </TableCell>
-                              <TableCell
-                                className={classes.tableCell}
-                                style={{
-                                  height: "auto !important",
-                                  border: "solid 1px black",
-                                }}
-                                component="th"
-                                scope="row"
-                              >
-                                <div style={{ display: "inline-flex" }}>
-                                  <Typography variant="bold1">{`Date Prepared : `}</Typography>
-                                  <TextField
-                                    variant="standard"
-                                    inputProps={{
-                                      style: {
-                                        height: 16,
-                                        padding: "0 14px",
-                                      },
-                                    }}
-                                    value={prepared}
-                                    name="prepared"
-                                    onChange={inputHandler}
-                                  />
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                            <TableRow className={classes.tableRow2}>
-                              <TableCell
-                                className={classes.tableCell}
-                                style={{
-                                  height: "auto !important",
-                                  border: "solid 1px black",
-                                }}
-                                component="th"
-                                scope="row"
-                              >
-                                Facility/POS : {item.general.facility || ""}
-                              </TableCell>
-                              <TableCell
-                                className={classes.tableCell}
-                                style={{
-                                  height: "auto !important",
-                                  border: "solid 1px black",
-                                }}
-                                component="th"
-                                scope="row"
-                              >
-                                <div style={{ display: "inline-flex" }}>
-                                  <Typography variant="bold1">
-                                    Date Pickup :{" "}
-                                  </Typography>
-                                  <TextField
-                                    variant="standard"
-                                    inputProps={{
-                                      style: {
-                                        height: 16,
-                                        padding: "0 14px",
-                                      },
-                                    }}
-                                    value={pickup}
-                                    name="pickup"
-                                    onChange={inputHandler}
-                                  />
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          </TableBody>
-                        </Table>
-                                  */}
+                        </div>
                       </div>
+
                       <div
                         style={{
                           paddingLeft: 10,
@@ -664,8 +483,5 @@ const TemplateMultiplePrint = (props) => {
     </React.Fragment>
   );
 };
-const mapStateToProps = (store) => ({
-  profileState: profileListStateSelector(store),
-});
 
-export default connect(mapStateToProps, null)(TemplateMultiplePrint);
+export default TemplateMultiplePrint;
