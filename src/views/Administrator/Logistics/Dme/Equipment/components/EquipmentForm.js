@@ -25,9 +25,10 @@ import { DAY_OF_WEEK } from "utils/constants";
 import { DME_EQUIPMENT } from "utils/constants";
 import CustomTimePicker from "components/Time/CustomTimePicker";
 import Delete from "@material-ui/icons/Delete";
-import { Add } from "@material-ui/icons";
+import { Add, Clear } from "@material-ui/icons";
 import moment from "moment";
 import { DME_SERVICE_TYPE } from "utils/constants";
+import CardHeader from "components/Card/CardHeader";
 
 let categoryList = [];
 let uoms = [];
@@ -585,214 +586,241 @@ function EquipmentForm(props) {
     <Modal
       open={isOpen}
       onClose={true}
-      aria-labelledby="equipment"
-      aria-describedby="equipmentmodal"
+      // onClose={clearModalHandler}
+      aria-labelledby="dme"
+      aria-describedby="dmemodal"
     >
       <div style={modalStyle} className={classes.paper}>
-        <HeaderModal title={titleHandler()} onClose={clearModalHandler} />
+        <CardHeader color="rose">
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              width: "100%",
+            }}
+          >
+            <div style={{ flex: "0 0 98%" }}>
+              <Typography variant="h6" style={{ fontWeight: "bold" }}>
+                {titleHandler()}
+              </Typography>
+            </div>
+            <div style={{ flex: "0 0 2%" }}>
+              <Clear
+                style={{ cursor: "pointer" }}
+                onClick={() => clearModalHandler()}
+              />
+            </div>
+          </div>
+        </CardHeader>
 
-        <Grid xs={12} sm={12} md={12}>
-          <Card plain>
-            <CardBody>
-              <Grid
-                style={{ paddingTop: 10 }}
-                container
-                spacing={1}
-                direction="row"
-              >
-                <Grid item xs={12} />
-                {components.map((item) => {
-                  return (
-                    <Grid
-                      item
-                      xs={12}
-                      md={item.cols ? item.cols : 3}
-                      sm={12}
-                      style={{ paddingBottom: 2 }}
-                    >
-                      {item.component === "textfield" ? (
-                        <React.Fragment>
-                          <CustomTextField
-                            {...item}
-                            value={generalForm[item.name]}
-                            disabled={disabledComponentHandler(item)}
-                            onChange={inputGeneralHandler}
-                          />
-                        </React.Fragment>
-                      ) : item.component === "datepicker" ? (
-                        <React.Fragment>
-                          <CustomDatePicker
-                            {...item}
-                            value={generalForm[item.name]}
-                            onChange={dateInputHandler}
-                            disabled={disabledComponentHandler(item)}
-                          />
-                        </React.Fragment>
-                      ) : item.component === "timepicker" ? (
-                        <React.Fragment>
-                          <CustomTimePicker
-                            {...item}
-                            value={generalForm[item.name]}
-                            onChange={timeInputHandler}
-                            disabled={disabledComponentHandler(item)}
-                          />
-                        </React.Fragment>
-                      ) : item.component === "singlecomplete" ? (
-                        <React.Fragment>
-                          <CustomSingleAutoComplete
-                            {...item}
-                            options={item.options || []}
-                            value={generalForm[item.name]}
-                            onSelectHandler={autoCompleteGeneralInputHander}
-                            onChangeHandler={onChangeGeneralInputHandler}
-                            disabled={disabledComponentHandler(item)}
-                          />
-                        </React.Fragment>
-                      ) : item.component === "multiplecomplete" ? (
-                        <CustomMultipleAutoComplete
-                          {...item}
-                          onChangeHandler={onChangeInputHandler}
-                          selected={generalForm[item.name]}
-                          selectAllHandler={selectAllHandler}
-                          selectHandler={addItemHandler}
-                          searchList={item.options || []}
-                          disabled={disabledComponentHandler(item)}
-                        />
-                      ) : item.component === "select" ? (
-                        <React.Fragment>
-                          <CustomSelect
-                            {...item}
-                            onChange={inputGeneralHandler}
-                            value={generalForm[item.name]}
-                            disabled={disabledComponentHandler(item)}
-                          />
-                        </React.Fragment>
-                      ) : (
-                        <TextareaAutosize
-                          {...item}
-                          aria-label="empty textarea"
-                          minRows={2}
-                          value={generalForm[item.name]}
-                          style={{ width: "100%" }}
-                          className="form-control"
-                          onChange={inputGeneralHandler}
-                        />
-                      )}
-                    </Grid>
-                  );
-                })}
-                {generalForm.patient && generalForm.patient.name ? (
-                  <Grid container direction="row" spacing={1}>
-                    <Grid items xs={12} md={12} sm={12}>
-                      <Grid container direction="row" spacing={1}>
-                        <Grid item xs={12}>
-                          <Typography variant="h6" style={{ paddingTop: 8 }}>
-                            Orders
-                          </Typography>
+        <Card plain>
+          <CardBody>
+            <Grid xs={12} sm={12} md={12}>
+              <Card plain>
+                <CardBody>
+                  <Grid
+                    style={{ paddingTop: 10 }}
+                    container
+                    spacing={1}
+                    direction="row"
+                  >
+                    <Grid item xs={12} />
+                    {components.map((item) => {
+                      return (
+                        <Grid
+                          item
+                          xs={12}
+                          md={item.cols ? item.cols : 3}
+                          sm={12}
+                          style={{ paddingBottom: 2 }}
+                        >
+                          {item.component === "textfield" ? (
+                            <React.Fragment>
+                              <CustomTextField
+                                {...item}
+                                value={generalForm[item.name]}
+                                disabled={disabledComponentHandler(item)}
+                                onChange={inputGeneralHandler}
+                              />
+                            </React.Fragment>
+                          ) : item.component === "datepicker" ? (
+                            <React.Fragment>
+                              <CustomDatePicker
+                                {...item}
+                                value={generalForm[item.name]}
+                                onChange={dateInputHandler}
+                                disabled={disabledComponentHandler(item)}
+                              />
+                            </React.Fragment>
+                          ) : item.component === "timepicker" ? (
+                            <React.Fragment>
+                              <CustomTimePicker
+                                {...item}
+                                value={generalForm[item.name]}
+                                onChange={timeInputHandler}
+                                disabled={disabledComponentHandler(item)}
+                              />
+                            </React.Fragment>
+                          ) : item.component === "singlecomplete" ? (
+                            <React.Fragment>
+                              <CustomSingleAutoComplete
+                                {...item}
+                                options={item.options || []}
+                                value={generalForm[item.name]}
+                                onSelectHandler={autoCompleteGeneralInputHander}
+                                onChangeHandler={onChangeGeneralInputHandler}
+                                disabled={disabledComponentHandler(item)}
+                              />
+                            </React.Fragment>
+                          ) : item.component === "multiplecomplete" ? (
+                            <CustomMultipleAutoComplete
+                              {...item}
+                              onChangeHandler={onChangeInputHandler}
+                              selected={generalForm[item.name]}
+                              selectAllHandler={selectAllHandler}
+                              selectHandler={addItemHandler}
+                              searchList={item.options || []}
+                              disabled={disabledComponentHandler(item)}
+                            />
+                          ) : item.component === "select" ? (
+                            <React.Fragment>
+                              <CustomSelect
+                                {...item}
+                                onChange={inputGeneralHandler}
+                                value={generalForm[item.name]}
+                                disabled={disabledComponentHandler(item)}
+                              />
+                            </React.Fragment>
+                          ) : (
+                            <TextareaAutosize
+                              {...item}
+                              aria-label="empty textarea"
+                              minRows={3}
+                              rows={2}
+                              value={generalForm[item.name]}
+                              style={{ width: "100%" }}
+                              className="form-control"
+                              onChange={inputGeneralHandler}
+                            />
+                          )}
                         </Grid>
-                        <Grid item xs={12} md={12} sm={12}>
-                          {generalForm.checklist &&
-                            generalForm.checklist.map((mItem, indx) => (
-                              <Grid
-                                container
-                                direction="row"
-                                spacing={2}
-                                id={indx}
-                                justifyContent="flex-start"
+                      );
+                    })}
+                    {generalForm.patient && generalForm.patient.name ? (
+                      <Grid container direction="row" spacing={1}>
+                        <Grid items xs={12} md={12} sm={12}>
+                          <Grid container direction="row" spacing={1}>
+                            <Grid item xs={12}>
+                              <Typography
+                                variant="h6"
+                                style={{ paddingTop: 8 }}
                               >
-                                <Grid>
-                                  <div
-                                    style={{
-                                      paddingTop: 12,
-                                      paddingLeft: 10,
-                                      display: "inline-flex",
-                                    }}
+                                Orders
+                              </Typography>
+                            </Grid>
+                            <Grid item xs={12} md={12} sm={12}>
+                              {generalForm.checklist &&
+                                generalForm.checklist.map((mItem, indx) => (
+                                  <Grid
+                                    container
+                                    direction="row"
+                                    spacing={2}
+                                    id={indx}
+                                    justifyContent="flex-start"
                                   >
-                                    <Typography variant="h5">
-                                      {indx + 1}.
-                                    </Typography>
-                                    <div style={{ paddingTop: 4 }}>
-                                      <Delete
-                                        style={{ color: "red" }}
-                                        onClick={() =>
-                                          deleteFromChecklistHandler(mItem)
-                                        }
+                                    <Grid>
+                                      <div
+                                        style={{
+                                          paddingTop: 12,
+                                          paddingLeft: 10,
+                                          display: "inline-flex",
+                                        }}
+                                      >
+                                        <Typography variant="h5">
+                                          {indx + 1}.
+                                        </Typography>
+                                        <div style={{ paddingTop: 4 }}>
+                                          <Delete
+                                            style={{ color: "red" }}
+                                            onClick={() =>
+                                              deleteFromChecklistHandler(mItem)
+                                            }
+                                          />
+                                        </div>
+                                      </div>
+                                    </Grid>
+                                    <Grid item xs={12} md={3} sm={10}>
+                                      <CustomTextField
+                                        label="Description"
+                                        placeholder="Description"
+                                        name="description"
+                                        value={mItem.description}
+                                        source={mItem}
+                                        onChange={inputSourceGeneralHandler}
                                       />
-                                    </div>
-                                  </div>
+                                    </Grid>
+                                    <Grid item xs={12} md={3} sm={10}>
+                                      <CustomTextField
+                                        label="Tier"
+                                        placeholder="Tier"
+                                        name="description"
+                                        value={mItem.tier}
+                                        source={mItem}
+                                        disabled
+                                        onChange={inputSourceGeneralHandler}
+                                      />
+                                    </Grid>
+                                    <Grid item xs={12} md={3} sm={10}>
+                                      <CustomTextField
+                                        label="Amount"
+                                        placeholder="Amount"
+                                        name="amount"
+                                        value={mItem.tier}
+                                        source={mItem}
+                                        disabled
+                                        onChange={inputSourceGeneralHandler}
+                                      />
+                                    </Grid>
+                                  </Grid>
+                                ))}
+                              <Grid
+                                item
+                                xs={12}
+                                md={12}
+                                sm={12}
+                                style={{ paddingTop: 8 }}
+                              >
+                                <Grid container direction="row" spacing={2}>
+                                  <Grid item xs={12} md={6} sm={12}>
+                                    <Button
+                                      onClick={() => addToChecklistHandler()}
+                                      variant="contained"
+                                      style={{
+                                        border: "solid 1px #2196f3",
+                                        color: "white",
+                                        background: "#2196f3",
+                                        fontFamily: "Roboto",
+                                        fontSize: "12px",
+                                        fontWeight: 500,
+                                        fontStretch: "normal",
+                                        fontStyle: "normal",
+                                        lineHeight: 1.71,
+                                        letterSpacing: "0.4px",
+                                        textAlign: "left",
+                                        cursor: "pointer",
+                                      }}
+                                      component="span"
+                                      startIcon={<Add />}
+                                    >
+                                      ADD ITEM
+                                    </Button>
+                                  </Grid>
                                 </Grid>
-                                <Grid item xs={12} md={3} sm={10}>
-                                  <CustomTextField
-                                    label="Description"
-                                    placeholder="Description"
-                                    name="description"
-                                    value={mItem.description}
-                                    source={mItem}
-                                    onChange={inputSourceGeneralHandler}
-                                  />
-                                </Grid>
-                                <Grid item xs={12} md={3} sm={10}>
-                                  <CustomTextField
-                                    label="Tier"
-                                    placeholder="Tier"
-                                    name="description"
-                                    value={mItem.tier}
-                                    source={mItem}
-                                    disabled
-                                    onChange={inputSourceGeneralHandler}
-                                  />
-                                </Grid>
-                                <Grid item xs={12} md={3} sm={10}>
-                                  <CustomTextField
-                                    label="Amount"
-                                    placeholder="Amount"
-                                    name="amount"
-                                    value={mItem.tier}
-                                    source={mItem}
-                                    disabled
-                                    onChange={inputSourceGeneralHandler}
-                                  />
-                                </Grid>
-                              </Grid>
-                            ))}
-                          <Grid
-                            item
-                            xs={12}
-                            md={12}
-                            sm={12}
-                            style={{ paddingTop: 8 }}
-                          >
-                            <Grid container direction="row" spacing={2}>
-                              <Grid item xs={12} md={6} sm={12}>
-                                <Button
-                                  onClick={() => addToChecklistHandler()}
-                                  variant="contained"
-                                  style={{
-                                    border: "solid 1px #2196f3",
-                                    color: "white",
-                                    background: "#2196f3",
-                                    fontFamily: "Roboto",
-                                    fontSize: "12px",
-                                    fontWeight: 500,
-                                    fontStretch: "normal",
-                                    fontStyle: "normal",
-                                    lineHeight: 1.71,
-                                    letterSpacing: "0.4px",
-                                    textAlign: "left",
-                                    cursor: "pointer",
-                                  }}
-                                  component="span"
-                                  startIcon={<Add />}
-                                >
-                                  ADD ITEM
-                                </Button>
                               </Grid>
                             </Grid>
                           </Grid>
                         </Grid>
-                      </Grid>
-                    </Grid>
-                    {/*
+                        {/*
                     <Grid item xs={12} md={6} sm={12}>
                       <Grid container direction="row" spacing={1}>
                         <Grid item xs={12}>
@@ -846,31 +874,32 @@ function EquipmentForm(props) {
                       </Grid>
                     </Grid>
                     */}
+                      </Grid>
+                    ) : null}
                   </Grid>
-                ) : null}
-              </Grid>
-              <div align="right">
-                <Button
-                  disabled={
-                    !generalForm.patient ||
-                    (generalForm.patient && !generalForm.patient.name)
-                  }
-                  variant="contained"
-                  color={
-                    !generalForm.patient ||
-                    (generalForm.patient && !generalForm.patient.name)
-                      ? "default"
-                      : "primary"
-                  }
-                  onClick={() => validateFormHandler()}
-                >
-                  Submit
-                </Button>
-              </div>
-            </CardBody>
-          </Card>
-          <br />
-        </Grid>
+                  <div align="right">
+                    <Button
+                      disabled={
+                        !generalForm.patient ||
+                        (generalForm.patient && !generalForm.patient.name)
+                      }
+                      variant="contained"
+                      color={
+                        !generalForm.patient ||
+                        (generalForm.patient && !generalForm.patient.name)
+                          ? "default"
+                          : "primary"
+                      }
+                      onClick={() => validateFormHandler()}
+                    >
+                      Submit
+                    </Button>
+                  </div>
+                </CardBody>
+              </Card>
+            </Grid>
+          </CardBody>
+        </Card>
       </div>
     </Modal>
   );

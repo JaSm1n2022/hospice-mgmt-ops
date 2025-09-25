@@ -43,6 +43,8 @@ import WidgetsIcon from "@material-ui/icons/Widgets";
 
 import PaymentIcon from "@material-ui/icons/PaymentOutlined";
 import StockRoomMain from "views/Administrator/Logistics/StockRoom/StockRoomMain";
+import DmeMain from "views/Administrator/Logistics/Dme/Equipment/EquipmentMain";
+import TransportationMain from "views/Administrator/Logistics/Transportation/TransportationMain";
 
 var dashRoutes = [
   {
@@ -94,6 +96,24 @@ var dashRoutes = [
         mini: "IL",
         rtlMini: "ع",
         component: StockRoomMain,
+        layout: "/admin",
+      },
+      {
+        path: "/dme",
+        name: "DME",
+        rtlName: "عالتسعير",
+        mini: "IL",
+        rtlMini: "ع",
+        component: DmeMain,
+        layout: "/admin",
+      },
+      {
+        path: "/transportation",
+        name: "Transportation",
+        rtlName: "عالتسعير",
+        mini: "IL",
+        rtlMini: "ع",
+        component: TransportationMain,
         layout: "/admin",
       },
     ],

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 // @material-ui/core components
 import { makeStyles } from "@material-ui/core/styles";
 // core components
@@ -8,7 +8,7 @@ import Table from "components/Table/Table.js";
 import Card from "components/Card/Card.js";
 import CardHeader from "components/Card/CardHeader.js";
 import CardBody from "components/Card/CardBody.js";
-
+import Button from "components/CustomButtons/Button.js";
 import EquipmentHandler from "./components/EquipmentHandler";
 import { connect } from "react-redux";
 import { productListStateSelector } from "store/selectors/productSelector";
@@ -28,9 +28,9 @@ import { equipmentUpdateStateSelector } from "store/selectors/equipmentSelector"
 import PropTypes from "prop-types";
 import ActionsFunction from "components/Actions/ActionsFunction";
 import { ACTION_STATUSES } from "utils/constants";
-import { Button, CircularProgress, Grid, Tooltip } from "@material-ui/core";
+import { CircularProgress, Grid, Tooltip } from "@material-ui/core";
 import AddIcon from "@material-ui/icons/Add";
-
+import { SupaContext } from "App";
 import HospiceTable from "components/Table/HospiceTable";
 import { CheckCircle, HelpOutline, ImportExport } from "@material-ui/icons";
 import Helper from "utils/helper";
@@ -51,7 +51,8 @@ import { resetFetchLocationState } from "store/actions/locationAction";
 import { locationListStateSelector } from "store/selectors/locationSelector";
 import moment from "moment";
 import { profileListStateSelector } from "store/selectors/profileSelector";
-import DmeOrderDocument from "views/Document/DmeOrderDocument";
+import DmeOrderDocument from "views/Administrator/Document/DmeOrderDocument";
+import { handleExport } from "utils/XlsxHelper";
 const styles = {
   cardCategoryWhite: {
     "&,& a,& a:hover,& a:focus": {
@@ -95,10 +96,10 @@ let isPatientListDone = true;
 let isEquipmentListDone = true;
 let isVendorDone = true;
 let isLocationDone = true;
-let userProfile = {};
 
 function EquipmentFunction(props) {
   const classes = useStyles();
+  const context = useContext(SupaContext);
   const { main } = props;
   const [dataSource, setDataSource] = useState([]);
   const [isPrint, setIsPrint] = useState(false);
@@ -196,13 +197,9 @@ function EquipmentFunction(props) {
   useEffect(() => {
     console.log("list equipments", props.main);
     isEquipmentListDone = false;
-    if (
-      props.profileState &&
-      props.profileState.data &&
-      props.profileState.data.length
-    ) {
-      userProfile = props.profileState.data[0];
-      props.listEquipments({ companyId: userProfile.companyId });
+
+    if (context.userProfile?.companyId) {
+      props.listEquipments({ companyId: context.userProfile?.companyId });
     }
   }, []);
   useEffect(() => {
@@ -212,17 +209,11 @@ function EquipmentFunction(props) {
       isVendorDone = false;
       isLocationDone = false;
       console.log("[List Patients]");
-      if (
-        !userProfile.name &&
-        props.profileState &&
-        props.profileState.data &&
-        props.profileState.data.length
-      ) {
-        userProfile = props.profileState.data[0];
+      if (context.userProfile?.companyId) {
+        props.listPatients({ companyId: context.userProfile?.companyId });
+        props.listLocations({ companyId: context.userProfile?.companyId });
+        props.listVendors({ companyId: context.userProfile?.companyId });
       }
-      props.listPatients({ companyId: userProfile.companyId });
-      props.listLocations({ companyId: userProfile.companyId });
-      props.listVendors({ companyId: userProfile.companyId });
     } else {
       isPatientListDone = true;
     }
@@ -312,10 +303,10 @@ function EquipmentFunction(props) {
       contactNo: payload.contactNo,
       contactName: payload.contactName,
       pickupNotes: payload.pickupNotes,
-      companyId: userProfile.companyId,
+      companyId: context.userProfile?.companyId,
       updatedUser: {
-        name: userProfile.name,
-        userId: userProfile.id,
+        name: context.userProfile?.name,
+        userId: context.userProfile?.id,
         date: new Date(),
       },
     };
@@ -333,8 +324,8 @@ function EquipmentFunction(props) {
     if (mode === "create") {
       params.created_at = new Date();
       params.createdUser = {
-        name: userProfile.name,
-        userId: userProfile.id,
+        name: context.userProfile?.name,
+        userId: context.userProfile?.id,
         date: new Date(),
       };
       props.createEquipment(params);
@@ -354,7 +345,7 @@ function EquipmentFunction(props) {
     setIsCreateEquipmentCollection(false);
     closeFormModalHandler();
     TOAST.ok("Equipment successfully created.");
-    props.listEquipments({ companyId: userProfile.companyId });
+    props.listEquipments({ companyId: context.userProfile?.companyId });
   }
   if (
     isUpdateEquipmentCollection &&
@@ -363,7 +354,7 @@ function EquipmentFunction(props) {
   ) {
     TOAST.ok("Equipment successfully updated.");
     setIsUpdateEquipmentCollection(false);
-    props.listEquipments({ companyId: userProfile.companyId });
+    props.listEquipments({ companyId: context.userProfile?.companyId });
   }
   console.log(
     "[isDeleteEquipment]",
@@ -378,7 +369,7 @@ function EquipmentFunction(props) {
     TOAST.ok("Equipment successfully deleted.");
     setIsDeleteEquipmentCollection(false);
 
-    props.listEquipments({ companyId: userProfile.companyId });
+    props.listEquipments({ companyId: context.userProfile?.companyId });
   }
 
   if (
@@ -441,31 +432,11 @@ function EquipmentFunction(props) {
   };
   const exportToExcelHandler = () => {
     const excelData = dataSource.filter((r) => r.isChecked);
-    const headers = columns;
-    const excel = Helper.formatExcelReport(headers, excelData);
-    console.log("headers", excel);
-    const fileType =
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
-    const fileExtension = ".xlsx";
-    let fileName = `equipment_list_batch_${new Date().getTime()}`;
+    const excel = Helper.formatExcelReport(columns, excelData);
+    let fileName = `dme_list_batch_${new Date().getTime()}`;
 
-    if (excelData && excelData.length) {
-      import(/* webpackChunkName: 'json2xls' */ "json2xls")
-        .then((json2xls) => {
-          // let fileName = fname + '_' + new Date().getTime();
-          const xls =
-            typeof json2xls === "function"
-              ? json2xls(excel)
-              : json2xls.default(excel);
-          const buffer = Buffer.from(xls, "binary");
-          // let buffer = Buffer.from(excelBuffer);
-          const data = new Blob([buffer], { type: fileType });
-          FileSaver.saveAs(data, fileName + fileExtension);
-        })
-        .catch((err) => {
-          // Handle failure
-          console.log(err);
-        });
+    if (excel && excel.length) {
+      handleExport(excel, fileName);
     }
   };
   const onPressEnterKeyHandler = (value) => {
@@ -535,61 +506,39 @@ function EquipmentFunction(props) {
                         }}
                       >
                         <Button
+                          color="info"
+                          size={"sm"}
+                          className={classes.marginRight}
                           onClick={() => createFormHandler()}
-                          variant="contained"
-                          style={{
-                            border: "solid 1px #2196f3",
-                            color: "white",
-                            background: "#2196f3",
-                            fontFamily: "Roboto",
-                            fontSize: "12px",
-                            fontWeight: 500,
-                            fontStretch: "normal",
-                            fontStyle: "normal",
-                            lineHeight: 1.71,
-                            letterSpacing: "0.4px",
-                            textAlign: "left",
-                            cursor: "pointer",
-                          }}
-                          component="span"
-                          startIcon={<AddIcon />}
                         >
-                          ADD Equipment
+                          <AddIcon className={classes.icons} /> Add DME
                         </Button>
+
                         {isAddGroupButtons && (
                           <Button
+                            size={"sm"}
+                            color="success"
+                            className={classes.marginRight}
                             onClick={() => exportToExcelHandler()}
-                            variant="outlined"
-                            style={{
-                              fontFamily: "Roboto",
-                              fontSize: "12px",
-                              fontWeight: 500,
-                              fontStretch: "normal",
-                              fontStyle: "normal",
-                              lineHeight: 1.71,
-                              letterSpacing: "0.4px",
-                              textAlign: "left",
-                              cursor: "pointer",
-                            }}
-                            component="span"
-                            startIcon={<ImportExport />}
                           >
-                            {" "}
-                            Export Excel{" "}
+                            <ImportExport className={classes.icons} /> Export
+                            Excel
                           </Button>
                         )}
+                        <div style={{ paddingTop: 4, width: "300px" }}>
+                          <SearchCustomTextField
+                            background={"white"}
+                            onChange={inputHandler}
+                            placeholder={"Search Item"}
+                            label={"Search Item"}
+                            name={"keywordValue"}
+                            height={36}
+                            onPressEnterKeyHandler={onPressEnterKeyHandler}
+                            isAllowEnterKey={true}
+                            value={keywordValue}
+                          />
+                        </div>
                       </div>
-
-                      <SearchCustomTextField
-                        background={"white"}
-                        onChange={inputHandler}
-                        placeholder={"Search Item"}
-                        label={"Search Item"}
-                        name={"keywordValue"}
-                        onPressEnterKeyHandler={onPressEnterKeyHandler}
-                        isAllowEnterKey={true}
-                        value={keywordValue}
-                      />
                     </Grid>
                     <HospiceTable
                       columns={columns}
