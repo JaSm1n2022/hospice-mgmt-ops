@@ -30,7 +30,7 @@ import { CircularProgress, Grid, Typography } from "@material-ui/core";
 import AddIcon from "@material-ui/icons/Add";
 
 import HospiceTable from "components/Table/HospiceTable";
-import { ImportExport } from "@material-ui/icons";
+import { AddAlert, ImportExport } from "@material-ui/icons";
 import Helper from "utils/helper";
 import * as FileSaver from "file-saver";
 import SearchCustomTextField from "components/TextField/SearchCustomTextField";
@@ -47,6 +47,7 @@ import { patientListStateSelector } from "store/selectors/patientSelector";
 import { exportToXlsx } from "utils/XlsxHelper";
 import { SupaContext } from "App";
 import { handleExport } from "utils/XlsxHelper";
+import Snackbar from "components/Snackbar/Snackbar";
 const styles = {
   cardCategoryWhite: {
     "&,& a,& a:hover,& a:focus": {
@@ -91,6 +92,9 @@ function ContractFunction(props) {
   const context = useContext(SupaContext);
   const classes = useStyles();
   const { main } = props;
+  const [message, setMessage] = useState("");
+  const [tc, setTC] = useState(false);
+  const [color, setColor] = useState("success");
   const [dataSource, setDataSource] = useState([]);
   const [columns, setColumns] = useState(ContractHandler.columns(main));
   const [isContractsCollection, setIsContractsCollection] = useState(true);
@@ -228,6 +232,23 @@ function ContractFunction(props) {
     isContractListDone = true;
     setIsContractsCollection(false);
   }
+  const showNotification = (place, color, msg) => {
+    setMessage(msg);
+    switch (place) {
+      case "tc":
+        if (!tc) {
+          setTC(true);
+          setColor(color);
+          setTimeout(function () {
+            setTC(false);
+          }, 6000);
+        }
+        break;
+      default:
+        break;
+    }
+  };
+
   const deleteRecordItemHandler = (id) => {
     console.log("[delete contract id]", id);
     props.deleteContract(id);
@@ -277,7 +298,8 @@ function ContractFunction(props) {
     props.createContractState.status === ACTION_STATUSES.SUCCEED
   ) {
     setIsCreateContractCollection(false);
-    TOAST.ok("Contract successfully created.");
+
+    showNotification("tc", "success", "Contract successfully created.");
     props.listContracts({ companyId: context.userProfile?.companyId });
   }
   if (
@@ -285,7 +307,8 @@ function ContractFunction(props) {
     props.updateContractState &&
     props.updateContractState.status === ACTION_STATUSES.SUCCEED
   ) {
-    TOAST.ok("Contract successfully updated.");
+    showNotification("tc", "success", "Contract successfully updated.");
+
     setIsUpdateContractCollection(false);
     props.listContracts({ companyId: context.userProfile?.companyId });
   }
@@ -299,12 +322,12 @@ function ContractFunction(props) {
     props.deleteContractState &&
     props.deleteContractState.status === ACTION_STATUSES.SUCCEED
   ) {
-    TOAST.ok("Contract successfully deleted.");
+    showNotification("tc", "success", "Contract successfully deleted.");
+
     setIsDeleteContractCollection(false);
 
     props.listContracts({ companyId: context.userProfile?.companyId });
   }
-
   const filterRecordHandler = (keyword) => {
     console.log("[Keyword]", keyword, originalSource);
     if (!keyword) {
@@ -380,6 +403,19 @@ function ContractFunction(props) {
         </div>
       ) : (
         <GridContainer>
+          {tc && (
+            <div style={{ paddingTop: 10 }}>
+              <Snackbar
+                place="tc"
+                color={color}
+                icon={AddAlert}
+                message={message}
+                open={tc}
+                closeNotification={() => setTC(false)}
+                close
+              />
+            </div>
+          )}
           <GridItem xs={12} sm={12} md={12}>
             <Card>
               <CardHeader color="warning">

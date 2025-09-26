@@ -1497,6 +1497,14 @@ export const EMPLOYEE_SERVICE_TYPE = [
     category: "serviceType",
     code: "SOC",
   },
+  {
+    id: 21,
+    name: "Reassessment",
+    label: "Reassessment",
+    value: "Reassessment",
+    category: "serviceType",
+    code: "REA",
+  },
 ];
 
 export const DME_SERVICE_TYPE = [

@@ -195,7 +195,11 @@ function IDGForm(props) {
     }
   }, [props.patientList, props.employeeList, props.item]);
   const POSITION_GROUPS = {
-    "registered nurse": ["registered nurse", "director of nurse"],
+    "registered nurse": [
+      "registered nurse",
+      "director of nurse",
+      "case manager",
+    ],
     "director of nurse": ["registered nurse", "director of nurse"],
     chaplain: ["chaplain", "bereavement"],
     bereavement: ["chaplain", "bereavement"],

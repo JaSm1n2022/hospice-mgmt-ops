@@ -51,7 +51,7 @@ import { resetFetchLocationState } from "store/actions/locationAction";
 import { locationListStateSelector } from "store/selectors/locationSelector";
 import moment from "moment";
 import { profileListStateSelector } from "store/selectors/profileSelector";
-import TransportationOrderDocument from "views/Document/TransportationOrderDocument";
+import TransportationOrderDocument from "views/Administrator/Document/TransportationOrderDocument";
 const styles = {
   cardCategoryWhite: {
     "&,& a,& a:hover,& a:focus": {
@@ -462,22 +462,6 @@ function TransportationFunction(props) {
     let fileName = `transportation_list_batch_${new Date().getTime()}`;
 
     if (excelData && excelData.length) {
-      import(/* webpackChunkName: 'json2xls' */ "json2xls")
-        .then((json2xls) => {
-          // let fileName = fname + '_' + new Date().getTime();
-          const xls =
-            typeof json2xls === "function"
-              ? json2xls(excel)
-              : json2xls.default(excel);
-          const buffer = Buffer.from(xls, "binary");
-          // let buffer = Buffer.from(excelBuffer);
-          const data = new Blob([buffer], { type: fileType });
-          FileSaver.saveAs(data, fileName + fileExtension);
-        })
-        .catch((err) => {
-          // Handle failure
-          console.log(err);
-        });
     }
   };
   const onPressEnterKeyHandler = (value) => {
