@@ -699,29 +699,7 @@ function Routesheet(props) {
                       />
                     )}
                   </div>
-                  {clients?.length === 0 &&
-                    isProcessDone &&
-                    isClientRequiredHandler() && (
-                      <div
-                        style={{
-                          width: "100%",
-                        }}
-                      >
-                        <div
-                          align="left"
-                          style={{ paddingLeft: 16, paddingTop: 5 }}
-                        >
-                          <SnackbarContent
-                            message={
-                              "No client has been assigned to your service. Please contact the administrator to request an assignment."
-                            }
-                            color="rose"
-                            close
-                            icon={AddAlertOutlined}
-                          />
-                        </div>
-                      </div>
-                    )}
+
                   {/* Right side: Clear Icon */}
                   {client && (
                     <div style={{ flex: "0 0 5%", textAlign: "right" }}>
@@ -856,6 +834,21 @@ function Routesheet(props) {
                   )}
                 </div>
               </GridItem>
+
+              {clients?.length === 0 &&
+                isProcessDone &&
+                isClientRequiredHandler() && (
+                  <GridItem>
+                    <SnackbarContent
+                      message={
+                        "No client has been assigned to your service. Please contact the administrator to request an assignment."
+                      }
+                      color="rose"
+                      close
+                      icon={AddAlertOutlined}
+                    />
+                  </GridItem>
+                )}
             </GridContainer>
             {clientService && (
               <GridItem xs={12} sm={12} md={12}>
