@@ -2,16 +2,19 @@ import React, { useEffect, useState } from "react";
 import CustomTextField from "components/TextField/CustomTextField";
 
 import CustomSingleAutoComplete from "components/AutoComplete/CustomSingleAutoComplete";
-import { Button, Card, CardContent, Grid, Modal } from "@material-ui/core";
+import { Grid, Modal, Typography } from "@material-ui/core";
 import { DEFAULT_ITEM } from "utils/constants";
 import styles from "./vendor.module.css";
 import { makeStyles } from "@material-ui/core";
 import CustomDatePicker from "components/Date/CustomDatePicker";
 import CustomSelect from "components/Select/CustomSelect";
-import ReactModal from "react-modal";
-import HeaderModal from "components/Modal/HeaderModal";
-
+import Card from "components/Card/Card";
+import CardBody from "components/Card/CardBody";
+import CardHeader from "components/Card/CardHeader";
 import { useTheme } from "@material-ui/core";
+import ModalFooter from "components/Modal/ModalFooter/ModalFooter";
+
+import { Clear } from "@material-ui/icons";
 
 function getModalStyle() {
   const top = 50;
@@ -37,8 +40,8 @@ const useStyles = makeStyles((theme) => ({
   },
   paper: {
     position: "absolute",
-    width: "98%",
-    height: "95%",
+    width: "50%",
+    height: "50%",
     overflow: "auto",
     backgroundColor: theme.palette.background.paper,
     border: "1px solid #000",
@@ -272,107 +275,115 @@ function VendorForm(props) {
       (generalForm.categoryType && !generalForm.categoryType.name)
     );
   };
+  const footerActions = [
+    {
+      title: props.distribution ? "Apply" : "Save",
+      type: "primary",
+      event: "submit",
+      callback: () => {
+        validateFormHandler();
+      },
+    },
+
+    {
+      title: "Cancel",
+      type: "default",
+      event: "cancel",
+      callback: () => {
+        console.log("[Cancel me]");
+        clearModalHandler();
+      },
+    },
+  ];
 
   return (
-    <ReactModal
-      style={{
-        overlay: {
-          zIndex: 999,
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: "rgba(0, 0, 0, 0.65)",
-        },
-        content: {
-          position: "absolute",
-          top: "0",
-          bottom: "0",
-          display: "flex",
-          flexDirection: "row",
-          justifyContent: "center",
-          alignItems: "center",
-          right: "0",
-          left: "0",
-          overflow: "none",
-          WebkitOverflowScrolling: "touch",
-          border: "none",
-          padding: "0px",
-          background: "none",
-        },
-      }}
-      isOpen={isOpen}
-      onRequestClose={clearModalHandler}
-      ariaHideApp={false}
+    <Modal
+      open={isOpen}
+      onClose={true}
+      aria-labelledby="form"
+      aria-describedby="formModal"
     >
-      <div className={styles.form}>
-        <HeaderModal title={titleHandler()} onClose={clearModalHandler} />{" "}
-        <div className={styles.content}>
-          <Grid container spacing={1} direction="row">
-            {components.map((item) => {
-              return (
-                <Grid
-                  item
-                  key={item.id}
-                  xs={item.cols ? item.cols : 3}
-                  style={{ paddingBottom: 2 }}
-                >
-                  {item.component === "textfield" ? (
-                    <React.Fragment>
-                      <CustomTextField
-                        {...item}
-                        value={generalForm[item.name]}
-                        onChange={inputGeneralHandler}
-                        isError={item.isError}
-                        errorMsg={item.errorMsg}
-                        disabled={disabledComponentHandler(item)}
-                      />
-                      {item.isError && <br />}
-                    </React.Fragment>
-                  ) : item.component === "datepicker" ? (
-                    <React.Fragment>
-                      <CustomDatePicker
-                        {...item}
-                        value={generalForm[item.name]}
-                        onChange={dateInputHandler}
-                      />
-                    </React.Fragment>
-                  ) : item.component === "singlecomplete" ? (
-                    <React.Fragment>
-                      <CustomSingleAutoComplete
-                        {...item}
-                        value={generalForm[item.name]}
-                        onSelectHandler={autoCompleteGeneralInputHander}
-                        onChangeHandler={onChangeGeneralInputHandler}
-                      />
-                    </React.Fragment>
-                  ) : item.component === "select" ? (
-                    <React.Fragment>
-                      <CustomSelect
-                        {...item}
-                        onChange={inputGeneralHandler}
-                        value={generalForm[item.name]}
-                      />
-                    </React.Fragment>
-                  ) : null}
-                </Grid>
-              );
-            })}
-          </Grid>
-          <div style={{ paddingTop: 10 }}>
-            <Button
-              disabled={isSubmitButtonDisabled()}
-              variant="contained"
-              color={isSubmitButtonDisabled() ? "default" : "primary"}
-              onClick={() => validateFormHandler()}
-            >
-              Submit
-            </Button>
+      <div style={modalStyle} className={classes.paper}>
+        <CardHeader color="rose">
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              width: "100%",
+            }}
+          >
+            <div style={{ flex: "0 0 98%" }}>
+              <Typography variant="h6">Create Vendor</Typography>
+            </div>
+            <div style={{ flex: "0 0 2%" }}>
+              <Clear
+                style={{ cursor: "pointer" }}
+                onClick={clearModalHandler}
+              />
+            </div>
           </div>
-        </div>
+        </CardHeader>
+        <br />
+        <Card plain>
+          <CardBody>
+            <Grid container spacing={1} direction="row">
+              {components.map((item) => {
+                return (
+                  <Grid
+                    item
+                    key={item.id}
+                    xs={item.cols ? item.cols : 3}
+                    style={{ paddingBottom: 2 }}
+                  >
+                    {item.component === "textfield" ? (
+                      <React.Fragment>
+                        <CustomTextField
+                          {...item}
+                          value={generalForm[item.name]}
+                          onChange={inputGeneralHandler}
+                          isError={item.isError}
+                          errorMsg={item.errorMsg}
+                          disabled={disabledComponentHandler(item)}
+                        />
+                        {item.isError && <br />}
+                      </React.Fragment>
+                    ) : item.component === "datepicker" ? (
+                      <React.Fragment>
+                        <CustomDatePicker
+                          {...item}
+                          value={generalForm[item.name]}
+                          onChange={dateInputHandler}
+                        />
+                      </React.Fragment>
+                    ) : item.component === "singlecomplete" ? (
+                      <React.Fragment>
+                        <CustomSingleAutoComplete
+                          {...item}
+                          value={generalForm[item.name]}
+                          onSelectHandler={autoCompleteGeneralInputHander}
+                          onChangeHandler={onChangeGeneralInputHandler}
+                        />
+                      </React.Fragment>
+                    ) : item.component === "select" ? (
+                      <React.Fragment>
+                        <CustomSelect
+                          {...item}
+                          onChange={inputGeneralHandler}
+                          value={generalForm[item.name]}
+                        />
+                      </React.Fragment>
+                    ) : null}
+                  </Grid>
+                );
+              })}
+            </Grid>
+          </CardBody>
+        </Card>
+        {props.mode && props.mode === "view" ? null : (
+          <ModalFooter actions={footerActions} />
+        )}
       </div>
-    </ReactModal>
+    </Modal>
   );
 }
 

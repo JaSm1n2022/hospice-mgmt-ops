@@ -40,12 +40,12 @@ import Image from "@material-ui/icons/Image";
 import Place from "@material-ui/icons/Place";
 import Timeline from "@material-ui/icons/Timeline";
 import WidgetsIcon from "@material-ui/icons/Widgets";
-
+import SettingsIcon from "@material-ui/icons/Settings";
 import PaymentIcon from "@material-ui/icons/PaymentOutlined";
-import StockRoomMain from "views/Administrator/Logistics/StockRoom/StockRoomMain";
-import DmeMain from "views/Administrator/Logistics/Dme/Equipment/EquipmentMain";
-import TransportationMain from "views/Administrator/Logistics/Transportation/TransportationMain";
-
+import StockRoom from "views/Administrator/Logistics/StockRoom/StockRoomMain";
+import Dme from "views/Administrator/Logistics/Dme/Equipment/EquipmentMain";
+import Transportation from "views/Administrator/Logistics/Transportation/TransportationMain";
+import Vendor from "views/Administrator/Settings/Vendor/VendorFunction";
 var dashRoutes = [
   {
     path: "/dashboard",
@@ -54,6 +54,24 @@ var dashRoutes = [
     icon: DashboardIcon,
     component: Dashboard,
     layout: "/admin",
+  },
+  {
+    collapse: true,
+    name: "Settings",
+    rtlName: "إدارة الرواتب",
+    icon: SettingsIcon,
+    state: "pageCollapse",
+    views: [
+      {
+        path: "/vendor",
+        name: "Vendor",
+        rtlName: "عالتسعير",
+        mini: "S",
+        rtlMini: "ع",
+        component: Vendor,
+        layout: "/admin",
+      },
+    ],
   },
   {
     collapse: true,
@@ -95,7 +113,7 @@ var dashRoutes = [
         rtlName: "عالتسعير",
         mini: "IL",
         rtlMini: "ع",
-        component: StockRoomMain,
+        component: StockRoom,
         layout: "/admin",
       },
       {
@@ -104,7 +122,7 @@ var dashRoutes = [
         rtlName: "عالتسعير",
         mini: "IL",
         rtlMini: "ع",
-        component: DmeMain,
+        component: Dme,
         layout: "/admin",
       },
       {
@@ -113,7 +131,7 @@ var dashRoutes = [
         rtlName: "عالتسعير",
         mini: "IL",
         rtlMini: "ع",
-        component: TransportationMain,
+        component: Transportation,
         layout: "/admin",
       },
     ],

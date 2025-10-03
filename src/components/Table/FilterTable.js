@@ -163,7 +163,7 @@ const FilterTable = (props) => {
           </GridItem>
         )}
 
-        <GridItem md={3} sm={6} xs={12}>
+        <GridItem md={props.search || 3} sm={6} xs={12}>
           <SearchCustomTextField
             background={"white"}
             onChange={inputHandler}

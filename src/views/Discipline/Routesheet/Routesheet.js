@@ -50,7 +50,7 @@ import {
 } from "@material-ui/icons";
 import CustomInput from "components/CustomInput/CustomInput.js";
 import ReactSignatureCanvas from "react-signature-canvas";
-import { TextareaAutosize, Tooltip } from "@material-ui/core";
+import { TextareaAutosize, Tooltip, Typography } from "@material-ui/core";
 import { routesheetCreateStateSelector } from "store/selectors/routesheetSelector.js";
 import { assignmentListStateSelector } from "store/selectors/assignmentSelector.js";
 import { contractListStateSelector } from "store/selectors/contractSelector.js";
@@ -67,7 +67,7 @@ import { connect } from "react-redux";
 import { ACTION_STATUSES } from "utils/constants.js";
 import SortUtil from "utils/sortUtil.js";
 import { CLIENT_SERVICES } from "utils/constants.js";
-import Typography from "views/Components/Typography.js";
+
 import SnackbarContent from "components/Snackbar/SnackbarContent.js";
 import Snackbar from "components/Snackbar/Snackbar.js";
 
@@ -711,10 +711,14 @@ function Routesheet(props) {
                           align="left"
                           style={{ paddingLeft: 16, paddingTop: 5 }}
                         >
-                          <Typography variant="h6">
-                            No client has been assigned to your service. Please
-                            contact the administrator to request an assignment.
-                          </Typography>
+                          <SnackbarContent
+                            message={
+                              "No client has been assigned to your service. Please contact the administrator to request an assignment."
+                            }
+                            color="rose"
+                            close
+                            icon={AddAlertOutlined}
+                          />
                         </div>
                       </div>
                     )}
