@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 // @material-ui/core components
 import { makeStyles } from "@material-ui/core/styles";
 // core components
@@ -8,24 +8,24 @@ import Table from "components/Table/Table.js";
 import Card from "components/Card/Card.js";
 import CardHeader from "components/Card/CardHeader.js";
 import CardBody from "components/Card/CardBody.js";
-
+import Button from "components/CustomButtons/Button.js";
 import PatientHandler from "./handler/PatientHandler";
 import { connect } from "react-redux";
 import { v4 as uuidv4 } from "uuid";
 import PropTypes from "prop-types";
 import ActionsFunction from "components/Actions/ActionsFunction";
 import { ACTION_STATUSES } from "utils/constants";
-import { Button, CircularProgress, Grid } from "@material-ui/core";
+import { CircularProgress, Grid } from "@material-ui/core";
 import AddIcon from "@material-ui/icons/Add";
 
 import HospiceTable from "components/Table/HospiceTable";
-import { ImportExport } from "@material-ui/icons";
+import { AddAlert, ImportExport } from "@material-ui/icons";
 import Helper from "utils/helper";
 import * as FileSaver from "file-saver";
 
-import PatientForm from "./components/PatientForm";
+import PatientForm from "./components/Form";
 import { attemptToUpdatePatient } from "store/actions/patientAction";
-import TOAST from "modules/toastManager";
+
 import { patientListStateSelector } from "store/selectors/patientSelector";
 import { patientCreateStateSelector } from "store/selectors/patientSelector";
 import { patientUpdateStateSelector } from "store/selectors/patientSelector";
@@ -42,6 +42,9 @@ import { attemptToFetchLocation } from "store/actions/locationAction";
 import { resetFetchLocationState } from "store/actions/locationAction";
 import { locationListStateSelector } from "store/selectors/locationSelector";
 import { profileListStateSelector } from "store/selectors/profileSelector";
+import { SupaContext } from "App";
+import Snackbar from "components/Snackbar/Snackbar";
+import { handleExport } from "utils/XlsxHelper";
 const styles = {
   cardCategoryWhite: {
     "&,& a,& a:hover,& a:focus": {
@@ -77,13 +80,15 @@ let productList = [];
 let grandTotal = 0.0;
 let originalSource = undefined;
 let locationList = [];
-let userProfile = {};
 
 let isListPatientDone = false;
 let isListLocationDone = false;
 function PatientFunction(props) {
   const classes = useStyles();
-
+  const [tc, setTC] = useState(false);
+  const [message, setMessage] = useState("");
+  const [color, setColor] = useState("success");
+  const context = useContext(SupaContext);
   const [dataSource, setDataSource] = useState([]);
   const [columns, setColumns] = useState(PatientHandler.columns(true));
   const [isPatientsCollection, setIsPatientsCollection] = useState(true);
@@ -102,6 +107,23 @@ function PatientFunction(props) {
   const [mode, setMode] = useState("create");
   const [isAddGroupButtons, setIsAddGroupButtons] = useState(false);
   const [keywordValue, setKeywordValue] = useState("");
+
+  const showNotification = (place, color, msg) => {
+    setMessage(msg);
+    switch (place) {
+      case "tc":
+        if (!tc) {
+          setTC(true);
+          setColor(color);
+          setTimeout(function () {
+            setTC(false);
+          }, 6000);
+        }
+        break;
+      default:
+        break;
+    }
+  };
 
   const createFormHandler = (data, mode) => {
     setItem(data);
@@ -158,14 +180,9 @@ function PatientFunction(props) {
   ]);
   useEffect(() => {
     console.log("list Patients", props.profileState);
-    if (
-      props.profileState &&
-      props.profileState.data &&
-      props.profileState.data.length
-    ) {
-      userProfile = props.profileState.data[0];
-      props.listPatients({ companyId: userProfile.companyId });
-      props.listLocations({ companyId: userProfile.companyId });
+    if (context.userProfile?.companyId) {
+      props.listPatients({ companyId: context.userProfile?.companyId });
+      props.listLocations({ companyId: context.userProfile?.companyId });
     }
   }, []);
 
@@ -231,7 +248,6 @@ function PatientFunction(props) {
     props.deletePatient(id);
   };
   const createPatientHandler = (payload, mode) => {
-    console.log("[Create Patient Handler]", payload, mode, userProfile);
     const params = {
       fn: "*",
       patientCd: payload.patientCd,
@@ -256,10 +272,10 @@ function PatientFunction(props) {
       prior_hospice_discharge: payload.priorHospiceDischarge?.name,
       eoc_discharge: payload.eocDischarge?.name,
       admitted_benefits_period: parseInt(payload.numberOfBenefits || 0, 10),
-      companyId: userProfile.companyId,
+      companyId: context.userProfile?.companyId,
       updatedUser: {
-        name: userProfile.name,
-        userId: userProfile.id,
+        name: context.userProfile?.name,
+        userId: context.userProfile?.id,
         date: new Date(),
       },
     };
@@ -273,8 +289,8 @@ function PatientFunction(props) {
     if (mode === "create") {
       params.created = new Date();
       params.createdUser = {
-        name: userProfile.name,
-        userId: userProfile.id,
+        name: context.userProfile?.name,
+        userId: context.userProfile?.id,
         date: new Date(),
       };
       props.createPatient(params);
@@ -291,17 +307,17 @@ function PatientFunction(props) {
     props.createPatientState.status === ACTION_STATUSES.SUCCEED
   ) {
     setIsCreatePatientCollection(false);
-    TOAST.ok("Patient successfully created.");
-    props.listPatients({ companyId: userProfile.companyId });
+    showNotification("tc", "success", "Patient successfully created.");
+    props.listPatients({ companyId: context.userProfile?.companyId });
   }
   if (
     isUpdatePatientCollection &&
     props.updatePatientState &&
     props.updatePatientState.status === ACTION_STATUSES.SUCCEED
   ) {
-    TOAST.ok("Patient successfully updated.");
+    showNotification("tc", "success", "Patient successfully updated.");
     setIsUpdatePatientCollection(false);
-    props.listPatients({ companyId: userProfile.companyId });
+    props.listPatients({ companyId: context.userProfile?.companyId });
   }
   console.log(
     "[isDeletePatient]",
@@ -313,10 +329,10 @@ function PatientFunction(props) {
     props.deletePatientState &&
     props.deletePatientState.status === ACTION_STATUSES.SUCCEED
   ) {
-    TOAST.ok("Patient successfully deleted.");
+    showNotification("tc", "success", "Patient successfully deleted.");
     setIsDeletePatientCollection(false);
 
-    props.listPatients({ companyId: userProfile.companyId });
+    props.listPatients({ companyId: context.userProfile?.companyId });
   }
 
   if (props.locations && props.locations.status === ACTION_STATUSES.SUCCEED) {
@@ -326,23 +342,20 @@ function PatientFunction(props) {
   }
 
   const filterRecordHandler = (keyword) => {
-    console.log("[Keyword]", keyword);
+    console.log("[Original]", originalSource);
     if (!keyword) {
       setDataSource([...originalSource]);
     } else {
       const temp = [...originalSource];
-      console.log("[Tempt]", temp);
+
       let found = temp.filter(
         (data) =>
-          data.name.toLowerCase().indexOf(keyword.toLowerCase()) !== -1 ||
-          (data.address &&
-            data.address.toLowerCase().indexOf(keyword.toLowerCase()) !== -1)
+          data.patientCd?.toLowerCase().indexOf(keyword.toLowerCase()) !== -1
       );
 
       setDataSource(found);
     }
   };
-
   const onCheckboxSelectionHandler = (data, isAll, itemIsChecked) => {
     console.log("[data ALl]", data, isAll, itemIsChecked);
     let dtSource = [...dataSource];
@@ -368,36 +381,29 @@ function PatientFunction(props) {
   };
   const exportToExcelHandler = () => {
     const excelData = dataSource.filter((r) => r.isChecked);
-    const headers = columns;
-    const excel = Helper.formatExcelReport(headers, excelData);
-    console.log("headers", excel);
-    const fileType =
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
-    const fileExtension = ".xlsx";
-    let fileName = `Patient_list_batch_${new Date().getTime()}`;
+    const excel = Helper.formatExcelReport(columns, excelData);
+    let fileName = `patient_list_${new Date().getTime()}`;
 
-    if (excelData && excelData.length) {
-      import(/* webpackChunkName: 'json2xls' */ "json2xls")
-        .then((json2xls) => {
-          // let fileName = fname + '_' + new Date().getTime();
-          const xls =
-            typeof json2xls === "function"
-              ? json2xls(excel)
-              : json2xls.default(excel);
-          const buffer = Buffer.from(xls, "binary");
-          // let buffer = Buffer.from(excelBuffer);
-          const data = new Blob([buffer], { type: fileType });
-          FileSaver.saveAs(data, fileName + fileExtension);
-        })
-        .catch((err) => {
-          // Handle failure
-          console.log(err);
-        });
+    if (excel && excel.length) {
+      handleExport(excel, fileName);
     }
   };
 
   return (
     <>
+      {tc && (
+        <div style={{ paddingTop: 10 }}>
+          <Snackbar
+            place="tc"
+            color={color}
+            icon={AddAlert}
+            message={message}
+            open={tc}
+            closeNotification={() => setTC(false)}
+            close
+          />
+        </div>
+      )}
       {!isListLocationDone || !isListPatientDone ? (
         <div align="center">
           <CircularProgress></CircularProgress>Loading...
@@ -406,75 +412,54 @@ function PatientFunction(props) {
         <GridContainer>
           <GridItem xs={12} sm={12} md={12}>
             <Card>
-              <CardHeader color="success">
+              <CardHeader color="rose">
                 <Grid container justifyContent="space-between">
-                  <h4 className={classes.cardTitleWhite}>Patient Setup</h4>
+                  <h4 className={classes.cardTitleWhite}>Patient</h4>
                 </Grid>
               </CardHeader>
               <CardBody>
-                <Grid
-                  container
-                  justifyContent="space-between"
-                  style={{ paddingBottom: 4 }}
-                >
-                  <div
-                    style={{ display: "inline-flex", gap: 10, paddingTop: 10 }}
-                  >
-                    <Button
-                      onClick={() => createFormHandler()}
-                      variant="contained"
-                      style={{
-                        border: "solid 1px #2196f3",
-                        color: "white",
-                        background: "#2196f3",
-                        fontFamily: "Roboto",
-                        fontSize: "12px",
-                        fontWeight: 500,
-
-                        fontStretch: "normal",
-                        fontStyle: "normal",
-                        lineHeight: 1.71,
-                        letterSpacing: "0.4px",
-                        textAlign: "left",
-                        cursor: "pointer",
-                      }}
-                      component="span"
-                      startIcon={<AddIcon />}
-                    >
-                      ADD Patient
-                    </Button>
-                    {isAddGroupButtons && (
+                <GridContainer alignItems="center" style={{ paddingLeft: 12 }}>
+                  <Grid item xs={12} md={6}>
+                    <div style={{ display: "inline-flex", gap: 10 }}>
                       <Button
-                        onClick={() => exportToExcelHandler()}
-                        variant="outlined"
-                        style={{
-                          fontFamily: "Roboto",
-                          fontSize: "12px",
-                          fontWeight: 500,
-
-                          fontStretch: "normal",
-                          fontStyle: "normal",
-                          lineHeight: 1.71,
-                          letterSpacing: "0.4px",
-                          textAlign: "left",
-                          cursor: "pointer",
-                        }}
-                        component="span"
-                        startIcon={<ImportExport />}
+                        color="info"
+                        className={classes.marginRight}
+                        onClick={() => createFormHandler()}
                       >
-                        {" "}
-                        Export Excel{" "}
+                        <AddIcon className={classes.icons} /> Add Patient
                       </Button>
-                    )}
-                  </div>
-                  <div>
+
+                      {isAddGroupButtons && (
+                        <Button
+                          color="success"
+                          className={classes.marginRight}
+                          onClick={() => exportToExcelHandler()}
+                        >
+                          <ImportExport className={classes.icons} /> Export
+                          Excel
+                        </Button>
+                      )}
+                    </div>
+                  </Grid>
+
+                  <Grid
+                    item
+                    xs={12}
+                    md={6}
+                    style={{
+                      display: "flex",
+                      justifyContent: "flex-end",
+                      paddingRight: 20,
+                    }}
+                  >
                     <FilterTable
                       filterRecordHandler={filterRecordHandler}
                       isNoDate={true}
                       main={false}
+                      search={12}
                     />
-                  </div>
-                </Grid>
+                  </Grid>
+                </GridContainer>
                 <HospiceTable
                   columns={columns}
                   main={true}

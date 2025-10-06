@@ -583,7 +583,7 @@ function DistributionForm(props) {
         <br />
         <Card plain>
           <CardBody>
-            <GridContainer>
+            <GridContainer style={{ overflow: "auto", height: "500px" }}>
               <Typography variant="h6">General Information</Typography>
               <Grid container spacing={1} direction="row">
                 {general.map((item) => {

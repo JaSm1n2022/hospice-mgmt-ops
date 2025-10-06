@@ -1,13 +1,13 @@
-import { Button, CircularProgress, Grid, Typography } from "@material-ui/core";
-import React, { useEffect } from "react";
+import { CircularProgress, Grid, Typography } from "@material-ui/core";
+import React, { useEffect, useContext } from "react";
 import ProductHandler from "./handler/ProductHandler";
 
 import AddIcon from "@material-ui/icons/Add";
 import { makeStyles } from "@material-ui/core/styles";
 import { useState } from "react";
-import * as FileSaver from "file-saver";
 
-import ProductForm from "./components/ProductForm";
+import Button from "components/CustomButtons/Button.js";
+import Form from "./components/Form";
 import { connect } from "react-redux";
 import ActionsFunction from "components/Actions/ActionsFunction";
 import FilterTable from "components/Table/FilterTable";
@@ -43,7 +43,8 @@ import { vendorListStateSelector } from "store/selectors/vendorSelector";
 import { subCategoryListStateSelector } from "store/selectors/subCategorySelector";
 import { attemptToFetchSubCategory } from "store/actions/subCategoryAction";
 import { resetFetchSubCategoryState } from "store/actions/subCategoryAction";
-
+import { SupaContext } from "App";
+import Snackbar from "components/Snackbar/Snackbar.js";
 let originalSource = [];
 let forCreateStock = undefined;
 let grandTotal = 0;
@@ -81,12 +82,12 @@ const styles = {
 };
 
 const useStyles = makeStyles(styles);
-let userProfile = {};
 
 const ProductFunction = (props) => {
   const classes = useStyles();
   const [dataSource, setDataSource] = useState([]);
   const [columns, setColumns] = useState([]);
+  const context = useContext(SupaContext);
   const [isProductsCollection, setIsProductsCollection] = useState(true);
   const [isCreateProductCollection, setIsCreateProductCollection] = useState(
     true
@@ -97,6 +98,10 @@ const ProductFunction = (props) => {
   const [isDeleteProductCollection, setIsDeleteProductCollection] = useState(
     true
   );
+  const [tc, setTC] = useState(false);
+  const [message, setMessage] = useState("");
+  const [color, setColor] = useState("success");
+
   const [isSubCategoryCollection, setIsSubCategoryCollection] = useState(true);
   const [isVendorCollection, setIsVendorCollection] = useState(true);
   const [isFormModal, setIsFormModal] = useState(false);
@@ -110,15 +115,9 @@ const ProductFunction = (props) => {
     setItem(data);
     setMode(mode || "create");
     //setIsFormModal(true);
-    if (
-      props.profileState &&
-      props.profileState.data &&
-      props.profileState.data.length
-    ) {
-      userProfile = props.profileState.data[0];
-      console.log("[List Categories]");
-      props.listSubCategories({ companyId: userProfile.companyId });
-      props.listVendors({ companyId: userProfile.companyId });
+    if (context.userProfile?.companyId) {
+      props.listSubCategories({ companyId: context.userProfile?.companyId });
+      props.listVendors({ companyId: context.userProfile?.companyId });
     }
   };
   const closeFormModalHandler = () => {
@@ -215,14 +214,9 @@ const ProductFunction = (props) => {
     isVendorCollection,
   ]);
   useEffect(() => {
-    if (
-      props.profileState &&
-      props.profileState.data &&
-      props.profileState.data.length
-    ) {
-      userProfile = props.profileState.data[0];
+    if (context.userProfile?.companyId) {
       isProductListDone = false;
-      props.listProducts({ companyId: userProfile.companyId });
+      props.listProducts({ companyId: context.userProfile?.companyId });
     }
   }, []);
 
@@ -268,6 +262,22 @@ const ProductFunction = (props) => {
     setDataSource(source);
     setIsProductsCollection(false);
   }
+  const showNotification = (place, color, msg) => {
+    setMessage(msg);
+    switch (place) {
+      case "tc":
+        if (!tc) {
+          setTC(true);
+          setColor(color);
+          setTimeout(function () {
+            setTC(false);
+          }, 6000);
+        }
+        break;
+      default:
+        break;
+    }
+  };
   const deleteRecordItemHandler = (id) => {
     props.deleteProduct(id);
   };
@@ -296,18 +306,18 @@ const ProductFunction = (props) => {
       qty_distribution: payload.unitQtyUom,
       short_description: payload.shortDescription,
       status: payload.status && payload.status.name === "Active" ? true : false,
-      companyId: userProfile.companyId,
+      companyId: context.userProfile?.companyId,
       updatedUser: {
-        name: userProfile.name,
-        userId: userProfile.id,
+        name: context.userProfile?.name,
+        userId: context.userProfile?.id,
         date: new Date(),
       },
     };
     if (mode === "create") {
       params.created_at = new Date();
       params.createdUser = {
-        name: userProfile.name,
-        userId: userProfile.id,
+        name: context.userProfile?.name,
+        userId: context.userProfile?.id,
         date: new Date(),
       };
 
@@ -349,6 +359,7 @@ const ProductFunction = (props) => {
   ) {
     console.log("[Product Id]", props.createProductState.data, forCreateStock);
     setIsCreateProductCollection(false);
+    showNotification("tc", "success", "Product successfully created.");
     props.listProducts({ companyId: userProfile.companyId });
   }
   if (
@@ -357,6 +368,7 @@ const ProductFunction = (props) => {
     props.updateProductState.status === ACTION_STATUSES.SUCCEED
   ) {
     setIsUpdateProductCollection(false);
+    showNotification("tc", "success", "Product successfully updated.");
     props.listProducts({ companyId: userProfile.companyId });
   }
   if (
@@ -366,6 +378,7 @@ const ProductFunction = (props) => {
   ) {
     setIsDeleteProductCollection(false);
     isListDone = false;
+    showNotification("tc", "success", "Vendor successfully deleted.");
     props.listProducts({ companyId: userProfile.companyId });
   }
   const filterRecordHandler = (keyword) => {
@@ -433,22 +446,6 @@ const ProductFunction = (props) => {
     let fileName = `product_list_batch_${new Date().getTime()}`;
 
     if (excelData && excelData.length) {
-      import(/* webpackChunkName: 'json2xls' */ "json2xls")
-        .then((json2xls) => {
-          // let fileName = fname + '_' + new Date().getTime();
-          const xls =
-            typeof json2xls === "function"
-              ? json2xls(excel)
-              : json2xls.default(excel);
-          const buffer = Buffer.from(xls, "binary");
-          // let buffer = Buffer.from(excelBuffer);
-          const data = new Blob([buffer], { type: fileType });
-          FileSaver.saveAs(data, fileName + fileExtension);
-        })
-        .catch((err) => {
-          // Handle failure
-          console.log(err);
-        });
     }
   };
   if (
@@ -467,6 +464,19 @@ const ProductFunction = (props) => {
   isListDone = isProductListDone;
   return (
     <React.Fragment>
+      {tc && (
+        <div style={{ paddingTop: 10 }}>
+          <Snackbar
+            place="tc"
+            color={color}
+            icon={AddAlert}
+            message={message}
+            open={tc}
+            closeNotification={() => setTC(false)}
+            close
+          />
+        </div>
+      )}
       {!isListDone ? (
         <div>
           <CircularProgress size={20}>Loading...</CircularProgress>
@@ -475,75 +485,55 @@ const ProductFunction = (props) => {
         <GridContainer>
           <GridItem xs={12} sm={12} md={12}>
             <Card>
-              <CardHeader color="success">
+              <CardHeader color="rose">
                 <Grid container justifyContent="space-between">
-                  <h4 className={classes.cardTitleWhite}>Product/Item Setup</h4>
+                  <h4 className={classes.cardTitleWhite}>Product</h4>
                 </Grid>
               </CardHeader>
               <CardBody>
-                <Grid
-                  container
-                  justifyContent="space-between"
-                  style={{ paddingBottom: 4 }}
-                >
-                  <div
-                    style={{ display: "inline-flex", gap: 10, paddingTop: 10 }}
-                  >
-                    <Button
-                      onClick={() => createFormHandler()}
-                      variant="contained"
-                      style={{
-                        border: "solid 1px #2196f3",
-                        color: "white",
-                        background: "#2196f3",
-                        fontFamily: "Roboto",
-                        fontSize: "12px",
-                        fontWeight: 500,
-
-                        fontStretch: "normal",
-                        fontStyle: "normal",
-                        lineHeight: 1.71,
-                        letterSpacing: "0.4px",
-                        textAlign: "left",
-                        cursor: "pointer",
-                      }}
-                      component="span"
-                      startIcon={<AddIcon />}
-                    >
-                      ADD PRODUCT/ITEM
-                    </Button>
-                    {isAddGroupButtons && (
+                <GridContainer alignItems="center" style={{ paddingLeft: 12 }}>
+                  <Grid item xs={12} md={6}>
+                    <div style={{ display: "inline-flex", gap: 10 }}>
                       <Button
-                        onClick={() => exportToExcelHandler()}
-                        variant="outlined"
-                        style={{
-                          fontFamily: "Roboto",
-                          fontSize: "12px",
-                          fontWeight: 500,
-
-                          fontStretch: "normal",
-                          fontStyle: "normal",
-                          lineHeight: 1.71,
-                          letterSpacing: "0.4px",
-                          textAlign: "left",
-                          cursor: "pointer",
-                        }}
-                        component="span"
-                        startIcon={<ImportExport />}
+                        color="info"
+                        className={classes.marginRight}
+                        onClick={() => createFormHandler()}
                       >
-                        {" "}
-                        Export Excel{" "}
+                        <AddIcon className={classes.icons} /> Add Product
                       </Button>
-                    )}
-                  </div>
-                  <div>
+
+                      {isAddGroupButtons && (
+                        <Button
+                          color="success"
+                          className={classes.marginRight}
+                          onClick={() => exportToExcelHandler()}
+                        >
+                          <ImportExport className={classes.icons} /> Export
+                          Excel
+                        </Button>
+                      )}
+                    </div>
+                  </Grid>
+
+                  <Grid
+                    item
+                    xs={12}
+                    md={6}
+                    style={{
+                      display: "flex",
+                      justifyContent: "flex-end",
+                      paddingRight: 20,
+                    }}
+                  >
                     <FilterTable
                       filterRecordHandler={filterRecordHandler}
                       isNoDate={true}
                       main={false}
+                      search={12}
                     />
-                  </div>
-                </Grid>
+                  </Grid>
+                </GridContainer>
+
                 <Grid item xs={12}>
                   <HospiceTable
                     main={true}
@@ -560,7 +550,7 @@ const ProductFunction = (props) => {
       )}
 
       {isFormModal && (
-        <ProductForm
+        <Form
           createProductHandler={createProductHandler}
           mode={mode}
           isOpen={isFormModal}
@@ -569,7 +559,7 @@ const ProductFunction = (props) => {
           subCategoryList={subCategoryList}
           vendorList={vendorList}
           manufacturerList={manufacturerList}
-          onClose={closeFormModalHandler}
+          closeFormModalHandler={closeFormModalHandler}
         />
       )}
     </React.Fragment>

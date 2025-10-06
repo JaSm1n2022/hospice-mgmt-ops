@@ -46,6 +46,12 @@ import StockRoom from "views/Administrator/Logistics/StockRoom/StockRoomMain";
 import Dme from "views/Administrator/Logistics/Dme/Equipment/EquipmentMain";
 import Transportation from "views/Administrator/Logistics/Transportation/TransportationMain";
 import Vendor from "views/Administrator/Settings/Vendor/VendorFunction";
+import Product from "views/Administrator/Settings/Product/ProductFunction";
+import Patient from "views/Administrator/Settings/Patient/PatientFunction";
+import Category from "views/Administrator/Settings/Category/CategoryFunction";
+import SubCategory from "views/Administrator/Settings/SubCategory/SubCategoryFunction";
+import Employee from "views/Administrator/Settings/Employee/EmployeeFunction";
+import Location from "views/Administrator/Settings/Location/LocationFunction";
 var dashRoutes = [
   {
     path: "/dashboard",
@@ -69,6 +75,60 @@ var dashRoutes = [
         mini: "S",
         rtlMini: "ع",
         component: Vendor,
+        layout: "/admin",
+      },
+      {
+        path: "/product",
+        name: "Product",
+        rtlName: "عالتسعير",
+        mini: "S",
+        rtlMini: "ع",
+        component: Product,
+        layout: "/admin",
+      },
+      {
+        path: "/patient",
+        name: "Patient",
+        rtlName: "عالتسعير",
+        mini: "S",
+        rtlMini: "ع",
+        component: Patient,
+        layout: "/admin",
+      },
+      {
+        path: "/employee",
+        name: "Employee",
+        rtlName: "عالتسعير",
+        mini: "S",
+        rtlMini: "ع",
+        component: Employee,
+        layout: "/admin",
+      },
+      {
+        path: "/category",
+        name: "Category",
+        rtlName: "عالتسعير",
+        mini: "S",
+        rtlMini: "ع",
+        component: Category,
+        layout: "/admin",
+      },
+      {
+        path: "/subcategory",
+        name: "SubCategory",
+        rtlName: "عالتسعير",
+        mini: "S",
+        rtlMini: "ع",
+        component: SubCategory,
+        layout: "/admin",
+      },
+      {
+        path: "/location",
+        name: "Location",
+        rtlName: "عالتسعير",
+        mini: "S",
+        rtlMini: "ع",
+        component: Location,
         layout: "/admin",
       },
     ],

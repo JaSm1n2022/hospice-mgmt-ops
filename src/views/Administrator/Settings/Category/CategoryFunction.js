@@ -1,30 +1,27 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 // @material-ui/core components
 import { makeStyles } from "@material-ui/core/styles";
 // core components
 import GridItem from "components/Grid/GridItem.js";
 import GridContainer from "components/Grid/GridContainer.js";
 
-import Card from "components/Card/Card.js";
-import CardHeader from "components/Card/CardHeader.js";
-import CardBody from "components/Card/CardBody.js";
-
 import CategoryHandler from "./handler/CategoryHandler";
 import { connect } from "react-redux";
 
 import ActionsFunction from "components/Actions/ActionsFunction";
 import { ACTION_STATUSES } from "utils/constants";
-import { Button, Grid, Typography } from "@material-ui/core";
+import { Grid, Typography } from "@material-ui/core";
 import AddIcon from "@material-ui/icons/Add";
-
+import Card from "components/Card/Card.js";
+import CardHeader from "components/Card/CardHeader.js";
+import CardBody from "components/Card/CardBody.js";
+import Button from "components/CustomButtons/Button.js";
 import HospiceTable from "components/Table/HospiceTable";
-import { ImportExport, StayPrimaryLandscapeOutlined } from "@material-ui/icons";
+import { ImportExport } from "@material-ui/icons";
 import Helper from "utils/helper";
-import * as FileSaver from "file-saver";
-import SearchCustomTextField from "components/TextField/SearchCustomTextField";
-import CategoryForm from "./components/CategoryForm";
+
+import CategoryForm from "./components/Form";
 import { attemptToUpdateCategory } from "store/actions/categoryAction";
-import TOAST from "modules/toastManager";
 import { categoryListStateSelector } from "store/selectors/categorySelector";
 import { categoryCreateStateSelector } from "store/selectors/categorySelector";
 import { categoryUpdateStateSelector } from "store/selectors/categorySelector";
@@ -38,6 +35,10 @@ import { attemptToDeleteCategory } from "store/actions/categoryAction";
 import { resetDeleteCategoryState } from "store/actions/categoryAction";
 import FilterTable from "components/Table/FilterTable";
 import { profileListStateSelector } from "store/selectors/profileSelector";
+import { SupaContext } from "App";
+import { handleExport } from "utils/XlsxHelper";
+import Snackbar from "components/Snackbar/Snackbar";
+import AddAlert from "@material-ui/icons/AddAlert";
 const styles = {
   cardCategoryWhite: {
     "&,& a,& a:hover,& a:focus": {
@@ -71,12 +72,15 @@ const styles = {
 const useStyles = makeStyles(styles);
 let productList = [];
 let grandTotal = 0.0;
-let userProfile = {};
+
 let originalSource = undefined;
 function CategoryFunction(props) {
   const classes = useStyles();
-
+  const context = useContext(SupaContext);
   const [dataSource, setDataSource] = useState([]);
+  const [tc, setTC] = useState(false);
+  const [message, setMessage] = useState("");
+  const [color, setColor] = useState("success");
   const [columns, setColumns] = useState(CategoryHandler.columns(true));
   const [isCategoriesCollection, setIsCategoriesCollection] = useState(true);
   const [isCreateCategoryCollection, setIsCreateCategoryCollection] = useState(
@@ -149,15 +153,26 @@ function CategoryFunction(props) {
   ]);
   useEffect(() => {
     console.log("list Categories");
-    if (
-      props.profileState &&
-      props.profileState.data &&
-      props.profileState.data.length
-    ) {
-      userProfile = props.profileState.data[0];
-      props.listCategories({ companyId: userProfile.companyId });
+    if (context.userProfile?.companyId) {
+      props.listCategories({ companyId: context.userProfile?.companyId });
     }
   }, []);
+  const showNotification = (place, color, msg) => {
+    setMessage(msg);
+    switch (place) {
+      case "tc":
+        if (!tc) {
+          setTC(true);
+          setColor(color);
+          setTimeout(function () {
+            setTC(false);
+          }, 6000);
+        }
+        break;
+      default:
+        break;
+    }
+  };
 
   const sortByWorth = (items) => {
     items.sort((a, b) => {
@@ -226,17 +241,17 @@ function CategoryFunction(props) {
       name: payload.name,
       description: payload.description,
 
-      companyId: userProfile.companyId,
+      companyId: context.userProfile?.companyId,
       updatedUser: {
-        name: userProfile.name,
-        userId: userProfile.id,
+        name: context.userProfile?.name,
+        userId: context.userProfile?.id,
         date: new Date(),
       },
     };
     if (mode === "create") {
       params.createdUser = {
-        name: userProfile.name,
-        userId: userProfile.id,
+        name: context.userProfile?.name,
+        userId: context.userProfile?.id,
         date: new Date(),
       };
       props.createCategory(params);
@@ -253,17 +268,18 @@ function CategoryFunction(props) {
     props.createCategoryState.status === ACTION_STATUSES.SUCCEED
   ) {
     setIsCreateCategoryCollection(false);
-    TOAST.ok("Category successfully created.");
-    props.listCategories({ companyId: userProfile.companyId });
+
+    showNotification("tc", "success", "Category successfully created.");
+    props.listCategories({ companyId: context.userProfile?.companyId });
   }
   if (
     isUpdateCategoryCollection &&
     props.updateCategoryState &&
     props.updateCategoryState.status === ACTION_STATUSES.SUCCEED
   ) {
-    TOAST.ok("Category successfully updated.");
+    showNotification("tc", "success", "Category successfully updated.");
     setIsUpdateCategoryCollection(false);
-    props.listCategories({ companyId: userProfile.companyId });
+    props.listCategories({ companyId: context.userProfile?.companyId });
   }
   console.log(
     "[isDeleteCategory]",
@@ -275,10 +291,10 @@ function CategoryFunction(props) {
     props.deleteCategoryState &&
     props.deleteCategoryState.status === ACTION_STATUSES.SUCCEED
   ) {
-    TOAST.ok("Category successfully deleted.");
+    showNotification("tc", "success", "Category successfully deleted.");
     setIsDeleteCategoryCollection(false);
 
-    props.listCategories({ companyId: userProfile.companyId });
+    props.listCategories({ companyId: context.userProfile?.companyId });
   }
 
   const filterRecordHandler = (keyword) => {
@@ -324,31 +340,11 @@ function CategoryFunction(props) {
   };
   const exportToExcelHandler = () => {
     const excelData = dataSource.filter((r) => r.isChecked);
-    const headers = columns;
-    const excel = Helper.formatExcelReport(headers, excelData);
-    console.log("headers", excel);
-    const fileType =
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
-    const fileExtension = ".xlsx";
-    let fileName = `Category_list_batch_${new Date().getTime()}`;
+    const excel = Helper.formatExcelReport(columns, excelData);
+    let fileName = `category_list_${new Date().getTime()}`;
 
-    if (excelData && excelData.length) {
-      import(/* webpackChunkName: 'json2xls' */ "json2xls")
-        .then((json2xls) => {
-          // let fileName = fname + '_' + new Date().getTime();
-          const xls =
-            typeof json2xls === "function"
-              ? json2xls(excel)
-              : json2xls.default(excel);
-          const buffer = Buffer.from(xls, "binary");
-          // let buffer = Buffer.from(excelBuffer);
-          const data = new Blob([buffer], { type: fileType });
-          FileSaver.saveAs(data, fileName + fileExtension);
-        })
-        .catch((err) => {
-          // Handle failure
-          console.log(err);
-        });
+    if (excel && excel.length) {
+      handleExport(excel, fileName);
     }
   };
   const onPressEnterKeyHandler = (value) => {
@@ -363,78 +359,69 @@ function CategoryFunction(props) {
   };
   return (
     <>
+      {tc && (
+        <div style={{ paddingTop: 10 }}>
+          <Snackbar
+            place="tc"
+            color={color}
+            icon={AddAlert}
+            message={message}
+            open={tc}
+            closeNotification={() => setTC(false)}
+            close
+          />
+        </div>
+      )}
       <GridContainer>
         <GridItem xs={12} sm={12} md={12}>
           <Card>
-            <CardHeader color="success">
+            <CardHeader color="rose">
               <Grid container justifyContent="space-between">
-                <h4 className={classes.cardTitleWhite}>Category Setup</h4>
+                <h4 className={classes.cardTitleWhite}>Category</h4>
               </Grid>
             </CardHeader>
             <CardBody>
-              <Grid
-                container
-                justifyContent="space-between"
-                style={{ paddingBottom: 4 }}
-              >
-                <div
-                  style={{ display: "inline-flex", gap: 10, paddingTop: 10 }}
-                >
-                  <Button
-                    onClick={() => createFormHandler()}
-                    variant="contained"
-                    style={{
-                      border: "solid 1px #2196f3",
-                      color: "white",
-                      background: "#2196f3",
-                      fontFamily: "Roboto",
-                      fontSize: "12px",
-                      fontWeight: 500,
-
-                      fontStretch: "normal",
-                      fontStyle: "normal",
-                      lineHeight: 1.71,
-                      letterSpacing: "0.4px",
-                      textAlign: "left",
-                      cursor: "pointer",
-                    }}
-                    component="span"
-                    startIcon={<AddIcon />}
-                  >
-                    ADD Category
-                  </Button>
-                  {isAddGroupButtons && (
+              <GridContainer alignItems="center" style={{ paddingLeft: 12 }}>
+                <Grid item xs={12} md={6}>
+                  <div style={{ display: "inline-flex", gap: 10 }}>
                     <Button
-                      onClick={() => exportToExcelHandler()}
-                      variant="outlined"
-                      style={{
-                        fontFamily: "Roboto",
-                        fontSize: "12px",
-                        fontWeight: 500,
-
-                        fontStretch: "normal",
-                        fontStyle: "normal",
-                        lineHeight: 1.71,
-                        letterSpacing: "0.4px",
-                        textAlign: "left",
-                        cursor: "pointer",
-                      }}
-                      component="span"
-                      startIcon={<ImportExport />}
+                      color="info"
+                      className={classes.marginRight}
+                      onClick={() => createFormHandler()}
                     >
-                      {" "}
-                      Export Excel{" "}
+                      <AddIcon className={classes.icons} /> Add Category
                     </Button>
-                  )}
-                </div>
-                <div>
+
+                    {isAddGroupButtons && (
+                      <Button
+                        color="success"
+                        className={classes.marginRight}
+                        onClick={() => exportToExcelHandler()}
+                      >
+                        <ImportExport className={classes.icons} /> Export Excel
+                      </Button>
+                    )}
+                  </div>
+                </Grid>
+
+                <Grid
+                  item
+                  xs={12}
+                  md={6}
+                  style={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    paddingRight: 20,
+                  }}
+                >
                   <FilterTable
                     filterRecordHandler={filterRecordHandler}
                     isNoDate={true}
                     main={false}
+                    search={12}
                   />
-                </div>
-              </Grid>
+                </Grid>
+              </GridContainer>
               <HospiceTable
                 columns={columns}
                 main={true}

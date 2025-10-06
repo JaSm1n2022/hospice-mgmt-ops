@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 // @material-ui/core components
 import { makeStyles } from "@material-ui/core/styles";
 // core components
@@ -11,11 +11,10 @@ import CardBody from "components/Card/CardBody.js";
 
 import LocationHandler from "./handler/LocationHandler";
 import { connect } from "react-redux";
-import { v4 as uuidv4 } from "uuid";
-import PropTypes from "prop-types";
+import Button from "components/CustomButtons/Button.js";
 import ActionsFunction from "components/Actions/ActionsFunction";
 import { ACTION_STATUSES } from "utils/constants";
-import { Button, Grid, Typography } from "@material-ui/core";
+import { Grid, Typography } from "@material-ui/core";
 import AddIcon from "@material-ui/icons/Add";
 
 import HospiceTable from "components/Table/HospiceTable";
@@ -39,6 +38,8 @@ import { attemptToDeleteLocation } from "store/actions/locationAction";
 import { resetDeleteLocationState } from "store/actions/locationAction";
 import FilterTable from "components/Table/FilterTable";
 import { profileListStateSelector } from "store/selectors/profileSelector";
+import { handleExport } from "utils/XlsxHelper";
+import { SupaContext } from "App";
 const styles = {
   cardCategoryWhite: {
     "&,& a,& a:hover,& a:focus": {
@@ -73,10 +74,13 @@ const useStyles = makeStyles(styles);
 let productList = [];
 let grandTotal = 0.0;
 let originalSource = undefined;
-let userProfile = {};
+
 function LocationFunction(props) {
   const classes = useStyles();
-
+  const [tc, setTC] = useState(false);
+  const [message, setMessage] = useState("");
+  const [color, setColor] = useState("success");
+  const context = useContext(SupaContext);
   const [dataSource, setDataSource] = useState([]);
   const [columns, setColumns] = useState(LocationHandler.columns(true));
   const [isLocationsCollection, setIsLocationsCollection] = useState(true);
@@ -95,7 +99,22 @@ function LocationFunction(props) {
   const [mode, setMode] = useState("create");
   const [isAddGroupButtons, setIsAddGroupButtons] = useState(false);
   const [keywordValue, setKeywordValue] = useState("");
-
+  const showNotification = (place, color, msg) => {
+    setMessage(msg);
+    switch (place) {
+      case "tc":
+        if (!tc) {
+          setTC(true);
+          setColor(color);
+          setTimeout(function () {
+            setTC(false);
+          }, 6000);
+        }
+        break;
+      default:
+        break;
+    }
+  };
   const createFormHandler = (data, mode) => {
     setItem(data);
     setMode(mode || "create");
@@ -150,13 +169,8 @@ function LocationFunction(props) {
   ]);
   useEffect(() => {
     console.log("list Locations");
-    if (
-      props.profileState &&
-      props.profileState.data &&
-      props.profileState.data.length
-    ) {
-      userProfile = props.profileState.data[0];
-      props.listLocations({ companyId: userProfile.companyId });
+    if (context.userProfile?.companyId) {
+      props.listLocations({ companyId: context.userProfile?.companyId });
     }
   }, []);
 
@@ -234,18 +248,18 @@ function LocationFunction(props) {
       name: payload.name,
       locationType: payload.locationType.name,
 
-      companyId: userProfile.companyId,
+      companyId: context.userProfile?.companyId,
       updatedUser: {
-        name: userProfile.name,
-        userId: userProfile.id,
+        name: context.userProfile?.name,
+        userId: context.userProfile?.id,
         date: new Date(),
       },
     };
     if (mode === "create") {
       params.createdAt = new Date();
       params.createdUser = {
-        name: userProfile.name,
-        userId: userProfile.id,
+        name: context.userProfile?.name,
+        userId: context.userProfile?.id,
         date: new Date(),
       };
       props.createLocation(params);
@@ -263,16 +277,17 @@ function LocationFunction(props) {
   ) {
     setIsCreateLocationCollection(false);
     TOAST.ok("Location successfully created.");
-    props.listLocations({ companyId: userProfile.companyId });
+    showNotification("tc", "success", "Location successfully created.");
+    props.listLocations({ companyId: context.userProfile?.companyId });
   }
   if (
     isUpdateLocationCollection &&
     props.updateLocationState &&
     props.updateLocationState.status === ACTION_STATUSES.SUCCEED
   ) {
-    TOAST.ok("Location successfully updated.");
+    showNotification("tc", "success", "Location successfully updated.");
     setIsUpdateLocationCollection(false);
-    props.listLocations({ companyId: userProfile.companyId });
+    props.listLocations({ companyId: context.userProfile?.companyId });
   }
   console.log(
     "[isDeleteLocation]",
@@ -284,10 +299,10 @@ function LocationFunction(props) {
     props.deleteLocationState &&
     props.deleteLocationState.status === ACTION_STATUSES.SUCCEED
   ) {
-    TOAST.ok("Location successfully deleted.");
+    showNotification("tc", "success", "Location successfully deleted.");
     setIsDeleteLocationCollection(false);
 
-    props.listLocations({ companyId: userProfile.companyId });
+    props.listLocations({ companyId: context.userProfile?.companyId });
   }
 
   const filterRecordHandler = (keyword) => {
@@ -331,35 +346,6 @@ function LocationFunction(props) {
     dtSource = sortByWorth(dtSource);
     setDataSource(dtSource);
   };
-  const exportToExcelHandler = () => {
-    const excelData = dataSource.filter((r) => r.isChecked);
-    const headers = columns;
-    const excel = Helper.formatExcelReport(headers, excelData);
-    console.log("headers", excel);
-    const fileType =
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
-    const fileExtension = ".xlsx";
-    let fileName = `Location_list_batch_${new Date().getTime()}`;
-
-    if (excelData && excelData.length) {
-      import(/* webpackChunkName: 'json2xls' */ "json2xls")
-        .then((json2xls) => {
-          // let fileName = fname + '_' + new Date().getTime();
-          const xls =
-            typeof json2xls === "function"
-              ? json2xls(excel)
-              : json2xls.default(excel);
-          const buffer = Buffer.from(xls, "binary");
-          // let buffer = Buffer.from(excelBuffer);
-          const data = new Blob([buffer], { type: fileType });
-          FileSaver.saveAs(data, fileName + fileExtension);
-        })
-        .catch((err) => {
-          // Handle failure
-          console.log(err);
-        });
-    }
-  };
   const onPressEnterKeyHandler = (value) => {
     filterRecordHandler(value);
     setKeywordValue(value);
@@ -370,80 +356,67 @@ function LocationFunction(props) {
       filterRecordHandler(e.target.value);
     }
   };
+  const exportToExcelHandler = () => {
+    const excelData = dataSource.filter((r) => r.isChecked);
+    const excel = Helper.formatExcelReport(columns, excelData);
+    let fileName = `location_list_${new Date().getTime()}`;
+
+    if (excel && excel.length) {
+      handleExport(excel, fileName);
+    }
+  };
   return (
     <>
       <GridContainer>
         <GridItem xs={12} sm={12} md={12}>
           <Card>
-            <CardHeader color="success">
+            <CardHeader color="rose">
               <Grid container justifyContent="space-between">
                 <h4 className={classes.cardTitleWhite}>Location Setup</h4>
               </Grid>
             </CardHeader>
             <CardBody>
-              <Grid
-                container
-                justifyContent="space-between"
-                style={{ paddingBottom: 4 }}
-              >
-                <div
-                  style={{ display: "inline-flex", gap: 10, paddingTop: 10 }}
-                >
-                  <Button
-                    onClick={() => createFormHandler()}
-                    variant="contained"
-                    style={{
-                      border: "solid 1px #2196f3",
-                      color: "white",
-                      background: "#2196f3",
-                      fontFamily: "Roboto",
-                      fontSize: "12px",
-                      fontWeight: 500,
-
-                      fontStretch: "normal",
-                      fontStyle: "normal",
-                      lineHeight: 1.71,
-                      letterSpacing: "0.4px",
-                      textAlign: "left",
-                      cursor: "pointer",
-                    }}
-                    component="span"
-                    startIcon={<AddIcon />}
-                  >
-                    ADD Location
-                  </Button>
-                  {isAddGroupButtons && (
+              <GridContainer alignItems="center" style={{ paddingLeft: 12 }}>
+                <Grid item xs={12} md={6}>
+                  <div style={{ display: "inline-flex", gap: 10 }}>
                     <Button
-                      onClick={() => exportToExcelHandler()}
-                      variant="outlined"
-                      style={{
-                        fontFamily: "Roboto",
-                        fontSize: "12px",
-                        fontWeight: 500,
-
-                        fontStretch: "normal",
-                        fontStyle: "normal",
-                        lineHeight: 1.71,
-                        letterSpacing: "0.4px",
-                        textAlign: "left",
-                        cursor: "pointer",
-                      }}
-                      component="span"
-                      startIcon={<ImportExport />}
+                      color="info"
+                      className={classes.marginRight}
+                      onClick={() => createFormHandler()}
                     >
-                      {" "}
-                      Export Excel{" "}
+                      <AddIcon className={classes.icons} /> Add Location
                     </Button>
-                  )}
-                </div>
-                <div>
+
+                    {isAddGroupButtons && (
+                      <Button
+                        color="success"
+                        className={classes.marginRight}
+                        onClick={() => exportToExcelHandler()}
+                      >
+                        <ImportExport className={classes.icons} /> Export Excel
+                      </Button>
+                    )}
+                  </div>
+                </Grid>
+
+                <Grid
+                  item
+                  xs={12}
+                  md={6}
+                  style={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    paddingRight: 20,
+                  }}
+                >
                   <FilterTable
                     filterRecordHandler={filterRecordHandler}
                     isNoDate={true}
                     main={false}
+                    search={12}
                   />
-                </div>
-              </Grid>
+                </Grid>
+              </GridContainer>
               <HospiceTable
                 columns={columns}
                 main={true}

@@ -41,7 +41,7 @@ import { categoryListStateSelector } from "store/selectors/categorySelector";
 import { attemptToFetchCategory } from "store/actions/categoryAction";
 import { resetFetchCategoryState } from "store/actions/categoryAction";
 import Snackbar from "components/Snackbar/Snackbar.js";
-import VendorForm from "./components/Form";
+import Form from "./components/Form";
 import { SupaContext } from "App";
 import { handleExport } from "utils/XlsxHelper";
 const styles = {
@@ -462,7 +462,7 @@ function VendorFunction(props) {
         </GridItem>
       </GridContainer>
       {isFormModal && (
-        <VendorForm
+        <Form
           filterRecordHandler={filterRecordHandler}
           categoryList={categoryList}
           dataSource={dataSource}

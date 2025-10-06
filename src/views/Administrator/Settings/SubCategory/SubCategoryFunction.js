@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 // @material-ui/core components
 import { makeStyles } from "@material-ui/core/styles";
 // core components
@@ -15,15 +15,15 @@ import { v4 as uuidv4 } from "uuid";
 import PropTypes from "prop-types";
 import ActionsFunction from "components/Actions/ActionsFunction";
 import { ACTION_STATUSES } from "utils/constants";
-import { Button, Grid, Typography } from "@material-ui/core";
+import { Grid } from "@material-ui/core";
 import AddIcon from "@material-ui/icons/Add";
-
+import Button from "components/CustomButtons/Button.js";
 import HospiceTable from "components/Table/HospiceTable";
-import { ImportExport, StayPrimaryLandscapeOutlined } from "@material-ui/icons";
+import { ImportExport } from "@material-ui/icons";
 import Helper from "utils/helper";
 import * as FileSaver from "file-saver";
 import SearchCustomTextField from "components/TextField/SearchCustomTextField";
-import SubCategoryForm from "./components/SubCategoryForm";
+import SubCategoryForm from "./components/Form";
 import { attemptToUpdateSubCategory } from "store/actions/subCategoryAction";
 import TOAST from "modules/toastManager";
 import { subCategoryListStateSelector } from "store/selectors/subCategorySelector";
@@ -42,6 +42,9 @@ import { profileListStateSelector } from "store/selectors/profileSelector";
 import { categoryListStateSelector } from "store/selectors/categorySelector";
 import { attemptToFetchCategory } from "store/actions/categoryAction";
 import { resetFetchCategoryState } from "store/actions/categoryAction";
+import { SupaContext } from "App";
+import AddAlert from "@material-ui/icons/AddAlert";
+import Snackbar from "components/Snackbar/Snackbar";
 const styles = {
   cardCategoryWhite: {
     "&,& a,& a:hover,& a:focus": {
@@ -75,10 +78,14 @@ const styles = {
 const useStyles = makeStyles(styles);
 let productList = [];
 let grandTotal = 0.0;
-let userProfile = {};
+
 let originalSource = undefined;
 function SubCategoryFunction(props) {
   const classes = useStyles();
+  const context = useContext(SupaContext);
+  const [tc, setTC] = useState(false);
+  const [message, setMessage] = useState("");
+  const [color, setColor] = useState("success");
 
   const [dataSource, setDataSource] = useState([]);
   const [columns, setColumns] = useState(SubCategoryHandler.columns(true));
@@ -109,14 +116,8 @@ function SubCategoryFunction(props) {
     setItem(data);
     setMode(mode || "create");
 
-    if (
-      props.profileState &&
-      props.profileState.data &&
-      props.profileState.data.length
-    ) {
-      userProfile = props.profileState.data[0];
-      console.log("[List Categories]");
-      props.listCategories({ companyId: userProfile.companyId });
+    if (context.userProfile?.companyId) {
+      props.listCategories({ companyId: context.userProfile?.companyId });
     }
     //   setIsFormModal(true);
   };
@@ -186,15 +187,26 @@ function SubCategoryFunction(props) {
   ]);
   useEffect(() => {
     console.log("list SubCategories");
-    if (
-      props.profileState &&
-      props.profileState.data &&
-      props.profileState.data.length
-    ) {
-      userProfile = props.profileState.data[0];
-      props.listSubCategories({ companyId: userProfile.companyId });
+    if (context.userProfile?.companyId) {
+      props.listSubCategories({ companyId: context.userProfile?.companyId });
     }
   }, []);
+  const showNotification = (place, color, msg) => {
+    setMessage(msg);
+    switch (place) {
+      case "tc":
+        if (!tc) {
+          setTC(true);
+          setColor(color);
+          setTimeout(function () {
+            setTC(false);
+          }, 6000);
+        }
+        break;
+      default:
+        break;
+    }
+  };
 
   const sortByWorth = (items) => {
     items.sort((a, b) => {
@@ -268,17 +280,17 @@ function SubCategoryFunction(props) {
         category_id: general?.category?.id,
         item_name: details[i].name,
         item_description: details[i].description,
-        companyId: userProfile.companyId,
+        companyId: context.userProfile?.companyId,
         updatedUser: {
-          name: userProfile.name,
-          userId: userProfile.id,
+          name: context.userProfile?.name,
+          userId: context.userProfile?.id,
           date: new Date(),
         },
       };
       if (mode === "create") {
         params.createdUser = {
-          name: userProfile.name,
-          userId: userProfile.id,
+          name: context.userProfile?.name,
+          userId: context.userProfile?.id,
           date: new Date(),
         };
       } else if (mode === "edit") {
@@ -306,17 +318,18 @@ function SubCategoryFunction(props) {
     props.createSubCategoryState.status === ACTION_STATUSES.SUCCEED
   ) {
     setIsCreateSubCategoryCollection(false);
-    TOAST.ok("SubCategory successfully created.");
-    props.listSubCategories({ companyId: userProfile.companyId });
+
+    showNotification("tc", "success", "SubCategory successfully created.");
+    props.listSubCategories({ companyId: context.userProfile?.companyId });
   }
   if (
     isUpdateSubCategoryCollection &&
     props.updateSubCategoryState &&
     props.updateSubCategoryState.status === ACTION_STATUSES.SUCCEED
   ) {
-    TOAST.ok("SubCategory successfully updated.");
+    showNotification("tc", "success", "SubCategory successfully updated.");
     setIsUpdateSubCategoryCollection(false);
-    props.listSubCategories({ companyId: userProfile.companyId });
+    props.listSubCategories({ companyId: context.userProfile?.companyId });
   }
   console.log(
     "[isDeleteSubCategory]",
@@ -328,10 +341,10 @@ function SubCategoryFunction(props) {
     props.deleteSubCategoryState &&
     props.deleteSubCategoryState.status === ACTION_STATUSES.SUCCEED
   ) {
-    TOAST.ok("SubCategory successfully deleted.");
+    showNotification("tc", "success", "SubCategory successfully deleted.");
     setIsDeleteSubCategoryCollection(false);
 
-    props.listSubCategories({ companyId: userProfile.companyId });
+    props.listSubCategories({ companyId: context.userProfile?.companyId });
   }
 
   const filterRecordHandler = (keyword) => {
@@ -379,31 +392,11 @@ function SubCategoryFunction(props) {
   };
   const exportToExcelHandler = () => {
     const excelData = dataSource.filter((r) => r.isChecked);
-    const headers = columns;
-    const excel = Helper.formatExcelReport(headers, excelData);
-    console.log("headers", excel);
-    const fileType =
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
-    const fileExtension = ".xlsx";
-    let fileName = `SubCategory_list_batch_${new Date().getTime()}`;
+    const excel = Helper.formatExcelReport(columns, excelData);
+    let fileName = `subcategory_list_${new Date().getTime()}`;
 
-    if (excelData && excelData.length) {
-      import(/* webpackChunkName: 'json2xls' */ "json2xls")
-        .then((json2xls) => {
-          // let fileName = fname + '_' + new Date().getTime();
-          const xls =
-            typeof json2xls === "function"
-              ? json2xls(excel)
-              : json2xls.default(excel);
-          const buffer = Buffer.from(xls, "binary");
-          // let buffer = Buffer.from(excelBuffer);
-          const data = new Blob([buffer], { type: fileType });
-          FileSaver.saveAs(data, fileName + fileExtension);
-        })
-        .catch((err) => {
-          // Handle failure
-          console.log(err);
-        });
+    if (excel && excel.length) {
+      handleExport(excel, fileName);
     }
   };
   console.log("[Props Categories]", props.categories);
@@ -415,78 +408,69 @@ function SubCategoryFunction(props) {
   }
   return (
     <>
+      {tc && (
+        <div style={{ paddingTop: 10 }}>
+          <Snackbar
+            place="tc"
+            color={color}
+            icon={AddAlert}
+            message={message}
+            open={tc}
+            closeNotification={() => setTC(false)}
+            close
+          />
+        </div>
+      )}
       <GridContainer>
         <GridItem xs={12} sm={12} md={12}>
           <Card>
-            <CardHeader color="success">
+            <CardHeader color="rose">
               <Grid container justifyContent="space-between">
-                <h4 className={classes.cardTitleWhite}>SubCategory Setup</h4>
+                <h4 className={classes.cardTitleWhite}>Sub Category</h4>
               </Grid>
             </CardHeader>
             <CardBody>
-              <Grid
-                container
-                justifyContent="space-between"
-                style={{ paddingBottom: 4 }}
-              >
-                <div
-                  style={{ display: "inline-flex", gap: 10, paddingTop: 10 }}
-                >
-                  <Button
-                    onClick={() => createFormHandler()}
-                    variant="contained"
-                    style={{
-                      border: "solid 1px #2196f3",
-                      color: "white",
-                      background: "#2196f3",
-                      fontFamily: "Roboto",
-                      fontSize: "12px",
-                      fontWeight: 500,
-
-                      fontStretch: "normal",
-                      fontStyle: "normal",
-                      lineHeight: 1.71,
-                      letterSpacing: "0.4px",
-                      textAlign: "left",
-                      cursor: "pointer",
-                    }}
-                    component="span"
-                    startIcon={<AddIcon />}
-                  >
-                    ADD SubCategory
-                  </Button>
-                  {isAddGroupButtons && (
+              <GridContainer alignItems="center" style={{ paddingLeft: 12 }}>
+                <Grid item xs={12} md={6}>
+                  <div style={{ display: "inline-flex", gap: 10 }}>
                     <Button
-                      onClick={() => exportToExcelHandler()}
-                      variant="outlined"
-                      style={{
-                        fontFamily: "Roboto",
-                        fontSize: "12px",
-                        fontWeight: 500,
-
-                        fontStretch: "normal",
-                        fontStyle: "normal",
-                        lineHeight: 1.71,
-                        letterSpacing: "0.4px",
-                        textAlign: "left",
-                        cursor: "pointer",
-                      }}
-                      component="span"
-                      startIcon={<ImportExport />}
+                      color="info"
+                      className={classes.marginRight}
+                      onClick={() => createFormHandler()}
                     >
-                      {" "}
-                      Export Excel{" "}
+                      <AddIcon className={classes.icons} /> Add SubCategory
                     </Button>
-                  )}
-                </div>
-                <div>
+
+                    {isAddGroupButtons && (
+                      <Button
+                        color="success"
+                        className={classes.marginRight}
+                        onClick={() => exportToExcelHandler()}
+                      >
+                        <ImportExport className={classes.icons} /> Export Excel
+                      </Button>
+                    )}
+                  </div>
+                </Grid>
+
+                <Grid
+                  item
+                  xs={12}
+                  md={6}
+                  style={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    paddingRight: 20,
+                  }}
+                >
                   <FilterTable
                     filterRecordHandler={filterRecordHandler}
                     isNoDate={true}
                     main={false}
+                    search={12}
                   />
-                </div>
-              </Grid>
+                </Grid>
+              </GridContainer>
               <HospiceTable
                 columns={columns}
                 main={true}
