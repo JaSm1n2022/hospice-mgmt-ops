@@ -56,9 +56,6 @@ export default function CustomDatePicker({
     <form className={classes.root} noValidate autoComplete="off">
       <MuiPickersUtilsProvider utils={DateFnsUtils}>
         <KeyboardDatePicker
-          DialogProps={{
-            style: { zIndex: 300000 }, // dialog container
-          }}
           inputVariant="outlined"
           id="date-picker-dialog"
           format="MM/dd/yyyy"

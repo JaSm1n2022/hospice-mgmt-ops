@@ -33,6 +33,7 @@ const useStyles = makeStyles((theme) => ({
  *
  * chipProps is always hidden to true
  */
+
 export default function CustomSingleAutoComplete(props) {
   const {
     tooltiptext,
@@ -50,6 +51,11 @@ export default function CustomSingleAutoComplete(props) {
   } = props;
   console.log("[Options]", options);
   const classes = useStyles(props);
+  const ZIndexPopper = React.forwardRef(function ZIndexPopper(props, ref) {
+    const { style, ...other } = props; // keep Popper's computed style
+    return <Popper ref={ref} {...other} style={{ ...style, zIndex: 300000 }} />;
+  });
+
   const body = (
     <Autocomplete
       classes={classes}
@@ -64,9 +70,7 @@ export default function CustomSingleAutoComplete(props) {
         }
       }}
       disablePortal={false}
-      PopperComponent={(props) => (
-        <Popper {...props} style={{ zIndex: 300000 }} />
-      )}
+      PopperComponent={ZIndexPopper}
       onInputChange={(event, newInputValue) => {
         if (!newInputValue) {
           onChangeHandler({ target: { name, value: newInputValue } }, source);
