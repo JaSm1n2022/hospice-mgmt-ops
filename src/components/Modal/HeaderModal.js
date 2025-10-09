@@ -7,7 +7,7 @@ export default function HeaderModal(props) {
   return (
     <div style={{ paddingLeft: 10, paddingRight: 10 }}>
       <Card plain>
-        <CardHeader plain color={props.color || "success"}>
+        <CardHeader plain color={props.color || "rose"}>
           <div
             style={{
               display: "inline-flex",

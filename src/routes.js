@@ -52,6 +52,7 @@ import Category from "views/Administrator/Settings/Category/CategoryFunction";
 import SubCategory from "views/Administrator/Settings/SubCategory/SubCategoryFunction";
 import Employee from "views/Administrator/Settings/Employee/EmployeeFunction";
 import Location from "views/Administrator/Settings/Location/LocationFunction";
+import Transaction from "views/Administrator/Transaction";
 var dashRoutes = [
   {
     path: "/dashboard",
@@ -134,10 +135,18 @@ var dashRoutes = [
     ],
   },
   {
+    path: "/transaction",
+    name: "Transaction",
+    rtlName: "لوحة القيادة",
+    icon: PaymentIcon,
+    component: Transaction,
+    layout: "/admin",
+  },
+  {
     collapse: true,
     name: "Operations Mgmt.",
     rtlName: "إدارة الرواتب",
-    icon: PaymentIcon,
+    icon: WidgetsIcon,
     state: "pageCollapse",
     views: [
       {

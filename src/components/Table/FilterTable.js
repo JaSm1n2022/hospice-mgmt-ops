@@ -135,7 +135,7 @@ const FilterTable = (props) => {
     <React.Fragment>
       <GridContainer sx={{ pt: 1 }} style={{ paddingTop: 10 }}>
         {!props.isNoDate && (
-          <GridItem md={3} sm={6} xs={12}>
+          <GridItem md={props.search || 3} sm={6} xs={12}>
             <CustomDateComplete
               value={dateSelected || DEFAULT_ITEM}
               name="dateType"
@@ -151,7 +151,7 @@ const FilterTable = (props) => {
           </GridItem>
         )}
         {!props.isNoDate && isDateCustom && (
-          <GridItem md={3} sm={6} xs={12}>
+          <GridItem md={props.search || 3} sm={6} xs={12}>
             <DateRangeModal
               description={`Created`}
               dateFrom={dateFrom}

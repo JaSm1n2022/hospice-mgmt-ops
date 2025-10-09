@@ -1,13 +1,12 @@
 import {
-  Button,
   CircularProgress,
   Grid,
   Menu,
   MenuItem,
   Typography,
 } from "@material-ui/core";
-import React, { useEffect } from "react";
-
+import React, { useEffect, useContext } from "react";
+import Button from "components/CustomButtons/Button.js";
 import ArrowDownwardIcon from "@material-ui/icons/ArrowDownward";
 import AddIcon from "@material-ui/icons/Add";
 
@@ -51,6 +50,9 @@ import { ImportExport } from "@material-ui/icons";
 import moment from "moment";
 import FilterTable from "components/Table/FilterTable";
 import { profileListStateSelector } from "store/selectors/profileSelector";
+import { SupaContext } from "App";
+import GridContainer from "components/Grid/GridContainer";
+import GridItem from "components/Grid/GridItem";
 let productList = [];
 let stockList = [];
 let originalSource = [];
@@ -61,7 +63,7 @@ let isStockDone = false;
 let isTransactionDone = false;
 let isUpdateStockDone = true;
 let isUpdateTransactionDone = true;
-let userProfile = {};
+
 const styles = {
   cardCategoryWhite: {
     "&,& a,& a:hover,& a:focus": {
@@ -95,6 +97,7 @@ const styles = {
 const useStyles = makeStyles(styles);
 const TransactionFunction = (props) => {
   const classes = useStyles();
+  const context = useContext(SupaContext);
   const [dataSource, setDataSource] = useState([]);
   const [columns, setColumns] = useState(TransactionHandler.columns());
   const [isTransactionsCollection, setIsTransactionsCollection] = useState(
@@ -177,24 +180,18 @@ const TransactionFunction = (props) => {
     isDeleteTransactionCollection,
   ]);
   useEffect(() => {
-    if (
-      props.profileState &&
-      props.profileState.data &&
-      props.profileState.data.length
-    ) {
-      userProfile = props.profileState.data[0];
-
+    if (context.userProfile?.companyId) {
       const dates = Helper.formatDateRangeByCriteriaV2("thisMonth");
       setDateFrom(dates.from);
       setDateTo(dates.to);
       console.log("[dates]", dates);
-      props.listProducts({ companyId: userProfile.companyId });
-      props.listStocks({ companyId: userProfile.companyId });
+      props.listProducts({ companyId: context.userProfile?.companyId });
+      props.listStocks({ companyId: context.userProfile?.companyId });
 
       props.listTransactions({
         from: dates.from,
         to: dates.to,
-        companyId: userProfile.companyId,
+        companyId: context.userProfile?.companyId,
       });
     }
   }, []);
@@ -223,7 +220,7 @@ const TransactionFunction = (props) => {
     props.listTransactions({
       from: dates.from,
       to: dates.to,
-      companyId: userProfile.companyId,
+      companyId: context.userProfile?.companyId,
     });
   };
   console.log("[props.transactions]", props.transactions);
@@ -310,10 +307,10 @@ const TransactionFunction = (props) => {
         payment_info: general.paymentInfo,
         payment_transaction_at: general.paymentDt,
         grand_total: detail.grandTotal,
-        companyId: userProfile.companyId,
+        companyId: context.userProfile?.companyId,
         updatedUser: {
-          name: userProfile.name,
-          userId: userProfile.id,
+          name: context.userProfile?.name,
+          userId: context.userProfile?.id,
           date: new Date(),
         },
       };
@@ -324,8 +321,8 @@ const TransactionFunction = (props) => {
       if (mode === "create") {
         params.created_at = new Date();
         params.createdUser = {
-          name: userProfile.name,
-          userId: userProfile.id,
+          name: context.userProfile?.name,
+          userId: context.userProfile?.id,
           date: new Date(),
         };
       }
@@ -552,22 +549,6 @@ const TransactionFunction = (props) => {
     let fileName = `transaction_list_batch_${new Date().getTime()}`;
 
     if (excelData && excelData.length) {
-      import(/* webpackChunkName: 'json2xls' */ "json2xls")
-        .then((json2xls) => {
-          // let fileName = fname + '_' + new Date().getTime();
-          const xls =
-            typeof json2xls === "function"
-              ? json2xls(excel)
-              : json2xls.default(excel);
-          const buffer = Buffer.from(xls, "binary");
-          // let buffer = Buffer.from(excelBuffer);
-          const data = new Blob([buffer], { type: fileType });
-          FileSaver.saveAs(data, fileName + fileExtension);
-        })
-        .catch((err) => {
-          // Handle failure
-          console.log(err);
-        });
     }
   };
 
@@ -591,147 +572,125 @@ const TransactionFunction = (props) => {
           Loading...
         </div>
       )}
-
-      <Grid
-        container
-        style={{
-          display: isFetchAllDone ? "" : "none",
-          paddingLeft: 10,
-          paddingRight: 10,
-        }}
-      >
-        <Card>
-          <CardHeader color="haloes">
-            <Grid justifyContent="space-between" container>
-              <h4 className={classes.cardTitleWhite}>Transaction Management</h4>
-              <h4 className={classes.cardTitleWhite}>{`$${parseFloat(
-                grandTotal
-              ).toFixed(2)}`}</h4>
-            </Grid>
-          </CardHeader>
-          <CardBody>
-            <Grid container>
-              <Grid
-                container
-                justifyContent="space-between"
-                style={{ paddingTop: 10 }}
+      <GridContainer>
+        <GridItem xs={12} sm={12} md={12}>
+          <Card>
+            <CardHeader color="rose">
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  width: "100%",
+                }}
               >
-                <div>
-                  <Typography variant="h6"></Typography>
+                {/* Left side: Select */}
+                <div style={{ flex: "0 0 90%" }}>
+                  <h4 className={classes.cardTitleWhite}>
+                    Transaction Management
+                  </h4>
                 </div>
-                <div>
+                <div align="right" style={{ flex: "0 0 10%" }}>
+                  <h4 className={classes.cardTitleWhite}>{`$${parseFloat(
+                    grandTotal
+                  ).toFixed(2)}`}</h4>
+                </div>
+              </div>
+            </CardHeader>
+            <CardBody>
+              <GridContainer alignItems="center" style={{ paddingLeft: 12 }}>
+                <Grid item xs={12} md={6}>
+                  <div style={{ display: "inline-flex", gap: 10 }}>
+                    <Button
+                      color="info"
+                      className={classes.marginRight}
+                      onClick={() => createFormHandler()}
+                    >
+                      <AddIcon className={classes.icons} /> Add Transaction
+                    </Button>
+
+                    {isAddGroupButtons && (
+                      <>
+                        <Button
+                          color="success"
+                          className={classes.marginRight}
+                          onClick={() => exportToExcelHandler()}
+                        >
+                          <ImportExport className={classes.icons} /> Export
+                          Excel
+                        </Button>
+                        <Button
+                          color="success"
+                          className={classes.marginRight}
+                          onClick={() => changeStatusHandler()}
+                        >
+                          <rrowDownwardIcon className={classes.icons} /> Change
+                          Status Excel
+                        </Button>
+                      </>
+                    )}
+
+                    <Menu
+                      id="simple-menu"
+                      anchorEl={anchorEl}
+                      keepMounted
+                      open={Boolean(anchorEl)}
+                      onClose={closeChangeStatusMenuHandler}
+                    >
+                      {SUPPLY_STATUS.map((map) => {
+                        return (
+                          <MenuItem onClick={() => updateStatusHandler(map)}>
+                            {map}
+                          </MenuItem>
+                        );
+                      })}
+                    </Menu>
+                  </div>
+                </Grid>
+
+                <Grid
+                  item
+                  xs={12}
+                  md={6}
+                  style={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    paddingRight: 20,
+                  }}
+                >
                   <FilterTable
                     filterRecordHandler={filterRecordHandler}
                     filterByDateHandler={filterByDateHandler}
+                    search={6}
                   />
-                </div>
-              </Grid>
+                </Grid>
+              </GridContainer>
+              <GridContainer>
+                <Grid item xs={12}>
+                  <HospiceTable
+                    main={true}
+                    height={400}
+                    onCheckboxSelectionHandler={onCheckboxSelectionHandler}
+                    columns={columns}
+                    dataSource={dataSource}
+                  />
+                </Grid>
+              </GridContainer>
 
-              <Grid
-                container
-                justifyContent="space-between"
-                style={{ paddingBottom: 12, paddingTop: 12 }}
-              >
-                <div style={{ display: "inline-flex", gap: 10 }}>
-                  <Button
-                    onClick={() => createFormHandler()}
-                    variant="contained"
-                    style={{
-                      border: "solid 1px #2196f3",
-                      color: "white",
-                      background: "#2196f3",
-                      fontFamily: "Roboto",
-                      fontSize: "12px",
-                      fontWeight: 500,
-                      fontStretch: "normal",
-                      fontStyle: "normal",
-                      lineHeight: 1.71,
-                      letterSpacing: "0.4px",
-                      textAlign: "left",
-                      cursor: "pointer",
-                    }}
-                    component="span"
-                    startIcon={<AddIcon />}
-                  >
-                    ADD TRANSACTION
-                  </Button>
-
-                  {isAddGroupButtons && (
-                    <div style={{ display: "inline-flex", gap: 10 }}>
-                      <Button
-                        onClick={() => exportToExcelHandler()}
-                        variant="outlined"
-                        style={{
-                          fontFamily: "Roboto",
-                          fontSize: "12px",
-                          fontWeight: 500,
-                          fontStretch: "normal",
-                          fontStyle: "normal",
-                          lineHeight: 1.71,
-                          letterSpacing: "0.4px",
-                          textAlign: "left",
-                          cursor: "pointer",
-                        }}
-                        component="span"
-                        startIcon={<ImportExport />}
-                      >
-                        {" "}
-                        Export Excel{" "}
-                      </Button>
-                      <Button
-                        onClick={changeStatusHandler}
-                        variant="outlined"
-                        aria-controls="simple-menu"
-                        aria-haspopup="true"
-                        component="span"
-                        endIcon={<ArrowDownwardIcon />}
-                      >
-                        Change Status
-                      </Button>
-                      <Menu
-                        id="simple-menu"
-                        anchorEl={anchorEl}
-                        keepMounted
-                        open={Boolean(anchorEl)}
-                        onClose={closeChangeStatusMenuHandler}
-                      >
-                        {SUPPLY_STATUS.map((map) => {
-                          return (
-                            <MenuItem onClick={() => updateStatusHandler(map)}>
-                              {map}
-                            </MenuItem>
-                          );
-                        })}
-                      </Menu>
-                    </div>
-                  )}
-                </div>
-              </Grid>
-              <Grid item xs={12}>
-                <HospiceTable
-                  main={true}
-                  height={400}
-                  onCheckboxSelectionHandler={onCheckboxSelectionHandler}
-                  columns={columns}
-                  dataSource={dataSource}
+              {isFormModal && (
+                <TransactionForm
+                  productList={productList}
+                  createTransactionHandler={createTransactionHandler}
+                  mode={mode}
+                  isOpen={isFormModal}
+                  isEdit={false}
+                  item={item}
+                  onClose={closeFormModalHandler}
                 />
-              </Grid>
-            </Grid>
-
-            {isFormModal && (
-              <TransactionForm
-                productList={productList}
-                createTransactionHandler={createTransactionHandler}
-                mode={mode}
-                isOpen={isFormModal}
-                isEdit={false}
-                item={item}
-                onClose={closeFormModalHandler}
-              />
-            )}
-          </CardBody>
-        </Card>
-      </Grid>
+              )}
+            </CardBody>
+          </Card>
+        </GridItem>
+      </GridContainer>
     </React.Fragment>
   );
 };

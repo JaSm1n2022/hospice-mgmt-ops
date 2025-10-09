@@ -16,7 +16,7 @@ import ArrowDownwardIcon from "@material-ui/icons/ArrowDownward";
 import { useState } from "react";
 import * as FileSaver from "file-saver";
 import { v4 as uuidv4 } from "uuid";
-import Form from "./components/Form";
+import Form from "./components/DistributionForm";
 import TemplateForm from "./components/TemplateForm";
 import { connect } from "react-redux";
 import Button from "components/CustomButtons/Button.js";

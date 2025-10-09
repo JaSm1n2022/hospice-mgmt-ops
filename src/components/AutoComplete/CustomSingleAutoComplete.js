@@ -7,6 +7,7 @@ import { makeStyles } from "@material-ui/core/styles";
 import Typography from "@material-ui/core/Typography";
 import { Tooltip } from "@material-ui/core";
 import PropTypes from "prop-types";
+import { Popper } from "@material-ui/core";
 const useStyles = makeStyles((theme) => ({
   inputRoot: {
     margin: "0",
@@ -62,6 +63,10 @@ export default function CustomSingleAutoComplete(props) {
           onSelectHandler(item, source);
         }
       }}
+      disablePortal={false}
+      PopperComponent={(props) => (
+        <Popper {...props} style={{ zIndex: 300000 }} />
+      )}
       onInputChange={(event, newInputValue) => {
         if (!newInputValue) {
           onChangeHandler({ target: { name, value: newInputValue } }, source);

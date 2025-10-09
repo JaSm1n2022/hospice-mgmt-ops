@@ -5,13 +5,12 @@ import ReactModal from "react-modal";
 import {
   Avatar,
   Box,
-  Button,
   Divider,
   Grid,
   Tooltip,
   Typography,
 } from "@material-ui/core";
-
+import Button from "components/CustomButtons/Button.js";
 import { v4 as uuidv4 } from "uuid";
 import DeleteIcon from "@material-ui/icons/Delete";
 import CustomSingleAutoComplete from "components/AutoComplete/CustomSingleAutoComplete";
@@ -24,8 +23,11 @@ import CustomSelect from "components/Select/CustomSelect";
 import CustomDatePicker from "components/Date/CustomDatePicker";
 import CustomTextField from "components/TextField/CustomTextField";
 import ModalFooter from "components/Modal/ModalFooter/ModalFooter";
-import ModalHeader from "components/Modal/ModalHeader/ModalHeader";
+
 import HeaderModal from "components/Modal/HeaderModal";
+import { makeStyles } from "@material-ui/core";
+import GridContainer from "components/Grid/GridContainer";
+import GridItem from "components/Grid/GridItem";
 let categoryList = [];
 let uoms = [];
 let vendors = [];
@@ -77,7 +79,10 @@ SUPPLY_CATEGORY.forEach((item, index) => {
     category: "category",
   });
 });
+
+const useStyles = makeStyles(styles);
 function TransportationForm(props) {
+  const classes = useStyles();
   const [generalForm, setGeneralForm] = useState({});
   const [detailForm, setDetailForm] = useState([]);
   const [searchItem, setSearchItem] = useState("");
@@ -464,7 +469,7 @@ function TransportationForm(props) {
     <ReactModal
       style={{
         overlay: {
-          zIndex: 999,
+          zIndex: 200000,
           position: "fixed",
           top: 0,
           left: 0,
@@ -482,7 +487,7 @@ function TransportationForm(props) {
           alignItems: "center",
           right: "0",
           left: "0",
-          overflow: "none",
+          overflow: "visible",
           WebkitOverflowScrolling: "touch",
           border: "none",
           padding: "0px",
@@ -500,15 +505,10 @@ function TransportationForm(props) {
       >
         <HeaderModal title={titleHandler()} onClose={onClose} />
         <div className={styles.content}>
-          <Grid
-            container
-            spacing={1}
-            direction="row"
-            style={{ paddingTop: 20 }}
-          >
+          <GridContainer style={{ paddingTop: 10 }}>
             {general.map((item) => {
               return (
-                <Grid item xs={item.cols ? item.cols : 3}>
+                <GridItem xs={12} sm={12} md={item.cols ? item.cols : 3}>
                   {item.component === "textfield" ? (
                     <React.Fragment>
                       <CustomTextField
@@ -543,31 +543,31 @@ function TransportationForm(props) {
                       />
                     </React.Fragment>
                   ) : null}
-                </Grid>
+                </GridItem>
               );
             })}
-          </Grid>
+          </GridContainer>
 
-          <br />
-          <Grid container justifyContent="space-between">
-            <Typography variant="h6">Items</Typography>
-            <Box
-              style={{
-                padding: 2,
-                background: "#ebedeb",
-                border: "1px solid #ebedeb",
-              }}
-            >
-              <Typography
-                variant="h5"
-                color="primary"
-              >{`$${new Intl.NumberFormat("en-US", {}).format(
-                parseFloat(totalAmount)
-              )}`}</Typography>
-            </Box>
-          </Grid>
-          <Grid container>
-            <Grid item xs={12} style={{ paddingBottom: 10 }}>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              width: "100%",
+            }}
+          >
+            {/* Left side: Select */}
+            <div style={{ flex: "0 0 90%" }}>
+              <h4 className={classes.cardTitleWhite}>Items</h4>
+            </div>
+            <div align="right" style={{ flex: "0 0 10%" }}>
+              <h4 className={classes.cardTitleWhite}>{`$${new Intl.NumberFormat(
+                "en-US",
+                {}
+              ).format(parseFloat(totalAmount))}`}</h4>
+            </div>
+          </div>
+          <GridContainer>
+            <GridItem item xs={12} style={{ paddingBottom: 10 }}>
               <Divider
                 variant="fullWidth"
                 style={{
@@ -577,19 +577,13 @@ function TransportationForm(props) {
                 orientation="horizontal"
                 flexItem
               />
-            </Grid>
+            </GridItem>
             <br />
-          </Grid>
+          </GridContainer>
           {detailForm.map((item, index) => {
             return (
-              <Grid
-                container
-                spacing={1}
-                direction="row"
-                style={{ paddingBottom: 12 }}
-                key={`contr-${index}`}
-              >
-                <Grid item xs={12}>
+              <GridContainer key={`contr-${index}`}>
+                <GridItem item xs={12}>
                   <div style={{ display: "inline-flex", gap: 10 }}>
                     <Avatar
                       style={{
@@ -695,8 +689,8 @@ function TransportationForm(props) {
                       />
                     </div>
                   </div>
-                </Grid>
-              </Grid>
+                </GridItem>
+              </GridContainer>
             );
           })}
 

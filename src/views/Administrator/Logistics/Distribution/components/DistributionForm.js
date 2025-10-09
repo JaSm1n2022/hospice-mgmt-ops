@@ -31,6 +31,9 @@ import FooterModal from "components/Modal/FooterModal";
 import ModalFooter from "components/Modal/ModalFooter/ModalFooter";
 import ModalHeader from "components/Modal/ModalHeader/ModalHeader";
 import { DEFAULT_ITEM } from "utils/constants";
+import GridContainer from "components/Grid/GridContainer";
+import SnackbarContent from "components/Snackbar/SnackbarContent";
+import { AddAlertOutlined } from "@material-ui/icons";
 
 let uoms = [];
 let patients = [];
@@ -545,7 +548,7 @@ function DistributionForm(props) {
     <ReactModal
       style={{
         overlay: {
-          zIndex: 999,
+          zIndex: 200000,
           position: "fixed",
           top: 0,
           left: 0,
@@ -577,216 +580,211 @@ function DistributionForm(props) {
       <div className={styles.form}>
         <HeaderModal title={titleHandler()} onClose={clearModalHandler} />
         <div className={styles.content}>
-          <Typography variant="h6">General Information</Typography>
-          <Grid container spacing={1} direction="row">
-            {general.map((item) => {
+          <GridContainer
+            style={{ paddingTop: 10, paddingLeft: 24, paddingRight: 24 }}
+          >
+            <Typography variant="h6">General Information</Typography>
+            <Grid container spacing={1} direction="row">
+              {general.map((item) => {
+                return (
+                  <Grid item xs={12} md={3} sm={12}>
+                    {item.component === "textfield" ? (
+                      <React.Fragment>
+                        <CustomTextField
+                          {...item}
+                          value={generalForm[item.name]}
+                          onChange={inputGeneralHandler}
+                        />
+                      </React.Fragment>
+                    ) : item.component === "datepicker" ? (
+                      <CustomDatePicker
+                        {...item}
+                        value={generalForm[item.name]}
+                        onChange={dateInputHandler}
+                      />
+                    ) : item.component === "singlecomplete" ? (
+                      <React.Fragment>
+                        <CustomSingleAutoComplete
+                          {...item}
+                          value={generalForm[item.name]}
+                          onSelectHandler={autoCompleteGeneralInputHander}
+                          onChangeHandler={onChangeGeneralInputHandler}
+                        />
+                      </React.Fragment>
+                    ) : item.component === "select" ? (
+                      <React.Fragment>
+                        <RegularSelect
+                          {...item}
+                          onChange={inputGeneralHandler}
+                          value={generalForm[item.value]}
+                        />
+                      </React.Fragment>
+                    ) : null}
+                  </Grid>
+                );
+              })}
+            </Grid>
+            <br />
+            <Typography variant="h6">Supplies</Typography>
+            {detailForm.map((item, index) => {
               return (
-                <Grid item xs={12} md={3} sm={12}>
-                  {item.component === "textfield" ? (
-                    <React.Fragment>
-                      <CustomTextField
-                        {...item}
-                        value={generalForm[item.name]}
-                        onChange={inputGeneralHandler}
-                      />
-                    </React.Fragment>
-                  ) : item.component === "datepicker" ? (
-                    <CustomDatePicker
-                      {...item}
-                      value={generalForm[item.name]}
-                      onChange={dateInputHandler}
+                <Grid
+                  container
+                  spacing={1}
+                  direction="row"
+                  style={{ paddingBottom: 12 }}
+                  key={`contr-${index}`}
+                >
+                  <Grid item xs={12} md={1} sm={12}>
+                    <div style={{ display: "inline-flex", gap: 10 }}>
+                      <Avatar className={classes.small}>{index + 1}</Avatar>
+                      <div style={{ paddingTop: 4 }}>
+                        <Tooltip title={"Delete Item"}>
+                          <DeleteIcon
+                            style={{
+                              color: "#F62100",
+                              fontSize: "24px",
+                              cursor: "pointer",
+                            }}
+                            onClick={() => deleteItemHandler(index)}
+                          />
+                        </Tooltip>
+                      </div>
+                    </div>
+                  </Grid>
+                  <Grid item xs={12} md={4} sm={12}>
+                    <CustomSingleAutoComplete
+                      disabled={
+                        (props.mode && props.mode === "view") ||
+                        props.mode === "edit"
+                          ? true
+                          : false
+                      }
+                      source={item}
+                      {...details.find((d) => d.id === "search")}
+                      value={item["search"]}
+                      onSelectHandler={autoCompleteDetailInputHander}
+                      onChangeHandler={onChangeDetailInputHandler}
+                      options={[...props.stockList]}
                     />
-                  ) : item.component === "singlecomplete" ? (
-                    <React.Fragment>
-                      <CustomSingleAutoComplete
-                        {...item}
-                        value={generalForm[item.name]}
-                        onSelectHandler={autoCompleteGeneralInputHander}
-                        onChangeHandler={onChangeGeneralInputHandler}
+                  </Grid>
+                  <Grid item xs={12} md={3} sm={12}>
+                    <CustomTextField
+                      disabled={true}
+                      source={item}
+                      {...details.find((d) => d.id === "description")}
+                      value={item["description"] || "-"}
+                      onChange={inputDetailHandler}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={2} sm={12}>
+                    <CustomTextField
+                      disabled={true}
+                      source={item}
+                      {...details.find((d) => d.id === "size")}
+                      value={item["size"] || "-"}
+                      onChange={inputDetailHandler}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={2} sm={12}>
+                    <CustomTextField
+                      disabled={true}
+                      source={item}
+                      {...details.find((d) => d.id === "flavor")}
+                      value={item["flavor"] || "-"}
+                      onChange={inputDetailHandler}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={2} sm={12}>
+                    <CustomTextField
+                      disabled={
+                        props.mode && props.mode === "view" ? true : false
+                      }
+                      source={item}
+                      {...details.find((d) => d.id === "orderQty")}
+                      value={item["orderQty"]}
+                      onChange={inputDetailHandler}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={2} sm={12}>
+                    <CustomTextField
+                      disabled={
+                        props.mode && props.mode === "view" ? true : false
+                      }
+                      source={item}
+                      {...details.find((d) => d.id === "price_per_pcs")}
+                      value={item["price_per_pcs"]}
+                      onChange={inputDetailHandler}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={2} sm={12}>
+                    <CustomTextField
+                      disabled={true}
+                      source={item}
+                      {...details.find((d) => d.id === "unitDistribution")}
+                      value={item["unitDistribution"]}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={2} sm={12}>
+                    <CustomTextField
+                      disabled={true}
+                      source={item}
+                      {...details.find((d) => d.id === "vendor")}
+                      value={item["vendor"] || "-"}
+                    />
+                  </Grid>
+
+                  <Grid item xs={12} md={2} sm={12}>
+                    <CustomTextField
+                      disabled={false}
+                      source={item}
+                      {...details.find((d) => d.id === "comments")}
+                      value={item["comments"] || ""}
+                      onChange={inputDetailHandler}
+                    />
+                  </Grid>
+
+                  {item.stockStatus && item.orderQty > 0 && (
+                    <Grid item xs={12} md={4} sm={12}>
+                      <SnackbarContent
+                        message={item.stockStatus}
+                        height={12}
+                        color={
+                          item.stockStatus.indexOf("In Stock") !== -1
+                            ? "info"
+                            : "rose"
+                        }
+                        icon={
+                          item.stockStatus.indexOf("In Stock") !== -1
+                            ? undefined
+                            : AddAlertOutlined
+                        }
                       />
-                    </React.Fragment>
-                  ) : item.component === "select" ? (
-                    <React.Fragment>
-                      <RegularSelect
-                        {...item}
-                        onChange={inputGeneralHandler}
-                        value={generalForm[item.value]}
-                      />
-                    </React.Fragment>
-                  ) : null}
+                    </Grid>
+                  )}
                 </Grid>
               );
             })}
-          </Grid>
-          <br />
-          <Typography variant="h6">Supplies</Typography>
-          {detailForm.map((item, index) => {
-            return (
-              <Grid
-                container
-                spacing={1}
-                direction="row"
-                style={{ paddingBottom: 12 }}
-                key={`contr-${index}`}
-              >
-                <Grid item xs={12} md={1} sm={12}>
-                  <div style={{ display: "inline-flex", gap: 10 }}>
-                    <Avatar className={classes.small}>{index + 1}</Avatar>
-                    <div style={{ paddingTop: 4 }}>
-                      <Tooltip title={"Delete Item"}>
-                        <DeleteIcon
-                          style={{
-                            color: "#F62100",
-                            fontSize: "24px",
-                            cursor: "pointer",
-                          }}
-                          onClick={() => deleteItemHandler(index)}
-                        />
-                      </Tooltip>
-                    </div>
-                  </div>
-                </Grid>
-                <Grid item xs={12} md={4} sm={12}>
-                  <CustomSingleAutoComplete
-                    disabled={
-                      (props.mode && props.mode === "view") ||
-                      props.mode === "edit"
-                        ? true
-                        : false
-                    }
-                    source={item}
-                    {...details.find((d) => d.id === "search")}
-                    value={item["search"]}
-                    onSelectHandler={autoCompleteDetailInputHander}
-                    onChangeHandler={onChangeDetailInputHandler}
-                    options={[...props.stockList]}
-                  />
-                </Grid>
-                <Grid item xs={12} md={3} sm={12}>
-                  <CustomTextField
-                    disabled={true}
-                    source={item}
-                    {...details.find((d) => d.id === "description")}
-                    value={item["description"] || "-"}
-                    onChange={inputDetailHandler}
-                  />
-                </Grid>
-                <Grid item xs={12} md={2} sm={12}>
-                  <CustomTextField
-                    disabled={true}
-                    source={item}
-                    {...details.find((d) => d.id === "size")}
-                    value={item["size"] || "-"}
-                    onChange={inputDetailHandler}
-                  />
-                </Grid>
-                <Grid item xs={12} md={2} sm={12}>
-                  <CustomTextField
-                    disabled={true}
-                    source={item}
-                    {...details.find((d) => d.id === "flavor")}
-                    value={item["flavor"] || "-"}
-                    onChange={inputDetailHandler}
-                  />
-                </Grid>
-                <Grid item xs={12} md={2} sm={12}>
-                  <CustomTextField
-                    disabled={
-                      props.mode && props.mode === "view" ? true : false
-                    }
-                    source={item}
-                    {...details.find((d) => d.id === "orderQty")}
-                    value={item["orderQty"]}
-                    onChange={inputDetailHandler}
-                  />
-                </Grid>
-                <Grid item xs={12} md={2} sm={12}>
-                  <CustomTextField
-                    disabled={
-                      props.mode && props.mode === "view" ? true : false
-                    }
-                    source={item}
-                    {...details.find((d) => d.id === "price_per_pcs")}
-                    value={item["price_per_pcs"]}
-                    onChange={inputDetailHandler}
-                  />
-                </Grid>
-                <Grid item xs={12} md={2} sm={12}>
-                  <CustomTextField
-                    disabled={true}
-                    source={item}
-                    {...details.find((d) => d.id === "unitDistribution")}
-                    value={item["unitDistribution"]}
-                  />
-                </Grid>
-                <Grid item xs={12} md={2} sm={12}>
-                  <CustomTextField
-                    disabled={true}
-                    source={item}
-                    {...details.find((d) => d.id === "vendor")}
-                    value={item["vendor"] || "-"}
-                  />
-                </Grid>
 
-                <Grid item xs={12} md={2} sm={12}>
-                  <CustomTextField
-                    disabled={false}
-                    source={item}
-                    {...details.find((d) => d.id === "comments")}
-                    value={item["comments"] || ""}
-                    onChange={inputDetailHandler}
-                  />
-                </Grid>
-
-                {item.stockStatus && item.orderQty > 0 && (
-                  <Grid item xs={12} md={4} sm={12}>
-                    <div
-                      id="in-stock"
-                      style={{
-                        height: 28,
-                        borderRadius: "4px",
-                        border: "1px solid #9e9e9e",
-                        paddingTop: 8,
-                        paddingLeft: 8,
-                        paddingBottom: 2,
-                      }}
-                    >
-                      <Typography
-                        variant="h6"
-                        style={{
-                          color:
-                            item.stockStatus.indexOf("In Stock") !== -1
-                              ? "blue"
-                              : "red",
-                        }}
-                      >
-                        {item.stockStatus}
-                      </Typography>
-                    </div>
-                  </Grid>
-                )}
-              </Grid>
-            );
-          })}
-
-          <div
-            style={{
-              paddingTop: 4,
-              display: props.mode && props.mode === "edit" ? "none" : "",
-            }}
-          >
-            <Button
-              disabled={props.mode && props.mode === "view" ? true : false}
-              variant="outlined"
-              color="primary"
-              style={{ fontSize: 14 }}
-              onClick={() => addItemHandler()}
+            <div
+              style={{
+                paddingTop: 4,
+                display: props.mode && props.mode === "edit" ? "none" : "",
+              }}
             >
-              Add Item
-            </Button>
-          </div>
+              <Button
+                disabled={props.mode && props.mode === "view" ? true : false}
+                variant="outlined"
+                color="primary"
+                style={{ fontSize: 14 }}
+                onClick={() => addItemHandler()}
+              >
+                Add Item
+              </Button>
+            </div>
+          </GridContainer>
         </div>
-        <br />
+
         {props.mode && props.mode === "view" ? null : (
           <ModalFooter actions={footerActions} />
         )}
