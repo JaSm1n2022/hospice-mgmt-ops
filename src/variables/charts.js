@@ -325,7 +325,7 @@ const simpleBarChart = {
     series: [[542, 443, 320, 780, 553, 453, 326, 434, 568, 610, 756, 895]],
   },
   options: {
-    seriesBarDistance: 10,
+    seriesBarDistance: 20,
     axisX: {
       showGrid: false,
     },

@@ -1,3 +1,4 @@
+import { makeStyles } from "@material-ui/core";
 import {
   Box,
   Button,
@@ -9,8 +10,9 @@ import {
   TableRow,
   Typography,
 } from "@material-ui/core";
+import { SupaContext } from "App";
 import CustomSingleAutoComplete from "components/AutoComplete/CustomSingleAutoComplete";
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { connect } from "react-redux";
 import { resetFetchDistributionState } from "store/actions/distributionAction";
 import { attemptToFetchDistribution } from "store/actions/distributionAction";
@@ -29,31 +31,58 @@ let numberOfMonth = 0;
 let numberOfProcess = 1;
 let data = [];
 let patientList = [];
-let userProfile = {};
+
 let grandTotal = 0.0;
 let recipientTotal = 0.0;
 const YTD_LIST = Helper.getDaysInMonth();
+const styles = {
+  cardCategoryWhite: {
+    "&,& a,& a:hover,& a:focus": {
+      color: "black",
+      margin: "0",
+      fontSize: "14px",
+      marginTop: "0",
+      marginBottom: "0",
+    },
+    "& a,& a:hover,& a:focus": {
+      color: "#FFFFFF",
+    },
+  },
+  cardTitleWhite: {
+    color: "black",
+    marginTop: "0px",
+    minHeight: "auto",
+    fontWeight: "300",
+    fontFamily: "'Roboto', 'Helvetica', 'Arial', sans-serif",
+    marginBottom: "3px",
+    textDecoration: "none",
+    "& small": {
+      color: "black",
+      fontSize: "65%",
+      fontWeight: "400",
+      lineHeight: "1",
+    },
+  },
+};
+const useStyles = makeStyles(styles);
 const Supply = (props) => {
+  const classes = useStyles();
+  const context = useContext(SupaContext);
   const [isProcessCollection, setIsProcessCollection] = useState(true);
   const [patient, setPatient] = useState(DEFAULT_ITEM);
   const [summary, setSummary] = useState([]);
   const [recipient, setRecipient] = useState([]);
   useEffect(() => {
-    if (
-      props.profileState &&
-      props.profileState.data &&
-      props.profileState.data.length
-    ) {
-      userProfile = props.profileState.data[0];
+    if (context.userProfile?.companyId) {
       data = [];
       numberOfProcess = 0;
       numberOfMonth = YTD_LIST.length;
       console.log("Year to call1", numberOfMonth, YTD_LIST[numberOfProcess]);
-      props.listPatients({ companyId: userProfile.companyId });
+      props.listPatients({ companyId: context.userProfile?.companyId });
       props.listDistributions({
         from: YTD_LIST[numberOfProcess].from,
         to: YTD_LIST[numberOfProcess].to,
-        companyId: userProfile.companyId,
+        companyId: context.userProfile?.companyId,
       });
     }
     //start with 2022
@@ -81,7 +110,7 @@ const Supply = (props) => {
         props.listDistributions({
           from: YTD_LIST[numberOfProcess].from,
           to: YTD_LIST[numberOfProcess].to,
-          companyId: userProfile.companyId,
+          companyId: context.userProfile?.companyId,
         });
       } else {
         console.log("[Final Data]", data);
@@ -159,21 +188,23 @@ const Supply = (props) => {
 
   return (
     <React.Fragment>
-      <Grid justifyContent="space-between" container style={{ padding: 10 }}>
-        <Typography variant="h5">Patients/Staff Distribution Report</Typography>
-        <Box
-          style={{
-            padding: 2,
-            background: "#ebedeb",
-            border: "1px solid #ebedeb",
-          }}
-        >
-          <Typography variant="h5" color="primary">{`$${new Intl.NumberFormat(
-            "en-US",
-            {}
-          ).format(parseFloat(grandTotal))}`}</Typography>
-        </Box>
-      </Grid>
+      <div
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          width: "100%",
+        }}
+      >
+        {/* Left side: Select */}
+        <div style={{ flex: "0 0 90%" }}>
+          <h4>Patients/Staff Distribution Report</h4>
+        </div>
+        <div align="right" style={{ flex: "0 0 10%" }}>
+          <h4>{`$${new Intl.NumberFormat("en-US", {}).format(
+            parseFloat(grandTotal)
+          )}`}</h4>
+        </div>
+      </div>
       <Grid justifyContent="space-between" container style={{ padding: 10 }}>
         <Typography variant="body1" color="textSecondary">
           *** This report includes medical and incontinence items provided to

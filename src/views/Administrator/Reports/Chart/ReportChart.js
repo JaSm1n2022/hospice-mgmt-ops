@@ -1,31 +1,30 @@
 import React, { useEffect, useState } from "react";
-import Chart from "react-apexcharts";
-import Helper from "utils/helper";
 
+import Helper from "utils/helper";
+import ChartistGraph from "react-chartist";
+import { makeStyles } from "@material-ui/core/styles";
+import { simpleBarChart } from "variables/charts";
+import GridContainer from "components/Grid/GridContainer";
+import GridItem from "components/Grid/GridItem";
+import Card from "components/Card/Card";
+import CardHeader from "components/Card/CardHeader";
+import CardBody from "components/Card/CardBody";
+import styles from "assets/jss/material-dashboard-pro-react/views/chartsStyle.js";
+
+const useStyles = makeStyles(styles);
 const ReportChart = (props) => {
-  const [options, setOptionss] = useState({
-    options: {
-      chart: {
-        id: "basic-bar",
-      },
-      xaxis: {
-        categories: [
-          "Oct 2022",
-          "Nov 2022",
-          "Dec 2022",
-          "Jan 2023",
-          "Feb 2023",
-        ],
-      },
-    },
+  const classes = useStyles();
+  const [data, setData] = useState({
+    labels: [],
+    series: [[]],
   });
-  const [series, setSeries] = useState({
-    series: [
-      {
-        name: "series-1",
-        data: [4583, 8346, 4977, 5269, 9032],
-      },
-    ],
+  const [options, setOptions] = useState({
+    seriesBarDistance: 30,
+    axisX: {
+      showGrid: false,
+    },
+
+    height: "300px",
   });
 
   useEffect(() => {
@@ -36,36 +35,35 @@ const ReportChart = (props) => {
       categories.push(Helper.formatReportDateAxisCategory(rep.range));
       values.push(rep.total);
     }
-    const tempOptions = {
-      options: {
-        chart: {
-          id: "basic-bar",
-        },
-        xaxis: {
-          categories,
-        },
-      },
-    };
-    const tempSeries = {
-      series: [
-        {
-          name: "series-1",
-          data: values,
-        },
-      ],
-    };
-    setSeries(tempSeries);
-    setOptionss(tempOptions);
+    setData({
+      labels: categories,
+      series: [values],
+    });
   }, [props]);
 
   return (
     <React.Fragment>
-      <Chart
-        options={options.options}
-        series={series.series}
-        type="bar"
-        width="600"
-      />
+      <GridContainer>
+        {data?.series?.length && (
+          <GridItem xs={12} sm={12} md={12}>
+            <Card chart>
+              <CardHeader color="rose">
+                <ChartistGraph
+                  className="ct-chart-white-colors"
+                  data={data}
+                  type="Bar"
+                  options={options}
+                  responsiveOptions={simpleBarChart.responsiveOptions}
+                  listener={simpleBarChart.animation}
+                />
+              </CardHeader>
+              <CardBody>
+                <h4 className={classes.cardTitle}></h4>
+              </CardBody>
+            </Card>
+          </GridItem>
+        )}
+      </GridContainer>
     </React.Fragment>
   );
 };

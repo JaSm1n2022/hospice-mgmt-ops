@@ -40,6 +40,7 @@ import Image from "@material-ui/icons/Image";
 import Place from "@material-ui/icons/Place";
 import Timeline from "@material-ui/icons/Timeline";
 import WidgetsIcon from "@material-ui/icons/Widgets";
+
 import SettingsIcon from "@material-ui/icons/Settings";
 import PaymentIcon from "@material-ui/icons/PaymentOutlined";
 import StockRoom from "views/Administrator/Logistics/StockRoom/StockRoomMain";
@@ -53,6 +54,17 @@ import SubCategory from "views/Administrator/Settings/SubCategory/SubCategoryFun
 import Employee from "views/Administrator/Settings/Employee/EmployeeFunction";
 import Location from "views/Administrator/Settings/Location/LocationFunction";
 import Transaction from "views/Administrator/Transaction";
+import Supply from "views/Administrator/Reports/Supply";
+import Order from "views/Administrator/Reports/Order";
+import Office from "views/Administrator/Reports/Office";
+import Medical from "views/Administrator/Reports/Medical";
+import Pharmacy from "views/Administrator/Reports/Pharmacy";
+import DmeReport from "views/Administrator/Reports/Dme";
+import TransportationReport from "views/Administrator/Reports/Transportation";
+import Services from "views/Administrator/Reports/Services";
+import Utilities from "views/Administrator/Reports/Utilities";
+import Payroll from "views/Administrator/Reports/Payroll";
+import Marketing from "views/Administrator/Reports/Marketing";
 var dashRoutes = [
   {
     path: "/dashboard",
@@ -67,7 +79,7 @@ var dashRoutes = [
     name: "Settings",
     rtlName: "إدارة الرواتب",
     icon: SettingsIcon,
-    state: "pageCollapse",
+    state: "settingsCollapse",
     views: [
       {
         path: "/vendor",
@@ -147,7 +159,7 @@ var dashRoutes = [
     name: "Operations Mgmt.",
     rtlName: "إدارة الرواتب",
     icon: WidgetsIcon,
-    state: "pageCollapse",
+    state: "opsCollapse",
     views: [
       {
         path: "/idt",
@@ -165,7 +177,7 @@ var dashRoutes = [
     name: "Inventory & Logistics",
     rtlName: "إدارة الرواتب",
     icon: WidgetsIcon,
-    state: "pageCollapse",
+    state: "inventoryCollapse",
     views: [
       {
         path: "/distribution",
@@ -211,7 +223,7 @@ var dashRoutes = [
     name: "Payroll Management",
     rtlName: "إدارة الرواتب",
     icon: PaymentIcon,
-    state: "pageCollapse",
+    state: "payrollCollapse",
     views: [
       {
         path: "/contract",
@@ -225,6 +237,124 @@ var dashRoutes = [
     ],
   },
 
+  {
+    collapse: true,
+    name: "YTD Expenses Report",
+    rtlName: "إدارة الرواتب",
+    icon: Timeline,
+    state: "expensesCollapse",
+    views: [
+      {
+        path: "/distributionReport",
+        name: "Distribution",
+        rtlName: "عالتسعير",
+        mini: "YTD",
+        rtlMini: "ع",
+        component: Supply,
+        layout: "/admin",
+      },
+      {
+        path: "/orderReport",
+        name: "Transaction",
+        rtlName: "عالتسعير",
+        mini: "YTD",
+        rtlMini: "ع",
+        component: Order,
+        layout: "/admin",
+      },
+      {
+        path: "/officeReport",
+        name: "Office",
+        rtlName: "عالتسعير",
+        mini: "YTD",
+        rtlMini: "ع",
+        component: Office,
+        layout: "/admin",
+      },
+      {
+        path: "/medicalReport",
+        name: "Medical/Incontinence",
+        rtlName: "عالتسعير",
+        mini: "YTD",
+        rtlMini: "ع",
+        component: Medical,
+        layout: "/admin",
+      },
+      {
+        path: "/pharmacyReport",
+        name: "Pharmacy",
+        rtlName: "عالتسعير",
+        mini: "YTD",
+        rtlMini: "ع",
+        component: Pharmacy,
+        layout: "/admin",
+      },
+      {
+        path: "/dmeReport",
+        name: "DME",
+        rtlName: "عالتسعير",
+        mini: "YTD",
+        rtlMini: "ع",
+        component: DmeReport,
+        layout: "/admin",
+      },
+      {
+        path: "/transportationReport",
+        name: "Transportation",
+        rtlName: "عالتسعير",
+        mini: "YTD",
+        rtlMini: "ع",
+        component: TransportationReport,
+        layout: "/admin",
+      },
+      {
+        path: "/servicesReport",
+        name: "Services",
+        rtlName: "عالتسعير",
+        mini: "YTD",
+        rtlMini: "ع",
+        component: Services,
+        layout: "/admin",
+      },
+      {
+        path: "/utilitiesReport",
+        name: "Utilities",
+        rtlName: "عالتسعير",
+        mini: "YTD",
+        rtlMini: "ع",
+        component: Utilities,
+        layout: "/admin",
+      },
+      {
+        path: "/payrollReport",
+        name: "Payroll",
+        rtlName: "عالتسعير",
+        mini: "YTD",
+        rtlMini: "ع",
+        component: Payroll,
+        layout: "/admin",
+      },
+      {
+        path: "/marketingReport",
+        name: "Marketing",
+        rtlName: "عالتسعير",
+        mini: "YTD",
+        rtlMini: "ع",
+        component: Marketing,
+        layout: "/admin",
+      },
+    ],
+  },
+
+  {
+    path: "/charts",
+    name: "Charts",
+    rtlName: "الرسوم البيانية",
+    icon: Timeline,
+    component: Charts,
+    layout: "/admin",
+  },
+  /*
   {
     collapse: true,
     name: "Pages",
@@ -547,5 +677,6 @@ var dashRoutes = [
     component: Calendar,
     layout: "/admin",
   },
+  */
 ];
 export default dashRoutes;

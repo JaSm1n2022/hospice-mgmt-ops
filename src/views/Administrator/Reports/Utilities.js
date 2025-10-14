@@ -8,7 +8,8 @@ import {
   TableRow,
   Typography,
 } from "@material-ui/core";
-import React, { useEffect, useState } from "react";
+import { SupaContext } from "App";
+import React, { useContext, useEffect, useState } from "react";
 import { connect } from "react-redux";
 import { attemptToFetchTransaction } from "store/actions/transactionAction";
 import { resetFetchTransactionState } from "store/actions/transactionAction";
@@ -23,20 +24,15 @@ let numberOfMonth = 0;
 let numberOfProcess = 1;
 let data = [];
 let grandTotal = 0.0;
-let userProfile = {};
+
 const YTD_LIST = Helper.getDaysInMonth();
 const Utilities = (props) => {
+  const context = useContext(SupaContext);
   const [isProcessCollection, setIsProcessCollection] = useState(true);
   const [summary, setSummary] = useState([]);
 
   useEffect(() => {
-    if (
-      props.profileState &&
-      props.profileState.data &&
-      props.profileState.data.length
-    ) {
-      userProfile = props.profileState.data[0];
-
+    if (context.userProfile?.companyId) {
       data = [];
       numberOfProcess = 0;
       numberOfMonth = YTD_LIST.length;
@@ -45,7 +41,7 @@ const Utilities = (props) => {
       props.listTransactions({
         from: YTD_LIST[numberOfProcess].from,
         to: YTD_LIST[numberOfProcess].to,
-        companyId: userProfile.companyId,
+        companyId: context.userProfile?.companyId,
       });
     }
     //start with 2022
@@ -79,7 +75,7 @@ const Utilities = (props) => {
         props.listTransactions({
           from: YTD_LIST[numberOfProcess].from,
           to: YTD_LIST[numberOfProcess].to,
-          companyId: userProfile.companyId,
+          companyId: context.userProfile?.companyId,
         });
       } else {
         grandTotal = 0.0;
@@ -113,25 +109,24 @@ const Utilities = (props) => {
 
   return (
     <React.Fragment>
-      <Grid justifyContent="space-between" container style={{ padding: 10 }}>
-        <div>
-          <Typography variant="h5">Utilities Purchased Report</Typography>
-
-          <Typography variant="body">(NVEnergy/COX)</Typography>
+      <div
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          width: "100%",
+        }}
+      >
+        {/* Left side: Select */}
+        <div style={{ flex: "0 0 90%" }}>
+          <h4>Utilities Purchased Report</h4>
         </div>
-        <Box
-          style={{
-            padding: 2,
-            background: "#ebedeb",
-            border: "1px solid #ebedeb",
-          }}
-        >
-          <Typography variant="h5" color="primary">{`$${new Intl.NumberFormat(
-            "en-US",
-            {}
-          ).format(parseFloat(grandTotal))}`}</Typography>
-        </Box>
-      </Grid>
+        <div align="right" style={{ flex: "0 0 10%" }}>
+          <h4>{`$${new Intl.NumberFormat("en-US", {}).format(
+            parseFloat(grandTotal)
+          )}`}</h4>
+        </div>
+      </div>
+
       <Grid justifyContent="space-between" container style={{ padding: 10 }}>
         <Typography variant="body1" color="textSecondary">
           Utilities reports, including electricity, water, gas,

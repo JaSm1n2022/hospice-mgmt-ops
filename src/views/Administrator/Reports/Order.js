@@ -8,7 +8,8 @@ import {
   TableRow,
   Typography,
 } from "@material-ui/core";
-import React, { useEffect, useState } from "react";
+import { SupaContext } from "App";
+import React, { useContext, useEffect, useState } from "react";
 import { connect } from "react-redux";
 import { attemptToFetchTransaction } from "store/actions/transactionAction";
 import { resetFetchTransactionState } from "store/actions/transactionAction";
@@ -22,20 +23,16 @@ import ReportChart from "./Chart/ReportChart";
 let numberOfMonth = 0;
 let numberOfProcess = 1;
 let data = [];
-let userProfile = {};
+
 let grandTotal = 0.0;
 const YTD_LIST = Helper.getDaysInMonth();
 const Order = (props) => {
+  const context = useContext(SupaContext);
   const [isProcessCollection, setIsProcessCollection] = useState(true);
   const [summary, setSummary] = useState([]);
 
   useEffect(() => {
-    if (
-      props.profileState &&
-      props.profileState.data &&
-      props.profileState.data.length
-    ) {
-      userProfile = props.profileState.data[0];
+    if (context.userProfile?.companyId) {
       data = [];
       numberOfProcess = 0;
       numberOfMonth = YTD_LIST.length;
@@ -43,7 +40,7 @@ const Order = (props) => {
       props.listTransactions({
         from: YTD_LIST[numberOfProcess].from,
         to: YTD_LIST[numberOfProcess].to,
-        companyId: userProfile.companyId,
+        companyId: context.userProfile?.companyId,
       });
     }
     //start with 2022
@@ -69,7 +66,7 @@ const Order = (props) => {
         props.listTransactions({
           from: YTD_LIST[numberOfProcess].from,
           to: YTD_LIST[numberOfProcess].to,
-          companyId: userProfile.companyId,
+          companyId: context.userProfile?.companyId,
         });
       } else {
         grandTotal = 0.0;
@@ -103,21 +100,23 @@ const Order = (props) => {
 
   return (
     <React.Fragment>
-      <Grid justifyContent="space-between" container style={{ padding: 10 }}>
-        <Typography variant="h5">Transaction Report</Typography>
-        <Box
-          style={{
-            padding: 2,
-            background: "#ebedeb",
-            border: "1px solid #ebedeb",
-          }}
-        >
-          <Typography variant="h5" color="primary">{`$${new Intl.NumberFormat(
-            "en-US",
-            {}
-          ).format(parseFloat(grandTotal).toFixed(2))}`}</Typography>
-        </Box>
-      </Grid>
+      <div
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          width: "100%",
+        }}
+      >
+        {/* Left side: Select */}
+        <div style={{ flex: "0 0 90%" }}>
+          <h4>Transaction Report</h4>
+        </div>
+        <div align="right" style={{ flex: "0 0 10%" }}>
+          <h4>{`$${new Intl.NumberFormat("en-US", {}).format(
+            parseFloat(grandTotal)
+          )}`}</h4>
+        </div>
+      </div>
       <Grid justifyContent="space-between" container style={{ padding: 10 }}>
         <Typography variant="body1" color="textSecondary">
           All transaction reports related to business activities such as office
@@ -152,7 +151,7 @@ const Order = (props) => {
       </Table>
       <div style={{ paddingTop: 10 }}>
         <Typography variant="h6">Graph Presentation</Typography>
-        <ReportChart data={summary} />
+        {summary.length > 0 ? <ReportChart data={summary} /> : null}
       </div>
     </React.Fragment>
   );

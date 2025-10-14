@@ -86,7 +86,7 @@ export default function Charts() {
             </CardBody>
           </Card>
         </GridItem>
-        <GridItem xs={12} sm={12} md={4}>
+        <GridItem xs={12} sm={12} md={12}>
           <Card chart>
             <CardHeader color="warning">
               <ChartistGraph
@@ -103,10 +103,11 @@ export default function Charts() {
             </CardBody>
           </Card>
         </GridItem>
-        <GridItem xs={12} sm={12} md={4}>
+        <GridItem xs={12} sm={12} md={12}>
           <Card chart>
             <CardHeader color="info">
               <ChartistGraph
+                width="600px"
                 className="ct-chart-white-colors"
                 data={simpleBarChart.data}
                 type="Bar"
