@@ -72,6 +72,7 @@ export default function LoginPage() {
   };
 
   React.useEffect(() => {
+    console.log("[LOGIN PAGE]");
     let id = setTimeout(function () {
       setCardAnimation("");
     }, 700);
@@ -97,6 +98,7 @@ export default function LoginPage() {
   };
 
   const classes = useStyles();
+  console.log("[WHY LOGIN PAGE]");
   return (
     <div className={classes.container}>
       <GridContainer justify="center">

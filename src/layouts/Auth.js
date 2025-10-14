@@ -18,6 +18,7 @@ import login from "assets/img/login.jpeg";
 import lock from "assets/img/lock.jpeg";
 import error from "assets/img/clint-mckoy.jpg";
 import pricing from "assets/img/bg-pricing.jpeg";
+import LoginPage from "views/Pages/LoginPage";
 import { connect } from "react-redux";
 import { profileListStateSelector } from "store/selectors/profileSelector";
 let routes = [];
@@ -94,6 +95,7 @@ function Pages(props) {
     }
     return activeRoute;
   };
+  console.log("[AUTH]", routes);
   return (
     <div>
       <AuthNavbar brandText={getActiveRoute(routes)} {...rest} />
@@ -104,7 +106,7 @@ function Pages(props) {
         >
           <Switch>
             {getRoutes(routes)}
-            <Redirect from="/auth" to="/auth/login-page" />
+            <Route path="/auth" component={LoginPage} />
           </Switch>
           <Footer white />
         </div>
