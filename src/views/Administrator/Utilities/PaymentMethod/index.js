@@ -5,6 +5,7 @@ import {
   makeStyles,
   Typography,
 } from "@material-ui/core";
+import { SupaContext } from "App";
 
 import CardBody from "components/Card/CardBody";
 import CustomDatePicker from "components/Date/CustomDatePicker";
@@ -13,7 +14,7 @@ import GridItem from "components/Grid/GridItem";
 
 import SimpleTable from "components/Table/SimpleTable";
 import moment from "moment";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { connect } from "react-redux";
 import { resetFetchTransactionState } from "store/actions/transactionAction";
 import { attemptToFetchTransaction } from "store/actions/transactionAction";
@@ -67,29 +68,24 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 let isTransactionDone = false;
-let userProfile = {};
+
 let allTransactionsSeries = [];
 let allTransactionGrandTotal = 0.0;
 const dates = Helper.formatDateRangeByCriteriaV2("thisMonth");
 const PaymentMethod = (props) => {
   const { listTransactions, resetlistTransactions, transactions } = props;
   const classes = useStyles();
-
+  const context = useContext(SupaContext);
   const [dateFrom, setDateFrom] = useState(dates.from);
   const [dateTo, setDateTo] = useState(dates.to);
   const [transactionList, setTransactionList] = useState([]);
   const [isTransactionCollection, setIsTransactionCollection] = useState(true);
   useEffect(() => {
-    if (
-      props.profileState &&
-      props.profileState.data &&
-      props.profileState.data.length
-    ) {
-      userProfile = props.profileState.data[0];
+    if (context.userProfile?.companyId) {
       listTransactions({
         from: dates.from,
         to: dates.to,
-        companyId: userProfile.companyId,
+        companyId: context.userProfile?.companyId,
       });
     }
   }, []);
@@ -286,7 +282,7 @@ const PaymentMethod = (props) => {
       listTransactions({
         from: moment(new Date(value)).format("YYYY-MM-DD"),
         to: moment(new Date(dateTo)).format("YYYY-MM-DD"),
-        companyId: userProfile.companyId,
+        companyId: context.userProfile?.companyId,
       });
     } else if (name === "dateTo") {
       setDateTo(value);
@@ -294,7 +290,7 @@ const PaymentMethod = (props) => {
       listTransactions({
         from: moment(new Date(dateFrom)).format("YYYY-MM-DD"),
         to: moment(new Date(value)).format("YYYY-MM-DD"),
-        companyId: userProfile.companyId,
+        companyId: context.userProfile?.companyId,
       });
     }
   };

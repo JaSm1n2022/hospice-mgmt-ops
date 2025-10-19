@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import CustomTextField from "components/TextField/CustomTextField";
 import { QUANTITY_UOM } from "utils/constants";
 import { v4 as uuidv4 } from "uuid";
@@ -33,8 +33,8 @@ import { connect } from "react-redux";
 import { attemptToFetchPayday } from "store/actions/paydayAction";
 import { resetFetchPaydayState } from "store/actions/paydayAction";
 import { paydayListStateSelector } from "store/selectors/paydaySelector";
-import UserProfile from "views/UserProfile/UserProfile";
 import { ACTION_STATUSES } from "utils/constants";
+import { SupaContext } from "App";
 
 let categoryList = [];
 let uoms = [];
@@ -198,6 +198,7 @@ const general = [
 let start = undefined;
 let end = undefined;
 function PayrollForm(props) {
+  const context = useContext(SupaContext);
   const classes = useStyles();
   const theme = useTheme();
   const [generalForm, setGeneralForm] = useState({});
@@ -404,7 +405,7 @@ function PayrollForm(props) {
     src[name] = value;
     if (name === "payDate") {
       props.listPaydays({
-        companyId: props.userProfile.companyId,
+        companyId: context.userProfile?.companyId,
         payday: moment(value).format("YYYY-MM-DD"),
       });
     }

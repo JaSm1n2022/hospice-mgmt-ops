@@ -441,22 +441,6 @@ function AdmittanceFunction(props) {
     let fileName = `admittance_list_batch_${new Date().getTime()}`;
 
     if (excelData && excelData.length) {
-      import(/* webpackChunkName: 'json2xls' */ "json2xls")
-        .then((json2xls) => {
-          // let fileName = fname + '_' + new Date().getTime();
-          const xls =
-            typeof json2xls === "function"
-              ? json2xls(excel)
-              : json2xls.default(excel);
-          const buffer = Buffer.from(xls, "binary");
-          // let buffer = Buffer.from(excelBuffer);
-          const data = new Blob([buffer], { type: fileType });
-          FileSaver.saveAs(data, fileName + fileExtension);
-        })
-        .catch((err) => {
-          // Handle failure
-          console.log(err);
-        });
     }
   };
   const onPressEnterKeyHandler = (value) => {

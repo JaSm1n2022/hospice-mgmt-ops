@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 // @material-ui/core components
 import { makeStyles } from "@material-ui/core/styles";
 // core components
@@ -6,6 +6,7 @@ import GridItem from "components/Grid/GridItem.js";
 import GridContainer from "components/Grid/GridContainer.js";
 
 import Card from "components/Card/Card.js";
+import Button from "components/CustomButtons/Button.js";
 import CardHeader from "components/Card/CardHeader.js";
 import CardBody from "components/Card/CardBody.js";
 
@@ -26,7 +27,7 @@ import { paydayUpdateStateSelector } from "store/selectors/paydaySelector";
 import PropTypes from "prop-types";
 import ActionsFunction from "components/Actions/ActionsFunction";
 import { ACTION_STATUSES } from "utils/constants";
-import { Button, CircularProgress, Grid, Typography } from "@material-ui/core";
+import { CircularProgress, Grid, Typography } from "@material-ui/core";
 import AddIcon from "@material-ui/icons/Add";
 
 import HospiceTable from "components/Table/HospiceTable";
@@ -44,6 +45,8 @@ import { resetFetchEmployeeState } from "store/actions/employeeAction";
 import { attemptToFetchPatient } from "store/actions/patientAction";
 import { resetFetchPatientState } from "store/actions/patientAction";
 import { patientListStateSelector } from "store/selectors/patientSelector";
+import { SupaContext } from "App";
+import FilterTable from "components/Table/FilterTable";
 const styles = {
   cardCategoryWhite: {
     "&,& a,& a:hover,& a:focus": {
@@ -79,12 +82,12 @@ let employeeList = [];
 let patientList = [];
 
 let originalSource = undefined;
-let userProfile = {};
 
 let isPaydayListDone = false;
 
 let isLoadingDone = false;
 function PaydayFunction(props) {
+  const context = useContext(SupaContext);
   const classes = useStyles();
   const { main } = props;
   const [dataSource, setDataSource] = useState([]);
@@ -168,13 +171,8 @@ function PaydayFunction(props) {
     console.log("list paydays");
     isPaydayListDone = false;
     isLoadingDone = false;
-    if (
-      props.profileState &&
-      props.profileState.data &&
-      props.profileState.data.length
-    ) {
-      userProfile = props.profileState.data[0];
-      props.listPaydays({ companyId: userProfile.companyId });
+    if (context.userProfile?.companyId) {
+      props.listPaydays({ companyId: context.userProfile?.companyId });
     }
   }, []);
 
@@ -221,7 +219,7 @@ function PaydayFunction(props) {
   const createPaydayHandler = (payload, mode) => {
     console.log("[Create Payday Handler]", payload, mode);
     const params = {
-      companyId: userProfile.companyId,
+      companyId: context.userProfile?.companyId,
       payday: payload.payday,
       start_period: payload.startPeriod,
       end_period: payload.endPeriod,
@@ -239,7 +237,7 @@ function PaydayFunction(props) {
   ) {
     setIsCreatePaydayCollection(false);
     TOAST.ok("Payday successfully created.");
-    props.listPaydays({ companyId: userProfile.companyId });
+    props.listPaydays({ companyId: context.userProfile?.companyId });
   }
   if (
     isUpdatePaydayCollection &&
@@ -248,7 +246,7 @@ function PaydayFunction(props) {
   ) {
     TOAST.ok("Payday successfully updated.");
     setIsUpdatePaydayCollection(false);
-    props.listPaydays({ companyId: userProfile.companyId });
+    props.listPaydays({ companyId: context.userProfile?.companyId });
   }
   console.log(
     "[isDeletePayday]",
@@ -263,7 +261,7 @@ function PaydayFunction(props) {
     TOAST.ok("Payday successfully deleted.");
     setIsDeletePaydayCollection(false);
 
-    props.listPaydays({ companyId: userProfile.companyId });
+    props.listPaydays({ companyId: context.userProfile?.companyId });
   }
 
   const filterRecordHandler = (keyword) => {
@@ -315,22 +313,6 @@ function PaydayFunction(props) {
     let fileName = `payday_list_batch_${new Date().getTime()}`;
 
     if (excelData && excelData.length) {
-      import(/* webpackChunkName: 'json2xls' */ "json2xls")
-        .then((json2xls) => {
-          // let fileName = fname + '_' + new Date().getTime();
-          const xls =
-            typeof json2xls === "function"
-              ? json2xls(excel)
-              : json2xls.default(excel);
-          const buffer = Buffer.from(xls, "binary");
-          // let buffer = Buffer.from(excelBuffer);
-          const data = new Blob([buffer], { type: fileType });
-          FileSaver.saveAs(data, fileName + fileExtension);
-        })
-        .catch((err) => {
-          // Handle failure
-          console.log(err);
-        });
     }
   };
   const onPressEnterKeyHandler = (value) => {
@@ -355,88 +337,72 @@ function PaydayFunction(props) {
         <GridContainer>
           <GridItem xs={12} sm={12} md={12}>
             <Card>
-              <CardHeader color="success">
-                <Grid container justifyContent="space-between">
-                  <h4 className={classes.cardTitleWhite}>Payday Management</h4>
-                </Grid>
+              <CardHeader color="rose">
+                <div
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    width: "100%",
+                  }}
+                >
+                  {/* Left side: Select */}
+                  <div style={{ flex: "0 0 90%" }}>
+                    <h4 className={classes.cardTitleWhite}>
+                      Payday Management
+                    </h4>
+                  </div>
+                </div>
               </CardHeader>
               <CardBody>
-                <Grid
-                  container
-                  justifyContent="space-between"
-                  style={{ paddingBottom: 4 }}
-                >
-                  <div
-                    style={{
-                      display: "inline-flex",
-                      gap: 10,
-                    }}
-                  >
+                <GridContainer style={{ paddingLeft: 20 }}>
+                  <GridItem md={12} sm={12} xs={12}>
+                    <FilterTable
+                      filterRecordHandler={filterRecordHandler}
+                      isNoDate={true}
+                    />
+                  </GridItem>
+                </GridContainer>
+                <GridContainer style={{ paddingLeft: 14 }}>
+                  <GridItem md={12} sm={12} xs={12}>
                     <Button
+                      color="info"
+                      className={classes.marginRight}
                       onClick={() => createFormHandler()}
-                      variant="contained"
-                      style={{
-                        border: "solid 1px #2196f3",
-                        color: "white",
-                        background: "#2196f3",
-                        fontFamily: "Roboto",
-                        fontSize: "12px",
-                        fontWeight: 500,
-                        fontStretch: "normal",
-                        fontStyle: "normal",
-                        lineHeight: 1.71,
-                        letterSpacing: "0.4px",
-                        textAlign: "left",
-                        cursor: "pointer",
-                      }}
-                      component="span"
-                      startIcon={<AddIcon />}
                     >
-                      ADD PAYDAY
+                      <AddIcon className={classes.icons} /> Add Payday
                     </Button>
-                    {isAddGroupButtons && (
-                      <Button
-                        onClick={() => exportToExcelHandler()}
-                        variant="outlined"
-                        style={{
-                          fontFamily: "Roboto",
-                          fontSize: "12px",
-                          fontWeight: 500,
-                          fontStretch: "normal",
-                          fontStyle: "normal",
-                          lineHeight: 1.71,
-                          letterSpacing: "0.4px",
-                          textAlign: "left",
-                          cursor: "pointer",
-                        }}
-                        component="span"
-                        startIcon={<ImportExport />}
-                      >
-                        {" "}
-                        Export Excel{" "}
-                      </Button>
-                    )}
-                  </div>
 
-                  <SearchCustomTextField
-                    background={"white"}
-                    onChange={inputHandler}
-                    placeholder={"Search Item"}
-                    label={"Search Item"}
-                    name={"keywordValue"}
-                    onPressEnterKeyHandler={onPressEnterKeyHandler}
-                    isAllowEnterKey={true}
-                    value={keywordValue}
+                    {isAddGroupButtons && (
+                      <>
+                        <Button
+                          color="success"
+                          onClick={() => exportToExcelHandler()}
+                          className={classes.marginRight}
+                        >
+                          <UploadIcon className={classes.icons} /> Export Excel
+                        </Button>
+                      </>
+                    )}
+                    <SearchCustomTextField
+                      background={"white"}
+                      onChange={inputHandler}
+                      placeholder={"Search Item"}
+                      label={"Search Item"}
+                      name={"keywordValue"}
+                      onPressEnterKeyHandler={onPressEnterKeyHandler}
+                      isAllowEnterKey={true}
+                      value={keywordValue}
+                    />
+                  </GridItem>
+                  <HospiceTable
+                    columns={columns}
+                    main={true}
+                    dataSource={dataSource}
+                    height={400}
+                    onCheckboxSelectionHandler={onCheckboxSelectionHandler}
                   />
-                </Grid>
-                <HospiceTable
-                  columns={columns}
-                  main={true}
-                  dataSource={dataSource}
-                  height={400}
-                  onCheckboxSelectionHandler={onCheckboxSelectionHandler}
-                />
-                ;
+                  ;
+                </GridContainer>
               </CardBody>
             </Card>
           </GridItem>

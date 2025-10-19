@@ -40,7 +40,7 @@ import Image from "@material-ui/icons/Image";
 import Place from "@material-ui/icons/Place";
 import Timeline from "@material-ui/icons/Timeline";
 import WidgetsIcon from "@material-ui/icons/Widgets";
-
+import GearIcon from "@material-ui/icons/Settings";
 import SettingsIcon from "@material-ui/icons/Settings";
 import PaymentIcon from "@material-ui/icons/PaymentOutlined";
 import StockRoom from "views/Administrator/Logistics/StockRoom/StockRoomMain";
@@ -65,6 +65,14 @@ import Services from "views/Administrator/Reports/Services";
 import Utilities from "views/Administrator/Reports/Utilities";
 import Payroll from "views/Administrator/Reports/Payroll";
 import Marketing from "views/Administrator/Reports/Marketing";
+import Paycheck from "views/Administrator/PayrollManagement/Paycheck";
+import Payday from "views/Administrator/PayrollManagement/Payday";
+import OrderPlot from "views/Administrator/Utilities/OrderPlot";
+import PatientSupplies from "views/Administrator/Utilities/PatientSupplies";
+import PatientMetrics from "views/Administrator/Utilities/PatientMetrics";
+import PatientDistribution from "views/Administrator/Utilities/PatientDistribution";
+import PaymentMethod from "views/Administrator/Utilities/PaymentMethod";
+import Admittance from "views/Administrator/Admittance/AdmittanceMain";
 var dashRoutes = [
   {
     path: "/dashboard",
@@ -229,9 +237,90 @@ var dashRoutes = [
         path: "/contract",
         name: "Contract",
         rtlName: "عالتسعير",
-        mini: "CC",
+        mini: "PM",
         rtlMini: "ع",
         component: Contract,
+        layout: "/admin",
+      },
+      {
+        path: "/pacheck",
+        name: "Paycheck",
+        rtlName: "عالتسعير",
+        mini: "PM",
+        rtlMini: "ع",
+        component: Paycheck,
+        layout: "/admin",
+      },
+      {
+        path: "/payday",
+        name: "Payday",
+        rtlName: "عالتسعير",
+        mini: "PM",
+        rtlMini: "ع",
+        component: Payday,
+        layout: "/admin",
+      },
+    ],
+  },
+  {
+    collapse: true,
+    name: "Utilities",
+    rtlName: "إدارة الرواتب",
+    icon: GearIcon,
+    state: "utilitiesCollapse",
+    views: [
+      {
+        path: "/orderPlot",
+        name: "Order Plot",
+        rtlName: "عالتسعير",
+        mini: "PM",
+        rtlMini: "ع",
+        component: OrderPlot,
+        layout: "/admin",
+      },
+      {
+        path: "/patientSupplies",
+        name: "Client Supplies Metrics",
+        rtlName: "عالتسعير",
+        mini: "PM",
+        rtlMini: "ع",
+        component: PatientSupplies,
+        layout: "/admin",
+      },
+      {
+        path: "/patientMetrics",
+        name: "Client Full Metrics",
+        rtlName: "عالتسعير",
+        mini: "PM",
+        rtlMini: "ع",
+        component: PatientMetrics,
+        layout: "/admin",
+      },
+      {
+        path: "/patientDistribution",
+        name: "Client Distribution Category",
+        rtlName: "عالتسعير",
+        mini: "PM",
+        rtlMini: "ع",
+        component: PatientDistribution,
+        layout: "/admin",
+      },
+      {
+        path: "/paymentMethod",
+        name: "Payment Method Tracking",
+        rtlName: "عالتسعير",
+        mini: "PM",
+        rtlMini: "ع",
+        component: PaymentMethod,
+        layout: "/admin",
+      },
+      {
+        path: "/admittance",
+        name: "Admittance Checklist",
+        rtlName: "عالتسعير",
+        mini: "PM",
+        rtlMini: "ع",
+        component: Admittance,
         layout: "/admin",
       },
     ],

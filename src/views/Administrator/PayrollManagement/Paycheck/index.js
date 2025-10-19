@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 // @material-ui/core components
 import { makeStyles } from "@material-ui/core/styles";
 // core components
@@ -8,7 +8,7 @@ import { v4 as uuidv4 } from "uuid";
 import Card from "components/Card/Card.js";
 import CardHeader from "components/Card/CardHeader.js";
 import CardBody from "components/Card/CardBody.js";
-
+import Button from "components/CustomButtons/Button.js";
 import PayrollHandler from "./components/PayrollHandler";
 import { connect } from "react-redux";
 import { payrollListStateSelector } from "store/selectors/payrollSelector";
@@ -27,7 +27,6 @@ import nanoid8 from "utils/nanoid8";
 import ActionsFunction from "components/Actions/ActionsFunction";
 import { ACTION_STATUSES } from "utils/constants";
 import {
-  Button,
   CircularProgress,
   Grid,
   Menu,
@@ -37,7 +36,7 @@ import {
 import AddIcon from "@material-ui/icons/Add";
 
 import HospiceTable from "components/Table/HospiceTable";
-import { ArrowDownward, ImportExport } from "@material-ui/icons";
+import { AddAlert, ArrowDownward, ImportExport } from "@material-ui/icons";
 import Helper from "utils/helper";
 import * as FileSaver from "file-saver";
 import SearchCustomTextField from "components/TextField/SearchCustomTextField";
@@ -56,10 +55,10 @@ import { attemptToFetchContract } from "store/actions/contractAction";
 import { resetFetchContractState } from "store/actions/contractAction";
 import FilterTable from "components/Table/FilterTable";
 import moment from "moment";
-import PaycheckDocument from "views/Document/PaycheckDocument";
-import PayrollPaymentDocument from "views/Document/PayrollPaymentDocument";
-import PayrollReceivedDocument from "views/Document/PayrollReceivedDocument";
-import PatientPayrollPaymentDocument from "views/Document/PatientPayrollDocument";
+import PaycheckDocument from "views/Administrator/Document/PaycheckDocument";
+import PayrollPaymentDocument from "views/Administrator/Document/PayrollPaymentDocument";
+import PayrollReceivedDocument from "views/Administrator/Document/PayrollReceivedDocument";
+import PatientPayrollPaymentDocument from "views/Administrator/Document/PatientPayrollDocument";
 import { EMPLOYEE_POSITION } from "utils/constants";
 import { attemptToFetchProduct } from "store/actions/productAction";
 import { resetFetchProductState } from "store/actions/productAction";
@@ -70,6 +69,8 @@ import { distributionCreateStateSelector } from "store/selectors/distributionSel
 import { attemptToCreateTransaction } from "store/actions/transactionAction";
 import { resetCreateTransactionState } from "store/actions/transactionAction";
 import { transactionCreateStateSelector } from "store/selectors/transactionSelector";
+import { SupaContext } from "App";
+import Snackbar from "components/Snackbar/Snackbar";
 const styles = {
   cardCategoryWhite: {
     "&,& a,& a:hover,& a:focus": {
@@ -107,7 +108,6 @@ let contractList = [];
 let payrollProductList = [];
 
 let originalSource = undefined;
-let userProfile = {};
 
 let isPayrollListDone = false;
 let isEmployeeListDone = false;
@@ -115,9 +115,15 @@ let isPatientListDone = false;
 let isContractListDone = false;
 let isPayrollProductListDone = false;
 let isLoadingDone = false;
+
 function PayrollFunction(props) {
+  const context = useContext(SupaContext);
   const classes = useStyles();
   const { main } = props;
+  const [message, setMessage] = useState("");
+  const [tc, setTC] = useState(false);
+  const [color, setColor] = useState("success");
+
   const [dataSource, setDataSource] = useState([]);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -214,12 +220,7 @@ function PayrollFunction(props) {
     isEmployeeListDone = false;
     isPatientListDone = false;
     isPayrollProductListDone = false;
-    if (
-      props.profileState &&
-      props.profileState.data &&
-      props.profileState.data.length
-    ) {
-      userProfile = props.profileState.data[0];
+    if (context.userProfile?.companyId) {
       const dates = Helper.formatDateRangeByCriteriaV2("thisMonth");
       setDateFrom(dates.from);
       setDateTo(dates.to);
@@ -227,15 +228,15 @@ function PayrollFunction(props) {
       props.listPayrolls({
         from: dates.from,
         to: dates.to,
-        companyId: userProfile.companyId,
+        companyId: context.userProfile?.companyId,
       });
       props.listProducts({
-        companyId: userProfile.companyId,
+        companyId: context.userProfile?.companyId,
         category: "Payroll",
       });
-      props.listEmployees({ companyId: userProfile.companyId });
-      props.listPatients({ companyId: userProfile.companyId });
-      props.listContracts({ companyId: userProfile.companyId });
+      props.listEmployees({ companyId: context.userProfile?.companyId });
+      props.listPatients({ companyId: context.userProfile?.companyId });
+      props.listContracts({ companyId: context.userProfile?.companyId });
     }
   }, []);
 
@@ -296,6 +297,23 @@ function PayrollFunction(props) {
     isPayrollListDone = true;
     setIsPayrollsCollection(false);
   }
+
+  const showNotification = (place, color, msg) => {
+    setMessage(msg);
+    switch (place) {
+      case "tc":
+        if (!tc) {
+          setTC(true);
+          setColor(color);
+          setTimeout(function () {
+            setTC(false);
+          }, 6000);
+        }
+        break;
+      default:
+        break;
+    }
+  };
   const deleteRecordItemHandler = (id) => {
     console.log("[delete payroll id]", id);
     props.deletePayroll(id);
@@ -305,7 +323,7 @@ function PayrollFunction(props) {
 
     for (const param of payload.details) {
       const params = {
-        companyId: userProfile.companyId,
+        companyId: context.userProfile.companyId,
         employeeId: payload.general?.employee.id,
         employeeName: payload.general?.employee?.name,
         employeeTitle: payload.general?.employee?.position,
@@ -328,8 +346,8 @@ function PayrollFunction(props) {
           `${moment(payload.general?.payDate).format("YYYY-MM-DD")} 08:00`
         ),
         updatedUser: {
-          name: userProfile.name,
-          userId: userProfile.id,
+          name: context.userProfile.name,
+          userId: context.userProfile.id,
           date: new Date(),
         },
       };
@@ -341,8 +359,8 @@ function PayrollFunction(props) {
       if (mode === "create") {
         params.created_at = new Date();
         params.createdUser = {
-          name: userProfile.name,
-          userId: userProfile.id,
+          name: context.userProfile.name,
+          userId: context.userProfile.id,
           date: new Date(),
         };
       } else if (mode === "edit") {
@@ -367,11 +385,12 @@ function PayrollFunction(props) {
     props.createPayrollState.status === ACTION_STATUSES.SUCCEED
   ) {
     setIsCreatePayrollCollection(false);
-    TOAST.ok("Payroll successfully created.");
+    showNotification("tc", "success", "Payroll successfully created.");
+
     props.listPayrolls({
       from: dateFrom,
       to: dateTo,
-      companyId: userProfile.companyId,
+      companyId: context.userProfile.companyId,
     });
   }
   if (
@@ -379,12 +398,12 @@ function PayrollFunction(props) {
     props.updatePayrollState &&
     props.updatePayrollState.status === ACTION_STATUSES.SUCCEED
   ) {
-    TOAST.ok("Payroll successfully updated.");
+    showNotification("tc", "success", "Payroll successfully updated.");
     setIsUpdatePayrollCollection(false);
     props.listPayrolls({
       from: dateFrom,
       to: dateTo,
-      companyId: userProfile.companyId,
+      companyId: context.userProfile.companyId,
     });
   }
   console.log(
@@ -397,7 +416,7 @@ function PayrollFunction(props) {
     props.deletePayrollState &&
     props.deletePayrollState.status === ACTION_STATUSES.SUCCEED
   ) {
-    TOAST.ok("Payroll successfully deleted.");
+    showNotification("tc", "success", "Payroll successfully deleted.");
     setIsDeletePayrollCollection(false);
 
     props.listPayrolls({
@@ -491,22 +510,6 @@ function PayrollFunction(props) {
     let fileName = `payroll_list_batch_${new Date().getTime()}`;
 
     if (excelData && excelData.length) {
-      import(/* webpackChunkName: 'json2xls' */ "json2xls")
-        .then((json2xls) => {
-          // let fileName = fname + '_' + new Date().getTime();
-          const xls =
-            typeof json2xls === "function"
-              ? json2xls(excel)
-              : json2xls.default(excel);
-          const buffer = Buffer.from(xls, "binary");
-          // let buffer = Buffer.from(excelBuffer);
-          const data = new Blob([buffer], { type: fileType });
-          FileSaver.saveAs(data, fileName + fileExtension);
-        })
-        .catch((err) => {
-          // Handle failure
-          console.log(err);
-        });
     }
   };
   const closePrintModalHandler = () => {
@@ -689,7 +692,7 @@ function PayrollFunction(props) {
     props.listPayrolls({
       from: dates.from,
       to: dates.to,
-      companyId: userProfile.companyId,
+      companyId: context.userProfile.companyId,
     });
   };
   const changeReportHandler = (event) => {
@@ -742,19 +745,19 @@ function PayrollFunction(props) {
             ? `${dd.payDate}T17:00:00.000Z`
             : new Date(),
           grand_total: parseFloat(dd.totalRate || 0).toFixed(2),
-          companyId: userProfile.companyId,
+          companyId: context.userProfile.companyId,
           comments: dd.dos?.length
             ? `${dd.dos.toString()}${dd.comments ? `/${dd.comments}` : ""}`
             : dd.comments,
 
           updatedUser: {
-            name: userProfile.name,
-            userId: userProfile.id,
+            name: context.userProfile.name,
+            userId: context.userProfile.id,
             date: new Date(),
           },
           createdUser: {
-            name: userProfile.name,
-            userId: userProfile.id,
+            name: context.userProfile.name,
+            userId: context.userProfile.id,
             date: new Date(),
           },
         };
@@ -775,8 +778,8 @@ function PayrollFunction(props) {
           isTransaction: true,
           id: p,
           updatedUser: {
-            name: userProfile.name,
-            userId: userProfile.id,
+            name: context.userProfile.name,
+            userId: context.userProfile.id,
             date: new Date(),
           },
         });
@@ -825,15 +828,15 @@ function PayrollFunction(props) {
           stock_status: 0,
           group_id: uuidv4(),
           unit_uom: "Fixed",
-          companyId: userProfile.companyId,
+          companyId: context.userProfile.companyId,
           updatedUser: {
-            name: userProfile.name,
-            userId: userProfile.id,
+            name: context.userProfile.name,
+            userId: context.userProfile.id,
             date: new Date(),
           },
           createdUser: {
-            name: userProfile.name,
-            userId: userProfile.id,
+            name: context.userProfile.name,
+            userId: context.userProfile.id,
             date: new Date(),
           },
           record_id: `${currentCategory.item}-${nanoid8()}`,
@@ -853,8 +856,8 @@ function PayrollFunction(props) {
           isDistributed: true,
           id: p,
           updatedUser: {
-            name: userProfile.name,
-            userId: userProfile.id,
+            name: context.userProfile.name,
+            userId: context.userProfile.id,
             date: new Date(),
           },
         });
@@ -884,108 +887,88 @@ function PayrollFunction(props) {
         </div>
       ) : (
         <GridContainer>
+          {tc && (
+            <div style={{ paddingTop: 10 }}>
+              <Snackbar
+                place="tc"
+                color={color}
+                icon={AddAlert}
+                message={message}
+                open={tc}
+                closeNotification={() => setTC(false)}
+                close
+              />
+            </div>
+          )}
           <GridItem xs={12} sm={12} md={12}>
             <Card>
-              <CardHeader color="success">
-                <Grid container justifyContent="space-between" spacing={24}>
-                  <h4 className={classes.cardTitleWhite}>Payroll Management</h4>
-                  <h4 className={classes.cardTitleWhite}>
-                    {`$${new Intl.NumberFormat("en-US", {}).format(
-                      parseFloat(computeGrandTotalHandler()).toFixed(2)
-                    )}`}
-                  </h4>
-                </Grid>
+              <CardHeader color="rose">
+                <div
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    width: "100%",
+                  }}
+                >
+                  {/* Left side: Select */}
+                  <div style={{ flex: "0 0 90%" }}>
+                    <h4 className={classes.cardTitleWhite}>
+                      Paycheck Management
+                    </h4>
+                  </div>
+                  <div align="right" style={{ flex: "0 0 10%" }}>
+                    <h4 className={classes.cardTitleWhite}>
+                      {" "}
+                      {`$${new Intl.NumberFormat("en-US", {}).format(
+                        parseFloat(computeGrandTotalHandler()).toFixed(2)
+                      )}`}
+                    </h4>
+                  </div>
+                </div>
               </CardHeader>
               <CardBody>
-                <Grid
-                  container
-                  justifyContent="space-between"
-                  style={{ paddingTop: 10 }}
-                >
-                  <div>
-                    <Typography variant="h6"></Typography>
-                  </div>
-                  <div>
+                <GridContainer style={{ paddingLeft: 20 }}>
+                  <GridItem md={12} sm={12} xs={12}>
                     <FilterTable
                       filterRecordHandler={filterRecordHandler}
                       filterByDateHandler={filterByDateHandler}
                     />
-                  </div>
-                </Grid>
-                <Grid
-                  container
-                  justifyContent="space-between"
-                  style={{ paddingBottom: 4 }}
-                >
-                  <div
-                    style={{
-                      display: "inline-flex",
-                      gap: 10,
-                    }}
-                  >
+                  </GridItem>
+                </GridContainer>
+                <GridContainer style={{ paddingLeft: 14 }}>
+                  <GridItem md={12} sm={12} xs={12}>
                     <Button
+                      color="info"
+                      className={classes.marginRight}
                       onClick={() => createFormHandler()}
-                      variant="contained"
-                      style={{
-                        border: "solid 1px #2196f3",
-                        color: "white",
-                        background: "#2196f3",
-                        fontFamily: "Roboto",
-                        fontSize: "12px",
-                        fontWeight: 500,
-                        fontStretch: "normal",
-                        fontStyle: "normal",
-                        lineHeight: 1.71,
-                        letterSpacing: "0.4px",
-                        textAlign: "left",
-                        cursor: "pointer",
-                      }}
-                      component="span"
-                      startIcon={<AddIcon />}
                     >
-                      ADD PAYROLL
+                      <AddIcon className={classes.icons} /> Add Payroll
                     </Button>
+
                     {isAddGroupButtons && (
-                      <div style={{ display: "inline-flex", gap: 10 }}>
+                      <>
                         <Button
+                          color="success"
                           onClick={() => exportToExcelHandler()}
-                          variant="outlined"
-                          style={{
-                            fontFamily: "Roboto",
-                            fontSize: "12px",
-                            fontWeight: 500,
-                            fontStretch: "normal",
-                            fontStyle: "normal",
-                            lineHeight: 1.71,
-                            letterSpacing: "0.4px",
-                            textAlign: "left",
-                            cursor: "pointer",
-                          }}
-                          component="span"
-                          startIcon={<ImportExport />}
+                          className={classes.marginRight}
                         >
-                          {" "}
-                          Export Excel{" "}
+                          <UploadIcon className={classes.icons} /> Export Excel
                         </Button>
                         <Button
+                          color="success"
                           onClick={() => uploadToTransactionHandler()}
-                          variant="outlined"
-                          style={{
-                            fontFamily: "Roboto",
-                            fontSize: "12px",
-                            fontWeight: 500,
-                            fontStretch: "normal",
-                            fontStyle: "normal",
-                            lineHeight: 1.71,
-                            letterSpacing: "0.4px",
-                            textAlign: "left",
-                            cursor: "pointer",
-                          }}
-                          component="span"
-                          startIcon={<ImportExport />}
+                          className={classes.marginRight}
                         >
-                          {" "}
-                          Upload to Transaction{" "}
+                          <UploadIcon className={classes.icons} /> Upload to
+                          Transaction
+                        </Button>
+                        <Button
+                          color="success"
+                          onClick={() => uploadToTransactionHandler()}
+                          className={classes.marginRight}
+                        >
+                          <UploadIcon className={classes.icons} /> Upload to
+                          Transaction
                         </Button>
                         <Button
                           onClick={() => uploadToDistributionHandler()}
@@ -1005,30 +988,9 @@ function PayrollFunction(props) {
                           startIcon={<ImportExport />}
                         >
                           {" "}
-                          Upload To Distribution{" "}
+                          Upload to Distribution{" "}
                         </Button>
-                        {/*
-                        <Button
-                          onClick={() => customExportExcelHandler()}
-                          variant="outlined"
-                          style={{
-                            fontFamily: "Roboto",
-                            fontSize: "12px",
-                            fontWeight: 500,
-                            fontStretch: "normal",
-                            fontStyle: "normal",
-                            lineHeight: 1.71,
-                            letterSpacing: "0.4px",
-                            textAlign: "left",
-                            cursor: "pointer",
-                          }}
-                          component="span"
-                          startIcon={<ImportExport />}
-                        >
-                          {" "}
-                          Formatted Excel Report{" "}
-                        </Button>
-                        */}
+
                         <Button
                           onClick={changeReportHandler}
                           variant="outlined"
@@ -1060,30 +1022,18 @@ function PayrollFunction(props) {
                             Client Signature
                           </MenuItem>
                         </Menu>
-                      </div>
+                      </>
                     )}
-                  </div>
-                  {/*
-                  <SearchCustomTextField
-                    background={"white"}
-                    onChange={inputHandler}
-                    placeholder={"Search Item"}
-                    label={"Search Item"}
-                    name={"keywordValue"}
-                    onPressEnterKeyHandler={onPressEnterKeyHandler}
-                    isAllowEnterKey={true}
-                    value={keywordValue}
+                  </GridItem>
+                  <HospiceTable
+                    columns={columns}
+                    main={true}
+                    dataSource={dataSource}
+                    height={400}
+                    onCheckboxSelectionHandler={onCheckboxSelectionHandler}
                   />
-*/}
-                </Grid>
-                <HospiceTable
-                  columns={columns}
-                  main={true}
-                  dataSource={dataSource}
-                  height={400}
-                  onCheckboxSelectionHandler={onCheckboxSelectionHandler}
-                />
-                ;
+                  ;
+                </GridContainer>
               </CardBody>
             </Card>
           </GridItem>
@@ -1097,7 +1047,7 @@ function PayrollFunction(props) {
           mode={mode}
           isOpen={isFormModal}
           isEdit={false}
-          userProfile={userProfile}
+          userProfile={context.userProfile}
           employeeList={employeeList}
           patientList={patientList}
           contractList={contractList}
