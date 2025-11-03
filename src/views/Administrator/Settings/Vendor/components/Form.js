@@ -323,7 +323,7 @@ function VendorForm(props) {
             </div>
           </div>
         </CardHeader>
-        <br />
+
         <Card plain>
           <CardBody>
             <Grid container spacing={1} direction="row">

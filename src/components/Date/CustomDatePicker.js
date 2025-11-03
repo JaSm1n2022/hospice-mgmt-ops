@@ -50,12 +50,14 @@ export default function CustomDatePicker({
   errorMsg,
   source,
   background,
+  pickerVariant = "inline", // "inline" | "dialog" | "static"
 }) {
   const classes = useStyles();
   return (
     <form className={classes.root} noValidate autoComplete="off">
       <MuiPickersUtilsProvider utils={DateFnsUtils}>
         <KeyboardDatePicker
+          variant={pickerVariant}
           inputVariant="outlined"
           id="date-picker-dialog"
           format="MM/dd/yyyy"

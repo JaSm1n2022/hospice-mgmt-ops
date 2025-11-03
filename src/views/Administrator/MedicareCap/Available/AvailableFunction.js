@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 // @material-ui/core components
 import { makeStyles } from "@material-ui/core/styles";
 // core components
@@ -25,6 +25,7 @@ import { resetFetchPatientState } from "store/actions/patientAction";
 import FilterTable from "components/Table/FilterTable";
 import { patientListStateSelector } from "store/selectors/patientSelector";
 import { profileListStateSelector } from "store/selectors/profileSelector";
+import { SupaContext } from "App";
 
 const styles = {
   cardCategoryWhite: {
@@ -61,9 +62,10 @@ const useStyles = makeStyles(styles);
 let patientList = [];
 let isProcessDone = true;
 let isPatientListDone = true;
-let userProfile = {};
+
 let originalSource = [];
 function AvailableFunction(props) {
+  const context = useContext(SupaContext);
   const classes = useStyles();
   const { main } = props;
   const [dataSource, setDataSource] = useState([]);
@@ -88,14 +90,9 @@ function AvailableFunction(props) {
   useEffect(() => {
     console.log("list calls", props.main);
     isPatientListDone = false;
-    if (
-      props.profileState &&
-      props.profileState.data &&
-      props.profileState.data.length
-    ) {
-      userProfile = props.profileState.data[0];
+    if (context.userProfile?.companyId) {
       props.listPatients({
-        companyId: userProfile.companyId,
+        companyId: context.userProfile?.companyId,
       });
     }
   }, []);
@@ -175,22 +172,6 @@ function AvailableFunction(props) {
     let fileName = `cap_list_batch_${new Date().getTime()}`;
 
     if (excelData && excelData.length) {
-      import(/* webpackChunkName: 'json2xls' */ "json2xls")
-        .then((json2xls) => {
-          // let fileName = fname + '_' + new Date().getTime();
-          const xls =
-            typeof json2xls === "function"
-              ? json2xls(excel)
-              : json2xls.default(excel);
-          const buffer = Buffer.from(xls, "binary");
-          // let buffer = Buffer.from(excelBuffer);
-          const data = new Blob([buffer], { type: fileType });
-          FileSaver.saveAs(data, fileName + fileExtension);
-        })
-        .catch((err) => {
-          // Handle failure
-          console.log(err);
-        });
     }
   };
   const onPressEnterKeyHandler = (value) => {
@@ -226,6 +207,11 @@ function AvailableFunction(props) {
                   </Grid>
                 </CardHeader>
                 <CardBody>
+                  <GridContainer style={{ paddingLeft: 20 }}>
+                    <GridItem md={12} sm={12} xs={12}>
+                      <FilterTable filterRecordHandler={filterRecordHandler} />
+                    </GridItem>
+                  </GridContainer>
                   <Grid
                     container
                     justifyContent="space-between"
@@ -260,12 +246,7 @@ function AvailableFunction(props) {
                         </Button>
                       )}
                     </div>
-                    <div>
-                      <FilterTable
-                        dateRangeSelection={"thisWeek"}
-                        filterRecordHandler={filterRecordHandler}
-                      />
-                    </div>
+
                     {/*
                       <SearchCustomTextField
                         background={"white"}

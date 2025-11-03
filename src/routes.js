@@ -73,6 +73,8 @@ import PatientMetrics from "views/Administrator/Utilities/PatientMetrics";
 import PatientDistribution from "views/Administrator/Utilities/PatientDistribution";
 import PaymentMethod from "views/Administrator/Utilities/PaymentMethod";
 import Admittance from "views/Administrator/Admittance/AdmittanceMain";
+import Medicare from "views/Administrator/MedicareCap/Available/AvailableFunction";
+import MedicareV2 from "views/Administrator/MedicareV2/MedicareV2Function";
 var dashRoutes = [
   {
     path: "/dashboard",
@@ -434,7 +436,24 @@ var dashRoutes = [
       },
     ],
   },
-
+  /*
+  {
+    path: "/medicare",
+    name: "Medicare Cap",
+    rtlName: "الرسوم البيانية",
+    icon: PaymentIcon,
+    component: Medicare,
+    layout: "/admin",
+  },
+  */
+  {
+    path: "/medicarev2",
+    name: "Medicare Cap V2",
+    rtlName: "الرسوم البيانية",
+    icon: PaymentIcon,
+    component: MedicareV2,
+    layout: "/admin",
+  },
   {
     path: "/charts",
     name: "Charts",

@@ -1631,7 +1631,8 @@ export const INSURANCE = [
 
 export const MEDICARE_CAP_AMOUNT = [
   { from: "2023-10-01", to: "2024-09-30", amount: 33494 },
-  { from: "2024-10-01", to: "2025-09-30", amount: 34000 },
+  { from: "2024-10-01", to: "2025-09-30", amount: 34465.34 },
+  { from: "2025-10-01", to: "2026-09-30", amount: 35361.44 },
 ];
 export const DISCHARGE_REASON = [
   {
@@ -1642,6 +1643,7 @@ export const DISCHARGE_REASON = [
     category: "discharge",
     id: "Death Discharge",
   },
+
   {
     name: "Transfer another hospice",
     label: "Transfer another hospice",
