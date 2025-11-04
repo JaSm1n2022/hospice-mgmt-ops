@@ -10,6 +10,8 @@ import {
   Grid,
   Modal,
   Typography,
+  Divider,
+  Box,
 } from "@material-ui/core";
 import { DEFAULT_ITEM } from "utils/constants";
 import { makeStyles } from "@material-ui/core";
@@ -83,21 +85,41 @@ const useStyles = makeStyles((theme) => ({
   paper: {
     position: "absolute",
     width: "70%",
-    height: "70%",
-    overflow: "auto",
+    height: "85%",
+    display: "flex",
+    flexDirection: "column",
     backgroundColor: theme.palette.background.paper,
     border: "1px solid #000",
     boxShadow: theme.shadows[0],
-    padding: theme.spacing(2, 4, 3),
     elevation: 2,
+  },
+  scrollableContent: {
+    flex: 1,
+    overflow: "auto",
+    padding: theme.spacing(2, 4, 3),
   },
   small: {
     width: theme.spacing(3),
     height: theme.spacing(3),
-
     color: "black",
     backgroundColor: "white",
     border: "1px solid black",
+  },
+  sectionHeader: {
+    marginTop: theme.spacing(2),
+    marginBottom: theme.spacing(1),
+    paddingTop: theme.spacing(2),
+  },
+  sectionTitle: {
+    fontWeight: 600,
+    fontSize: "1rem",
+    color: "#e91e63",
+    marginBottom: theme.spacing(1),
+  },
+  sectionDivider: {
+    marginBottom: theme.spacing(2),
+    backgroundColor: "#e91e63",
+    height: 2,
   },
 }));
 let generatedPatientId = "";
@@ -127,9 +149,14 @@ function PatientForm(props) {
         name: "status",
         options: PATIENT_STATUS,
         hide: props.mode && props.mode === "create" ? true : false,
-        //disabled: props.mode && props.mode === 'view' ? true : false,
-
-        cols: 4,
+        cols: 12,
+      },
+      // PROFILE SECTION
+      {
+        id: "profileHeader",
+        component: "sectionheader",
+        label: "Patient Profile",
+        cols: 12,
       },
       {
         id: "ln",
@@ -137,39 +164,14 @@ function PatientForm(props) {
         placeholder: "Last Name",
         label: "Last Name*",
         name: "ln",
-        //disabled: props.mode && props.mode === 'view' ? true : false,
-
-        cols: 4,
+        cols: 6,
       },
-
       {
         id: "fn",
         component: "textfield",
-        placeholder: "fn",
-        label: "Initial Name",
+        placeholder: "Initial Name",
+        label: "Initial Name*",
         name: "fn",
-        //disabled: props.mode && props.mode === 'view' ? true : false,
-
-        cols: 4,
-      },
-      {
-        id: "soc",
-        component: "datepicker",
-        placeholder: "SOC",
-        label: "SOC",
-        name: "soc",
-        //disabled: props.mode && props.mode === 'view' ? true : false,
-
-        cols: 4,
-      },
-      {
-        id: "address",
-        component: "textfield",
-        placeholder: "Address",
-        label: "Address",
-        name: "address",
-        //disabled: props.mode && props.mode === 'view' ? true : false,
-
         cols: 6,
       },
       {
@@ -178,9 +180,7 @@ function PatientForm(props) {
         placeholder: "Contact Phone",
         label: "Phone",
         name: "phone",
-        //disabled: props.mode && props.mode === 'view' ? true : false,
-
-        cols: 3,
+        cols: 6,
       },
       {
         id: "contactPerson",
@@ -188,9 +188,30 @@ function PatientForm(props) {
         placeholder: "Contact Person",
         label: "Contact Person",
         name: "contactPerson",
-        //disabled: props.mode && props.mode === 'view' ? true : false,
-
-        cols: 3,
+        cols: 6,
+      },
+      {
+        id: "address",
+        component: "textfield",
+        placeholder: "Address",
+        label: "Address",
+        name: "address",
+        cols: 8,
+      },
+      {
+        id: "location",
+        component: "singlecomplete",
+        placeholder: "Location",
+        label: "Location",
+        name: "location",
+        cols: 4,
+      },
+      // PRIOR HOSPICE SECTION
+      {
+        id: "priorHospiceHeader",
+        component: "sectionheader",
+        label: "Prior Hospice Information",
+        cols: 12,
       },
       {
         id: "isPriorHospice",
@@ -198,21 +219,24 @@ function PatientForm(props) {
         placeholder: "Has Prior Hospice Care",
         label: "Has Prior Hospice Care",
         name: "isPriorHospice",
-        //disabled: props.mode && props.mode === 'view' ? true : false,
-
         cols: 12,
       },
       {
         id: "priorHospiceDischarge",
         component: "singlecomplete",
-        placeholder: "Prior Hospice Discharge",
-        label: "Prior Hospice Discharge",
+        placeholder: "Prior Hospice Discharge Reason",
+        label: "Prior Hospice Discharge Reason",
         name: "priorHospiceDischarge",
         options: [...priorDischargeList],
-
-        //disabled: props.mode && props.mode === 'view' ? true : false,
-
-        cols: 4,
+        cols: 6,
+      },
+      {
+        id: "priorHospiceDischargeDt",
+        component: "datepicker",
+        placeholder: "Prior Hospice Discharge Date",
+        label: "Prior Hospice Discharge Date",
+        name: "priorHospiceDischargeDt",
+        cols: 6,
       },
       {
         id: "priorDayCare",
@@ -222,20 +246,7 @@ function PatientForm(props) {
         label: "Prior Hospice # Daycare",
         name: "priorDayCare",
         hide: false,
-
-        //disabled: props.mode && props.mode === 'view' ? true : false,
-
-        cols: 4,
-      },
-      {
-        id: "priorHospiceDischargeDt",
-        component: "datepicker",
-        placeholder: "Prior Hospice Discharge Date",
-        label: "Prior Hospice Discharge Date",
-        name: "priorHospiceDischargeDt",
-        //disabled: props.mode && props.mode === 'view' ? true : false,
-
-        cols: 4,
+        cols: 6,
       },
       {
         id: "priorBenefitsPeriod",
@@ -246,16 +257,22 @@ function PatientForm(props) {
         name: "priorBenefitsPeriod",
         hide: false,
         value: "1",
-        //disabled: props.mode && props.mode === 'view' ? true : false,
-
-        cols: 4,
+        cols: 6,
+      },
+      // ADMISSION SECTION
+      {
+        id: "admissionHeader",
+        component: "sectionheader",
+        label: "Admission Information",
+        cols: 12,
       },
       {
-        id: "newGrid",
-        component: "grid",
-        placeholder: "",
-
-        cols: 12,
+        id: "soc",
+        component: "datepicker",
+        placeholder: "SOC (Start of Care)",
+        label: "SOC (Start of Care)*",
+        name: "soc",
+        cols: 4,
       },
       {
         id: "numberOfBenefits",
@@ -266,31 +283,41 @@ function PatientForm(props) {
         name: "numberOfBenefits",
         hide: false,
         value: 1,
-        //disabled: props.mode && props.mode === 'view' ? true : false,
-
         cols: 4,
       },
       {
-        id: "location",
+        id: "insurance",
         component: "singlecomplete",
-        placeholder: "Location",
-        label: "Location",
-        name: "location",
-        //disabled: props.mode && props.mode === 'view' ? true : false,
-
+        placeholder: "Insurance",
+        label: "Insurance",
+        name: "insurance",
+        hide: false,
+        options: [...INSURANCE],
         cols: 4,
       },
-
+      {
+        id: "capeligible",
+        component: "capeligible",
+        placeholder: "Cap Eligibility",
+        label: "Eligible for Cap?",
+        name: "capeligible",
+        hide: false,
+        cols: 12,
+      },
+      // EOC/DISCHARGE SECTION
+      {
+        id: "eocHeader",
+        component: "sectionheader",
+        label: "EOC / Discharge Information",
+        cols: 12,
+      },
       {
         id: "eoc",
         component: "datepicker",
-        placeholder: "EOC",
-        label: "EOC",
+        placeholder: "EOC (End of Care)",
+        label: "EOC (End of Care)",
         name: "eoc",
-
-        //disabled: props.mode && props.mode === 'view' ? true : false,
-
-        cols: 4,
+        cols: 6,
       },
       {
         id: "eocDischarge",
@@ -299,35 +326,7 @@ function PatientForm(props) {
         label: "EOC Discharge Reason",
         name: "eocDischarge",
         options: [...eocDischargeList],
-
-        //disabled: props.mode && props.mode === 'view' ? true : false,
-
-        cols: 4,
-      },
-
-      {
-        id: "insurance",
-        component: "singlecomplete",
-        placeholder: "insurance",
-        label: "Insurance",
-        name: "insurance",
-        hide: false,
-        options: [...INSURANCE],
-        //disabled: props.mode && props.mode === 'view' ? true : false,
-
-        cols: 4,
-      },
-      {
-        id: "capeligible",
-        component: "capeligible",
-        placeholder: "capeligible",
-        label: "Eligible for Cap?",
-        name: "capeligible",
-        hide: false,
-
-        //disabled: props.mode && props.mode === 'view' ? true : false,
-
-        cols: 4,
+        cols: 6,
       },
     ];
     setComponents(general);
@@ -764,7 +763,7 @@ function PatientForm(props) {
             }}
           >
             <div style={{ flex: "0 0 98%" }}>
-              <Typography variant="h6">Create Patient</Typography>
+              <Typography variant="h6">{titleHandler()}</Typography>
             </div>
             <div style={{ flex: "0 0 2%" }}>
               <Clear
@@ -775,8 +774,9 @@ function PatientForm(props) {
           </div>
         </CardHeader>
 
-        <Card plain>
-          <CardBody>
+        <div className={classes.scrollableContent}>
+          <Card plain>
+            <CardBody>
             <Grid container spacing={1} direction="row">
               {components.map((item) => {
                 return (
@@ -789,7 +789,14 @@ function PatientForm(props) {
                       display: item.hide ? "none" : "",
                     }}
                   >
-                    {item.component === "textfield" ? (
+                    {item.component === "sectionheader" ? (
+                      <Box className={classes.sectionHeader}>
+                        <Typography className={classes.sectionTitle}>
+                          {item.label}
+                        </Typography>
+                        <Divider className={classes.sectionDivider} />
+                      </Box>
+                    ) : item.component === "textfield" ? (
                       <React.Fragment>
                         <CustomTextField
                           {...item}
@@ -849,9 +856,33 @@ function PatientForm(props) {
                       </React.Fragment>
                     ) : item.component === "capeligible" ? (
                       <React.Fragment>
-                        <Typography variant="body" style={{ fontWeight: 500 }}>
-                          {item.label} {checkCapEligibility()}
-                        </Typography>
+                        <Box
+                          style={{
+                            padding: "12px",
+                            backgroundColor: "#f5f5f5",
+                            borderRadius: "4px",
+                            border: "1px solid #e0e0e0",
+                          }}
+                        >
+                          <Typography variant="body1" style={{ fontWeight: 600 }}>
+                            {item.label}
+                          </Typography>
+                          <Typography
+                            variant="h6"
+                            style={{
+                              fontWeight: 700,
+                              marginTop: "8px",
+                              color:
+                                checkCapEligibility() === "YES"
+                                  ? "#43a047"
+                                  : checkCapEligibility() === "NO"
+                                  ? "#e53935"
+                                  : "#ff9800",
+                            }}
+                          >
+                            {checkCapEligibility()}
+                          </Typography>
+                        </Box>
                       </React.Fragment>
                     ) : item.component === "select" ? (
                       <React.Fragment>
@@ -892,6 +923,8 @@ function PatientForm(props) {
             </div>
           </CardBody>
         </Card>
+        </div>
+
         {props.mode && props.mode === "view" ? null : (
           <ModalFooter
             actions={footerActions}
