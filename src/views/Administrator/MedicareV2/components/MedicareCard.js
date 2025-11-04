@@ -194,13 +194,29 @@ const MedicareCard = ({ data }) => {
           <span className={classes.label}>Insurance:</span>
           <span className={classes.value}>{data.insurance || "N/A"}</span>
         </div>
+        {data.hasPriorHospice && (
+          <div className={classes.dataRow}>
+            <span className={classes.label}>Prior Hospice:</span>
+            <Chip
+              label="Yes"
+              size="small"
+              style={{ backgroundColor: "#ff9800", color: "white", fontWeight: 600 }}
+            />
+          </div>
+        )}
+        {data.hasPriorHospice && data.priorDayCare > 0 && (
+          <div className={classes.dataRow}>
+            <span className={classes.label}>Prior Day Care:</span>
+            <span className={classes.value}>{data.priorDayCare} days</span>
+          </div>
+        )}
 
         <Divider className={classes.divider} />
 
         {/* Benefits Information */}
         <Typography className={classes.sectionTitle}>
           <LocalHospital className={classes.icon} />
-          Benefits Admitted
+          Benefits Admitted (Benefit Period {data.benefitCount || 0})
         </Typography>
         <Grid container spacing={1}>
           {data.first90Benefit && (
@@ -247,8 +263,29 @@ const MedicareCard = ({ data }) => {
 
         <Divider className={classes.divider} />
 
+        {/* Cap Eligibility Status */}
+        {!data.isCapEligible && data.capIneligibleReason && (
+          <>
+            <Divider className={classes.divider} />
+            <div style={{
+              padding: "12px",
+              backgroundColor: "#fff3cd",
+              borderLeft: "4px solid #ff9800",
+              marginBottom: "16px",
+              borderRadius: "4px"
+            }}>
+              <Typography style={{ fontSize: "0.875rem", fontWeight: 600, color: "#856404" }}>
+                ⚠️ Cap Not Applicable
+              </Typography>
+              <Typography style={{ fontSize: "0.75rem", color: "#856404", marginTop: "4px" }}>
+                {data.capIneligibleReason} - Claims based on daily rate only. Used cap tracked for aggregate cap computation.
+              </Typography>
+            </div>
+          </>
+        )}
+
         {/* FY Cap - Only show admission FY cap (no continuation cap display) */}
-        {fiscalYear && (
+        {fiscalYear && data.isCapEligible !== false && (
           <>
             <Typography className={classes.sectionTitle}>
               <AttachMoney className={classes.icon} />
@@ -262,6 +299,18 @@ const MedicareCard = ({ data }) => {
                 {formatCurrency(data.firstPeriodCap)}
               </span>
             </div>
+            {data.hasPriorHospice && data.benefitCount === 2 && data.priorDayCare > 0 && (
+              <div style={{
+                padding: "8px",
+                backgroundColor: "#e3f2fd",
+                borderRadius: "4px",
+                marginTop: "8px",
+                fontSize: "0.75rem",
+                color: "#1976d2"
+              }}>
+                ℹ️ Cap apportioned with prior hospice day care ({data.priorDayCare} days)
+              </div>
+            )}
 
             <Divider className={classes.divider} />
           </>
@@ -297,22 +346,39 @@ const MedicareCard = ({ data }) => {
               <span className={classes.label}>Used Cap:</span>
               <span className={classes.value}>{formatCurrency(data.usedCapFirstPeriod)}</span>
             </div>
-            <div className={classes.dataRow}>
-              <span className={classes.label}>Allowed Cap (Apportioned):</span>
-              <span className={classes.value}>{formatCurrency(data.allowedCapFirstPeriod)}</span>
-            </div>
-            <div className={classes.dataRow}>
-              <span className={classes.label}>Available Cap:</span>
-              <span
-                className={`${classes.value} ${
-                  parseFloat(data.availableCapFirstPeriod || 0) >= 0
-                    ? classes.positiveValue
-                    : classes.negativeValue
-                }`}
-              >
-                {formatCurrency(data.availableCapFirstPeriod)}
-              </span>
-            </div>
+            {data.isCapEligible !== false ? (
+              <>
+                <div className={classes.dataRow}>
+                  <span className={classes.label}>Allowed Cap (Apportioned):</span>
+                  <span className={classes.value}>{formatCurrency(data.allowedCapFirstPeriod)}</span>
+                </div>
+                <div className={classes.dataRow}>
+                  <span className={classes.label}>Available Cap:</span>
+                  <span
+                    className={`${classes.value} ${
+                      parseFloat(data.availableCapFirstPeriod || 0) >= 0
+                        ? classes.positiveValue
+                        : classes.negativeValue
+                    }`}
+                  >
+                    {formatCurrency(data.availableCapFirstPeriod)}
+                  </span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className={classes.dataRow}>
+                  <span className={classes.label}>Allowed Cap:</span>
+                  <span className={classes.value}>{formatCurrency(0)}</span>
+                </div>
+                <div className={classes.dataRow}>
+                  <span className={classes.label}>Available Cap:</span>
+                  <span className={`${classes.value} ${classes.negativeValue}`}>
+                    {formatCurrency(data.availableCapFirstPeriod)}
+                  </span>
+                </div>
+              </>
+            )}
           </>
         )}
 
