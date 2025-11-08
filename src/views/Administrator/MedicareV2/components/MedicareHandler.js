@@ -63,8 +63,8 @@ class MedicareHandler {
       item.benefitCount = benefitCount;
 
       // Check if insurance is traditional medicare (case insensitive)
-      const isTraditionalMedicare = item.insurance &&
-        item.insurance.toLowerCase().includes('traditional');
+      const isTraditionalMedicare =
+        item.insurance && item.insurance.toLowerCase().includes("traditional");
       item.isTraditionalMedicare = isTraditionalMedicare;
 
       // Determine if patient is eligible for cap based on prior hospice rules
@@ -94,11 +94,17 @@ class MedicareHandler {
         item.secondPeriodDays = 0.0;
         item.usedCapFirstPeriod = item.totalClaim;
         item.allowedCapFirstPeriod = 0.0; // No cap available
-        item.availableCapFirstPeriod = parseFloat(0 - parseFloat(item.usedCapFirstPeriod)).toFixed(2); // Negative available cap
+        item.availableCapFirstPeriod = parseFloat(
+          0 - parseFloat(item.usedCapFirstPeriod)
+        ).toFixed(2); // Negative available cap
         item.usedCapSecondPeriod = 0.0;
         item.allowedCapSecondPeriod = 0.0;
         item.availableCapSecondPeriod = 0.0;
-      } else if (item.hasPriorHospice && benefitCount === 2 && item.priorDayCare > 0) {
+      } else if (
+        item.hasPriorHospice &&
+        benefitCount === 2 &&
+        item.priorDayCare > 0
+      ) {
         // Use apportionment with prior day care for benefit 2
         const totalDaysIncludingPrior = dayCares + item.priorDayCare;
 
@@ -108,11 +114,15 @@ class MedicareHandler {
               ? parseFloat(238 * 60).toFixed(2)
               : parseFloat(firstPeriodDays * 238).toFixed(2);
           const fistRemainingClaim =
-            firstPeriodDays >= 60 ? parseFloat(187 * (firstPeriodDays - 60)) : 0;
+            firstPeriodDays >= 60
+              ? parseFloat(187 * (firstPeriodDays - 60))
+              : 0;
           item.usedCapFirstPeriod = parseFloat(
             parseFloat(first60DaysClaim) + parseFloat(fistRemainingClaim)
           ).toFixed(2);
-          item.usedCapSecondPeriod = parseFloat(187 * secondPeriodDays).toFixed(2);
+          item.usedCapSecondPeriod = parseFloat(187 * secondPeriodDays).toFixed(
+            2
+          );
 
           // Apportion based on total days including prior
           const firstPctAvailable =
@@ -120,7 +130,9 @@ class MedicareHandler {
           const secondPctAvailable =
             (secondPeriodDays / totalDaysIncludingPrior) * item.secondPeriodCap;
           item.allowedCapFirstPeriod = parseFloat(firstPctAvailable).toFixed(2);
-          item.allowedCapSecondPeriod = parseFloat(secondPctAvailable).toFixed(2);
+          item.allowedCapSecondPeriod = parseFloat(secondPctAvailable).toFixed(
+            2
+          );
           item.availableCapFirstPeriod = parseFloat(
             parseFloat(item.allowedCapFirstPeriod) -
               parseFloat(item.usedCapFirstPeriod)
@@ -136,10 +148,12 @@ class MedicareHandler {
           item.secondPeriodDays = 0.0;
           item.usedCapFirstPeriod = item.totalClaim;
           // Apportion based on current days vs total days including prior
-          const allowedCap = (dayCares / totalDaysIncludingPrior) * item.firstPeriodCap;
+          const allowedCap =
+            (dayCares / totalDaysIncludingPrior) * item.firstPeriodCap;
           item.allowedCapFirstPeriod = parseFloat(allowedCap).toFixed(2);
           item.availableCapFirstPeriod = parseFloat(
-            parseFloat(item.allowedCapFirstPeriod) - parseFloat(item.usedCapFirstPeriod)
+            parseFloat(item.allowedCapFirstPeriod) -
+              parseFloat(item.usedCapFirstPeriod)
           ).toFixed(2);
           item.usedCapSecondPeriod = 0.0;
           item.allowedCapSecondPeriod = 0.0;
@@ -185,6 +199,26 @@ class MedicareHandler {
         item.usedCapSecondPeriod = 0.0;
         item.allowedCapSecondPeriod = 0.0;
         item.availableCapSecondPeriod = 0.0;
+      }
+
+      // Special handling for non-death discharge: Set available cap = allowed cap
+      if (item.eoc_discharge && item.eoc_discharge !== "Death Discharge") {
+        item.availableCapFirstPeriod = item.allowedCapFirstPeriod;
+        if (item.secondPeriodDays > 0) {
+          item.availableCapSecondPeriod = item.allowedCapSecondPeriod;
+        }
+      }
+
+      // EXCEPTION: When benefits is 3 or more, available cap = negative of used cap
+      if (benefitCount >= 3) {
+        item.availableCapFirstPeriod = parseFloat(
+          -parseFloat(item.usedCapFirstPeriod)
+        ).toFixed(2);
+        if (item.secondPeriodDays > 0) {
+          item.availableCapSecondPeriod = parseFloat(
+            -parseFloat(item.usedCapSecondPeriod)
+          ).toFixed(2);
+        }
       }
     });
 

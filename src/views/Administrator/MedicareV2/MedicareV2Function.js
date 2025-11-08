@@ -106,7 +106,7 @@ function MedicareV2Function(props) {
   }
 
   const filterRecordHandler = (keyword) => {
-    console.log("[Keyword]", keyword);
+    console.log("[Keyword]", keyword, originalSource);
     if (!keyword) {
       setDataSource([...originalSource]);
     } else {

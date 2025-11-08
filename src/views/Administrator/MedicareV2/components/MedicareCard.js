@@ -137,7 +137,8 @@ const MedicareCard = ({ data }) => {
 
   // Get benefit labels based on admission fiscal year
   const getBenefitLabels = () => {
-    const baseYear = fiscalYear === "FY2024" ? 2024 : fiscalYear === "FY2025" ? 2025 : 2026;
+    const baseYear =
+      fiscalYear === "FY2024" ? 2024 : fiscalYear === "FY2025" ? 2025 : 2026;
     return {
       first: `FY ${baseYear}`,
       second: `FY ${baseYear + 1}`,
@@ -151,9 +152,15 @@ const MedicareCard = ({ data }) => {
   return (
     <Card className={classes.card}>
       <CardHeader
-        className={isActive ? classes.cardHeaderActive : classes.cardHeaderInactive}
+        className={
+          isActive ? classes.cardHeaderActive : classes.cardHeaderInactive
+        }
         title={
-          <Box display="flex" alignItems="center" justifyContent="space-between">
+          <Box
+            display="flex"
+            alignItems="center"
+            justifyContent="space-between"
+          >
             <Box display="flex" alignItems="center" gap={1}>
               <Person />
               <Typography variant="h6">{data.clientName || "N/A"}</Typography>
@@ -170,7 +177,10 @@ const MedicareCard = ({ data }) => {
           </Box>
         }
         subheader={
-          <Typography variant="body2" style={{ color: "rgba(255,255,255,0.9)" }}>
+          <Typography
+            variant="body2"
+            style={{ color: "rgba(255,255,255,0.9)" }}
+          >
             Patient # {data.patientCd || "N/A"}
           </Typography>
         }
@@ -190,6 +200,12 @@ const MedicareCard = ({ data }) => {
           <span className={classes.label}>EOC:</span>
           <span className={classes.value}>{formatDate(data.eoc)}</span>
         </div>
+        {data.eoc && (
+          <div className={classes.dataRow}>
+            <span className={classes.label}>Discharge Reason:</span>
+            <span className={classes.value}>{data.eoc_discharge}</span>
+          </div>
+        )}
         <div className={classes.dataRow}>
           <span className={classes.label}>Insurance:</span>
           <span className={classes.value}>{data.insurance || "N/A"}</span>
@@ -200,7 +216,11 @@ const MedicareCard = ({ data }) => {
             <Chip
               label="Yes"
               size="small"
-              style={{ backgroundColor: "#ff9800", color: "white", fontWeight: 600 }}
+              style={{
+                backgroundColor: "#ff9800",
+                color: "white",
+                fontWeight: 600,
+              }}
             />
           </div>
         )}
@@ -267,18 +287,33 @@ const MedicareCard = ({ data }) => {
         {!data.isCapEligible && data.capIneligibleReason && (
           <>
             <Divider className={classes.divider} />
-            <div style={{
-              padding: "12px",
-              backgroundColor: "#fff3cd",
-              borderLeft: "4px solid #ff9800",
-              marginBottom: "16px",
-              borderRadius: "4px"
-            }}>
-              <Typography style={{ fontSize: "0.875rem", fontWeight: 600, color: "#856404" }}>
+            <div
+              style={{
+                padding: "12px",
+                backgroundColor: "#fff3cd",
+                borderLeft: "4px solid #ff9800",
+                marginBottom: "16px",
+                borderRadius: "4px",
+              }}
+            >
+              <Typography
+                style={{
+                  fontSize: "0.875rem",
+                  fontWeight: 600,
+                  color: "#856404",
+                }}
+              >
                 ⚠️ Cap Not Applicable
               </Typography>
-              <Typography style={{ fontSize: "0.75rem", color: "#856404", marginTop: "4px" }}>
-                {data.capIneligibleReason} - Claims based on daily rate only. Used cap tracked for aggregate cap computation.
+              <Typography
+                style={{
+                  fontSize: "0.75rem",
+                  color: "#856404",
+                  marginTop: "4px",
+                }}
+              >
+                {data.capIneligibleReason} - Claims based on daily rate only.
+                Used cap tracked for aggregate cap computation.
               </Typography>
             </div>
           </>
@@ -289,28 +324,43 @@ const MedicareCard = ({ data }) => {
           <>
             <Typography className={classes.sectionTitle}>
               <AttachMoney className={classes.icon} />
-              Fiscal Year Cap (Admitted in {fiscalYear === "FY2024" ? "FY 2024" : fiscalYear === "FY2025" ? "FY 2025" : "FY 2026"})
+              Fiscal Year Cap (Admitted in{" "}
+              {fiscalYear === "FY2024"
+                ? "FY 2024"
+                : fiscalYear === "FY2025"
+                ? "FY 2025"
+                : "FY 2026"}
+              )
             </Typography>
             <div className={classes.dataRow}>
               <span className={classes.label}>
-                {fiscalYear === "FY2024" ? "FY 2024 Cap:" : fiscalYear === "FY2025" ? "FY 2025 Cap:" : "FY 2026 Cap:"}
+                {fiscalYear === "FY2024"
+                  ? "FY 2024 Cap:"
+                  : fiscalYear === "FY2025"
+                  ? "FY 2025 Cap:"
+                  : "FY 2026 Cap:"}
               </span>
               <span className={classes.value}>
                 {formatCurrency(data.firstPeriodCap)}
               </span>
             </div>
-            {data.hasPriorHospice && data.benefitCount === 2 && data.priorDayCare > 0 && (
-              <div style={{
-                padding: "8px",
-                backgroundColor: "#e3f2fd",
-                borderRadius: "4px",
-                marginTop: "8px",
-                fontSize: "0.75rem",
-                color: "#1976d2"
-              }}>
-                ℹ️ Cap apportioned with prior hospice day care ({data.priorDayCare} days)
-              </div>
-            )}
+            {data.hasPriorHospice &&
+              data.benefitCount === 2 &&
+              data.priorDayCare > 0 && (
+                <div
+                  style={{
+                    padding: "8px",
+                    backgroundColor: "#e3f2fd",
+                    borderRadius: "4px",
+                    marginTop: "8px",
+                    fontSize: "0.75rem",
+                    color: "#1976d2",
+                  }}
+                >
+                  ℹ️ Cap apportioned with prior hospice day care (
+                  {data.priorDayCare} days)
+                </div>
+              )}
 
             <Divider className={classes.divider} />
           </>
@@ -327,7 +377,9 @@ const MedicareCard = ({ data }) => {
         </div>
         <div className={classes.dataRow}>
           <span className={classes.label}>Total Claim:</span>
-          <span className={classes.value}>{formatCurrency(data.totalClaim)}</span>
+          <span className={classes.value}>
+            {formatCurrency(data.totalClaim)}
+          </span>
         </div>
 
         <Divider className={classes.divider} />
@@ -336,21 +388,33 @@ const MedicareCard = ({ data }) => {
         {fiscalYear && (
           <>
             <Typography className={classes.sectionTitle}>
-              {fiscalYear === "FY2024" ? "FY 2024 Breakdown" : fiscalYear === "FY2025" ? "FY 2025 Breakdown" : "FY 2026 Breakdown"}
+              {fiscalYear === "FY2024"
+                ? "FY 2024 Breakdown"
+                : fiscalYear === "FY2025"
+                ? "FY 2025 Breakdown"
+                : "FY 2026 Breakdown"}
             </Typography>
             <div className={classes.dataRow}>
               <span className={classes.label}>Accumulated Days:</span>
-              <span className={classes.value}>{data.firstPeriodDays || 0} days</span>
+              <span className={classes.value}>
+                {data.firstPeriodDays || 0} days
+              </span>
             </div>
             <div className={classes.dataRow}>
               <span className={classes.label}>Used Cap:</span>
-              <span className={classes.value}>{formatCurrency(data.usedCapFirstPeriod)}</span>
+              <span className={classes.value}>
+                {formatCurrency(data.usedCapFirstPeriod)}
+              </span>
             </div>
             {data.isCapEligible !== false ? (
               <>
                 <div className={classes.dataRow}>
-                  <span className={classes.label}>Allowed Cap (Apportioned):</span>
-                  <span className={classes.value}>{formatCurrency(data.allowedCapFirstPeriod)}</span>
+                  <span className={classes.label}>
+                    Allowed Cap (Apportioned):
+                  </span>
+                  <span className={classes.value}>
+                    {formatCurrency(data.allowedCapFirstPeriod)}
+                  </span>
                 </div>
                 <div className={classes.dataRow}>
                   <span className={classes.label}>Available Cap:</span>
@@ -379,6 +443,20 @@ const MedicareCard = ({ data }) => {
                 </div>
               </>
             )}
+            {data.eoc_discharge && data.eoc_discharge !== "Death Discharge" && (
+              <div
+                style={{
+                  padding: "8px",
+                  backgroundColor: "#e3f2fd",
+                  borderRadius: "4px",
+                  marginTop: "8px",
+                  fontSize: "0.75rem",
+                  color: "#1976d2",
+                }}
+              >
+                ℹ️ Non-death discharge: Available cap set to allowed cap
+              </div>
+            )}
           </>
         )}
 
@@ -387,19 +465,29 @@ const MedicareCard = ({ data }) => {
           <>
             <Divider className={classes.divider} />
             <Typography className={classes.sectionTitle}>
-              {fiscalYear === "FY2024" ? "FY 2025 Breakdown (Continued)" : fiscalYear === "FY2025" ? "FY 2026 Breakdown (Continued)" : "FY 2027 Breakdown (Continued)"}
+              {fiscalYear === "FY2024"
+                ? "FY 2025 Breakdown (Continued)"
+                : fiscalYear === "FY2025"
+                ? "FY 2026 Breakdown (Continued)"
+                : "FY 2027 Breakdown (Continued)"}
             </Typography>
             <div className={classes.dataRow}>
               <span className={classes.label}>Accumulated Days:</span>
-              <span className={classes.value}>{data.secondPeriodDays || 0} days</span>
+              <span className={classes.value}>
+                {data.secondPeriodDays || 0} days
+              </span>
             </div>
             <div className={classes.dataRow}>
               <span className={classes.label}>Used Cap:</span>
-              <span className={classes.value}>{formatCurrency(data.usedCapSecondPeriod)}</span>
+              <span className={classes.value}>
+                {formatCurrency(data.usedCapSecondPeriod)}
+              </span>
             </div>
             <div className={classes.dataRow}>
               <span className={classes.label}>Allowed Cap (Apportioned):</span>
-              <span className={classes.value}>{formatCurrency(data.allowedCapSecondPeriod)}</span>
+              <span className={classes.value}>
+                {formatCurrency(data.allowedCapSecondPeriod)}
+              </span>
             </div>
             <div className={classes.dataRow}>
               <span className={classes.label}>Available Cap:</span>
@@ -413,6 +501,20 @@ const MedicareCard = ({ data }) => {
                 {formatCurrency(data.availableCapSecondPeriod)}
               </span>
             </div>
+            {data.eoc_discharge && data.eoc_discharge !== "Death Discharge" && (
+              <div
+                style={{
+                  padding: "8px",
+                  backgroundColor: "#e3f2fd",
+                  borderRadius: "4px",
+                  marginTop: "8px",
+                  fontSize: "0.75rem",
+                  color: "#1976d2",
+                }}
+              >
+                ℹ️ Non-death discharge: Available cap set to allowed cap
+              </div>
+            )}
           </>
         )}
       </CardContent>
