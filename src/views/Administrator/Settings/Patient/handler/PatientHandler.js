@@ -37,8 +37,20 @@ class PatientHandler {
       {
         defaultFlex: 1,
         minWidth: 200,
-        name: "numberOfBenefits",
-        header: "No of Benefits",
+        name: "admitted_benefits_period",
+        header: "Admitted Benefits",
+      },
+      {
+        defaultFlex: 1,
+        minWidth: 200,
+        name: "state",
+        header: "State",
+      },
+      {
+        defaultFlex: 1,
+        minWidth: 200,
+        name: "county",
+        header: "County",
       },
     ];
   }

@@ -26,6 +26,8 @@ import { CARE_TYPE } from "utils/constants";
 import { PATIENT_STATUS } from "utils/constants";
 import { INSURANCE } from "utils/constants";
 import { DISCHARGE_REASON } from "utils/constants";
+import { US_STATES } from "utils/constants";
+import { getCountiesByState } from "utils/usCounties";
 import ModalFooter from "components/Modal/ModalFooter/ModalFooter";
 import CardHeader from "components/Card/CardHeader";
 import { Clear } from "@material-ui/icons";
@@ -133,6 +135,7 @@ function PatientForm(props) {
   const [modalStyle] = React.useState(getModalStyle);
   const [components, setComponents] = useState([]);
   const [locations, setLocations] = useState([]);
+  const [counties, setCounties] = useState([]);
   const [patientIdentity, setPatientIdentity] = useState("");
   const [patientIdentityError, setPatientIdentityError] = useState("");
   const { isOpen } = props;
@@ -140,6 +143,8 @@ function PatientForm(props) {
   useEffect(() => {
     const fm = {};
     fm.created_at = new Date();
+    fm.state = DEFAULT_ITEM;
+    fm.county = DEFAULT_ITEM;
     const general = [
       {
         id: "status",
@@ -296,6 +301,26 @@ function PatientForm(props) {
         cols: 4,
       },
       {
+        id: "state",
+        component: "singlecomplete",
+        placeholder: "State",
+        label: "State",
+        name: "state",
+        hide: false,
+        options: [...US_STATES],
+        cols: 6,
+      },
+      {
+        id: "county",
+        component: "singlecomplete",
+        placeholder: "County",
+        label: "County",
+        name: "county",
+        hide: false,
+        options: [],
+        cols: 6,
+      },
+      {
         id: "capeligible",
         component: "capeligible",
         placeholder: "Cap Eligibility",
@@ -363,6 +388,26 @@ function PatientForm(props) {
       fm.insurance = [...INSURANCE].find(
         (p) => p.name === props.item.insurance
       );
+
+      // Load state and county (state is stored as code in database)
+      if (props.item.state) {
+        // Find state by code (props.item.state contains the code like "NV", "CA")
+        fm.state = [...US_STATES].find((s) => s.code === props.item.state) || DEFAULT_ITEM;
+        // Populate counties for the selected state
+        if (fm.state && fm.state.name) {
+          const countyList = getCountiesByState(fm.state.name);
+          setCounties(countyList);
+          // Load the county if it exists
+          if (props.item.county) {
+            fm.county = countyList.find((c) => c.name === props.item.county) || DEFAULT_ITEM;
+          } else {
+            fm.county = DEFAULT_ITEM;
+          }
+        }
+      } else {
+        fm.state = DEFAULT_ITEM;
+        fm.county = DEFAULT_ITEM;
+      }
 
       fm.location.value = fm.location?.name;
       fm.location.label = fm.location?.name;
@@ -538,8 +583,20 @@ function PatientForm(props) {
       src.priorHospiceDischarge = item;
     } else if (item.category === "eocDischarge") {
       src.eocDischarge = item;
+    } else if (item.category === "state") {
+      src.state = item;
+      // When state changes, populate counties and reset county selection
+      const countyList = getCountiesByState(item.name);
+      setCounties(countyList);
+      src.county = DEFAULT_ITEM;
+    } else if (item.category === "county") {
+      src.county = item;
     }
-    setComponents(temp);
+
+    // Only update components if there are errors to clear
+    if (found) {
+      setComponents(temp);
+    }
 
     setGeneralForm(src);
   };
@@ -616,6 +673,14 @@ function PatientForm(props) {
       src.name === "priorDayCare" &&
       JSON.stringify(generalForm) !== "{}" &&
       !generalForm.isPriorHospice
+    ) {
+      return true;
+    }
+    if (
+      src &&
+      src.name === "county" &&
+      JSON.stringify(generalForm) !== "{}" &&
+      !generalForm.state?.name
     ) {
       return true;
     }
@@ -832,10 +897,14 @@ function PatientForm(props) {
                             item.name === "priorHospiceDischarge" &&
                             !generalForm.isPriorHospice
                               ? DEFAULT_ITEM
-                              : generalForm[item.name]
+                              : generalForm[item.name] || DEFAULT_ITEM
                           }
                           options={
-                            item.name === "location" ? locations : item.options
+                            item.name === "location"
+                              ? locations
+                              : item.name === "county"
+                              ? counties
+                              : item.options
                           }
                           isError={item.isError}
                           errorMsg={item.isError ? item.errorMsg : ""}

@@ -1,0 +1,72 @@
+[
+    {
+        "fy": 2025,
+        "start_date": "2024-10-01",
+        "end_date": "2025-09-30",
+        "state": "NV",
+        "county": "Clark",
+        "cbsa": "29820",
+        "aggregate_cap": 34465.34,
+        "wage_index": null,
+        "rates_national": {
+            "rhc_days_1_60": 224.62,
+            "rhc_days_61_plus": 176.92,
+            "chc_full_day": 1618.59,
+            "chc_hourly": 67.44,
+            "irc": 518.78,
+            "gip": 1170.04
+        },
+        "labor_share": {
+            "rhc": 0.66,
+            "chc": 0.752,
+            "irc": 0.61,
+            "gip": 0.635
+        },
+        "non_labor_share": {
+            "rhc": 0.34,
+            "chc": 0.248,
+            "irc": 0.39,
+            "gip": 0.365
+        },
+        "notes": {
+            "apply_wage_index_to": "labor_portion_only",
+            "location_rule_rhc_chc": "use_beneficiary_residence_county",
+            "location_rule_gip_irc": "use_facility_location_county"
+        }
+    },
+    {
+        "fy": 2026,
+        "start_date": "2025-10-01",
+        "end_date": "2026-09-30",
+        "state": "NV",
+        "county": "Clark",
+        "cbsa": "29820",
+        "aggregate_cap": 35361.44,
+        "wage_index": null,
+        "rates_national": {
+            "rhc_days_1_60": 230.83,
+            "rhc_days_61_plus": 181.94,
+            "chc_full_day": 1674.29,
+            "chc_hourly": 69.76,
+            "irc": 532.48,
+            "gip": 1199.86
+        },
+        "labor_share": {
+            "rhc": 0.66,
+            "chc": 0.752,
+            "irc": 0.61,
+            "gip": 0.635
+        },
+        "non_labor_share": {
+            "rhc": 0.34,
+            "chc": 0.248,
+            "irc": 0.39,
+            "gip": 0.365
+        },
+        "notes": {
+            "apply_wage_index_to": "labor_portion_only",
+            "location_rule_rhc_chc": "use_beneficiary_residence_county",
+            "location_rule_gip_irc": "use_facility_location_county"
+        }
+    }
+]

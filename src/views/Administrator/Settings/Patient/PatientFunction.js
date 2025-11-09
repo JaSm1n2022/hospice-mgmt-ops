@@ -266,6 +266,8 @@ function PatientFunction(props) {
       locationCd: payload.location ? payload.location.locationCd : "",
       insurance: payload.insurance?.name,
       insuranceCd: payload.insurance?.code,
+      state: payload.state?.code || null,
+      county: payload.county?.name || null,
       is_prior_hospice: payload.isPriorHospice,
       prior_benefits_period: parseInt(payload.priorBenefitsPeriod || 0, 10),
       prior_day_care: parseInt(payload.priorDayCare || 0, 10),
