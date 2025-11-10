@@ -45,8 +45,12 @@ class MedicareHandler {
       return parseFloat(days * rates.rhc_days_1_60).toFixed(2);
     } else {
       const first60Claim = parseFloat(60 * rates.rhc_days_1_60).toFixed(2);
-      const remainingClaim = parseFloat((days - 60) * rates.rhc_days_61_plus).toFixed(2);
-      return parseFloat(parseFloat(first60Claim) + parseFloat(remainingClaim)).toFixed(2);
+      const remainingClaim = parseFloat(
+        (days - 60) * rates.rhc_days_61_plus
+      ).toFixed(2);
+      return parseFloat(
+        parseFloat(first60Claim) + parseFloat(remainingClaim)
+      ).toFixed(2);
     }
   }
 
@@ -83,7 +87,11 @@ class MedicareHandler {
         ) || "";
 
       // Get rates for second period if needed
-      const secondRates = this.getRatesForLocation(item.state, item.county, secondYear);
+      const secondRates = this.getRatesForLocation(
+        item.state,
+        item.county,
+        secondYear
+      );
       item.secondPeriodCap = secondRates.aggregate_cap || secondPeriod.amount;
 
       // Check if patient has prior hospice
@@ -132,7 +140,9 @@ class MedicareHandler {
       let priorHospiceClaim = 0;
 
       if (item.hasPriorHospice && item.priorDayCare > 0) {
-        priorHospiceClaim = parseFloat(this.calculateClaim(item.priorDayCare, rates));
+        priorHospiceClaim = parseFloat(
+          this.calculateClaim(item.priorDayCare, rates)
+        );
         // If prior hospice claim alone exceeds or equals aggregate cap, no cap available
         if (priorHospiceClaim >= item.firstPeriodCap) {
           priorHospiceExceedsAggregateCap = true;
@@ -156,7 +166,10 @@ class MedicareHandler {
         if (secondPeriodDays > 0) {
           // Calculate claims using new rates
           item.usedCapFirstPeriod = this.calculateClaim(firstPeriodDays, rates);
-          item.usedCapSecondPeriod = this.calculateClaim(secondPeriodDays, rates);
+          item.usedCapSecondPeriod = this.calculateClaim(
+            secondPeriodDays,
+            rates
+          );
 
           // Apportion based on total days including prior
           const firstPctAvailable =
@@ -164,10 +177,13 @@ class MedicareHandler {
           const secondPctAvailable =
             (secondPeriodDays / totalDaysIncludingPrior) * item.secondPeriodCap;
           item.allowedCapFirstPeriod = parseFloat(firstPctAvailable).toFixed(2);
-          item.allowedCapSecondPeriod = parseFloat(secondPctAvailable).toFixed(2);
+          item.allowedCapSecondPeriod = parseFloat(secondPctAvailable).toFixed(
+            2
+          );
 
           // Check if prior + current exceeds aggregate cap
-          const totalUsedWithPrior = parseFloat(priorHospiceClaim) +
+          const totalUsedWithPrior =
+            parseFloat(priorHospiceClaim) +
             parseFloat(item.usedCapFirstPeriod) +
             parseFloat(item.usedCapSecondPeriod);
 
@@ -201,8 +217,8 @@ class MedicareHandler {
           item.allowedCapFirstPeriod = parseFloat(allowedCap).toFixed(2);
 
           // Check if prior + current exceeds aggregate cap
-          const totalUsedWithPrior = parseFloat(priorHospiceClaim) +
-            parseFloat(item.usedCapFirstPeriod);
+          const totalUsedWithPrior =
+            parseFloat(priorHospiceClaim) + parseFloat(item.usedCapFirstPeriod);
 
           if (totalUsedWithPrior >= item.firstPeriodCap) {
             // When aggregate cap exceeded, set allowed cap and available cap to zero

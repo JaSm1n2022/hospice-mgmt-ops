@@ -28,6 +28,7 @@ import { INSURANCE } from "utils/constants";
 import { DISCHARGE_REASON } from "utils/constants";
 import { US_STATES } from "utils/constants";
 import { getCountiesByState } from "utils/usCounties";
+import BenefitPeriodCalculator from "utils/BenefitPeriodCalculator";
 import ModalFooter from "components/Modal/ModalFooter/ModalFooter";
 import CardHeader from "components/Card/CardHeader";
 import { Clear } from "@material-ui/icons";
@@ -291,6 +292,18 @@ function PatientForm(props) {
         cols: 4,
       },
       {
+        id: "currentBenefits",
+        component: "textfield",
+        type: "number",
+        placeholder: "Current Benefits Period",
+        label: "Current Benefits Period (Computed)",
+        name: "currentBenefits",
+        hide: false,
+        disabled: true,
+        value: "",
+        cols: 4,
+      },
+      {
         id: "insurance",
         component: "singlecomplete",
         placeholder: "Insurance",
@@ -370,6 +383,10 @@ function PatientForm(props) {
         fm.priorHospiceDischargeDt = fm.prior_hospice_discharge_dt;
       }
       fm.priorBenefitsPeriod = fm.prior_benefits_period || undefined;
+
+      // Compute current benefits for display
+      const currentBenefit = BenefitPeriodCalculator.getCurrentBenefitPeriod(fm);
+      fm.currentBenefits = currentBenefit || "";
       fm.eocDischarge = fm.eoc_discharge
         ? eocDischargeList.find((f) => f.name === fm.eoc_discharge)
         : DEFAULT_ITEM;
@@ -621,6 +638,18 @@ function PatientForm(props) {
     if (src.soc && src.isPriorHospice && src.priorHospiceDischargeDt) {
       src.numberOfBenefits = dischargeDaysHandler(src);
     }
+
+    // Compute current benefits when SOC or EOC changes
+    if (name === "soc" || name === "eoc") {
+      const patientData = {
+        soc: src.soc,
+        eoc: src.eoc || null,
+        admitted_benefits_period: src.numberOfBenefits || 1,
+      };
+      const currentBenefit = BenefitPeriodCalculator.getCurrentBenefitPeriod(patientData);
+      src.currentBenefits = currentBenefit || "";
+    }
+
     setGeneralForm(src);
   };
   const titleHandler = () => {

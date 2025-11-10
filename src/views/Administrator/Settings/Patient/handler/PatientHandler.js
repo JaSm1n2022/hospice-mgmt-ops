@@ -1,4 +1,5 @@
 import moment from "moment";
+import BenefitPeriodCalculator from "utils/BenefitPeriodCalculator";
 
 class PatientHandler {
   static columns(main) {
@@ -43,6 +44,12 @@ class PatientHandler {
       {
         defaultFlex: 1,
         minWidth: 200,
+        name: "current_benefits",
+        header: "Current Benefits",
+      },
+      {
+        defaultFlex: 1,
+        minWidth: 200,
         name: "state",
         header: "State",
       },
@@ -55,7 +62,8 @@ class PatientHandler {
     ];
   }
   static mapData(items) {
-    return items;
+    // Compute current benefits for all patients using the reusable calculator
+    return BenefitPeriodCalculator.batchCalculateCurrentBenefits(items);
   }
 }
 export default PatientHandler;

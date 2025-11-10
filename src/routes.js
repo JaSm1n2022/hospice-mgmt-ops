@@ -76,6 +76,8 @@ import Admittance from "views/Administrator/Admittance/AdmittanceMain";
 import Medicare from "views/Administrator/MedicareCap/Available/AvailableFunction";
 import MedicareV2 from "views/Administrator/MedicareV2/MedicareV2Function";
 import Hope from "views/Administrator/Hope/HopeFunction";
+import RecertificationTimeline from "views/Administrator/RecertificationTimeline/RecertificationTimelineFunction";
+import UpdateBenefits from "views/Administrator/Utilities/UpdateBenefits";
 var dashRoutes = [
   {
     path: "/dashboard",
@@ -326,6 +328,15 @@ var dashRoutes = [
         component: Admittance,
         layout: "/admin",
       },
+      {
+        path: "/updateBenefits",
+        name: "Update Benefits Period",
+        rtlName: "عالتسعير",
+        mini: "PM",
+        rtlMini: "ع",
+        component: UpdateBenefits,
+        layout: "/admin",
+      },
     ],
   },
 
@@ -449,7 +460,7 @@ var dashRoutes = [
   */
   {
     path: "/medicarev2",
-    name: "Medicare Cap V2",
+    name: "Medicare Cap",
     rtlName: "الرسوم البيانية",
     icon: PaymentIcon,
     component: MedicareV2,
@@ -461,6 +472,14 @@ var dashRoutes = [
     rtlName: "الرسوم البيانية",
     icon: PaymentIcon,
     component: Hope,
+    layout: "/admin",
+  },
+  {
+    path: "/recertification",
+    name: "Recertification Timeline",
+    rtlName: "الرسوم البيانية",
+    icon: Timeline,
+    component: RecertificationTimeline,
     layout: "/admin",
   },
   {
