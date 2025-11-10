@@ -321,7 +321,7 @@ function PatientForm(props) {
         name: "state",
         hide: false,
         options: [...US_STATES],
-        cols: 6,
+        cols: 4,
       },
       {
         id: "county",
@@ -331,7 +331,7 @@ function PatientForm(props) {
         name: "county",
         hide: false,
         options: [],
-        cols: 6,
+        cols: 4,
       },
       {
         id: "capeligible",
@@ -340,7 +340,15 @@ function PatientForm(props) {
         label: "Eligible for Cap?",
         name: "capeligible",
         hide: false,
-        cols: 12,
+        cols: 6,
+      },
+      {
+        id: "recertDt",
+        component: "datepicker",
+        placeholder: "Recertification",
+        label: "Recertification",
+        name: "recertDt",
+        cols: 6,
       },
       // EOC/DISCHARGE SECTION
       {
@@ -377,6 +385,9 @@ function PatientForm(props) {
       console.log("[LocationList]", props.locationList);
       const fm = { ...props.item };
       fm.isPriorHospice = fm.is_prior_hospice;
+      if (fm.last_recertification_dt) {
+        fm.recertDt = fm.last_recertification_dt;
+      }
       fm.priorDayCare = fm.prior_day_care || undefined;
       fm.numberOfBenefits = fm.admitted_benefits_period || undefined;
       if (fm.prior_hospice_discharge_dt) {
@@ -385,7 +396,9 @@ function PatientForm(props) {
       fm.priorBenefitsPeriod = fm.prior_benefits_period || undefined;
 
       // Compute current benefits for display
-      const currentBenefit = BenefitPeriodCalculator.getCurrentBenefitPeriod(fm);
+      const currentBenefit = BenefitPeriodCalculator.getCurrentBenefitPeriod(
+        fm
+      );
       fm.currentBenefits = currentBenefit || "";
       fm.eocDischarge = fm.eoc_discharge
         ? eocDischargeList.find((f) => f.name === fm.eoc_discharge)
@@ -409,14 +422,18 @@ function PatientForm(props) {
       // Load state and county (state is stored as code in database)
       if (props.item.state) {
         // Find state by code (props.item.state contains the code like "NV", "CA")
-        fm.state = [...US_STATES].find((s) => s.code === props.item.state) || DEFAULT_ITEM;
+        fm.state =
+          [...US_STATES].find((s) => s.code === props.item.state) ||
+          DEFAULT_ITEM;
         // Populate counties for the selected state
         if (fm.state && fm.state.name) {
           const countyList = getCountiesByState(fm.state.name);
           setCounties(countyList);
           // Load the county if it exists
           if (props.item.county) {
-            fm.county = countyList.find((c) => c.name === props.item.county) || DEFAULT_ITEM;
+            fm.county =
+              countyList.find((c) => c.name === props.item.county) ||
+              DEFAULT_ITEM;
           } else {
             fm.county = DEFAULT_ITEM;
           }
@@ -646,7 +663,9 @@ function PatientForm(props) {
         eoc: src.eoc || null,
         admitted_benefits_period: src.numberOfBenefits || 1,
       };
-      const currentBenefit = BenefitPeriodCalculator.getCurrentBenefitPeriod(patientData);
+      const currentBenefit = BenefitPeriodCalculator.getCurrentBenefitPeriod(
+        patientData
+      );
       src.currentBenefits = currentBenefit || "";
     }
 
@@ -871,156 +890,161 @@ function PatientForm(props) {
         <div className={classes.scrollableContent}>
           <Card plain>
             <CardBody>
-            <Grid container spacing={1} direction="row">
-              {components.map((item) => {
-                return (
-                  <Grid
-                    item
-                    key={item.id}
-                    xs={item.cols ? item.cols : 3}
-                    style={{
-                      paddingBottom: 2,
-                      display: item.hide ? "none" : "",
-                    }}
-                  >
-                    {item.component === "sectionheader" ? (
-                      <Box className={classes.sectionHeader}>
-                        <Typography className={classes.sectionTitle}>
-                          {item.label}
-                        </Typography>
-                        <Divider className={classes.sectionDivider} />
-                      </Box>
-                    ) : item.component === "textfield" ? (
-                      <React.Fragment>
-                        <CustomTextField
-                          {...item}
-                          value={generalForm[item.name]}
-                          onChange={inputGeneralHandler}
-                          isError={item.isError}
-                          errorMsg={item.isError ? item.errorMsg : ""}
-                          disabled={disabledComponentHandler(item)}
-                        />
-                        {item.isError && <br />}
-                      </React.Fragment>
-                    ) : item.component === "datepicker" ? (
-                      <React.Fragment>
-                        <CustomDatePicker
-                          {...item}
-                          noDefault={true}
-                          value={generalForm[item.name]}
-                          onChange={dateInputHandler}
-                          isError={item.isError}
-                          errorMsg={item.isError ? item.errorMsg : ""}
-                          disabled={disabledComponentHandler(item)}
-                        />
-                      </React.Fragment>
-                    ) : item.component === "grid" ? (
-                      <React.Fragment>
-                        <Grid md={12} />
-                      </React.Fragment>
-                    ) : item.component === "singlecomplete" ? (
-                      <React.Fragment>
-                        <CustomSingleAutoComplete
-                          {...item}
-                          value={
-                            item.name === "priorHospiceDischarge" &&
-                            !generalForm.isPriorHospice
-                              ? DEFAULT_ITEM
-                              : generalForm[item.name] || DEFAULT_ITEM
-                          }
-                          options={
-                            item.name === "location"
-                              ? locations
-                              : item.name === "county"
-                              ? counties
-                              : item.options
-                          }
-                          isError={item.isError}
-                          errorMsg={item.isError ? item.errorMsg : ""}
-                          onSelectHandler={autoCompleteGeneralInputHander}
-                          source={item}
-                          onChangeHandler={onChangeGeneralInputHandler}
-                          disabled={disabledComponentHandler(item)}
-                        />
-                      </React.Fragment>
-                    ) : item.component === "checkbox" ? (
-                      <React.Fragment>
-                        <CustomCheckbox
-                          {...item}
-                          isChecked={generalForm[item.name]}
-                          onChange={inputGeneralHandler}
-                          disabled={disabledComponentHandler(item)}
-                        />
-                      </React.Fragment>
-                    ) : item.component === "capeligible" ? (
-                      <React.Fragment>
-                        <Box
-                          style={{
-                            padding: "12px",
-                            backgroundColor: "#f5f5f5",
-                            borderRadius: "4px",
-                            border: "1px solid #e0e0e0",
-                          }}
-                        >
-                          <Typography variant="body1" style={{ fontWeight: 600 }}>
+              <Grid container spacing={1} direction="row">
+                {components.map((item) => {
+                  return (
+                    <Grid
+                      item
+                      key={item.id}
+                      xs={item.cols ? item.cols : 3}
+                      style={{
+                        paddingBottom: 2,
+                        display: item.hide ? "none" : "",
+                      }}
+                    >
+                      {item.component === "sectionheader" ? (
+                        <Box className={classes.sectionHeader}>
+                          <Typography className={classes.sectionTitle}>
                             {item.label}
                           </Typography>
-                          <Typography
-                            variant="h6"
+                          <Divider className={classes.sectionDivider} />
+                        </Box>
+                      ) : item.component === "textfield" ? (
+                        <React.Fragment>
+                          <CustomTextField
+                            {...item}
+                            value={generalForm[item.name]}
+                            onChange={inputGeneralHandler}
+                            isError={item.isError}
+                            errorMsg={item.isError ? item.errorMsg : ""}
+                            disabled={disabledComponentHandler(item)}
+                          />
+                          {item.isError && <br />}
+                        </React.Fragment>
+                      ) : item.component === "datepicker" ? (
+                        <React.Fragment>
+                          <CustomDatePicker
+                            {...item}
+                            noDefault={true}
+                            value={generalForm[item.name]}
+                            onChange={dateInputHandler}
+                            isError={item.isError}
+                            errorMsg={item.isError ? item.errorMsg : ""}
+                            disabled={disabledComponentHandler(item)}
+                          />
+                        </React.Fragment>
+                      ) : item.component === "grid" ? (
+                        <React.Fragment>
+                          <Grid md={12} />
+                        </React.Fragment>
+                      ) : item.component === "singlecomplete" ? (
+                        <React.Fragment>
+                          <CustomSingleAutoComplete
+                            {...item}
+                            value={
+                              item.name === "priorHospiceDischarge" &&
+                              !generalForm.isPriorHospice
+                                ? DEFAULT_ITEM
+                                : generalForm[item.name] || DEFAULT_ITEM
+                            }
+                            options={
+                              item.name === "location"
+                                ? locations
+                                : item.name === "county"
+                                ? counties
+                                : item.options
+                            }
+                            isError={item.isError}
+                            errorMsg={item.isError ? item.errorMsg : ""}
+                            onSelectHandler={autoCompleteGeneralInputHander}
+                            source={item}
+                            onChangeHandler={onChangeGeneralInputHandler}
+                            disabled={disabledComponentHandler(item)}
+                          />
+                        </React.Fragment>
+                      ) : item.component === "checkbox" ? (
+                        <React.Fragment>
+                          <CustomCheckbox
+                            {...item}
+                            isChecked={generalForm[item.name]}
+                            onChange={inputGeneralHandler}
+                            disabled={disabledComponentHandler(item)}
+                          />
+                        </React.Fragment>
+                      ) : item.component === "capeligible" ? (
+                        <React.Fragment>
+                          <Box
                             style={{
-                              fontWeight: 700,
-                              marginTop: "8px",
-                              color:
-                                checkCapEligibility() === "YES"
-                                  ? "#43a047"
-                                  : checkCapEligibility() === "NO"
-                                  ? "#e53935"
-                                  : "#ff9800",
+                              padding: "12px",
+                              backgroundColor: "#f5f5f5",
+                              borderRadius: "4px",
+                              border: "1px solid #e0e0e0",
                             }}
                           >
-                            {checkCapEligibility()}
-                          </Typography>
-                        </Box>
-                      </React.Fragment>
-                    ) : item.component === "select" ? (
-                      <React.Fragment>
-                        <CustomSelect
-                          {...item}
-                          onChange={inputGeneralHandler}
-                          isError={item.isError}
-                          errorMsg={item.isError ? item.errorMsg : ""}
-                          value={generalForm[item.name]}
-                        />
-                      </React.Fragment>
-                    ) : null}
-                  </Grid>
-                );
-              })}
-            </Grid>
-            <div style={{ paddingTop: 10 }}>
-              <Grid direction="row" container spacing={2}>
-                <Grid item xs={12}>
-                  <Typography variant="body">
-                    Suggested Patient ID : {createPatientIdHandler()}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} style={{ paddingTop: 8 }}>
-                  <CustomTextField
-                    value={patientIdentity}
-                    name={patientIdentity}
-                    onChange={inputIdentityHandler}
-                    placeholder={"Create Identity"}
-                  />
-                  <div>
-                    <Typography variant="body" style={{ color: "red" }}>
-                      {patientIdentityError}
-                    </Typography>
-                  </div>
-                </Grid>
+                            <div style={{ display: "inline-flex", gap: 4 }}>
+                              <Typography
+                                variant="body1"
+                                style={{ fontWeight: 600 }}
+                              >
+                                {item.label}
+                              </Typography>
+                              <Typography
+                                variant="body1"
+                                style={{
+                                  fontWeight: 700,
+
+                                  color:
+                                    checkCapEligibility() === "YES"
+                                      ? "#43a047"
+                                      : checkCapEligibility() === "NO"
+                                      ? "#e53935"
+                                      : "#ff9800",
+                                }}
+                              >
+                                {checkCapEligibility()}
+                              </Typography>
+                            </div>
+                          </Box>
+                        </React.Fragment>
+                      ) : item.component === "select" ? (
+                        <React.Fragment>
+                          <CustomSelect
+                            {...item}
+                            onChange={inputGeneralHandler}
+                            isError={item.isError}
+                            errorMsg={item.isError ? item.errorMsg : ""}
+                            value={generalForm[item.name]}
+                          />
+                        </React.Fragment>
+                      ) : null}
+                    </Grid>
+                  );
+                })}
               </Grid>
-            </div>
-          </CardBody>
-        </Card>
+              <div style={{ paddingTop: 10 }}>
+                <Grid direction="row" container spacing={2}>
+                  <Grid item xs={12}>
+                    <Typography variant="body">
+                      Suggested Patient ID : {createPatientIdHandler()}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} style={{ paddingTop: 8 }}>
+                    <CustomTextField
+                      value={patientIdentity}
+                      name={patientIdentity}
+                      onChange={inputIdentityHandler}
+                      placeholder={"Create Identity"}
+                    />
+                    <div>
+                      <Typography variant="body" style={{ color: "red" }}>
+                        {patientIdentityError}
+                      </Typography>
+                    </div>
+                  </Grid>
+                </Grid>
+              </div>
+            </CardBody>
+          </Card>
         </div>
 
         {props.mode && props.mode === "view" ? null : (

@@ -82,11 +82,17 @@ function MedicareV2Function(props) {
   useEffect(() => {
     console.log("Medicare V2 - loading patient data");
     isPatientListDone = false;
+    setIsPatientsCollection(true);
     if (context.userProfile?.companyId) {
       props.listPatients({
         companyId: context.userProfile?.companyId,
       });
     }
+
+    // Cleanup: reset state when component unmounts
+    return () => {
+      props.resetListPatients();
+    };
   }, []);
 
   if (
@@ -103,6 +109,7 @@ function MedicareV2Function(props) {
     originalSource = [...source];
     setDataSource(source);
     setIsPatientsCollection(false);
+    props.resetListPatients();
   }
 
   const filterRecordHandler = (keyword) => {

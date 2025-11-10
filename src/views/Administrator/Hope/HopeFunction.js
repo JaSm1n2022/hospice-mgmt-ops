@@ -87,11 +87,17 @@ function HopeFunction(props) {
   useEffect(() => {
     console.log("Hope - loading patient data");
     isPatientListDone = false;
+    setIsPatientsCollection(true);
     if (context.userProfile?.companyId) {
       props.listPatients({
         companyId: context.userProfile?.companyId,
       });
     }
+
+    // Cleanup: reset state when component unmounts
+    return () => {
+      props.resetListPatients();
+    };
   }, []);
 
   if (
@@ -110,6 +116,7 @@ function HopeFunction(props) {
     }
     setDataSource(source);
     setIsPatientsCollection(false);
+    props.resetListPatients();
   }
 
   const formatDate = (date) => {

@@ -281,6 +281,9 @@ function PatientFunction(props) {
         date: new Date(),
       },
     };
+    if (payload.recertDt) {
+      params.last_recertification_dt = payload.recertDt;
+    }
     if (payload.priorHospiceDischargeDt) {
       params.prior_hospice_discharge_dt = payload.priorHospiceDischargeDt;
     }

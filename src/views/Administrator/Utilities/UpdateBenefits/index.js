@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { makeStyles } from "@material-ui/core/styles";
 import GridItem from "components/Grid/GridItem.js";
 import GridContainer from "components/Grid/GridContainer.js";
@@ -9,9 +9,17 @@ import Button from "components/CustomButtons/Button.js";
 import { CircularProgress, Typography } from "@material-ui/core";
 import { Refresh, CheckCircle, Warning } from "@material-ui/icons";
 import { SupaContext } from "App";
+import { connect } from "react-redux";
 
 import BenefitPeriodCalculator from "utils/BenefitPeriodCalculator";
 import Snackbar from "components/Snackbar/Snackbar";
+import { attemptToFetchPatient } from "store/actions/patientAction";
+import { attemptToUpdatePatient } from "store/actions/patientAction";
+import { resetFetchPatientState } from "store/actions/patientAction";
+import { resetUpdatePatientState } from "store/actions/patientAction";
+import { patientListStateSelector } from "store/selectors/patientSelector";
+import { patientUpdateStateSelector } from "store/selectors/patientSelector";
+import { ACTION_STATUSES } from "utils/constants";
 
 const styles = {
   cardTitle: {
@@ -54,7 +62,12 @@ const styles = {
 
 const useStyles = makeStyles(styles);
 
-function UpdateBenefits() {
+let isPatientsCollection = true;
+let isUpdateCollection = true;
+let patientsToUpdate = [];
+let currentUpdateIndex = 0;
+
+function UpdateBenefits(props) {
   const classes = useStyles();
   const context = useContext(SupaContext);
   const [loading, setLoading] = useState(false);
@@ -62,37 +75,41 @@ function UpdateBenefits() {
   const [message, setMessage] = useState("");
   const [messageColor, setMessageColor] = useState("success");
   const [showNotification, setShowNotification] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  const updateAllBenefits = async () => {
-    try {
-      setLoading(true);
-      setStats(null);
+  useEffect(() => {
+    // Cleanup: reset states when component unmounts
+    return () => {
+      props.resetListPatients();
+      props.resetUpdatePatient();
+    };
+  }, []);
 
-      // Fetch all patients
-      const { data: patients, error: fetchError } = await supabase
-        .from("patient")
-        .select("*")
-        .eq("companyId", context.userProfile?.companyId);
+  useEffect(() => {
+    if (
+      isPatientsCollection &&
+      props.patients &&
+      props.patients.status === ACTION_STATUSES.SUCCEED
+    ) {
+      isPatientsCollection = false;
+      props.resetListPatients();
 
-      if (fetchError) {
-        throw new Error(`Error fetching patients: ${fetchError.message}`);
-      }
+      const patients = props.patients.data;
 
       if (!patients || patients.length === 0) {
         setMessage("No patients found to update");
         setMessageColor("info");
         setShowNotification(true);
+        setLoading(false);
         return;
       }
 
       // Calculate current benefits for all patients
-      const patientsWithBenefits = BenefitPeriodCalculator.batchCalculateCurrentBenefits(
-        patients
-      );
+      const patientsWithBenefits =
+        BenefitPeriodCalculator.batchCalculateCurrentBenefits(patients);
 
       // Prepare updates
       const updates = [];
-      let updatedCount = 0;
       let skippedCount = 0;
 
       for (const patient of patientsWithBenefits) {
@@ -101,43 +118,118 @@ function UpdateBenefits() {
             id: patient.id,
             current_benefits: patient.current_benefits,
           });
-          updatedCount++;
         } else {
           skippedCount++;
         }
       }
 
-      // Batch update using Supabase
-      if (updates.length > 0) {
-        for (const update of updates) {
-          const { error: updateError } = await supabase
-            .from("patient")
-            .update({ current_benefits: update.current_benefits })
-            .eq("id", update.id);
-
-          if (updateError) {
-            console.error(`Error updating patient ${update.id}:`, updateError);
-          }
-        }
-      }
+      patientsToUpdate = updates;
+      currentUpdateIndex = 0;
 
       setStats({
         total: patients.length,
-        updated: updatedCount,
+        updated: 0,
         skipped: skippedCount,
       });
 
-      setMessage(`Successfully updated ${updatedCount} patient records`);
-      setMessageColor("success");
-      setShowNotification(true);
-    } catch (error) {
-      console.error("Error updating benefits:", error);
-      setMessage(`Error: ${error.message}`);
-      setMessageColor("danger");
-      setShowNotification(true);
-    } finally {
-      setLoading(false);
+      // Start updating if there are patients to update
+      if (updates.length > 0) {
+        setIsUpdating(true);
+        updateNextPatient();
+      } else {
+        setMessage("No patients to update");
+        setMessageColor("info");
+        setShowNotification(true);
+        setLoading(false);
+      }
     }
+  }, [props.patients]);
+
+  useEffect(() => {
+    if (
+      !isUpdateCollection &&
+      props.updatePatientState &&
+      props.updatePatientState.status === ACTION_STATUSES.SUCCEED
+    ) {
+      isUpdateCollection = true;
+      props.resetUpdatePatient();
+
+      // Update stats
+      setStats((prevStats) => ({
+        ...prevStats,
+        updated: currentUpdateIndex,
+      }));
+
+      // Continue with next patient
+      if (currentUpdateIndex < patientsToUpdate.length) {
+        updateNextPatient();
+      } else {
+        // All updates complete
+        setIsUpdating(false);
+        setLoading(false);
+        setMessage(
+          `Successfully updated ${patientsToUpdate.length} patient records`
+        );
+        setMessageColor("success");
+        setShowNotification(true);
+      }
+    }
+
+    if (
+      !isUpdateCollection &&
+      props.updatePatientState &&
+      props.updatePatientState.status === ACTION_STATUSES.FAILED
+    ) {
+      isUpdateCollection = true;
+      props.resetUpdatePatient();
+
+      console.error(
+        `Error updating patient ${patientsToUpdate[currentUpdateIndex - 1]?.id}`
+      );
+
+      // Continue with next patient even if one fails
+      if (currentUpdateIndex < patientsToUpdate.length) {
+        updateNextPatient();
+      } else {
+        setIsUpdating(false);
+        setLoading(false);
+        setMessage(`Update completed with some errors`);
+        setMessageColor("warning");
+        setShowNotification(true);
+      }
+    }
+  }, [props.updatePatientState]);
+
+  const updateNextPatient = () => {
+    if (currentUpdateIndex < patientsToUpdate.length) {
+      const patient = patientsToUpdate[currentUpdateIndex];
+      currentUpdateIndex++;
+
+      const params = {
+        id: patient.id,
+        current_benefits: patient.current_benefits,
+        companyId: context.userProfile?.companyId,
+        updatedUser: {
+          name: context.userProfile?.name,
+          userId: context.userProfile?.id,
+          date: new Date(),
+        },
+      };
+
+      isUpdateCollection = false;
+      props.updatePatient(params);
+    }
+  };
+
+  const updateAllBenefits = () => {
+    setLoading(true);
+    setStats(null);
+    isPatientsCollection = true;
+    patientsToUpdate = [];
+    currentUpdateIndex = 0;
+
+    // Fetch all patients using saga
+    props.listPatients({ companyId: context.userProfile?.companyId });
   };
 
   return (
@@ -236,4 +328,16 @@ function UpdateBenefits() {
   );
 }
 
-export default UpdateBenefits;
+const mapStateToProps = (store) => ({
+  patients: patientListStateSelector(store),
+  updatePatientState: patientUpdateStateSelector(store),
+});
+
+const mapDispatchToProps = (dispatch) => ({
+  listPatients: (data) => dispatch(attemptToFetchPatient(data)),
+  resetListPatients: () => dispatch(resetFetchPatientState()),
+  updatePatient: (data) => dispatch(attemptToUpdatePatient(data)),
+  resetUpdatePatient: () => dispatch(resetUpdatePatientState()),
+});
+
+export default connect(mapStateToProps, mapDispatchToProps)(UpdateBenefits);

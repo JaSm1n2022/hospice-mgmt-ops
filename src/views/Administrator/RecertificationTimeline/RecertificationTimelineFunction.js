@@ -51,11 +51,17 @@ function RecertificationTimelineFunction(props) {
   useEffect(() => {
     console.log("Recertification Timeline - loading patient data");
     isPatientListDone = false;
+    setIsPatientsCollection(true);
     if (context.userProfile?.companyId) {
       props.listPatients({
         companyId: context.userProfile?.companyId,
       });
     }
+
+    // Cleanup: reset state when component unmounts
+    return () => {
+      props.resetListPatients();
+    };
   }, []);
 
   if (
@@ -72,6 +78,7 @@ function RecertificationTimelineFunction(props) {
       originalDataSource = [...source];
       setDataSource(source);
       setIsPatientsCollection(false);
+      props.resetListPatients();
     }
   }
 
