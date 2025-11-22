@@ -149,13 +149,15 @@ class MedicareHandler {
         }
       }
 
-      // If prior hospice exceeds aggregate cap, set allowed cap and available cap to zero
+      // If prior hospice exceeds aggregate cap, set allowed cap to zero and available cap to negative of used cap
       if (priorHospiceExceedsAggregateCap) {
         item.firstPeriodDays = dayCares;
         item.secondPeriodDays = 0.0;
         item.usedCapFirstPeriod = item.totalClaim;
         item.allowedCapFirstPeriod = "0.00";
-        item.availableCapFirstPeriod = "0.00";
+        item.availableCapFirstPeriod = parseFloat(
+          -parseFloat(item.usedCapFirstPeriod)
+        ).toFixed(2);
         item.usedCapSecondPeriod = 0.0;
         item.allowedCapSecondPeriod = 0.0;
         item.availableCapSecondPeriod = 0.0;
@@ -188,11 +190,15 @@ class MedicareHandler {
             parseFloat(item.usedCapSecondPeriod);
 
           if (totalUsedWithPrior >= item.firstPeriodCap) {
-            // When aggregate cap exceeded, set allowed cap and available cap to zero
+            // When aggregate cap exceeded, set allowed cap to zero and available cap to negative of used cap
             item.allowedCapFirstPeriod = "0.00";
-            item.availableCapFirstPeriod = "0.00";
+            item.availableCapFirstPeriod = parseFloat(
+              -parseFloat(item.usedCapFirstPeriod)
+            ).toFixed(2);
             item.allowedCapSecondPeriod = "0.00";
-            item.availableCapSecondPeriod = "0.00";
+            item.availableCapSecondPeriod = parseFloat(
+              -parseFloat(item.usedCapSecondPeriod)
+            ).toFixed(2);
           } else {
             item.availableCapFirstPeriod = parseFloat(
               parseFloat(item.allowedCapFirstPeriod) -
@@ -221,9 +227,11 @@ class MedicareHandler {
             parseFloat(priorHospiceClaim) + parseFloat(item.usedCapFirstPeriod);
 
           if (totalUsedWithPrior >= item.firstPeriodCap) {
-            // When aggregate cap exceeded, set allowed cap and available cap to zero
+            // When aggregate cap exceeded, set allowed cap to zero and available cap to negative of used cap
             item.allowedCapFirstPeriod = "0.00";
-            item.availableCapFirstPeriod = "0.00";
+            item.availableCapFirstPeriod = parseFloat(
+              -parseFloat(item.usedCapFirstPeriod)
+            ).toFixed(2);
           } else {
             item.availableCapFirstPeriod = parseFloat(
               parseFloat(item.allowedCapFirstPeriod) -

@@ -390,20 +390,6 @@ const MedicareCard = ({ data }) => {
                 {formatCurrency(data.availableCapFirstPeriod)}
               </span>
             </div>
-            {data.hasPriorHospice && parseFloat(data.allowedCapFirstPeriod || 0) === 0 && parseFloat(data.usedCapFirstPeriod || 0) > 0 && (
-              <div
-                style={{
-                  padding: "8px",
-                  backgroundColor: "#ffebee",
-                  borderRadius: "4px",
-                  marginTop: "8px",
-                  fontSize: "0.75rem",
-                  color: "#c62828",
-                }}
-              >
-                ⚠️ Prior hospice usage exceeded aggregate cap - No cap available
-              </div>
-            )}
             {data.eoc_discharge && data.eoc_discharge !== "Death Discharge" && (
               <div
                 style={{
@@ -462,20 +448,6 @@ const MedicareCard = ({ data }) => {
                 {formatCurrency(data.availableCapSecondPeriod)}
               </span>
             </div>
-            {data.hasPriorHospice && parseFloat(data.allowedCapSecondPeriod || 0) === 0 && parseFloat(data.usedCapSecondPeriod || 0) > 0 && (
-              <div
-                style={{
-                  padding: "8px",
-                  backgroundColor: "#ffebee",
-                  borderRadius: "4px",
-                  marginTop: "8px",
-                  fontSize: "0.75rem",
-                  color: "#c62828",
-                }}
-              >
-                ⚠️ Prior hospice usage exceeded aggregate cap - No cap available
-              </div>
-            )}
             {data.eoc_discharge && data.eoc_discharge !== "Death Discharge" && (
               <div
                 style={{
