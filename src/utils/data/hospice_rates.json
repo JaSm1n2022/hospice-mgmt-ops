@@ -9,8 +9,8 @@
         "aggregate_cap": 34465.34,
         "wage_index": null,
         "rates_national": {
-            "rhc_days_1_60": 224.62,
-            "rhc_days_61_plus": 176.92,
+            "rhc_days_1_60": 235.86,
+            "rhc_days_61_plus": 189.56,
             "chc_full_day": 1618.59,
             "chc_hourly": 67.44,
             "irc": 518.78,
@@ -44,8 +44,8 @@
         "aggregate_cap": 35361.44,
         "wage_index": null,
         "rates_national": {
-            "rhc_days_1_60": 230.83,
-            "rhc_days_61_plus": 181.94,
+            "rhc_days_1_60": 244.30,
+            "rhc_days_61_plus": 192.5,
             "chc_full_day": 1674.29,
             "chc_hourly": 69.76,
             "irc": 532.48,

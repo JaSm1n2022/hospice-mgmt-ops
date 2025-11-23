@@ -43,6 +43,7 @@ import WidgetsIcon from "@material-ui/icons/Widgets";
 import GearIcon from "@material-ui/icons/Settings";
 import SettingsIcon from "@material-ui/icons/Settings";
 import PaymentIcon from "@material-ui/icons/PaymentOutlined";
+import TrendingUpIcon from "@material-ui/icons/TrendingUp";
 import StockRoom from "views/Administrator/Logistics/StockRoom/StockRoomMain";
 import Dme from "views/Administrator/Logistics/Dme/Equipment/EquipmentMain";
 import Transportation from "views/Administrator/Logistics/Transportation/TransportationMain";
@@ -75,6 +76,7 @@ import PaymentMethod from "views/Administrator/Utilities/PaymentMethod";
 import Admittance from "views/Administrator/Admittance/AdmittanceMain";
 import Medicare from "views/Administrator/MedicareCap/Available/AvailableFunction";
 import MedicareV2 from "views/Administrator/MedicareV2/MedicareV2Function";
+import RevenueForecast from "views/Administrator/MedicareV2/RevenueForecast";
 import Hope from "views/Administrator/Hope/HopeFunction";
 import RecertificationTimeline from "views/Administrator/RecertificationTimeline/RecertificationTimelineFunction";
 import UpdateBenefits from "views/Administrator/Utilities/UpdateBenefits";
@@ -464,6 +466,14 @@ var dashRoutes = [
     rtlName: "الرسوم البيانية",
     icon: PaymentIcon,
     component: MedicareV2,
+    layout: "/admin",
+  },
+  {
+    path: "/revenue-forecast",
+    name: "Revenue Forecast",
+    rtlName: "الرسوم البيانية",
+    icon: TrendingUpIcon,
+    component: RevenueForecast,
     layout: "/admin",
   },
   {
