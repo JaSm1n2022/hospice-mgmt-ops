@@ -139,7 +139,8 @@ const SummaryStats = ({ data }) => {
             if (allowedCap > 0) {
               // Only aggregate the admission FY cap (firstPeriodCap), not continuation caps
               acc.fy2025TotalAggregate += parseFloat(patient.firstPeriodCap || 0);
-              acc.fy2025TotalUsed += parseFloat(patient.usedCapFirstPeriod || 0);
+              // Include both first and second period usage for total used cap
+              acc.fy2025TotalUsed += parseFloat(patient.usedCapFirstPeriod || 0) + parseFloat(patient.usedCapSecondPeriod || 0);
               acc.fy2025TotalAvailable += parseFloat(patient.availableCapFirstPeriod || 0);
             }
 
@@ -170,7 +171,8 @@ const SummaryStats = ({ data }) => {
             if (allowedCap > 0) {
               // Only aggregate the admission FY cap (firstPeriodCap), not continuation caps
               acc.fy2026TotalAggregate += parseFloat(patient.firstPeriodCap || 0);
-              acc.fy2026TotalUsed += parseFloat(patient.usedCapFirstPeriod || 0);
+              // Include both first and second period usage for total used cap
+              acc.fy2026TotalUsed += parseFloat(patient.usedCapFirstPeriod || 0) + parseFloat(patient.usedCapSecondPeriod || 0);
               acc.fy2026TotalAvailable += parseFloat(patient.availableCapFirstPeriod || 0);
             }
 
