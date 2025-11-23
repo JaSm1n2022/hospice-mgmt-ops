@@ -121,8 +121,8 @@ function MedicareV2Function(props) {
 
       let found = temp.filter(
         (data) =>
-          data.clientName &&
-          data.clientName.toLowerCase().indexOf(keyword.toLowerCase()) !== -1
+          data.patientCd &&
+          data.patientCd.toLowerCase().indexOf(keyword.toLowerCase()) !== -1
       );
 
       setDataSource(found);
@@ -182,7 +182,7 @@ function MedicareV2Function(props) {
                       <TextField
                         fullWidth
                         variant="outlined"
-                        placeholder="Search by patient name..."
+                        placeholder="Search by patient ID..."
                         value={keywordValue}
                         onChange={inputHandler}
                         className={classes.searchField}

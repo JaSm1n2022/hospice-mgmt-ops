@@ -8,6 +8,7 @@ import {
   MonetizationOn,
   People,
   PersonAdd,
+  CheckCircle,
 } from "@material-ui/icons";
 
 const useStyles = makeStyles((theme) => ({
@@ -34,6 +35,9 @@ const useStyles = makeStyles((theme) => ({
   },
   statCardPositive: {
     background: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)",
+  },
+  statCardReadyToUse: {
+    background: "linear-gradient(135deg, #11998e 0%, #38ef7d 100%)",
   },
   statCardOverview: {
     background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
@@ -92,11 +96,13 @@ const SummaryStats = ({ data }) => {
         fy2025TotalAggregate: 0,
         fy2025TotalUsed: 0,
         fy2025TotalAvailable: 0,
+        fy2025AvailableCapReadyToUse: 0,
         fy2025AdmittedCount: 0,
         fy2025DischargedCount: 0,
         fy2026TotalAggregate: 0,
         fy2026TotalUsed: 0,
         fy2026TotalAvailable: 0,
+        fy2026AvailableCapReadyToUse: 0,
         fy2026AdmittedCount: 0,
         fy2026DischargedCount: 0,
       };
@@ -126,10 +132,27 @@ const SummaryStats = ({ data }) => {
 
           // Check if SOC is in FY 2025 (2024-10-01 to 2025-09-30)
           if (socDate >= fy2025Start && socDate <= fy2025End) {
-            // Only aggregate the admission FY cap (firstPeriodCap), not continuation caps
-            acc.fy2025TotalAggregate += parseFloat(patient.firstPeriodCap || 0);
-            acc.fy2025TotalUsed += parseFloat(patient.usedCapFirstPeriod || 0);
-            acc.fy2025TotalAvailable += parseFloat(patient.availableCapFirstPeriod || 0);
+            // Exclude patients from aggregate cap calculations if:
+            // 1. Their allowed cap is "0.00" (meaning prior hospice exceeded cap or total usage exceeded cap)
+            const allowedCap = parseFloat(patient.allowedCapFirstPeriod || 0);
+
+            if (allowedCap > 0) {
+              // Only aggregate the admission FY cap (firstPeriodCap), not continuation caps
+              acc.fy2025TotalAggregate += parseFloat(patient.firstPeriodCap || 0);
+              acc.fy2025TotalUsed += parseFloat(patient.usedCapFirstPeriod || 0);
+              acc.fy2025TotalAvailable += parseFloat(patient.availableCapFirstPeriod || 0);
+            }
+
+            // Calculate Available Cap Ready to Use (death discharge patients only, positive available cap only)
+            if (
+              patient.eoc_discharge === "Death Discharge" &&
+              parseFloat(patient.availableCapFirstPeriod || 0) > 0
+            ) {
+              acc.fy2025AvailableCapReadyToUse += parseFloat(
+                patient.availableCapFirstPeriod || 0
+              );
+            }
+
             acc.fy2025AdmittedCount += 1;
 
             // Count discharges (any patient admitted in FY 2025 who has EOC - is inactive)
@@ -140,10 +163,27 @@ const SummaryStats = ({ data }) => {
 
           // Check if SOC is in FY 2026 (2025-10-01 to 2026-09-30)
           if (socDate >= fy2026Start && socDate <= fy2026End) {
-            // Only aggregate the admission FY cap (firstPeriodCap), not continuation caps
-            acc.fy2026TotalAggregate += parseFloat(patient.firstPeriodCap || 0);
-            acc.fy2026TotalUsed += parseFloat(patient.usedCapFirstPeriod || 0);
-            acc.fy2026TotalAvailable += parseFloat(patient.availableCapFirstPeriod || 0);
+            // Exclude patients from aggregate cap calculations if:
+            // 1. Their allowed cap is "0.00" (meaning prior hospice exceeded cap or total usage exceeded cap)
+            const allowedCap = parseFloat(patient.allowedCapFirstPeriod || 0);
+
+            if (allowedCap > 0) {
+              // Only aggregate the admission FY cap (firstPeriodCap), not continuation caps
+              acc.fy2026TotalAggregate += parseFloat(patient.firstPeriodCap || 0);
+              acc.fy2026TotalUsed += parseFloat(patient.usedCapFirstPeriod || 0);
+              acc.fy2026TotalAvailable += parseFloat(patient.availableCapFirstPeriod || 0);
+            }
+
+            // Calculate Available Cap Ready to Use (death discharge patients only, positive available cap only)
+            if (
+              patient.eoc_discharge === "Death Discharge" &&
+              parseFloat(patient.availableCapFirstPeriod || 0) > 0
+            ) {
+              acc.fy2026AvailableCapReadyToUse += parseFloat(
+                patient.availableCapFirstPeriod || 0
+              );
+            }
+
             acc.fy2026AdmittedCount += 1;
 
             // Count discharges (any patient admitted in FY 2026 who has EOC - is inactive)
@@ -162,11 +202,13 @@ const SummaryStats = ({ data }) => {
         fy2025TotalAggregate: 0,
         fy2025TotalUsed: 0,
         fy2025TotalAvailable: 0,
+        fy2025AvailableCapReadyToUse: 0,
         fy2025AdmittedCount: 0,
         fy2025DischargedCount: 0,
         fy2026TotalAggregate: 0,
         fy2026TotalUsed: 0,
         fy2026TotalAvailable: 0,
+        fy2026AvailableCapReadyToUse: 0,
         fy2026AdmittedCount: 0,
         fy2026DischargedCount: 0,
       }
@@ -300,6 +342,20 @@ const SummaryStats = ({ data }) => {
             </Typography>
           </Paper>
         </Grid>
+
+        <Grid item xs={12} sm={6} md={4} style={{ flexBasis: '20%', maxWidth: '20%' }}>
+          <Paper className={`${classes.statCard} ${classes.statCardReadyToUse}`} elevation={3}>
+            <Box className={classes.iconBox}>
+              <CheckCircle className={classes.icon} />
+            </Box>
+            <Typography className={classes.label}>
+              Available Cap Ready to Use
+            </Typography>
+            <Typography className={classes.value}>
+              {formatCurrency(totals.fy2025AvailableCapReadyToUse)}
+            </Typography>
+          </Paper>
+        </Grid>
       </Grid>
 
       <Typography className={classes.sectionTitle}>
@@ -372,6 +428,20 @@ const SummaryStats = ({ data }) => {
             </Typography>
             <Typography className={classes.value}>
               {formatCurrency(totals.fy2026TotalAvailable)}
+            </Typography>
+          </Paper>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={4} style={{ flexBasis: '20%', maxWidth: '20%' }}>
+          <Paper className={`${classes.statCard} ${classes.statCardReadyToUse}`} elevation={3}>
+            <Box className={classes.iconBox}>
+              <CheckCircle className={classes.icon} />
+            </Box>
+            <Typography className={classes.label}>
+              Available Cap Ready to Use
+            </Typography>
+            <Typography className={classes.value}>
+              {formatCurrency(totals.fy2026AvailableCapReadyToUse)}
             </Typography>
           </Paper>
         </Grid>

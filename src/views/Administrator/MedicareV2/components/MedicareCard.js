@@ -283,7 +283,7 @@ const MedicareCard = ({ data }) => {
 
         <Divider className={classes.divider} />
 
-        {/* FY Cap - Only show admission FY cap (no continuation cap display) */}
+        {/* FY Cap - Show admission FY cap and continuation FY cap if applicable */}
         {fiscalYear && (
           <>
             <Typography className={classes.sectionTitle}>
@@ -308,6 +308,20 @@ const MedicareCard = ({ data }) => {
                 {formatCurrency(data.firstPeriodCap)}
               </span>
             </div>
+            {data.secondPeriodDays > 0 && data.secondPeriodCap && (
+              <div className={classes.dataRow}>
+                <span className={classes.label}>
+                  {fiscalYear === "FY2024"
+                    ? "FY 2025 Cap (Continued):"
+                    : fiscalYear === "FY2025"
+                    ? "FY 2026 Cap (Continued):"
+                    : "FY 2027 Cap (Continued):"}
+                </span>
+                <span className={classes.value}>
+                  {formatCurrency(data.secondPeriodCap)}
+                </span>
+              </div>
+            )}
             {data.hasPriorHospice &&
               data.benefitCount === 2 &&
               data.priorDayCare > 0 && (
