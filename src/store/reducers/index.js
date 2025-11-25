@@ -29,6 +29,7 @@ import routesheetReducer from "./routesheet";
 import paydayReducer from "./payday";
 import trainingReducer from "./training";
 import certificationReducer from "./certification";
+import incomeReducer from "./income";
 export default combineReducers({
   invoice: invoiceReducer,
   product: productReducer,
@@ -60,4 +61,5 @@ export default combineReducers({
   payday: paydayReducer,
   training: trainingReducer,
   certification: certificationReducer,
+  income: incomeReducer,
 });

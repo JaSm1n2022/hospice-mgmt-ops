@@ -226,7 +226,7 @@ const MedicareCard = ({ data }) => {
         )}
         {data.hasPriorHospice && data.priorDayCare > 0 && (
           <div className={classes.dataRow}>
-            <span className={classes.label}>Prior Day Care:</span>
+            <span className={classes.label}>Prior Total Day Care:</span>
             <span className={classes.value}>{data.priorDayCare} days</span>
           </div>
         )}
@@ -385,9 +385,7 @@ const MedicareCard = ({ data }) => {
               </span>
             </div>
             <div className={classes.dataRow}>
-              <span className={classes.label}>
-                Allowed Cap (Apportioned):
-              </span>
+              <span className={classes.label}>Allowed Cap (Apportioned):</span>
               <span className={classes.value}>
                 {formatCurrency(data.allowedCapFirstPeriod)}
               </span>

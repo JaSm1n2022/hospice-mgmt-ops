@@ -97,6 +97,7 @@ class MedicareHandler {
       // Check if patient has prior hospice
       item.hasPriorHospice = item.is_prior_hospice || false;
       item.priorDayCare = parseFloat(item.prior_day_care || 0);
+      item.lastDayCare = parseFloat(item.prior_last_day_care || 0);
       let currentDay = moment(new Date());
       if (item.eoc) {
         currentDay = moment(item.eoc);

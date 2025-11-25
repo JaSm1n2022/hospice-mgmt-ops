@@ -31,6 +31,7 @@ import routesheetSaga from "./routesheetSaga";
 import paydaySaga from "./paydaySaga";
 import trainingSaga from "./trainingSaga";
 import certificationSaga from "./certificationSaga";
+import incomeSaga from "./incomeSaga";
 export function* rootSaga() {
   yield all([
     authSaga(),
@@ -65,5 +66,6 @@ export function* rootSaga() {
     paydaySaga(),
     trainingSaga(),
     certificationSaga(),
+    incomeSaga(),
   ]);
 }

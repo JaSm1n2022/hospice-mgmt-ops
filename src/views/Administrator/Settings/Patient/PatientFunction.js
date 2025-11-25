@@ -271,6 +271,7 @@ function PatientFunction(props) {
       is_prior_hospice: payload.isPriorHospice,
       prior_benefits_period: parseInt(payload.priorBenefitsPeriod || 0, 10),
       prior_day_care: parseInt(payload.priorDayCare || 0, 10),
+      prior_last_care: parseInt(payload.lastDayCare || 0, 10),
       prior_hospice_discharge: payload.priorHospiceDischarge?.name,
       eoc_discharge: payload.eocDischarge?.name,
       admitted_benefits_period: parseInt(payload.numberOfBenefits || 0, 10),

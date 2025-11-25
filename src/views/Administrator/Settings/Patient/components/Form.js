@@ -248,9 +248,19 @@ function PatientForm(props) {
         id: "priorDayCare",
         component: "textfield",
         type: "number",
-        placeholder: "Prior Hospice # Daycare",
-        label: "Prior Hospice # Daycare",
+        placeholder: "Prior Hospice total # Daycare",
+        label: "Prior Hospice total # Daycare",
         name: "priorDayCare",
+        hide: false,
+        cols: 6,
+      },
+      {
+        id: "lastDayCare",
+        component: "textfield",
+        type: "number",
+        placeholder: "Prior Hospice last # Daycare",
+        label: "Prior Hospice last # Daycare",
+        name: "lastDayCare",
         hide: false,
         cols: 6,
       },
@@ -389,6 +399,8 @@ function PatientForm(props) {
         fm.recertDt = fm.last_recertification_dt;
       }
       fm.priorDayCare = fm.prior_day_care || undefined;
+      fm.lastDayCare = fm.prior_last_day_care || undefined;
+
       fm.numberOfBenefits = fm.admitted_benefits_period || undefined;
       if (fm.prior_hospice_discharge_dt) {
         fm.priorHospiceDischargeDt = fm.prior_hospice_discharge_dt;
@@ -531,10 +543,10 @@ function PatientForm(props) {
         temp.errorMsg = `${temp.label} is required`;
       }
       if (
-        temp.name === "priorDayCare" &&
+        temp.name === "lastDayCare" &&
         generalForm.priorHospiceDischarge?.name ===
           "Transfer another hospice" &&
-        (!generalForm.priorDayCare || generalForm.priorDayCare === 0)
+        (!generalForm.lastDayCare || generalForm.lastDayCare === 0)
       ) {
         isValid = false;
         temp.isError = true;
