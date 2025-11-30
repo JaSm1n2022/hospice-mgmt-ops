@@ -376,18 +376,33 @@ const MedicareCard = ({ data }) => {
                 {formatCurrency(data.priorHospiceAvailableCap)}
               </span>
             </div>
-            <div
-              style={{
-                padding: "8px",
-                backgroundColor: "#e8f5e9",
-                borderRadius: "4px",
-                marginTop: "8px",
-                fontSize: "0.75rem",
-                color: "#2e7d32",
-              }}
-            >
-              ✓ Available cap included in total (transfer patient)
-            </div>
+            {parseFloat(data.priorHospiceAvailableCap || 0) > 0 ? (
+              <div
+                style={{
+                  padding: "8px",
+                  backgroundColor: "#e8f5e9",
+                  borderRadius: "4px",
+                  marginTop: "8px",
+                  fontSize: "0.75rem",
+                  color: "#2e7d32",
+                }}
+              >
+                ✓ Available cap included in total (transfer patient)
+              </div>
+            ) : (
+              <div
+                style={{
+                  padding: "8px",
+                  backgroundColor: "#fff3e0",
+                  borderRadius: "4px",
+                  marginTop: "8px",
+                  fontSize: "0.75rem",
+                  color: "#e65100",
+                }}
+              >
+                ℹ️ No available cap to transfer (negative cap set to zero)
+              </div>
+            )}
 
             <Divider className={classes.divider} />
           </>
@@ -451,20 +466,6 @@ const MedicareCard = ({ data }) => {
                 {formatCurrency(data.availableCapFirstPeriod)}
               </span>
             </div>
-            {data.eoc_discharge && data.eoc_discharge !== "Death Discharge" && (
-              <div
-                style={{
-                  padding: "8px",
-                  backgroundColor: "#e3f2fd",
-                  borderRadius: "4px",
-                  marginTop: "8px",
-                  fontSize: "0.75rem",
-                  color: "#1976d2",
-                }}
-              >
-                ℹ️ Non-death discharge: Available cap set to allowed cap
-              </div>
-            )}
           </>
         )}
 
@@ -509,20 +510,6 @@ const MedicareCard = ({ data }) => {
                 {formatCurrency(data.availableCapSecondPeriod)}
               </span>
             </div>
-            {data.eoc_discharge && data.eoc_discharge !== "Death Discharge" && (
-              <div
-                style={{
-                  padding: "8px",
-                  backgroundColor: "#e3f2fd",
-                  borderRadius: "4px",
-                  marginTop: "8px",
-                  fontSize: "0.75rem",
-                  color: "#1976d2",
-                }}
-              >
-                ℹ️ Non-death discharge: Available cap set to allowed cap
-              </div>
-            )}
           </>
         )}
       </CardContent>

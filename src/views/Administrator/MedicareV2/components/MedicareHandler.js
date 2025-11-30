@@ -152,10 +152,26 @@ class MedicareHandler {
         }
       }
 
-      // If prior hospice exceeds aggregate cap, still calculate FY breakdown but with no apportionment
+      // If prior hospice exceeds aggregate cap, still calculate FY breakdown and show prior hospice apportionment
       if (priorHospiceExceedsAggregateCap) {
-        // Calculate prior hospice used cap using admitted FY's RHC rate only
+        const totalDaysIncludingPrior = dayCares + item.priorDayCare;
+
+        // Calculate prior hospice caps using admitted FY's cap and RHC rate
+        const priorAllowedCap =
+          (item.priorDayCare / totalDaysIncludingPrior) * item.firstPeriodCap;
+        item.priorHospiceAllowedCap = parseFloat(priorAllowedCap).toFixed(2);
         item.priorHospiceUsedCap = this.calculateClaim(item.priorDayCare, rates);
+
+        // Calculate prior hospice available cap
+        const priorAvailableCap = parseFloat(
+          parseFloat(item.priorHospiceAllowedCap) -
+            parseFloat(item.priorHospiceUsedCap)
+        );
+
+        // If negative, set to zero (don't transfer negative cap)
+        item.priorHospiceAvailableCap = priorAvailableCap < 0
+          ? "0.00"
+          : priorAvailableCap.toFixed(2);
 
         if (secondPeriodDays > 0) {
           // Patient spans two FY periods - calculate used cap for each period using FY-specific rates
@@ -166,24 +182,53 @@ class MedicareHandler {
           item.usedCapFirstPeriod = this.calculateClaim(firstPeriodDays, rates);
           item.usedCapSecondPeriod = this.calculateClaim(secondPeriodDays, secondRates);
 
-          // No apportionment - set allowed cap to zero for both periods
-          item.allowedCapFirstPeriod = "0.00";
-          item.allowedCapSecondPeriod = "0.00";
+          // Calculate apportioned allowed cap for current patient (including prior days in total)
+          const firstPctAvailable =
+            (firstPeriodDays / totalDaysIncludingPrior) * item.firstPeriodCap;
+          const secondPctAvailable =
+            (secondPeriodDays / totalDaysIncludingPrior) * item.secondPeriodCap;
+          item.allowedCapFirstPeriod = parseFloat(firstPctAvailable).toFixed(2);
+          item.allowedCapSecondPeriod = parseFloat(secondPctAvailable).toFixed(2);
+
+          // Calculate current patient's available cap
+          const currentAvailableFirst = parseFloat(
+            parseFloat(item.allowedCapFirstPeriod) -
+              parseFloat(item.usedCapFirstPeriod)
+          ).toFixed(2);
+          const currentAvailableSecond = parseFloat(
+            parseFloat(item.allowedCapSecondPeriod) -
+              parseFloat(item.usedCapSecondPeriod)
+          ).toFixed(2);
+
+          // Include prior hospice available cap in total (only if positive)
           item.availableCapFirstPeriod = parseFloat(
-            -parseFloat(item.usedCapFirstPeriod)
+            parseFloat(currentAvailableFirst) +
+              parseFloat(item.priorHospiceAvailableCap)
           ).toFixed(2);
-          item.availableCapSecondPeriod = parseFloat(
-            -parseFloat(item.usedCapSecondPeriod)
-          ).toFixed(2);
+          item.availableCapSecondPeriod = currentAvailableSecond;
         } else {
           // Patient stays within one FY period
           item.firstPeriodDays = dayCares;
           item.secondPeriodDays = 0.0;
           item.usedCapFirstPeriod = item.totalClaim;
-          item.allowedCapFirstPeriod = "0.00";
-          item.availableCapFirstPeriod = parseFloat(
-            -parseFloat(item.usedCapFirstPeriod)
+
+          // Calculate apportioned allowed cap for current patient (including prior days in total)
+          const allowedCap =
+            (dayCares / totalDaysIncludingPrior) * item.firstPeriodCap;
+          item.allowedCapFirstPeriod = parseFloat(allowedCap).toFixed(2);
+
+          // Calculate current patient's available cap
+          const currentAvailable = parseFloat(
+            parseFloat(item.allowedCapFirstPeriod) -
+              parseFloat(item.usedCapFirstPeriod)
           ).toFixed(2);
+
+          // Include prior hospice available cap in total (only if positive)
+          item.availableCapFirstPeriod = parseFloat(
+            parseFloat(currentAvailable) +
+              parseFloat(item.priorHospiceAvailableCap)
+          ).toFixed(2);
+
           item.usedCapSecondPeriod = 0.0;
           item.allowedCapSecondPeriod = 0.0;
           item.availableCapSecondPeriod = 0.0;
@@ -198,10 +243,17 @@ class MedicareHandler {
           (item.priorDayCare / totalDaysIncludingPrior) * item.firstPeriodCap;
         item.priorHospiceAllowedCap = parseFloat(priorAllowedCap).toFixed(2);
         item.priorHospiceUsedCap = this.calculateClaim(item.priorDayCare, rates);
-        item.priorHospiceAvailableCap = parseFloat(
+
+        // Calculate prior hospice available cap
+        const priorAvailableCap = parseFloat(
           parseFloat(item.priorHospiceAllowedCap) -
             parseFloat(item.priorHospiceUsedCap)
-        ).toFixed(2);
+        );
+
+        // If negative, set to zero (don't transfer negative cap)
+        item.priorHospiceAvailableCap = priorAvailableCap < 0
+          ? "0.00"
+          : priorAvailableCap.toFixed(2);
 
         if (secondPeriodDays > 0) {
           // Patient spans two FY periods
@@ -308,21 +360,6 @@ class MedicareHandler {
           item.availableCapSecondPeriod = parseFloat(
             -parseFloat(item.usedCapSecondPeriod)
           ).toFixed(2);
-        }
-      }
-
-      // Special handling for non-death discharge: Set available cap = allowed cap
-      // BUT NOT if prior hospice exceeded aggregate cap (already set to negative)
-      // AND NOT if benefits >= 3 without prior hospice (already set to negative)
-      if (
-        item.eoc_discharge &&
-        item.eoc_discharge !== "Death Discharge" &&
-        !priorHospiceExceedsAggregateCap &&
-        !(benefitCount >= 3 && !item.hasPriorHospice)
-      ) {
-        item.availableCapFirstPeriod = item.allowedCapFirstPeriod;
-        if (item.secondPeriodDays > 0) {
-          item.availableCapSecondPeriod = item.allowedCapSecondPeriod;
         }
       }
     });
