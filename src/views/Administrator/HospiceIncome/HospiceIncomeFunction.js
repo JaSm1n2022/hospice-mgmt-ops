@@ -119,22 +119,6 @@ function HospiceIncomeFunction(props) {
   }, [props.incomeData]);
 
   // Handle create success
-  useEffect(() => {
-    if (props.createIncome?.status === ACTION_STATUSES.SUCCEED) {
-      // Reload income data
-      props.fetchIncome({ companyId: context.userProfile.companyId });
-      // Reset form
-      setFormData({
-        patientCd: "",
-        payor: "",
-        payPeriod: "",
-        datePaid: "",
-        remitRef: "",
-        amount: "",
-      });
-      props.resetCreateIncome();
-    }
-  }, [props.createIncome]);
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
@@ -147,7 +131,7 @@ function HospiceIncomeFunction(props) {
   const handleSubmit = () => {
     const payload = {
       payor: formData.payor,
-      pay_Period: formData.payPeriod,
+      pay_period: formData.payPeriod,
       date_paid: formData.datePaid,
       remit_ref: formData.remitRef,
 
@@ -156,7 +140,7 @@ function HospiceIncomeFunction(props) {
         ?.id,
       companyId: context.userProfile.companyId,
       amount_usd: parseFloat(formData.amount),
-      createdAt: new Date(),
+      created_at: new Date(),
       updatedUser: {
         name: context.userProfile?.name,
         userId: context.userProfile?.id,
@@ -231,7 +215,22 @@ function HospiceIncomeFunction(props) {
       </div>
     );
   }
-
+  if (props.createIncome?.status === ACTION_STATUSES.SUCCEED) {
+    // Reload income data
+    //  props.fetchIncome({ companyId: context.userProfile.companyId });
+    // Reset form
+    /*
+    setFormData({
+      patientCd: "",
+      payor: "",
+      payPeriod: "",
+      datePaid: "",
+      remitRef: "",
+      amount: "",
+    });
+    */
+    props.resetCreateIncome();
+  }
   return (
     <div>
       <GridContainer>

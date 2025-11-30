@@ -57,9 +57,9 @@ function* createIncome(rqst) {
       throw error;
     }
     yield put(setCreateIncomeSucceed({ success: true }));
-    TOAST.success("Income entry created successfully");
+    TOAST.ok("Income entry created successfully");
   } catch (error) {
-    console.log(`[create Income] : ${error.toString()}`);
+    console.log(`[create Income2] : ${error.toString()}`);
     yield put(setCreateIncomeFailure(`[create income] : ${error.toString()}`));
     TOAST.error(`Failed to create income: ${error.toString()}`);
   }
@@ -80,7 +80,7 @@ function* updateIncome(rqst) {
       throw error;
     }
     yield put(setUpdateIncomeSucceed({ success: true }));
-    TOAST.success("Income entry updated successfully");
+    TOAST.ok("Income entry updated successfully");
   } catch (error) {
     console.log(`[update Income] : ${error.toString()}`);
     yield put(setUpdateIncomeFailure(`[update Income] : ${error.toString()}`));
@@ -104,7 +104,7 @@ function* deleteIncome(rqst) {
       throw error;
     }
     yield put(setDeleteIncomeSucceed({ success: true }));
-    TOAST.success("Income entry deleted successfully");
+    TOAST.ok("Income entry deleted successfully");
   } catch (error) {
     console.log(`[delete Income] : ${error.toString()}`);
     yield put(setDeleteIncomeFailure(`[delete Income] : ${error.toString()}`));
@@ -175,7 +175,7 @@ function* uploadFile(rqst) {
     yield put(
       setUploadFileSucceed({ success: true, fileUrl: urlData.publicUrl })
     );
-    TOAST.success(`File ${file.name} uploaded successfully`);
+    TOAST.ok(`File ${file.name} uploaded successfully`);
   } catch (error) {
     console.log(`[upload File] : ${error.toString()}`);
     yield put(setUploadFileFailure(`[upload File] : ${error.toString()}`));
