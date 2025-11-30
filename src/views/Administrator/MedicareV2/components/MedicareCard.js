@@ -512,6 +512,57 @@ const MedicareCard = ({ data }) => {
             </div>
           </>
         )}
+
+        {/* POST-DISCHARGE (EOC) - Only show if post-discharge days exist */}
+        {data.postDischargeDays > 0 && (
+          <>
+            <Divider className={classes.divider} />
+            <Typography className={classes.sectionTitle}>
+              <LocalHospital className={classes.icon} />
+              POST-DISCHARGE (EOC)
+            </Typography>
+            <div className={classes.dataRow}>
+              <span className={classes.label}>Post-Discharge Days:</span>
+              <span className={classes.value}>{data.postDischargeDays} days</span>
+            </div>
+            <div className={classes.dataRow}>
+              <span className={classes.label}>Allowed Cap (Apportioned):</span>
+              <span className={classes.value}>
+                {formatCurrency(data.postDischargeAllowedCap)}
+              </span>
+            </div>
+            <div className={classes.dataRow}>
+              <span className={classes.label}>Estimated Used Cap:</span>
+              <span className={classes.value}>
+                {formatCurrency(data.postDischargeUsedCap)}
+              </span>
+            </div>
+            <div className={classes.dataRow}>
+              <span className={classes.label}>Available Cap:</span>
+              <span
+                className={`${classes.value} ${
+                  parseFloat(data.postDischargeAvailableCap || 0) >= 0
+                    ? classes.positiveValue
+                    : classes.negativeValue
+                }`}
+              >
+                {formatCurrency(data.postDischargeAvailableCap)}
+              </span>
+            </div>
+            <div
+              style={{
+                padding: "8px",
+                backgroundColor: "#fff3e0",
+                borderRadius: "4px",
+                marginTop: "8px",
+                fontSize: "0.75rem",
+                color: "#e65100",
+              }}
+            >
+              ℹ️ Not included in total used cap, revenue, or available cap
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );

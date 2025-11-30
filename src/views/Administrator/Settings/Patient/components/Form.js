@@ -384,6 +384,22 @@ function PatientForm(props) {
         options: [...eocDischargeList],
         cols: 6,
       },
+      // POST-DISCHARGE SECTION
+      {
+        id: "postDischargeHeader",
+        component: "sectionheader",
+        label: "Post-Discharge (EOC)",
+        cols: 12,
+      },
+      {
+        id: "newHospiceCareDays",
+        component: "textfield",
+        type: "number",
+        placeholder: "Total Hospice Days of Care (All Agencies)",
+        label: "Total Hospice Days of Care (All Agencies)",
+        name: "newHospiceCareDays",
+        cols: 6,
+      },
     ];
     setComponents(general);
 
@@ -400,6 +416,7 @@ function PatientForm(props) {
       }
       fm.priorDayCare = fm.prior_day_care || undefined;
       fm.lastDayCare = fm.prior_last_day_care || undefined;
+      fm.newHospiceCareDays = fm.new_hospice_care_day || undefined;
 
       fm.numberOfBenefits = fm.admitted_benefits_period || undefined;
       if (fm.prior_hospice_discharge_dt) {

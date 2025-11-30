@@ -154,7 +154,9 @@ class MedicareHandler {
 
       // If prior hospice exceeds aggregate cap, still calculate FY breakdown and show prior hospice apportionment
       if (priorHospiceExceedsAggregateCap) {
-        const totalDaysIncludingPrior = dayCares + item.priorDayCare;
+        // Include post-discharge days in total apportionment
+        const postDischargeDays = parseInt(item.new_hospice_care_day || 0, 10);
+        const totalDaysIncludingPrior = dayCares + item.priorDayCare + postDischargeDays;
 
         // Calculate prior hospice caps using admitted FY's cap and RHC rate
         const priorAllowedCap =
@@ -172,6 +174,24 @@ class MedicareHandler {
         item.priorHospiceAvailableCap = priorAvailableCap < 0
           ? "0.00"
           : priorAvailableCap.toFixed(2);
+
+        // Calculate post-discharge (EOC) caps using admitted FY's cap and RHC rate
+        if (postDischargeDays > 0) {
+          const postDischargeAllowedCap =
+            (postDischargeDays / totalDaysIncludingPrior) * item.firstPeriodCap;
+          item.postDischargeAllowedCap = parseFloat(postDischargeAllowedCap).toFixed(2);
+          item.postDischargeUsedCap = this.calculateClaim(postDischargeDays, rates);
+          item.postDischargeAvailableCap = parseFloat(
+            parseFloat(item.postDischargeAllowedCap) -
+              parseFloat(item.postDischargeUsedCap)
+          ).toFixed(2);
+          item.postDischargeDays = postDischargeDays;
+        } else {
+          item.postDischargeAllowedCap = "0.00";
+          item.postDischargeUsedCap = "0.00";
+          item.postDischargeAvailableCap = "0.00";
+          item.postDischargeDays = 0;
+        }
 
         if (secondPeriodDays > 0) {
           // Patient spans two FY periods - calculate used cap for each period using FY-specific rates
@@ -235,8 +255,9 @@ class MedicareHandler {
         }
       } else if (item.hasPriorHospice && item.priorDayCare > 0) {
         // Prior hospice exists but doesn't exceed cap alone
-        // Include prior days in total for apportionment calculation
-        const totalDaysIncludingPrior = dayCares + item.priorDayCare;
+        // Include prior days and post-discharge days in total for apportionment calculation
+        const postDischargeDays = parseInt(item.new_hospice_care_day || 0, 10);
+        const totalDaysIncludingPrior = dayCares + item.priorDayCare + postDischargeDays;
 
         // Calculate prior hospice caps using admitted FY's cap and RHC rate
         const priorAllowedCap =
@@ -254,6 +275,24 @@ class MedicareHandler {
         item.priorHospiceAvailableCap = priorAvailableCap < 0
           ? "0.00"
           : priorAvailableCap.toFixed(2);
+
+        // Calculate post-discharge (EOC) caps using admitted FY's cap and RHC rate
+        if (postDischargeDays > 0) {
+          const postDischargeAllowedCap =
+            (postDischargeDays / totalDaysIncludingPrior) * item.firstPeriodCap;
+          item.postDischargeAllowedCap = parseFloat(postDischargeAllowedCap).toFixed(2);
+          item.postDischargeUsedCap = this.calculateClaim(postDischargeDays, rates);
+          item.postDischargeAvailableCap = parseFloat(
+            parseFloat(item.postDischargeAllowedCap) -
+              parseFloat(item.postDischargeUsedCap)
+          ).toFixed(2);
+          item.postDischargeDays = postDischargeDays;
+        } else {
+          item.postDischargeAllowedCap = "0.00";
+          item.postDischargeUsedCap = "0.00";
+          item.postDischargeAvailableCap = "0.00";
+          item.postDischargeDays = 0;
+        }
 
         if (secondPeriodDays > 0) {
           // Patient spans two FY periods
@@ -317,14 +356,18 @@ class MedicareHandler {
         }
       } else if (secondPeriodDays > 0) {
         // No prior hospice, patient spans two FY periods
+        // Include post-discharge days in total for apportionment
+        const postDischargeDays = parseInt(item.new_hospice_care_day || 0, 10);
+        const totalDaysWithPost = dayCares + postDischargeDays;
+
         // Calculate claims using FY-specific rates
         item.usedCapFirstPeriod = this.calculateClaim(firstPeriodDays, rates);
         item.usedCapSecondPeriod = this.calculateClaim(secondPeriodDays, secondRates);
 
         const firstPctAvailable =
-          (firstPeriodDays / dayCares) * item.firstPeriodCap;
+          (firstPeriodDays / totalDaysWithPost) * item.firstPeriodCap;
         const secondPctAvailable =
-          (secondPeriodDays / dayCares) * item.secondPeriodCap;
+          (secondPeriodDays / totalDaysWithPost) * item.secondPeriodCap;
         item.allowedCapFirstPeriod = parseFloat(firstPctAvailable).toFixed(2);
         item.allowedCapSecondPeriod = parseFloat(secondPctAvailable).toFixed(2);
         item.availableCapFirstPeriod = parseFloat(
@@ -337,13 +380,59 @@ class MedicareHandler {
         ).toFixed(2);
         item.firstPeriodDays = firstPeriodDays;
         item.secondPeriodDays = secondPeriodDays;
+
+        // Calculate post-discharge (EOC) caps
+        if (postDischargeDays > 0) {
+          const postDischargeAllowedCap =
+            (postDischargeDays / totalDaysWithPost) * item.firstPeriodCap;
+          item.postDischargeAllowedCap = parseFloat(postDischargeAllowedCap).toFixed(2);
+          item.postDischargeUsedCap = this.calculateClaim(postDischargeDays, rates);
+          item.postDischargeAvailableCap = parseFloat(
+            parseFloat(item.postDischargeAllowedCap) -
+              parseFloat(item.postDischargeUsedCap)
+          ).toFixed(2);
+          item.postDischargeDays = postDischargeDays;
+        } else {
+          item.postDischargeAllowedCap = "0.00";
+          item.postDischargeUsedCap = "0.00";
+          item.postDischargeAvailableCap = "0.00";
+          item.postDischargeDays = 0;
+        }
       } else {
+        // No prior hospice, patient in one FY period
+        // Include post-discharge days in total for apportionment
+        const postDischargeDays = parseInt(item.new_hospice_care_day || 0, 10);
+        const totalDaysWithPost = dayCares + postDischargeDays;
+
         item.firstPeriodDays = dayCares;
         item.secondPeriodDays = 0.0;
         item.usedCapFirstPeriod = item.totalClaim;
-        item.allowedCapFirstPeriod = item.usedCapFirstPeriod;
+
+        // If post-discharge days exist, use apportionment
+        if (postDischargeDays > 0) {
+          const allowedCap = (dayCares / totalDaysWithPost) * item.firstPeriodCap;
+          item.allowedCapFirstPeriod = parseFloat(allowedCap).toFixed(2);
+
+          // Calculate post-discharge (EOC) caps
+          const postDischargeAllowedCap =
+            (postDischargeDays / totalDaysWithPost) * item.firstPeriodCap;
+          item.postDischargeAllowedCap = parseFloat(postDischargeAllowedCap).toFixed(2);
+          item.postDischargeUsedCap = this.calculateClaim(postDischargeDays, rates);
+          item.postDischargeAvailableCap = parseFloat(
+            parseFloat(item.postDischargeAllowedCap) -
+              parseFloat(item.postDischargeUsedCap)
+          ).toFixed(2);
+          item.postDischargeDays = postDischargeDays;
+        } else {
+          item.allowedCapFirstPeriod = item.usedCapFirstPeriod;
+          item.postDischargeAllowedCap = "0.00";
+          item.postDischargeUsedCap = "0.00";
+          item.postDischargeAvailableCap = "0.00";
+          item.postDischargeDays = 0;
+        }
+
         item.availableCapFirstPeriod = parseFloat(
-          parseFloat(item.firstPeriodCap) - parseFloat(item.usedCapFirstPeriod)
+          parseFloat(item.allowedCapFirstPeriod) - parseFloat(item.usedCapFirstPeriod)
         ).toFixed(2);
         item.usedCapSecondPeriod = 0.0;
         item.allowedCapSecondPeriod = 0.0;
