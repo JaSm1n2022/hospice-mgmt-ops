@@ -154,6 +154,9 @@ class MedicareHandler {
 
       // If prior hospice exceeds aggregate cap, still calculate FY breakdown but with no apportionment
       if (priorHospiceExceedsAggregateCap) {
+        // Calculate prior hospice used cap using admitted FY's RHC rate only
+        item.priorHospiceUsedCap = this.calculateClaim(item.priorDayCare, rates);
+
         if (secondPeriodDays > 0) {
           // Patient spans two FY periods - calculate used cap for each period using FY-specific rates
           item.firstPeriodDays = firstPeriodDays;
@@ -187,7 +190,18 @@ class MedicareHandler {
         }
       } else if (item.hasPriorHospice && item.priorDayCare > 0) {
         // Prior hospice exists but doesn't exceed cap alone
-        // Use FY apportionment based on current patient days only
+        // Include prior days in total for apportionment calculation
+        const totalDaysIncludingPrior = dayCares + item.priorDayCare;
+
+        // Calculate prior hospice caps using admitted FY's cap and RHC rate
+        const priorAllowedCap =
+          (item.priorDayCare / totalDaysIncludingPrior) * item.firstPeriodCap;
+        item.priorHospiceAllowedCap = parseFloat(priorAllowedCap).toFixed(2);
+        item.priorHospiceUsedCap = this.calculateClaim(item.priorDayCare, rates);
+        item.priorHospiceAvailableCap = parseFloat(
+          parseFloat(item.priorHospiceAllowedCap) -
+            parseFloat(item.priorHospiceUsedCap)
+        ).toFixed(2);
 
         if (secondPeriodDays > 0) {
           // Patient spans two FY periods
@@ -198,32 +212,51 @@ class MedicareHandler {
           item.usedCapFirstPeriod = this.calculateClaim(firstPeriodDays, rates);
           item.usedCapSecondPeriod = this.calculateClaim(secondPeriodDays, secondRates);
 
-          // FY apportionment using CURRENT patient days only (not including prior)
+          // FY apportionment including prior days in denominator
           const firstPctAvailable =
-            (firstPeriodDays / dayCares) * item.firstPeriodCap;
+            (firstPeriodDays / totalDaysIncludingPrior) * item.firstPeriodCap;
           const secondPctAvailable =
-            (secondPeriodDays / dayCares) * item.secondPeriodCap;
+            (secondPeriodDays / totalDaysIncludingPrior) * item.secondPeriodCap;
           item.allowedCapFirstPeriod = parseFloat(firstPctAvailable).toFixed(2);
           item.allowedCapSecondPeriod = parseFloat(secondPctAvailable).toFixed(2);
-          item.availableCapFirstPeriod = parseFloat(
+
+          // Calculate available cap for current patient
+          const currentAvailableFirst = parseFloat(
             parseFloat(item.allowedCapFirstPeriod) -
               parseFloat(item.usedCapFirstPeriod)
           ).toFixed(2);
-          item.availableCapSecondPeriod = parseFloat(
+          const currentAvailableSecond = parseFloat(
             parseFloat(item.allowedCapSecondPeriod) -
               parseFloat(item.usedCapSecondPeriod)
           ).toFixed(2);
+
+          // Include prior hospice available cap in total (transfer patient)
+          item.availableCapFirstPeriod = parseFloat(
+            parseFloat(currentAvailableFirst) +
+              parseFloat(item.priorHospiceAvailableCap)
+          ).toFixed(2);
+          item.availableCapSecondPeriod = currentAvailableSecond;
         } else {
-          // Patient stays within one FY period - use full FY cap
+          // Patient stays within one FY period
           item.firstPeriodDays = dayCares;
           item.secondPeriodDays = 0.0;
           item.usedCapFirstPeriod = item.totalClaim;
 
-          // No FY apportionment needed - patient only uses one FY period
-          item.allowedCapFirstPeriod = item.firstPeriodCap;
-          item.availableCapFirstPeriod = parseFloat(
+          // Apportion based on current days vs total days including prior
+          const allowedCap =
+            (dayCares / totalDaysIncludingPrior) * item.firstPeriodCap;
+          item.allowedCapFirstPeriod = parseFloat(allowedCap).toFixed(2);
+
+          // Calculate available cap for current patient
+          const currentAvailable = parseFloat(
             parseFloat(item.allowedCapFirstPeriod) -
               parseFloat(item.usedCapFirstPeriod)
+          ).toFixed(2);
+
+          // Include prior hospice available cap in total (transfer patient)
+          item.availableCapFirstPeriod = parseFloat(
+            parseFloat(currentAvailable) +
+              parseFloat(item.priorHospiceAvailableCap)
           ).toFixed(2);
 
           item.usedCapSecondPeriod = 0.0;

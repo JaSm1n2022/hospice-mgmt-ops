@@ -322,9 +322,7 @@ const MedicareCard = ({ data }) => {
                 </span>
               </div>
             )}
-            {data.hasPriorHospice &&
-              data.benefitCount === 2 &&
-              data.priorDayCare > 0 && (
+            {data.hasPriorHospice && data.priorDayCare > 0 && (
                 <div
                   style={{
                     padding: "8px",
@@ -335,10 +333,61 @@ const MedicareCard = ({ data }) => {
                     color: "#1976d2",
                   }}
                 >
-                  ℹ️ Cap apportioned with prior hospice day care (
-                  {data.priorDayCare} days)
+                  ℹ️ FY cap apportioned including prior hospice days ({data.priorDayCare} days)
                 </div>
               )}
+
+            <Divider className={classes.divider} />
+          </>
+        )}
+
+        {/* Previous Hospice Agency Used Cap - Only show if prior hospice exists */}
+        {data.hasPriorHospice && data.priorDayCare > 0 && (
+          <>
+            <Typography className={classes.sectionTitle}>
+              <LocalHospital className={classes.icon} />
+              Previous Hospice Agency
+            </Typography>
+            <div className={classes.dataRow}>
+              <span className={classes.label}>Prior Days:</span>
+              <span className={classes.value}>{data.priorDayCare} days</span>
+            </div>
+            <div className={classes.dataRow}>
+              <span className={classes.label}>Allowed Cap (Apportioned):</span>
+              <span className={classes.value}>
+                {formatCurrency(data.priorHospiceAllowedCap)}
+              </span>
+            </div>
+            <div className={classes.dataRow}>
+              <span className={classes.label}>Estimated Used Cap:</span>
+              <span className={classes.value}>
+                {formatCurrency(data.priorHospiceUsedCap)}
+              </span>
+            </div>
+            <div className={classes.dataRow}>
+              <span className={classes.label}>Available Cap:</span>
+              <span
+                className={`${classes.value} ${
+                  parseFloat(data.priorHospiceAvailableCap || 0) >= 0
+                    ? classes.positiveValue
+                    : classes.negativeValue
+                }`}
+              >
+                {formatCurrency(data.priorHospiceAvailableCap)}
+              </span>
+            </div>
+            <div
+              style={{
+                padding: "8px",
+                backgroundColor: "#e8f5e9",
+                borderRadius: "4px",
+                marginTop: "8px",
+                fontSize: "0.75rem",
+                color: "#2e7d32",
+              }}
+            >
+              ✓ Available cap included in total (transfer patient)
+            </div>
 
             <Divider className={classes.divider} />
           </>
