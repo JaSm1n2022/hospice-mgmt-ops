@@ -17,6 +17,7 @@ import {
   AttachMoney,
   Timeline,
 } from "@material-ui/icons";
+import moment from "moment";
 
 const useStyles = makeStyles((theme) => ({
   card: {
@@ -323,19 +324,20 @@ const MedicareCard = ({ data }) => {
               </div>
             )}
             {data.hasPriorHospice && data.priorDayCare > 0 && (
-                <div
-                  style={{
-                    padding: "8px",
-                    backgroundColor: "#e3f2fd",
-                    borderRadius: "4px",
-                    marginTop: "8px",
-                    fontSize: "0.75rem",
-                    color: "#1976d2",
-                  }}
-                >
-                  ℹ️ FY cap apportioned including prior hospice days ({data.priorDayCare} days)
-                </div>
-              )}
+              <div
+                style={{
+                  padding: "8px",
+                  backgroundColor: "#e3f2fd",
+                  borderRadius: "4px",
+                  marginTop: "8px",
+                  fontSize: "0.75rem",
+                  color: "#1976d2",
+                }}
+              >
+                ℹ️ FY cap apportioned including prior hospice days (
+                {data.priorDayCare} days)
+              </div>
+            )}
 
             <Divider className={classes.divider} />
           </>
@@ -523,8 +525,18 @@ const MedicareCard = ({ data }) => {
             </Typography>
             <div className={classes.dataRow}>
               <span className={classes.label}>Post-Discharge Days:</span>
-              <span className={classes.value}>{data.postDischargeDays} days</span>
+              <span className={classes.value}>
+                {data.postDischargeDays} days
+              </span>
             </div>
+            {data.new_hospice_dod && (
+              <div className={classes.dataRow}>
+                <span className={classes.label}>Date of Death:</span>
+                <span className={classes.value}>
+                  {moment(data.new_hospice_dod).format("MM/DD/YYYY")}
+                </span>
+              </div>
+            )}
             <div className={classes.dataRow}>
               <span className={classes.label}>Allowed Cap (Apportioned):</span>
               <span className={classes.value}>
@@ -563,6 +575,92 @@ const MedicareCard = ({ data }) => {
             </div>
           </>
         )}
+
+        {/* Warning for non-death discharge without post-discharge days */}
+        {data.eoc &&
+          !data.postDischargeDays &&
+          data.eoc_discharge &&
+          data.eoc_discharge !== "Death Discharge" &&
+          !data.eoc_discharge.toLowerCase().includes("death") && (
+            <>
+              <Divider className={classes.divider} />
+              <div
+                style={{
+                  padding: "12px",
+                  backgroundColor: "#ffebee",
+                  borderRadius: "4px",
+                  marginTop: "8px",
+                  fontSize: "0.75rem",
+                  color: "#c62828",
+                  fontWeight: 500,
+                  border: "1px solid #ef5350",
+                }}
+              >
+                ⚠️ Patient discharged (non-death). Please review the
+                Post-Discharge (EOC) number of care days. Verify eligibility and
+                update the patient's post-discharge total days in the patient
+                profile.
+              </div>
+            </>
+          )}
+
+        {/* Apportionment complete statement - Shows independently of POST-DISCHARGE section */}
+        {(() => {
+          // Priority 1: Check post-discharge Date of Death (new_hospice_dod)
+          if (data.new_hospice_dod) {
+            return (
+              <>
+                <Divider className={classes.divider} />
+                <div
+                  style={{
+                    padding: "8px",
+                    backgroundColor: "#e8f5e9",
+                    borderRadius: "4px",
+                    marginTop: "8px",
+                    fontSize: "0.75rem",
+                    color: "#2e7d32",
+                    fontWeight: 500,
+                  }}
+                >
+                  ✓ The patient passed away on{" "}
+                  {moment(data.new_hospice_dod).format("MM/DD/YYYY")}, so
+                  apportionment is now complete.
+                </div>
+              </>
+            );
+          }
+
+          // Priority 2: If no new_hospice_dod, check EOC with death discharge
+          if (
+            data.eoc &&
+            data.eoc_discharge &&
+            (data.eoc_discharge === "Death Discharge" ||
+              data.eoc_discharge.toLowerCase().includes("death"))
+          ) {
+            return (
+              <>
+                <Divider className={classes.divider} />
+                <div
+                  style={{
+                    padding: "8px",
+                    backgroundColor: "#e8f5e9",
+                    borderRadius: "4px",
+                    marginTop: "8px",
+                    fontSize: "0.75rem",
+                    color: "#2e7d32",
+                    fontWeight: 500,
+                  }}
+                >
+                  ✓ The patient passed away on{" "}
+                  {moment(data.eoc).format("MM/DD/YYYY")}, so apportionment is
+                  now complete.
+                </div>
+              </>
+            );
+          }
+
+          return null;
+        })()}
       </CardContent>
     </Card>
   );

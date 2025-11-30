@@ -289,6 +289,9 @@ function PatientFunction(props) {
     if (payload.priorHospiceDischargeDt) {
       params.prior_hospice_discharge_dt = payload.priorHospiceDischargeDt;
     }
+    if (payload.newHospiceDod) {
+      params.new_hospice_dod = payload.newHospiceDod;
+    }
     if (payload.eoc) {
       params.eoc = new Date(payload.eoc);
       params.status = "Inactive";

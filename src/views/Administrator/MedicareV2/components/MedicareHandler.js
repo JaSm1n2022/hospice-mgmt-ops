@@ -424,7 +424,8 @@ class MedicareHandler {
           ).toFixed(2);
           item.postDischargeDays = postDischargeDays;
         } else {
-          item.allowedCapFirstPeriod = item.usedCapFirstPeriod;
+          // No post-discharge days - patient gets full FY cap
+          item.allowedCapFirstPeriod = item.firstPeriodCap;
           item.postDischargeAllowedCap = "0.00";
           item.postDischargeUsedCap = "0.00";
           item.postDischargeAvailableCap = "0.00";

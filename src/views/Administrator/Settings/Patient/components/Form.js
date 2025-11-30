@@ -400,6 +400,14 @@ function PatientForm(props) {
         name: "newHospiceCareDays",
         cols: 6,
       },
+      {
+        id: "newHospiceDod",
+        component: "datepicker",
+        placeholder: "Date of Death",
+        label: "Date of Death",
+        name: "newHospiceDod",
+        cols: 6,
+      },
     ];
     setComponents(general);
 
@@ -417,6 +425,9 @@ function PatientForm(props) {
       fm.priorDayCare = fm.prior_day_care || undefined;
       fm.lastDayCare = fm.prior_last_day_care || undefined;
       fm.newHospiceCareDays = fm.new_hospice_care_day || undefined;
+      if (fm.new_hospice_dod) {
+        fm.newHospiceDod = fm.new_hospice_dod;
+      }
 
       fm.numberOfBenefits = fm.admitted_benefits_period || undefined;
       if (fm.prior_hospice_discharge_dt) {
