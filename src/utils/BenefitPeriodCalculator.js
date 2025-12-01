@@ -20,10 +20,17 @@ class BenefitPeriodCalculator {
     const comparisonDate = patient.eoc ? moment(patient.eoc) : moment();
 
     // Calculate all benefit periods starting from admitted benefit
-    const benefitPeriods = this.calculateBenefitPeriods(socDate, admittedBenefit);
+    const benefitPeriods = this.calculateBenefitPeriods(
+      socDate,
+      admittedBenefit
+    );
 
     // Find which benefit period the comparison date falls into
-    const currentBenefit = this.findCurrentBenefit(benefitPeriods, comparisonDate, admittedBenefit);
+    const currentBenefit = this.findCurrentBenefit(
+      benefitPeriods,
+      comparisonDate,
+      admittedBenefit
+    );
 
     return currentBenefit;
   }
@@ -103,6 +110,10 @@ class BenefitPeriodCalculator {
   static batchCalculateCurrentBenefits(patients) {
     return patients.map((patient) => ({
       ...patient,
+      new_hospice_dod:
+        patient.eoc && patient.eoc_discharge === "Death Discharge"
+          ? patient.eoc
+          : patient.new_hospice_dod,
       current_benefits: this.getCurrentBenefitPeriod(patient),
     }));
   }
@@ -120,7 +131,9 @@ class BenefitPeriodCalculator {
     const admittedBenefit = parseInt(patient.admitted_benefits_period || 1);
     const periods = this.calculateBenefitPeriods(socDate, admittedBenefit);
 
-    const currentPeriod = periods.find((p) => p.benefitNumber === currentBenefit);
+    const currentPeriod = periods.find(
+      (p) => p.benefitNumber === currentBenefit
+    );
 
     return {
       currentBenefitNumber: currentBenefit,
