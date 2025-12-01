@@ -9,6 +9,8 @@ import {
   Chip,
   Divider,
   Box,
+  Tooltip,
+  IconButton,
 } from "@material-ui/core";
 import {
   Person,
@@ -16,6 +18,7 @@ import {
   LocalHospital,
   AttachMoney,
   Timeline,
+  Warning,
 } from "@material-ui/icons";
 import moment from "moment";
 
@@ -150,6 +153,14 @@ const MedicareCard = ({ data }) => {
 
   const benefitLabels = getBenefitLabels();
 
+  // Check if we should show the alert icon for non-death discharge
+  const shouldShowAlert =
+    data.eoc &&
+    !data.postDischargeDays &&
+    data.eoc_discharge &&
+    data.eoc_discharge !== "Death Discharge" &&
+    !data.eoc_discharge.toLowerCase().includes("death");
+
   return (
     <Card className={classes.card}>
       <CardHeader
@@ -166,15 +177,27 @@ const MedicareCard = ({ data }) => {
               <Person />
               <Typography variant="h6">{data.clientName || "N/A"}</Typography>
             </Box>
-            <Chip
-              label={statusText}
-              size="small"
-              className={classes.statusChip}
-              style={{
-                backgroundColor: "rgba(255,255,255,0.3)",
-                color: "white",
-              }}
-            />
+            <Box display="flex" alignItems="center" gap={1}>
+              {shouldShowAlert && (
+                <Tooltip
+                  title="⚠️ Patient discharged (non-death). Please review the Post-Discharge (EOC) number of care days. Verify eligibility and update the patient's post-discharge total days in the patient profile."
+                  arrow
+                >
+                  <IconButton size="small" style={{ color: "white" }}>
+                    <Warning />
+                  </IconButton>
+                </Tooltip>
+              )}
+              <Chip
+                label={statusText}
+                size="small"
+                className={classes.statusChip}
+                style={{
+                  backgroundColor: "rgba(255,255,255,0.3)",
+                  color: "white",
+                }}
+              />
+            </Box>
           </Box>
         }
         subheader={
