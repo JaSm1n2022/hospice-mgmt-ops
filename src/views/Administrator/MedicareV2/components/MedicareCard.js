@@ -139,15 +139,13 @@ const MedicareCard = ({ data }) => {
 
   const fiscalYear = getFiscalYear();
 
-  // Get benefit labels based on admission fiscal year
+  // Get benefit labels as sequential periods
   const getBenefitLabels = () => {
-    const baseYear =
-      fiscalYear === "FY2024" ? 2024 : fiscalYear === "FY2025" ? 2025 : 2026;
     return {
-      first: `FY ${baseYear}`,
-      second: `FY ${baseYear + 1}`,
-      third: `FY ${baseYear + 2}`,
-      fourth: `FY ${baseYear + 3}`,
+      first: "Benefit Period 1",
+      second: "Benefit Period 2",
+      third: "Benefit Period 3",
+      fourth: "Benefit Period 4",
     };
   };
 
