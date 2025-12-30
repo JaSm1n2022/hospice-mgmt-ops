@@ -25,6 +25,11 @@ import {
   TextField,
   Checkbox,
   FormControlLabel,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Box,
 } from "@material-ui/core";
 import { Edit as EditIcon, Check as CheckIcon } from "@material-ui/icons";
 import { attemptToFetchPatient } from "store/actions/patientAction";
@@ -104,6 +109,7 @@ function HopeFunction(props) {
     second_symptom: "",
     third_symptom: "",
   });
+  const [hopeCompletedFilter, setHopeCompletedFilter] = useState("both"); // "both", "yes", "no"
 
   useEffect(() => {
     console.log("Hope - loading patient data");
@@ -183,6 +189,20 @@ function HopeFunction(props) {
   const formatDateRange = (startDate, endDate) => {
     if (!startDate || !endDate) return "N/A";
     return `${formatDateShort(startDate)} - ${formatDateShort(endDate)}`;
+  };
+
+  const getFilteredData = () => {
+    if (!dataSource) return [];
+
+    if (hopeCompletedFilter === "both") {
+      return dataSource;
+    } else if (hopeCompletedFilter === "yes") {
+      return dataSource.filter(p => p.is_hope_completed === true);
+    } else if (hopeCompletedFilter === "no") {
+      return dataSource.filter(p => !p.is_hope_completed);
+    }
+
+    return dataSource;
   };
 
   const calculateTimeline = (socDate) => {
@@ -272,6 +292,20 @@ function HopeFunction(props) {
                   </p>
                 </CardHeader>
                 <CardBody>
+                  <Box mb={2}>
+                    <FormControl variant="outlined" size="small" style={{ minWidth: 200 }}>
+                      <InputLabel>HOPE Completed</InputLabel>
+                      <Select
+                        value={hopeCompletedFilter}
+                        onChange={(e) => setHopeCompletedFilter(e.target.value)}
+                        label="HOPE Completed"
+                      >
+                        <MenuItem value="both">Both</MenuItem>
+                        <MenuItem value="yes">Yes</MenuItem>
+                        <MenuItem value="no">No</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Box>
                   <TableContainer
                     component={Paper}
                     className={classes.tableContainer}
@@ -348,8 +382,8 @@ function HopeFunction(props) {
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {dataSource && dataSource.length > 0 ? (
-                          dataSource.map((patient, index) => {
+                        {getFilteredData().length > 0 ? (
+                          getFilteredData().map((patient, index) => {
                             const timeline = calculateTimeline(patient.soc);
                             const isFirstSymptomMild = patient.first_symptom?.toUpperCase() === "MILD";
                             const isSecondSymptomMild = patient.second_symptom?.toUpperCase() === "MILD";
