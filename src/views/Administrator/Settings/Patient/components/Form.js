@@ -634,6 +634,23 @@ function PatientForm(props) {
       setComponents(tempList);
     }
 
+    // Recompute current benefits period when relevant fields change
+    if (
+      target.name === "numberOfBenefits" ||
+      target.name === "priorBenefitsPeriod"
+    ) {
+      const patientData = {
+        soc: source.soc,
+        eoc: source.eoc || null,
+        admitted_benefits_period: source.numberOfBenefits || 1,
+      };
+      const currentBenefit = BenefitPeriodCalculator.getCurrentBenefitPeriod(
+        patientData
+      );
+      console.log("[BENEFITS]", currentBenefit);
+      source.currentBenefits = currentBenefit || "";
+    }
+
     console.log("[SOURCE]", source);
     setGeneralForm(source);
   };
@@ -706,6 +723,7 @@ function PatientForm(props) {
       const currentBenefit = BenefitPeriodCalculator.getCurrentBenefitPeriod(
         patientData
       );
+      console.log("[BENEFITS]", currentBenefit);
       src.currentBenefits = currentBenefit || "";
     }
 
