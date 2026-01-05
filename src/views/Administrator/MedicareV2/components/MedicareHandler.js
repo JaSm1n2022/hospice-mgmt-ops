@@ -67,11 +67,10 @@ class MedicareHandler {
           new Date(`${item.soc} 17:00`) <= new Date(`${m.to} 17:00`)
       );
 
-      //get Diff of last First Period
-      const firstStartDt = moment(new Date(`${item.soc} 17:00`));
-      const firstEndDt = moment(new Date(`${firstPeriod.to} 17:00`));
-      const allowedDays = moment.duration(firstEndDt.diff(firstStartDt));
-      const firstPeriodDays = Math.floor(allowedDays.asDays());
+      //get Diff of last First Period (inclusive of both start and end dates)
+      const firstStartDt = moment(item.soc, 'YYYY-MM-DD');
+      const firstEndDt = moment(firstPeriod.to, 'YYYY-MM-DD');
+      const firstPeriodDays = firstEndDt.diff(firstStartDt, 'days') + 1;
 
       // Use aggregate cap from rates JSON if available, otherwise fallback to constants
       item.firstPeriodCap = rates.aggregate_cap || firstPeriod.amount;
@@ -98,15 +97,15 @@ class MedicareHandler {
       item.hasPriorHospice = item.is_prior_hospice || false;
       item.priorDayCare = parseFloat(item.prior_day_care || 0);
       item.lastDayCare = parseFloat(item.prior_last_day_care || 0);
-      let currentDay = moment(new Date());
+      let currentDay = moment().startOf('day');
       if (item.eoc) {
-        currentDay = moment(item.eoc);
+        currentDay = moment(item.eoc, 'YYYY-MM-DD');
         item.eoc = moment(item.eoc).format("YYYY-MM-DD");
       }
 
-      const socDay = moment(new Date(`${item.soc} 17:00`));
-      const diff = moment.duration(currentDay.diff(socDay));
-      const dayCares = Math.floor(diff.asDays());
+      const socDay = moment(item.soc, 'YYYY-MM-DD');
+      // Calculate days of care (inclusive of both SOC and current/EOC date)
+      const dayCares = currentDay.diff(socDay, 'days') + 1;
       item.first90Benefit = dayCares;
       const secondPeriodDays = dayCares - firstPeriodDays;
 

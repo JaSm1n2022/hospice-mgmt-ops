@@ -360,7 +360,7 @@ const ProductFunction = (props) => {
     console.log("[Product Id]", props.createProductState.data, forCreateStock);
     setIsCreateProductCollection(false);
     showNotification("tc", "success", "Product successfully created.");
-    props.listProducts({ companyId: userProfile.companyId });
+    props.listProducts({ companyId: context.userProfile?.companyId });
   }
   if (
     isUpdateProductCollection &&
@@ -369,7 +369,7 @@ const ProductFunction = (props) => {
   ) {
     setIsUpdateProductCollection(false);
     showNotification("tc", "success", "Product successfully updated.");
-    props.listProducts({ companyId: userProfile.companyId });
+    props.listProducts({ companyId: context.userProfile?.companyId });
   }
   if (
     isDeleteProductCollection &&
@@ -379,7 +379,7 @@ const ProductFunction = (props) => {
     setIsDeleteProductCollection(false);
     isListDone = false;
     showNotification("tc", "success", "Vendor successfully deleted.");
-    props.listProducts({ companyId: userProfile.companyId });
+    props.listProducts({ companyId: context.userProfile?.companyId });
   }
   const filterRecordHandler = (keyword) => {
     console.log("[Keyword]", keyword);
