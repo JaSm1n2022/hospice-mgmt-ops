@@ -29,7 +29,7 @@ import { attemptToCreateStock } from "store/actions/stockAction";
 import { resetCreateStockState } from "store/actions/stockAction";
 import { ACTION_STATUSES } from "utils/constants";
 import Helper from "utils/helper";
-import { ImportExport } from "@material-ui/icons";
+import { ImportExport, AddAlert } from "@material-ui/icons";
 import Card from "components/Card/Card";
 import CardHeader from "components/Card/CardHeader";
 import CardBody from "components/Card/CardBody";

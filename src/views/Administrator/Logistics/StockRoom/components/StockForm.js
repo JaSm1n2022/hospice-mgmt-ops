@@ -237,7 +237,8 @@ function StockForm(props) {
     }
   }, [props.item]);
   const validateFormHandler = () => {
-    if (!searchItem?.name || isExistingItem) {
+    console.log();
+    if ((!searchItem?.name || isExistingItem) && props.mode !== "edit") {
       if (!searchItem) {
         setSnackbarMsg("Please select One");
       } else {
@@ -245,6 +246,7 @@ function StockForm(props) {
       }
       setIsExistingItem(true);
     } else {
+      console.log("[GENERAL FORM]", generalForm);
       props.createStockHandler(generalForm, props.mode);
     }
   };
