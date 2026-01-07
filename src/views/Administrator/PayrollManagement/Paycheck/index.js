@@ -34,6 +34,7 @@ import {
   Typography,
 } from "@material-ui/core";
 import AddIcon from "@material-ui/icons/Add";
+import UploadIcon from "@material-ui/icons/CloudUpload";
 
 import HospiceTable from "components/Table/HospiceTable";
 import { AddAlert, ArrowDownward, ImportExport } from "@material-ui/icons";
@@ -422,7 +423,7 @@ function PayrollFunction(props) {
     props.listPayrolls({
       from: dateFrom,
       to: dateTo,
-      companyId: userProfile.companyId,
+      companyId: context.userProfile.companyId,
     });
   }
 
@@ -777,6 +778,7 @@ function PayrollFunction(props) {
         payrollUpdateData.push({
           isTransaction: true,
           id: p,
+          companyId: context.userProfile.companyId,
           updatedUser: {
             name: context.userProfile.name,
             userId: context.userProfile.id,
@@ -791,7 +793,7 @@ function PayrollFunction(props) {
   const uploadToDistributionHandler = () => {
     const data = formatEmployeeReportHandler();
 
-    console.log("[Data]", data);
+    console.log("[uploadToDistributionHandler]", data, payrollProductList);
     const distributionData = [];
     const payrollIds = [];
     data.forEach((d) => {
@@ -855,6 +857,7 @@ function PayrollFunction(props) {
         payrollUpdateData.push({
           isDistributed: true,
           id: p,
+          companyId: context.userProfile.companyId,
           updatedUser: {
             name: context.userProfile.name,
             userId: context.userProfile.id,
@@ -954,6 +957,7 @@ function PayrollFunction(props) {
                         >
                           <UploadIcon className={classes.icons} /> Export Excel
                         </Button>
+
                         <Button
                           color="success"
                           onClick={() => uploadToTransactionHandler()}
@@ -964,13 +968,6 @@ function PayrollFunction(props) {
                         </Button>
                         <Button
                           color="success"
-                          onClick={() => uploadToTransactionHandler()}
-                          className={classes.marginRight}
-                        >
-                          <UploadIcon className={classes.icons} /> Upload to
-                          Transaction
-                        </Button>
-                        <Button
                           onClick={() => uploadToDistributionHandler()}
                           variant="outlined"
                           style={{

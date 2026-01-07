@@ -438,7 +438,7 @@ const TransactionFunction = (props) => {
     props.listTransactions({
       from: dateFrom,
       to: dateTo,
-      companyId: userProfile.companyId,
+      companyId: context.userProfile.companyId,
     });
   }
   if (
@@ -452,7 +452,7 @@ const TransactionFunction = (props) => {
     props.listTransactions({
       from: dateFrom,
       to: dateTo,
-      companyId: userProfile.companyId,
+      companyId: context.userProfile.companyId,
     });
   }
   console.log(
@@ -470,7 +470,7 @@ const TransactionFunction = (props) => {
     props.listTransactions({
       from: dateFrom,
       to: dateTo,
-      companyId: userProfile.companyId,
+      companyId: context.userProfile.companyId,
     });
   }
   if (
