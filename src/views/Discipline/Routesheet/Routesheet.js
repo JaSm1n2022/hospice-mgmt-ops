@@ -348,7 +348,7 @@ function Routesheet(props) {
       console.log("[CLIENT]", clientService, contractList, target.value);
       let m = contractList.find(
         (c) =>
-          c.serviceType === clientService &&
+          c.serviceType?.toLowerCase() === clientService?.toLocaleLowerCase() &&
           c.patientCd === target.value &&
           context.employeeProfile.id === c.employeeId
       );
@@ -356,7 +356,7 @@ function Routesheet(props) {
       if (!m) {
         m = contractList.find(
           (c) =>
-            c.serviceType === clientService &&
+            c.serviceType?.toLowerCase() === clientService?.toLowerCase() &&
             context.employeeProfile.id === c.employeeId
         );
         console.log("[CONTRACT LIST2]", m);
@@ -378,6 +378,14 @@ function Routesheet(props) {
 
       setClient(target.value);
     } else if (target.name === "clientService") {
+      console.log(
+        "[CLIENT]",
+        clientService,
+        contractList,
+        target.value,
+        context.employeeProfile.id
+      );
+
       setClientError({ isError: false, message: "" });
       setOtherServiceError({ isError: false, message: "" });
       if (target.value === "Attendance") {
@@ -386,7 +394,17 @@ function Routesheet(props) {
       }
 
       let m = contractList.find(
-        (c) => c.serviceType === target.value && !c.patientCd
+        (c) =>
+          c.serviceType?.toLowerCase() === target.value?.toLowerCase() &&
+          context.employeeProfile.id === c.employeeId
+      );
+      console.log(
+        "[CLIENT2]",
+        m,
+        context.employeeProfile.id,
+        clientService,
+        contractList,
+        target.value
       );
 
       setContractRate(m);
