@@ -374,6 +374,7 @@ function RoutesheetForm(props) {
                     name={"rate"}
                     label="Contract Rate"
                     placeholder="Contract Rate"
+                    onCha
                     value={contractRateHandler()}
                   />
                 </Grid>

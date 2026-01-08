@@ -19,6 +19,7 @@ import { HOSPICE_FACILITIES } from "utils/constants";
 import { DIVINE_EMPLOYEES } from "utils/constants";
 import { DIVINE_PATIENT_LIST } from "utils/constants";
 import { QUANTITY_UOM } from "utils/constants";
+import TOAST from "modules/toastManager";
 import CustomTextField from "components/TextField/CustomTextField";
 import CustomDatePicker from "components/Date/CustomDatePicker";
 import CustomSingleAutoComplete from "components/AutoComplete/CustomSingleAutoComplete";
@@ -157,12 +158,24 @@ function DistributionForm(props) {
 
   const general = [
     {
+      id: "category",
+      component: "singlecomplete",
+      placeholder: "Select Category",
+      label: "Select Category",
+      name: "category",
+      options: [...(props.categoryList || [])],
+      disabled: props.mode && props.mode === "view" ? true : false,
+    },
+    {
       id: "orderDt",
       component: "datepicker",
       placeholder: "Requested Date",
       label: "Requested Date",
       name: "orderDt",
-      disabled: props.mode && props.mode === "view" ? true : false,
+      disabled:
+        (props.mode && props.mode === "view") || !generalForm.selectedCategory
+          ? true
+          : false,
     },
     {
       id: "patient",
@@ -171,7 +184,10 @@ function DistributionForm(props) {
       label: "Patient Name",
       name: "patient",
       options: [...props.patientList],
-      disabled: props.mode && props.mode === "view" ? true : false,
+      disabled:
+        (props.mode && props.mode === "view") || !generalForm.selectedCategory
+          ? true
+          : false,
     },
     {
       id: "facility",
@@ -190,7 +206,10 @@ function DistributionForm(props) {
       label: "Requestor",
       name: "requestor",
       options: [...props.employeeList],
-      disabled: props.mode && props.mode === "view" ? true : false,
+      disabled:
+        (props.mode && props.mode === "view") || !generalForm.selectedCategory
+          ? true
+          : false,
     },
     {
       id: "position",
@@ -207,7 +226,10 @@ function DistributionForm(props) {
       placeholder: "Patient Caregiver",
       label: "Patient Caregiver",
       name: "caregiver",
-      disabled: props.mode && props.mode === "view" ? true : false,
+      disabled:
+        (props.mode && props.mode === "view") || !generalForm.selectedCategory
+          ? true
+          : false,
     },
 
     {
@@ -217,7 +239,10 @@ function DistributionForm(props) {
       label: "Status",
       name: "status",
       options: statuses,
-      disabled: props.mode && props.mode === "view" ? true : false,
+      disabled:
+        (props.mode && props.mode === "view") || !generalForm.selectedCategory
+          ? true
+          : false,
     },
   ];
 
@@ -350,6 +375,10 @@ function DistributionForm(props) {
     console.log("[Print Handler]", generalForm, detailForm);
   };
   const validateFormHandler = () => {
+    if (!generalForm.selectedCategory) {
+      TOAST.error("Category is required");
+      return;
+    }
     if (!generalForm.patientCd) {
       TOAST.error("Patient Name is required");
       return;
@@ -416,23 +445,39 @@ function DistributionForm(props) {
         val = val - originalOrderQty;
       }
       console.log("[source input val2]", val);
-      const findProduct = props.stockList.find(
-        (stock) => stock.productId === source.productId
-      );
 
-      const qtyOnHand = findProduct ? findProduct.qty_on_hand || 0 : 0;
+      const categoryName = generalForm.selectedCategory
+        ? generalForm.selectedCategory.name.toLowerCase()
+        : '';
 
-      const calc = parseInt(qtyOnHand || 0, 10) - parseInt(val, 10);
-      source.adjustedQty = val;
-      source.qtyOnHand = qtyOnHand || 0;
-      if (val > 0) {
-        if (calc >= 0) {
-          source.stockStatus = `Qty On Hand : ${qtyOnHand || 0} ( In Stock )`;
-        } else {
-          source.stockStatus = `Qty On Hand: ${
-            qtyOnHand || 0
-          }  ( Out of Stock)`;
+      // Only check stock for Office or Medical/Incontinence (stockroom items)
+      const useStockroom =
+        categoryName === 'office' ||
+        categoryName === 'medical/incontinence';
+
+      if (useStockroom) {
+        const findProduct = props.stockList.find(
+          (stock) => stock.productId === source.productId
+        );
+
+        const qtyOnHand = findProduct ? findProduct.qty_on_hand || 0 : 0;
+
+        const calc = parseInt(qtyOnHand || 0, 10) - parseInt(val, 10);
+        source.adjustedQty = val;
+        source.qtyOnHand = qtyOnHand || 0;
+        if (val > 0) {
+          if (calc >= 0) {
+            source.stockStatus = `Qty On Hand : ${qtyOnHand || 0} ( In Stock )`;
+          } else {
+            source.stockStatus = `Qty On Hand: ${
+              qtyOnHand || 0
+            }  ( Out of Stock)`;
+          }
         }
+      } else {
+        // For other categories (product table), don't show stock status
+        source.adjustedQty = val;
+        source.stockStatus = null;
       }
     }
     setIsRefresh(!isRefresh);
@@ -455,6 +500,10 @@ function DistributionForm(props) {
     } else if (item.category === "status") {
       src.status = item;
       src.statusName = item.name;
+    } else if (item.categoryType === "category") {
+      src.selectedCategory = item;
+      src.category = item;
+      src.categoryName = item.name;
     }
 
     setGeneralForm(src);
@@ -463,32 +512,90 @@ function DistributionForm(props) {
   const autoCompleteDetailInputHander = (item, source) => {
     source.search = item;
     console.log("[item]", item);
-    source.description = `${item.description}  / ${item.additional_info}`;
-    source.productId = item.productId;
-    source.category = item.category;
-    source.categoryId = item.category_id;
-    source.subCategory = item.subCategory;
-    source.shortDescription = item.shortDescription || item.short_description;
-    source.subCategoryId = item.subCategory_id;
-    source.vendor = item.vendor || "-";
-    const productInfo = props.productList.find(
-      (product) => product.id === item.productId
-    );
-    if (productInfo) {
-      source.size = productInfo.size;
-      source.flavor = productInfo.flavor;
-      source.shortDescription = productInfo.short_description;
-      source.unitDistribution = productInfo.unit_distribution;
-      source.price_per_pcs = productInfo.price_per_pcs;
-      source.search.shortDescription = productInfo.short_description;
-      source.search.unitDistribution = productInfo.unit_distribution;
-      source.search.category = productInfo.category;
-      source.search.subCategory = productInfo.subCategory;
-      source.search.vendor = productInfo.vendor;
-      source.search.size = productInfo.size;
+
+    const categoryName = generalForm.selectedCategory
+      ? generalForm.selectedCategory.name.toLowerCase()
+      : '';
+
+    // Check if category is Office or Medical/Incontinence
+    const useStockroom =
+      categoryName === 'office' ||
+      categoryName === 'medical/incontinence';
+
+    if (useStockroom) {
+      // Item is from stockList, need to look up product info
+      source.description = `${item.description}  / ${item.additional_info}`;
+      source.productId = item.productId;
+      source.category = item.category;
+      source.categoryId = item.category_id;
+      source.subCategory = item.subCategory;
+      source.shortDescription = item.shortDescription || item.short_description;
+      source.subCategoryId = item.subCategory_id;
+      source.vendor = item.vendor || "-";
+
+      const productInfo = props.productList.find(
+        (product) => product.id === item.productId
+      );
+      if (productInfo) {
+        source.size = productInfo.size;
+        source.flavor = productInfo.flavor;
+        source.shortDescription = productInfo.short_description;
+        source.unitDistribution = productInfo.unit_distribution;
+        source.price_per_pcs = productInfo.price_per_pcs;
+        source.search.shortDescription = productInfo.short_description;
+        source.search.unitDistribution = productInfo.unit_distribution;
+        source.search.category = productInfo.category;
+        source.search.subCategory = productInfo.subCategory;
+        source.search.vendor = productInfo.vendor;
+        source.search.size = productInfo.size;
+      }
+    } else {
+      // Item is directly from productList, use it as is
+      source.description = `${item.description}  / ${item.additional_info || ''}`;
+      source.productId = item.id;
+      source.category = item.category;
+      source.categoryId = item.category_id;
+      source.subCategory = item.subCategory;
+      source.shortDescription = item.short_description;
+      source.subCategoryId = item.subCategory_id;
+      source.vendor = item.vendor || "-";
+      source.size = item.size;
+      source.flavor = item.flavor;
+      source.unitDistribution = item.unit_distribution;
+      source.price_per_pcs = item.price_per_pcs;
     }
+
     setIsRefresh(!isRefresh);
   };
+
+  const getFilteredStockList = () => {
+    if (!generalForm || !generalForm.selectedCategory) {
+      return props.stockList || [];
+    }
+    const categoryName = generalForm.selectedCategory.name.toLowerCase();
+
+    // Check if category is Office or Medical/Incontinence
+    const useStockroom =
+      categoryName === 'office' ||
+      categoryName === 'medical/incontinence';
+
+    if (useStockroom) {
+      // Use stockroom table (stockList) for Office or Medical/Incontinence
+      const filtered = props.stockList.filter((stock) => {
+        const stockCategory = (stock.category || "").toLowerCase();
+        return stockCategory === categoryName;
+      });
+      return filtered;
+    } else {
+      // Use product table (productList) for other categories
+      const filtered = props.productList.filter((product) => {
+        const productCategory = (product.category || "").toLowerCase();
+        return productCategory === categoryName;
+      });
+      return filtered;
+    }
+  };
+
   const onChangeGeneralInputHandler = (e) => {
     const src = { ...generalForm };
     if (!e.target.value) {
@@ -590,7 +697,12 @@ function DistributionForm(props) {
                 style={{ paddingTop: 10, paddingLeft: 20, paddingRight: 20 }}
               >
                 <Typography variant="h6">General Information</Typography>
-                <Grid container spacing={1} direction="row">
+                <Grid
+                  container
+                  spacing={1}
+                  direction="row"
+                  style={{ paddingBottom: 20 }}
+                >
                   {general.map((item) => {
                     return (
                       <Grid item xs={12} md={3} sm={12}>
@@ -630,8 +742,12 @@ function DistributionForm(props) {
                     );
                   })}
                 </Grid>
-                <br />
-                <Typography variant="h6">Supplies</Typography>
+
+                <Typography variant="h6">
+                  {generalForm.selectedCategory
+                    ? `${generalForm.selectedCategory.name}`
+                    : "Supplies"}
+                </Typography>
                 {detailForm.map((item, index) => {
                   return (
                     <Grid
@@ -648,11 +764,19 @@ function DistributionForm(props) {
                             <Tooltip title={"Delete Item"}>
                               <DeleteIcon
                                 style={{
-                                  color: "#F62100",
+                                  color: !generalForm.selectedCategory
+                                    ? "#ccc"
+                                    : "#F62100",
                                   fontSize: "24px",
-                                  cursor: "pointer",
+                                  cursor: !generalForm.selectedCategory
+                                    ? "not-allowed"
+                                    : "pointer",
                                 }}
-                                onClick={() => deleteItemHandler(index)}
+                                onClick={() => {
+                                  if (generalForm.selectedCategory) {
+                                    deleteItemHandler(index);
+                                  }
+                                }}
                               />
                             </Tooltip>
                           </div>
@@ -662,7 +786,8 @@ function DistributionForm(props) {
                         <CustomSingleAutoComplete
                           disabled={
                             (props.mode && props.mode === "view") ||
-                            props.mode === "edit"
+                            props.mode === "edit" ||
+                            !generalForm.selectedCategory
                               ? true
                               : false
                           }
@@ -671,7 +796,7 @@ function DistributionForm(props) {
                           value={item["search"]}
                           onSelectHandler={autoCompleteDetailInputHander}
                           onChangeHandler={onChangeDetailInputHandler}
-                          options={[...props.stockList]}
+                          options={getFilteredStockList()}
                         />
                       </Grid>
                       <Grid item xs={12} md={3} sm={12}>
@@ -704,7 +829,10 @@ function DistributionForm(props) {
                       <Grid item xs={12} md={2} sm={12}>
                         <CustomTextField
                           disabled={
-                            props.mode && props.mode === "view" ? true : false
+                            (props.mode && props.mode === "view") ||
+                            !generalForm.selectedCategory
+                              ? true
+                              : false
                           }
                           source={item}
                           {...details.find((d) => d.id === "orderQty")}
@@ -715,7 +843,10 @@ function DistributionForm(props) {
                       <Grid item xs={12} md={2} sm={12}>
                         <CustomTextField
                           disabled={
-                            props.mode && props.mode === "view" ? true : false
+                            (props.mode && props.mode === "view") ||
+                            !generalForm.selectedCategory
+                              ? true
+                              : false
                           }
                           source={item}
                           {...details.find((d) => d.id === "price_per_pcs")}
@@ -742,7 +873,12 @@ function DistributionForm(props) {
 
                       <Grid item xs={12} md={2} sm={12}>
                         <CustomTextField
-                          disabled={false}
+                          disabled={
+                            (props.mode && props.mode === "view") ||
+                            !generalForm.selectedCategory
+                              ? true
+                              : false
+                          }
                           source={item}
                           {...details.find((d) => d.id === "comments")}
                           value={item["comments"] || ""}
@@ -777,7 +913,10 @@ function DistributionForm(props) {
                   }}
                 >
                   <Button
-                    disabled={props.mode && props.mode === "view"}
+                    disabled={
+                      (props.mode && props.mode === "view") ||
+                      !generalForm.selectedCategory
+                    }
                     variant="outlined"
                     color="primary"
                     onClick={addItemHandler}

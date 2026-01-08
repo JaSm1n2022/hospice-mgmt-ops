@@ -345,10 +345,22 @@ function Routesheet(props) {
       setMileage(target.value);
     } else if (target.name === "client") {
       setClientError({ isError: false, message: "" });
-
-      const m = contractList.find(
-        (c) => c.serviceType === clientService && c.patientCd === target.value
+      console.log("[CLIENT]", clientService, contractList, target.value);
+      let m = contractList.find(
+        (c) =>
+          c.serviceType === clientService &&
+          c.patientCd === target.value &&
+          context.employeeProfile.id === c.employeeId
       );
+      console.log("[CONTRACT LIST]", m);
+      if (!m) {
+        m = contractList.find(
+          (c) =>
+            c.serviceType === clientService &&
+            context.employeeProfile.id === c.employeeId
+        );
+        console.log("[CONTRACT LIST2]", m);
+      }
       if (m) {
         setContractRate(m);
         if (m?.isMileageRate) {

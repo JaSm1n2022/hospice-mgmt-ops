@@ -26,6 +26,7 @@ import { stockListStateSelector } from "store/selectors/stockSelector";
 import { patientListStateSelector } from "store/selectors/patientSelector";
 import { employeeListStateSelector } from "store/selectors/employeeSelector";
 import { templateListStateSelector } from "store/selectors/templateSelector";
+import { categoryListStateSelector } from "store/selectors/categorySelector";
 import { distributionListStateSelector } from "store/selectors/distributionSelector";
 import { distributionCreateStateSelector } from "store/selectors/distributionSelector";
 import { distributionUpdateStateSelector } from "store/selectors/distributionSelector";
@@ -42,6 +43,8 @@ import { attemptToFetchProduct } from "store/actions/productAction";
 import { resetFetchProductState } from "store/actions/productAction";
 import { attemptToFetchStock } from "store/actions/stockAction";
 import { resetFetchStockState } from "store/actions/stockAction";
+import { attemptToFetchCategory } from "store/actions/categoryAction";
+import { resetFetchCategoryState } from "store/actions/categoryAction";
 import { attemptToFetchDistribution } from "store/actions/distributionAction";
 import { resetFetchDistributionState } from "store/actions/distributionAction";
 import { attemptToCreateDistribution } from "store/actions/distributionAction";
@@ -101,6 +104,7 @@ let stockList = [];
 let patientList = [];
 let employeeList = [];
 let templateList = [];
+let categoryList = [];
 
 let isProductListDone = false;
 let isStockListDone = false;
@@ -108,6 +112,7 @@ let isDistributionListDone = false;
 let isPatientListDone = false;
 let isEmployeeListDone = false;
 let isTemplateListDone = false;
+let isCategoryListDone = false;
 let isAllFetchDone = false;
 let mainGeneral = {};
 let mainDetails = [];
@@ -271,6 +276,7 @@ const Distribution = (props) => {
       });
       props.listEmployees({ companyId: context.userProfile?.companyId });
       props.listTemplates({ companyId: context.userProfile?.companyId });
+      props.listCategories({ companyId: context.userProfile?.companyId });
     }
   }, []);
 
@@ -446,6 +452,17 @@ const Distribution = (props) => {
     });
     isEmployeeListDone = true;
     props.resetListEmployees();
+  }
+  if (props.categories && props.categories.status === ACTION_STATUSES.SUCCEED) {
+    categoryList = [...props.categories.data];
+    categoryList.forEach((item) => {
+      item.name = item.name.toUpperCase();
+      item.value = item.name.toUpperCase();
+      item.label = item.name.toUpperCase();
+      item.categoryType = "category";
+    });
+    isCategoryListDone = true;
+    props.resetListCategories();
   }
   if (props.products && props.products.status === ACTION_STATUSES.SUCCEED) {
     productList = [...props.products.data];
@@ -967,7 +984,8 @@ const Distribution = (props) => {
     isStockListDone,
     isPatientListDone,
     isProductListDone,
-    isDistributionListDone
+    isDistributionListDone,
+    isCategoryListDone
   );
   if (
     isTemplateListDone &&
@@ -975,7 +993,8 @@ const Distribution = (props) => {
     isStockListDone &&
     isPatientListDone &&
     isProductListDone &&
-    isDistributionListDone
+    isDistributionListDone &&
+    isCategoryListDone
   ) {
     isAllFetchDone = true;
   }
@@ -1398,6 +1417,7 @@ const Distribution = (props) => {
           patientList={patientList}
           productList={productList}
           stockList={stockList}
+          categoryList={categoryList}
           createDistributionHandler={createDistributionHandler}
           mode={mode}
           isOpen={isFormModal}
@@ -1446,6 +1466,7 @@ const mapStateToProps = (store) => ({
   patients: patientListStateSelector(store),
   employees: employeeListStateSelector(store),
   templates: templateListStateSelector(store),
+  categories: categoryListStateSelector(store),
   distributions: distributionListStateSelector(store),
   createDistributionState: distributionCreateStateSelector(store),
   updateDistributionState: distributionUpdateStateSelector(store),
@@ -1466,6 +1487,8 @@ const mapDispatchToProps = (dispatch) => ({
   resetListProducts: () => dispatch(resetFetchProductState()),
   listStocks: (data) => dispatch(attemptToFetchStock(data)),
   resetListStocks: () => dispatch(resetFetchStockState()),
+  listCategories: (data) => dispatch(attemptToFetchCategory(data)),
+  resetListCategories: () => dispatch(resetFetchCategoryState()),
   listDistributions: (data) => dispatch(attemptToFetchDistribution(data)),
   resetListDistributions: () => dispatch(resetFetchDistributionState()),
   createDistribution: (data) => dispatch(attemptToCreateDistribution(data)),

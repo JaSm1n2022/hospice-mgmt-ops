@@ -77,6 +77,7 @@ import PaymentMethod from "views/Administrator/Utilities/PaymentMethod";
 import Admittance from "views/Administrator/Admittance/AdmittanceMain";
 import Medicare from "views/Administrator/MedicareCap/Available/AvailableFunction";
 import MedicareV2 from "views/Administrator/MedicareV2/MedicareV2Function";
+import Routesheet from "views/Administrator/Administrative/Routesheet/RoutesheetFunction";
 import RevenueForecast from "views/Administrator/MedicareV2/RevenueForecast";
 import HospiceIncome from "views/Administrator/HospiceIncome/HospiceIncomeFunction";
 import Hope from "views/Administrator/Hope/HopeFunction";
@@ -267,6 +268,15 @@ var dashRoutes = [
         mini: "PM",
         rtlMini: "ع",
         component: Payday,
+        layout: "/admin",
+      },
+      {
+        path: "/routesheet",
+        name: "Routesheet",
+        rtlName: "عالتسعير",
+        mini: "PM",
+        rtlMini: "ع",
+        component: Routesheet,
         layout: "/admin",
       },
     ],

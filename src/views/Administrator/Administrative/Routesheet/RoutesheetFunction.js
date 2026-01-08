@@ -1,19 +1,20 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 // @material-ui/core components
 import { makeStyles } from "@material-ui/core/styles";
 // core components
+import Button from "components/CustomButtons/Button.js";
 import GridItem from "components/Grid/GridItem.js";
 import GridContainer from "components/Grid/GridContainer.js";
 import Table from "components/Table/Table.js";
 import Card from "components/Card/Card.js";
 import CardHeader from "components/Card/CardHeader.js";
 import CardBody from "components/Card/CardBody.js";
-
+import { SupaContext } from "App";
 import RoutesheetHandler from "./components/RoutesheetHandler";
 import { connect } from "react-redux";
 import ActionsFunction from "components/Actions/ActionsFunction";
 import { ACTION_STATUSES } from "utils/constants";
-import { Button, CircularProgress, Grid } from "@material-ui/core";
+import { CircularProgress, Grid } from "@material-ui/core";
 import AddIcon from "@material-ui/icons/Add";
 
 import HospiceTable from "components/Table/HospiceTable";
@@ -93,9 +94,10 @@ let isEmployeeDone = true;
 let isPatientDone = true;
 let isContractDone = true;
 let employeeList = [];
-let userProfile = {};
+
 function RoutesheetFunction(props) {
   const classes = useStyles();
+  const context = useContext(SupaContext);
   const { main } = props;
   const [dataSource, setDataSource] = useState([]);
   const [columns, setColumns] = useState(RoutesheetHandler.columns(main));
@@ -180,23 +182,18 @@ function RoutesheetFunction(props) {
     isPatientDone = false;
     isEmployeeDone = false;
     setIsRoutesheetCollection(true);
-    if (
-      props.profileState &&
-      props.profileState.data &&
-      props.profileState.data.length
-    ) {
-      userProfile = props.profileState.data[0];
+    if (context.userProfile?.companyId) {
       const dates = Helper.formatDateRangeByCriteriaV2("thisWeek");
       setDateFrom(dates.from);
       setDateTo(dates.to);
-      props.listEmployees({ companyId: userProfile.companyId });
+      props.listEmployees({ companyId: context.userProfile.companyId });
       props.listRoutesheet({
-        companyId: userProfile.companyId,
+        companyId: context.userProfile.companyId,
         from: dates.from,
         to: dates.to,
       });
-      props.listContracts({ companyId: userProfile.companyId });
-      props.listPatients({ companyId: userProfile.companyId });
+      props.listContracts({ companyId: context.userProfile.companyId });
+      props.listPatients({ companyId: context.userProfile.companyId });
     }
   }, []);
 
@@ -270,7 +267,7 @@ function RoutesheetFunction(props) {
     closeFormModalHandler();
     TOAST.ok("Routesheet successfully created.");
     props.listRoutesheet({
-      companyId: userProfile.companyId,
+      companyId: context.userProfile.companyId,
       from: dateFrom,
       to: dateTo,
     });
@@ -283,7 +280,7 @@ function RoutesheetFunction(props) {
     TOAST.ok("Routesheet successfully updated.");
     setIsUpdateRoutesheetCollection(false);
     props.listRoutesheet({
-      companyId: userProfile.companyId,
+      companyId: context.userProfile.companyId,
       from: dateFrom,
       to: dateTo,
     });
@@ -302,7 +299,7 @@ function RoutesheetFunction(props) {
     setIsDeleteRoutesheetCollection(false);
 
     props.listRoutesheet({
-      companyId: userProfile.companyId,
+      companyId: context.userProfile.companyId,
       from: dateFrom,
       to: dateTo,
     });
@@ -359,22 +356,6 @@ function RoutesheetFunction(props) {
     let fileName = `routesheet_list_batch_${new Date().getTime()}`;
 
     if (excelData && excelData.length) {
-      import(/* webpackChunkName: 'json2xls' */ "json2xls")
-        .then((json2xls) => {
-          // let fileName = fname + '_' + new Date().getTime();
-          const xls =
-            typeof json2xls === "function"
-              ? json2xls(excel)
-              : json2xls.default(excel);
-          const buffer = Buffer.from(xls, "binary");
-          // let buffer = Buffer.from(excelBuffer);
-          const data = new Blob([buffer], { type: fileType });
-          FileSaver.saveAs(data, fileName + fileExtension);
-        })
-        .catch((err) => {
-          // Handle failure
-          console.log(err);
-        });
     }
   };
   const onPressEnterKeyHandler = (value) => {
@@ -428,7 +409,7 @@ function RoutesheetFunction(props) {
     setDateTo(dates.to);
     setDateFrom(dates.from);
     props.listRoutesheet({
-      companyId: userProfile.companyId,
+      companyId: context.userProfile.companyId,
       from: moment(new Date(dates.from)).utc().format("YYYY-MM-DD"),
       to: moment(new Date(dates.to)).utc().format("YYYY-MM-DD"),
     });
@@ -442,63 +423,49 @@ function RoutesheetFunction(props) {
         </div>
       ) : (
         <div>
-          {main ? (
-            <GridContainer>
-              <GridItem xs={12} sm={12} md={12}>
-                <Card>
-                  <CardHeader color="success">
-                    <Grid container justifyContent="space-between">
+          <GridContainer>
+            <GridItem xs={12} sm={12} md={12}>
+              <Card>
+                <CardHeader color="rose">
+                  <div
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      width: "100%",
+                    }}
+                  >
+                    {/* Left side: Select */}
+                    <div style={{ flex: "0 0 90%" }}>
                       <h4 className={classes.cardTitleWhite}>
                         Routesheet Management
                       </h4>
-                      <h4 className={classes.cardTitleWhite}>{`$${parseFloat(
-                        grandTotal || 0
-                      ).toFixed(2)}`}</h4>
-                    </Grid>
-                  </CardHeader>
-                  <CardBody>
-                    <Grid
-                      container
-                      justifyContent="space-between"
-                      style={{ paddingBottom: 4 }}
-                    >
-                      <div
-                        style={{
-                          display: "inline-flex",
-                          gap: 10,
-                        }}
+                    </div>
+                    <div align="right" style={{ flex: "0 0 10%" }}>
+                      <h4
+                        className={classes.cardTitleWhite}
+                      >{`$${grandTotal}`}</h4>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardBody>
+                  <GridContainer style={{ paddingLeft: 20 }}>
+                    <GridItem md={12} sm={12} xs={12}>
+                      <FilterTable
+                        filterRecordHandler={filterRecordHandler}
+                        filterByDateHandler={filterByDateHandler}
+                      />
+                    </GridItem>
+                  </GridContainer>
+                  <GridContainer style={{ paddingLeft: 14 }}>
+                    <GridItem md={12} sm={12} xs={12}>
+                      <Button
+                        color="info"
+                        className={classes.marginRight}
+                        onClick={() => createFormHandler()}
                       >
-                        <Button
-                          onClick={() => createFormHandler()}
-                          variant="contained"
-                          style={{
-                            border: "solid 1px #2196f3",
-                            color: "white",
-                            background: "#2196f3",
-                            fontFamily: "Roboto",
-                            fontSize: "12px",
-                            fontWeight: 500,
-                            height: "40px",
-                            fontStretch: "normal",
-                            fontStyle: "normal",
-                            lineHeight: 1.71,
-                            letterSpacing: "0.4px",
-                            textAlign: "left",
-                            cursor: "pointer",
-                          }}
-                          component="span"
-                          startIcon={<AddIcon />}
-                        >
-                          ADD Routesheet
-                        </Button>
-                      </div>
-                      <div>
-                        <FilterTable
-                          dateRangeSelection={"thisWeek"}
-                          filterRecordHandler={filterRecordHandler}
-                          filterByDateHandler={filterByDateHandler}
-                        />
-                      </div>
+                        <AddIcon className={classes.icons} /> Add Routesheet
+                      </Button>
+
                       <Grid item md={12} xs={12}>
                         {isAddGroupButtons && (
                           <Button
@@ -524,7 +491,9 @@ function RoutesheetFunction(props) {
                           </Button>
                         )}
                       </Grid>
-                      {/*
+                    </GridItem>
+                  </GridContainer>
+                  {/*
                       <SearchCustomTextField
                         background={"white"}
                         onChange={inputHandler}
@@ -536,44 +505,19 @@ function RoutesheetFunction(props) {
                         value={keywordValue}
                       />
                       */}
-                    </Grid>
-                    <HospiceTable
-                      columns={columns}
-                      main={true}
-                      grandTotal={grandTotal}
-                      dataSource={dataSource}
-                      height={400}
-                      onCheckboxSelectionHandler={onCheckboxSelectionHandler}
-                    />
-                    ;
-                  </CardBody>
-                </Card>
-              </GridItem>
-            </GridContainer>
-          ) : (
-            <div>
-              <Grid style={{ paddingBottom: 2 }} container>
-                <Grid md={4} xs={12} sm={6}>
-                  <SearchCustomTextField
-                    background={"white"}
-                    onChange={inputHandler}
-                    placeholder={"Search Item"}
-                    label={"Search Item"}
-                    name={"keywordValue"}
-                    onPressEnterKeyHandler={onPressEnterKeyHandler}
-                    isAllowEnterKey={true}
-                    value={keywordValue}
+                  <HospiceTable
+                    columns={columns}
+                    main={true}
+                    grandTotal={grandTotal}
+                    dataSource={dataSource}
+                    height={400}
+                    onCheckboxSelectionHandler={onCheckboxSelectionHandler}
                   />
-                </Grid>
-              </Grid>
-              <HospiceTable
-                main={false}
-                columns={columns}
-                dataSource={dataSource}
-                height={300}
-              />
-            </div>
-          )}
+                  ;
+                </CardBody>
+              </Card>
+            </GridItem>
+          </GridContainer>
         </div>
       )}
       {isFormModal && (
@@ -588,7 +532,7 @@ function RoutesheetFunction(props) {
           employeeList={employeeList}
           vendorList={vendorList}
           contractList={contractList}
-          userProfile={userProfile}
+          userProfile={context.userProfile}
           locationList={locationList}
           patientList={patientList}
           closeFormModalHandler={closeFormModalHandler}
