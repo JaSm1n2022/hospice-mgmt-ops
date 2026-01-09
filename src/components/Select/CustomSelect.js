@@ -72,24 +72,23 @@ export default function CustomSelect({
   errorMsg,
 }) {
   const classes = useStyles();
+
   const body = (
     <Select
       inputProps={{ style: { fontSize: "10pt" } }} // font size of input text
-      InputLabelProps={{ style: { fontSize: "10pt" } }} // font size of input label
-      labelId="simple-select-filled-label"
       id={name}
       placeholder={value || placeholder}
-      label={label}
       name={name}
       margin="dense"
       disabled={disabled || false}
       className={root && root === "minmax" ? classes.rootRule : classes.root}
-      value={value || label || "Select"}
+      value={value || "Select"}
       source={source}
       onChange={(event) => onChange(event, source)}
+      displayEmpty
     >
       <MenuItem disabled value="Select">
-        Select
+        <span style={{ color: "#999" }}>Select</span>
       </MenuItem>
 
       {options &&
@@ -120,16 +119,15 @@ export default function CustomSelect({
   );
   return (
     <div>
+      {label && (
+        <h4 style={{ marginBottom: "8px", marginTop: "0px", fontSize: "14px" }}>
+          {label}
+        </h4>
+      )}
       <FormControl
         variant={variant || "outlined"}
         className={classes.quantityRoot}
       >
-        {label && (
-          <InputLabel id="demo-simple-select-outlined-label">
-            <h4>{label}</h4>
-          </InputLabel>
-        )}
-
         {tooltiptext ? (
           <Tooltip
             placement={tooltipPlacement || "bottom-start"}

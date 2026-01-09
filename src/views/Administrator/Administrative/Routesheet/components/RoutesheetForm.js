@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import CustomTextField from "components/TextField/CustomTextField";
 import { QUANTITY_UOM } from "utils/constants";
 import { SUPPLY_CATEGORY } from "utils/constants";
@@ -24,16 +24,28 @@ import { useTheme } from "@material-ui/core";
 import CustomMultipleAutoComplete from "components/AutoComplete/CustomMultipleAutoComplete";
 import { DAY_OF_WEEK } from "utils/constants";
 import { SERVICE_TYPE } from "utils/constants";
-
 import CustomTimePicker from "components/Time/CustomTimePicker";
 import Delete from "@material-ui/icons/Delete";
-import { Add, DeleteOutline } from "@material-ui/icons";
+import { Add, DeleteOutline, Money } from "@material-ui/icons";
 import moment from "moment";
+import dayjs from "dayjs";
 import CustomCheckbox from "components/Checkbox/CustomCheckbox";
 import TOAST from "modules/toastManager";
 import SortUtil from "utils/sortUtil";
 import { CLIENT_SERVICES } from "utils/constants";
 import { setSeconds } from "date-fns";
+import ReactSignatureCanvas from "react-signature-canvas";
+import SnackbarContent from "components/Snackbar/SnackbarContent.js";
+import {
+  AddAlertOutlined,
+  AssignmentIndOutlined,
+  ClearOutlined,
+  DriveEta,
+  EventOutlined,
+  Favorite,
+  Gesture,
+  NotesOutlined,
+} from "@material-ui/icons";
 
 let categoryList = [];
 let uoms = [];
@@ -104,6 +116,7 @@ const useStyles = makeStyles((theme) => ({
 }));
 let serviceList = [];
 let currentContract = undefined;
+let isSigned = false;
 function RoutesheetForm(props) {
   const classes = useStyles();
   const [users, setUsers] = useState([]);
@@ -111,10 +124,49 @@ function RoutesheetForm(props) {
   const [patient, setPatient] = useState(DEFAULT_ITEM);
   const [clientService, setClientService] = useState(DEFAULT_ITEM);
   const [modalStyle] = React.useState(getModalStyle);
-  const [detailForm, setDetailForm] = useState([]);
   const [isRefresh, setIsRefresh] = useState(false);
+  const [mileage, setMileage] = useState(0);
+  const [totalMileageReimbursement, setTotalMileageReimbursement] = useState(0);
+  const [notes, setNotes] = useState("");
+  const [otherService, setOtherService] = useState("");
+  const [isMileageRate, setIsMileageRate] = useState(false);
+  const [contractRate, setContractRate] = useState(0);
+  const [approvedPayment, setApprovedPayment] = useState(0);
+  const [isApproved, setIsApproved] = useState(false);
+  const [comments, setComments] = useState("");
+  const sigCanvas = useRef();
+  const [dosStartDate, setDosStartDate] = useState(new Date());
+  const [dosStartTime, setDosStartTime] = useState(
+    dayjs(new Date()).format("HH:mm")
+  );
+  const [dosEndDate, setDosEndDate] = useState(new Date());
+  const [dosEndTime, setDosEndTime] = useState(
+    dayjs(new Date()).add(1, "hour").format("HH:mm")
+  );
+  const [clientError, setClientError] = useState({
+    isError: false,
+    message: "",
+  });
+  const [signatureError, setSignatureError] = useState({
+    isError: false,
+    message: "",
+  });
+  const [otherServiceError, setOtherServiceError] = useState({
+    isError: false,
+    message: "",
+  });
+  const [serviceError, setServiceError] = useState({
+    isError: false,
+    message: "",
+  });
+  const [employeeError, setEmployeeError] = useState({
+    isError: false,
+    message: "",
+  });
   const { isOpen } = props;
+
   useEffect(() => {
+    console.log("[props.patientList]", props.patientList);
     let tempUsers = [];
     if (props.employeeList) {
       tempUsers = [...props.employeeList];
@@ -151,171 +203,264 @@ function RoutesheetForm(props) {
   };
 
   const autoCompleteGeneralHander = (item) => {
-    if (item.category === "user") {
-      setEmployee(item);
-    } else if (item.category === "service") {
+    if (item.category === "service") {
       setClientService(item);
+      setServiceError({ isError: false, message: "" });
+      setContractRateHandler(patient?.name, item);
+      setOtherServiceError({ isError: false, message: "" });
+    } else if (item.category === "user") {
+      setEmployee(item);
+      setEmployeeError({ isError: false, message: "" });
     } else if (item.category === "patient") {
       setPatient(item);
+      setClientError({ isError: false, message: "" });
     }
+  };
+  const approvedPaymentHandler = (mileage, rate) => {
+    const mileageMaxReimbursement = currentContract?.maxReimbursement || 0;
+    const mileageCost = currentContract?.mileageRate
+      ? parseFloat(currentContract?.mileageRate * mileage)
+      : 0;
+    const calcMileage =
+      mileageCost > mileageMaxReimbursement
+        ? mileageMaxReimbursement
+        : mileageCost;
+    setTotalMileageReimbursement(calcMileage);
+
+    setApprovedPayment(
+      parseFloat(parseFloat(calcMileage) + parseFloat(rate)).toFixed(2)
+    );
   };
   const inputHandler = ({ target }) => {
     console.log("[TARGET]", target.name);
     if (target.name === "employee" && !target.value) {
       setEmployee(DEFAULT_ITEM);
     }
+    if (target.name === "isApprovedPayment") {
+      setIsApproved(target.checked);
+    }
     if (target.name === "clientService" && !target.value) {
       setClientService(DEFAULT_ITEM);
+      setServiceError({ isError: true, message: "Service is required." });
     }
     if (target.name === "patient" && !target.value) {
       setPatient(DEFAULT_ITEM);
     }
-  };
-  const inputSourceHandler = ({ target }, source) => {
-    if (target.name === "timeIn") {
-      source.in = target.value;
-    } else if (target.name === "timeOut") {
-      source.out = target.value;
-    } else if (target.name === "mileage") {
-      source.mileage = target.value;
+    if (target.name === "rate") {
+      setContractRate(target.value);
     }
-    setIsRefresh(!isRefresh);
+    if (target.name === "approvedPayment") {
+      console.log("[APPROVED PAYMENT]", target.value);
+      setApprovedPayment(target.value);
+    }
+    if (target.name === "notes") {
+      setNotes(target.value);
+    }
+    if (target.name === "comments") {
+      setComments(target.value);
+    }
+
+    if (target.name === "otherService") {
+      setOtherService(target.value);
+      if (target.value) {
+        setOtherServiceError({ isError: false, message: "" });
+      } else {
+        setOtherServiceError({
+          isError: true,
+          message: "Other service is required.",
+        });
+      }
+    }
+    if (target.name === "mileage") {
+      setMileage(target.value);
+      approvedPaymentHandler(target.value, contractRate);
+    }
   };
-  const contractRateHandler = () => {
-    const contracts = props.contractList || [];
-    console.log(
-      "[Contracts]",
-      contracts,
-      employee,
-      clientService,
-      patient.value
+
+  const setContractRateHandler = (patientCd, service) => {
+    let m = props.contractList.find(
+      (c) =>
+        c.serviceType?.toLowerCase() === service?.name?.toLowerCase() &&
+        c.patientCd === patientCd &&
+        c.employeeId === employee.id
     );
-    let rate;
-    rate =
-      contracts.find(
+    if (!m) {
+      m = props.contractList.find(
         (c) =>
-          c.serviceType &&
-          c.patientCd &&
-          c.employeeId === employee.id &&
-          clientService.value === c.serviceType &&
-          c.patientCd == patient.value
-      ) || undefined;
-    if (!rate) {
-      rate = contracts.find(
-        (c) =>
-          c.serviceType &&
-          c.employeeId === employee.id &&
-          clientService.value === c.serviceType
+          c.serviceType?.toLowerCase() === service?.name?.toLowerCase() &&
+          c.employeeId === employee.id
       );
     }
-    currentContract = rate;
-    return rate?.serviceRate || 0;
-  };
-  const mileageRateHandler = () => {
-    return currentContract?.isMileageRate || false;
-    /*
-    const contracts = props.contractList || [];
-    console.log(
-      "[Contracts]",
-      contracts,
-      employee,
-      clientService,
-      patient.value
-    );
-    let isMileageRate = false;
-    isMileageRate =
-      contracts.find(
-        (c) =>
-          c.serviceType &&
-          c.patientCd &&
-          c.employeeId === employee.id &&
-          clientService.value === c.serviceType &&
-          c.patientCd == patient.value
-      )?.isMileageRate || false;
-    if (!isMileageRate) {
-      isMileageRate =
-        contracts.find(
-          (c) =>
-            c.serviceType &&
-            c.employeeId === employee.id &&
-            clientService.value === c.serviceType
-        )?.isMileageRate || false;
+    console.log("[CONTRACT WITH PATIENT]", m);
+    currentContract = m;
+    setContractRate(m?.serviceRate, 0);
+    if (m?.isMileageRate) {
+      setIsMileageRate(m?.isMileageRate);
+    } else {
+      setIsMileageRate(false);
     }
-    return isMileageRate;
-    */
+    approvedPaymentHandler(mileage, m.serviceRate || 0);
   };
-  const addItemHandler = () => {
-    const records = [...detailForm];
-    records.push({
-      id: uuidv4(),
-      dt: new Date(),
-      in: moment(new Date()).format("HH:mm"),
-      out: moment(new Date()).add(1, "hour").format("HH:mm"),
-      mileage: 0,
-    });
-    setDetailForm(records);
-  };
-  if (detailForm?.length === 0) {
-    addItemHandler();
-  }
-  const dateInputHandler = (value, name, source) => {
-    if (name === "dt") {
-      source.dt = value;
-    }
+
+  const onBeginHandler = () => {
+    isSigned = true;
+    setSignatureError({ isError: false, message: "" });
     setIsRefresh(!isRefresh);
   };
-  const validateFormHandler = () => {
-    console.log("[DETAIL FORM]", detailForm, employee, patient, clientService);
-    const params = [];
 
-    detailForm.forEach((d) => {
-      const detail = {
-        created_at: new Date(),
-        companyId: props.userProfile.companyId,
-        updatedUser: {
-          name: props.userProfile.name,
-          userId: props.userProfile.id,
-          date: new Date(),
-        },
-        createdUser: {
-          name: props.userProfile.name,
-          userId: props.userProfile.id,
-          date: new Date(),
-        },
-
-        timeIn: d.in,
-        timeOut: d.out,
-        requestor: employee.name,
-        requestorId: employee.id,
-        requestorTitle: employee.position,
-        mileage: d.mileage || 0,
-        isMileageRate: currentContract?.isMileageRate || false,
-        serviceRate: currentContract?.serviceRate || 0,
-        serviceRateType: currentContract?.serviceRateType || "",
-        mileageRate: currentContract?.mileageRate || 0,
-        mileageMaxReimbursement: currentContract?.maxReimbursement || 0,
-        mileageCost: currentContract?.mileageRate
-          ? parseFloat(currentContract?.mileageRate * d.mileage)
-          : 0,
-
-        dos: moment(d.dt).format("YYYY-MM-DD"),
-      };
-      detail.totalMileageReimbursement =
-        detail.mileageCost > detail.mileageMaxReimbursement
-          ? detail.mileageMaxReimbursement
-          : detail.mileageCost;
-      detail.status = "For Review";
-      detail.service = clientService?.name || "";
-      detail.serviceCd = clientService?.code || "";
-      detail.patientCd = patient.patientCd;
-      detail.estimatedPayment =
-        detail.totalMileageReimbursement + detail.serviceRate;
-      detail.approvedPayment = detail.estimatedPayment;
-      params.push(detail);
-    });
-    console.log("[PARAMS]", params);
-    props.createRoutesheetHandler(params, props.mode || "create");
+  const clearSignatureHandler = () => {
+    isSigned = false;
+    sigCanvas.current?.clear();
+    setIsRefresh(!isRefresh);
   };
+
+  const dateInputHandler = (value, name) => {
+    if (name === "dosStartDate") {
+      setDosStartDate(value);
+    } else if (name === "dosEndDate") {
+      setDosEndDate(value);
+    }
+  };
+
+  const timeInputHandler = ({ target }) => {
+    if (target.name === "dosStartTime") {
+      setDosStartTime(target.value);
+    } else if (target.name === "dosEndTime") {
+      setDosEndTime(target.value);
+    }
+  };
+
+  const isClientRequiredHandler = () => {
+    if (!clientService?.name) {
+      return false;
+    } else if (clientService?.name?.toLowerCase() === "other") {
+      return true;
+    } else if (serviceList.find((s) => s.name === clientService?.name)) {
+      return serviceList.find((s) => s.name === clientService?.name)
+        ?.isClientRequired;
+    }
+  };
+
+  const validateFormHandler = () => {
+    const signImg = sigCanvas.current?.getCanvas().toDataURL("image/png");
+    console.log(
+      "[VALIDATE]",
+      employee,
+      clientService,
+      patient,
+      approvedPayment
+    );
+
+    setEmployeeError({ isError: false, message: "" });
+    setClientError({ isError: false, message: "" });
+    setSignatureError({ isError: false, message: "" });
+    setOtherServiceError({ isError: false, message: "" });
+
+    let isValid = true;
+
+    if (!employee?.id) {
+      setEmployeeError({ isError: true, message: "Employee is required." });
+      isValid = false;
+    }
+
+    if (!clientService?.name) {
+      setServiceError({ isError: true, message: "Service is required." });
+
+      isValid = false;
+    }
+
+    if (isClientRequiredHandler() && !patient?.patientCd) {
+      setClientError({ isError: true, message: "Client is required." });
+      isValid = false;
+    }
+
+    if (!isSigned) {
+      setSignatureError({ isError: true, message: "Signature is required." });
+      isValid = false;
+    }
+
+    if (
+      clientService &&
+      clientService?.name?.toLowerCase() === "other" &&
+      !otherService
+    ) {
+      setOtherServiceError({ isError: true, message: "Field is required." });
+      isValid = false;
+    }
+
+    if (!isValid) {
+      return;
+    }
+
+    // Combine date and time
+    const dosStartCombined = dayjs(dosStartDate)
+      .hour(parseInt(dosStartTime.split(":")[0]))
+      .minute(parseInt(dosStartTime.split(":")[1]));
+    const dosEndCombined = dayjs(dosEndDate)
+      .hour(parseInt(dosEndTime.split(":")[0]))
+      .minute(parseInt(dosEndTime.split(":")[1]));
+
+    const params = {
+      created_at: new Date(),
+      companyId: props.userProfile.companyId,
+      updatedUser: {
+        name: props.userProfile.name,
+        userId: props.userProfile.id,
+        date: new Date(),
+      },
+      createdUser: {
+        name: props.userProfile.name,
+        userId: props.userProfile.id,
+        date: new Date(),
+      },
+      signature_based: signImg,
+      timeIn: dosStartTime,
+      timeOut: dosEndTime,
+      requestor: employee.name,
+      requestorId: employee.id,
+      requestorTitle: employee.position,
+      mileage: mileage || 0,
+      isMileageRate: isMileageRate || false,
+      serviceRate: contractRate || 0,
+      comments: comments,
+      approvedPayment: approvedPayment || contractRate,
+      serviceRateType: currentContract?.serviceRateType || "",
+      serviceNotes: notes || "",
+      mileageRate: currentContract.mileageRate || 0,
+      mileageMaxReimbursement: currentContract?.maxReimbursement || 0,
+      mileageCost: mileage * currentContract?.mileageRate || 0,
+      totalMileageReimbursement: totalMileageReimbursement,
+      dosStart: dosStartCombined.format("YYYY-MM-DD HH:mm"),
+      dosEnd: dosEndCombined.format("YYYY-MM-DD HH:mm"),
+      dos: dayjs(dosStartDate).format("YYYY-MM-DD"),
+      status: isApproved ? "Approved" : "For Review",
+    };
+
+    params.totalMileageReimbursement =
+      params.mileageCost > params.mileageMaxReimbursement
+        ? params.mileageMaxReimbursement
+        : params.mileageCost;
+    params.estimatedPayment = parseFloat(
+      parseFloat(params.totalMileageReimbursement) +
+        parseFloat(params.serviceRate)
+    ).toFixed(2);
+
+    if (clientService?.name?.toLowerCase() === "other") {
+      params.service = otherService || "Other";
+      params.serviceCd = "Other";
+    } else {
+      const serviceInfo = serviceList.find(
+        (f) => f.name === clientService?.name
+      );
+      params.service = serviceInfo?.name || "";
+      params.serviceCd = serviceInfo?.code || "";
+    }
+    params.patientCd = patient?.patientCd || "";
+
+    console.log("[PARAMS]", params);
+    props.createRoutesheetHandler([params], props.mode || "create");
+  };
+
   return (
     <Modal
       open={isOpen}
@@ -329,159 +474,527 @@ function RoutesheetForm(props) {
           <Card plain>
             <CardBody>
               <Grid
-                style={{ paddingTop: 10 }}
                 container
-                spacing={1}
+                spacing={2}
                 direction="row"
+                style={{ paddingBottom: 10 }}
               >
                 <Grid item xs={12} md={3} sm={12}>
                   <CustomSingleAutoComplete
                     name={"employee"}
-                    label="Employee"
-                    placeholder="Employee"
+                    label="Select Employee"
+                    placeholder="Select Employee"
                     options={users || [DEFAULT_ITEM]}
                     value={employee}
                     onSelectHandler={autoCompleteGeneralHander}
                     onChangeHandler={inputHandler}
                   />
+                  {employeeError.isError && (
+                    <SnackbarContent
+                      message={employeeError.message}
+                      color="rose"
+                      close
+                      icon={AddAlertOutlined}
+                    />
+                  )}
                 </Grid>
+
                 <Grid item xs={12} md={3} sm={12}>
                   <CustomSingleAutoComplete
                     name={"clientService"}
-                    label="Service"
-                    placeholder="Service"
+                    label="Select Service"
+                    placeholder="Select Service"
                     options={serviceList || [DEFAULT_ITEM]}
                     value={clientService}
                     onSelectHandler={autoCompleteGeneralHander}
                     onChangeHandler={inputHandler}
-                    disabled={!employee?.name}
+                    disabled={!employee.name}
                   />
+                  {serviceError.isError && (
+                    <SnackbarContent
+                      message={serviceError.message}
+                      color="rose"
+                      close
+                      icon={AddAlertOutlined}
+                    />
+                  )}
                 </Grid>
-                <Grid item xs={12} md={3} sm={12}>
+
+                {clientService === "Other" && (
+                  <Grid item xs={12} sm={12} md={3}>
+                    <CustomTextField
+                      name="otherService"
+                      placeholder="Other service here"
+                      label="Other Service"
+                      onChange={inputHandler}
+                      value={otherService}
+                    />
+                    {otherServiceError.isError && (
+                      <SnackbarContent
+                        message={otherServiceError.message}
+                        color="rose"
+                        close
+                        icon={AddAlertOutlined}
+                      />
+                    )}
+                  </Grid>
+                )}
+
+                <Grid
+                  item
+                  xs={12}
+                  md={3}
+                  sm={12}
+                  style={{
+                    display: isClientRequiredHandler() ? "" : "none",
+                  }}
+                >
                   <CustomSingleAutoComplete
                     name={"patient"}
-                    label="Client"
-                    placeholder="Client"
-                    options={props.patientList || [DEFAULT_ITEM]}
+                    label="Select Client"
+                    placeholder="Select Client"
+                    options={(props.patientList || []).map((item) => ({
+                      value: item.patientCd,
+                      name: item.patientCd,
+                      label: item.patientCd,
+                      category: "patient",
+                      id: item.patientCd,
+                      patientCd: item.patientCd,
+                      description: item.patientCd,
+                    }))}
                     value={patient}
                     onSelectHandler={autoCompleteGeneralHander}
                     onChangeHandler={inputHandler}
                     disabled={!clientService?.name}
                   />
+
+                  {clientError.isError && (
+                    <SnackbarContent
+                      message={clientError.message}
+                      color="rose"
+                      close
+                      icon={AddAlertOutlined}
+                    />
+                  )}
                 </Grid>
+
                 <Grid item xs={12} md={3} sm={12}>
                   <CustomTextField
                     name={"rate"}
+                    type="number"
                     label="Contract Rate"
                     placeholder="Contract Rate"
-                    onCha
-                    value={contractRateHandler()}
+                    value={contractRate}
+                    onChange={inputHandler}
                   />
                 </Grid>
               </Grid>
-              <Grid item xs={12} style={{ paddingTop: 4 }}>
-                <Typography variant="h6">TIME IN/OUT</Typography>
-              </Grid>
-              {detailForm.map((item, index) => {
-                return (
-                  <Grid
-                    container
-                    spacing={1}
-                    direction="row"
-                    style={{ paddingBottom: 12 }}
-                    key={`contr-${index}`}
-                  >
-                    <Grid item xs={12} md={1}>
-                      <div style={{ display: "inline-flex", gap: 10 }}>
-                        <div style={{ paddingTop: 4 }}>
-                          <Tooltip title={"Delete Item"}>
-                            <DeleteOutline
-                              style={{
-                                color: "#F62100",
-                                fontSize: "24px",
-                                cursor: "pointer",
-                              }}
-                              onClick={() => deleteItemHandler(index)}
-                            />
-                          </Tooltip>
+
+              {clientService && (
+                <Grid container spacing={2} style={{ paddingTop: 20 }}>
+                  <Grid item xs={12}>
+                    <Card>
+                      <div
+                        style={{
+                          background:
+                            "linear-gradient(60deg, #66bb6a, #43a047)",
+                          padding: "15px",
+                          marginTop: "-20px",
+                          marginLeft: "15px",
+                          marginRight: "15px",
+                          borderRadius: "3px",
+                          boxShadow:
+                            "0 4px 20px 0 rgba(0, 0, 0,.14), 0 7px 10px -5px rgba(76, 175, 80,.4)",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "10px",
+                            paddingTop: 10,
+                          }}
+                        >
+                          <EventOutlined
+                            style={{ color: "white", fontSize: "24px" }}
+                          />
+                          <Typography
+                            variant="h6"
+                            style={{
+                              color: "white",
+                              margin: 0,
+                              fontWeight: 400,
+                            }}
+                          >
+                            Date of Service
+                          </Typography>
                         </div>
                       </div>
-                    </Grid>
-                    <Grid item xs={12} md={3} sm={12}>
-                      <CustomDatePicker
-                        name="dt"
-                        source={item}
-                        value={item.dt}
-                        onChange={dateInputHandler}
-                      />
-                    </Grid>
-                    <Grid item xs={12} md={3} sm={12}>
-                      <CustomTimePicker
-                        name="timeIn"
-                        label="Time In"
-                        source={item}
-                        value={item.in || "08:00"}
-                        onChange={inputSourceHandler}
-                      />
-                    </Grid>
-                    <Grid item xs={12} md={3} sm={12}>
-                      <CustomTimePicker
-                        name="timeOut"
-                        label="time Out"
-                        source={item}
-                        value={item.out || "17:00"}
-                        onChange={inputSourceHandler}
-                      />
-                    </Grid>
-                    <Grid item xs={12} md={2} sm={12}>
-                      <CustomTextField
-                        name="mileage"
-                        label="Mileage"
-                        source={item}
-                        value={mileageRateHandler() ? item.mileage : 0}
-                        disabled={!mileageRateHandler()}
-                        onChange={inputSourceHandler}
-                      />
-                    </Grid>
+                      <CardBody style={{ paddingTop: "30px" }}>
+                        <Grid container spacing={2}>
+                          <Grid item xs={12} sm={6} md={3}>
+                            <CustomDatePicker
+                              label="Start Date"
+                              name="dosStartDate"
+                              value={dosStartDate}
+                              onChange={dateInputHandler}
+                            />
+                          </Grid>
+                          <Grid item xs={12} sm={6} md={3}>
+                            <CustomTimePicker
+                              label="Start Time"
+                              name="dosStartTime"
+                              value={dosStartTime}
+                              onChange={timeInputHandler}
+                            />
+                          </Grid>
+                          <Grid item xs={12} sm={6} md={3}>
+                            <CustomDatePicker
+                              label="End Date"
+                              name="dosEndDate"
+                              value={dosEndDate}
+                              onChange={dateInputHandler}
+                            />
+                          </Grid>
+                          <Grid item xs={12} sm={6} md={3}>
+                            <CustomTimePicker
+                              label="End Time"
+                              name="dosEndTime"
+                              value={dosEndTime}
+                              onChange={timeInputHandler}
+                            />
+                          </Grid>
+                        </Grid>
+                      </CardBody>
+                    </Card>
                   </Grid>
-                );
-              })}
+
+                  {isMileageRate && (
+                    <Grid item xs={12} sm={12} md={4}>
+                      <Card style={{ height: "100%" }}>
+                        <div
+                          style={{
+                            background:
+                              "linear-gradient(60deg, #ef5350, #e53935)",
+                            padding: "15px",
+                            marginTop: "-20px",
+                            marginLeft: "15px",
+                            marginRight: "15px",
+                            borderRadius: "3px",
+                            boxShadow:
+                              "0 4px 20px 0 rgba(0, 0, 0,.14), 0 7px 10px -5px rgba(244, 67, 54,.4)",
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "10px",
+                              paddingTop: 10,
+                            }}
+                          >
+                            <DriveEta
+                              style={{ color: "white", fontSize: "24px" }}
+                            />
+                            <Typography
+                              variant="h6"
+                              style={{
+                                color: "white",
+                                margin: 0,
+                                fontWeight: 400,
+                              }}
+                            >
+                              Log Mileage
+                            </Typography>
+                          </div>
+                        </div>
+                        <CardBody style={{ paddingTop: "30px" }}>
+                          <CustomTextField
+                            name="mileage"
+                            placeholder="Enter mileage"
+                            label="Mileage"
+                            onChange={inputHandler}
+                            value={mileage}
+                            type="number"
+                          />
+                        </CardBody>
+                      </Card>
+                    </Grid>
+                  )}
+
+                  <Grid item xs={12} sm={12} md={isMileageRate ? 4 : 6}>
+                    <Card style={{ height: "100%" }}>
+                      <div
+                        style={{
+                          background:
+                            "linear-gradient(60deg, #ffa726, #fb8c00)",
+                          padding: "15px",
+                          marginTop: "-20px",
+                          marginLeft: "15px",
+                          marginRight: "15px",
+                          borderRadius: "3px",
+                          boxShadow:
+                            "0 4px 20px 0 rgba(0, 0, 0,.14), 0 7px 10px -5px rgba(255, 152, 0,.4)",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "10px",
+                            paddingTop: 10,
+                          }}
+                        >
+                          <NotesOutlined
+                            style={{ color: "white", fontSize: "24px" }}
+                          />
+                          <Typography
+                            variant="h6"
+                            style={{
+                              color: "white",
+                              margin: 0,
+                              fontWeight: 400,
+                            }}
+                          >
+                            Service Notes
+                          </Typography>
+                        </div>
+                      </div>
+                      <CardBody style={{ paddingTop: "30px" }}>
+                        <TextareaAutosize
+                          aria-label="service notes"
+                          minRows={4}
+                          rows={4}
+                          value={notes}
+                          placeholder="Enter service notes here..."
+                          name={"notes"}
+                          style={{
+                            width: "100%",
+                            border: "1px solid #ddd",
+                            borderRadius: "4px",
+                            padding: "8px",
+                            fontSize: "10pt",
+                            fontFamily: "inherit",
+                          }}
+                          onKeyPress={(ev) => {
+                            if (ev.key === "Enter") {
+                              ev.preventDefault();
+                            }
+                          }}
+                          onChange={inputHandler}
+                        />
+                      </CardBody>
+                    </Card>
+                  </Grid>
+
+                  <Grid item xs={12} sm={12} md={isMileageRate ? 4 : 6}>
+                    <Card style={{ height: "100%" }}>
+                      <div
+                        style={{
+                          background:
+                            "linear-gradient(60deg, #26c6da, #00acc1)",
+                          padding: "15px",
+                          marginTop: "-20px",
+                          marginLeft: "15px",
+                          marginRight: "15px",
+                          borderRadius: "3px",
+                          boxShadow:
+                            "0 4px 20px 0 rgba(0, 0, 0,.14), 0 7px 10px -5px rgba(0, 172, 193,.4)",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "10px",
+                            paddingTop: 10,
+                          }}
+                        >
+                          <Gesture
+                            style={{ color: "white", fontSize: "24px" }}
+                          />
+                          <Typography
+                            variant="h6"
+                            style={{
+                              color: "white",
+                              margin: 0,
+                              fontWeight: 400,
+                            }}
+                          >
+                            Signature
+                          </Typography>
+                        </div>
+                      </div>
+                      <CardBody style={{ paddingTop: "30px" }}>
+                        <div
+                          style={{
+                            border: "2px dashed #ddd",
+                            borderRadius: "4px",
+                            padding: "10px",
+                            background: "#fafafa",
+                          }}
+                        >
+                          <ReactSignatureCanvas
+                            penColor="green"
+                            onBegin={(e) => onBeginHandler(e)}
+                            ref={(ref) => {
+                              sigCanvas.current = ref;
+                            }}
+                            canvasProps={{
+                              height: 80,
+                              width: "100%",
+                              style: {
+                                width: "100%",
+                                height: "80px",
+                                background: "white",
+                                borderRadius: "4px",
+                              },
+                              className: "sigCanvas",
+                            }}
+                          />
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            marginTop: "10px",
+                          }}
+                        >
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            color="secondary"
+                            onClick={clearSignatureHandler}
+                            startIcon={<ClearOutlined />}
+                          >
+                            Clear
+                          </Button>
+                        </div>
+                        {signatureError.isError && (
+                          <SnackbarContent
+                            message={signatureError.message}
+                            color="rose"
+                            close
+                            icon={AddAlertOutlined}
+                          />
+                        )}
+                      </CardBody>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={12} sm={12} md={6}>
+                    <Card style={{ height: "100%" }}>
+                      <div
+                        style={{
+                          background:
+                            "linear-gradient(60deg, #26c6da, #00acc1)",
+                          padding: "15px",
+                          marginTop: "-20px",
+                          marginLeft: "15px",
+                          marginRight: "15px",
+                          borderRadius: "3px",
+                          boxShadow:
+                            "0 4px 20px 0 rgba(0, 0, 0,.14), 0 7px 10px -5px rgba(0, 172, 193,.4)",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "10px",
+                            paddingTop: 10,
+                          }}
+                        >
+                          <Money style={{ color: "white", fontSize: "24px" }} />
+                          <Typography
+                            variant="h6"
+                            style={{
+                              color: "white",
+                              margin: 0,
+                              fontWeight: 400,
+                            }}
+                          >
+                            Approved Payment
+                          </Typography>
+                        </div>
+                      </div>
+                      <CardBody style={{ paddingTop: "30px" }}>
+                        <div
+                          style={{
+                            border: "2px dashed #ddd",
+                            borderRadius: "4px",
+                            padding: "10px",
+                            background: "#fafafa",
+                          }}
+                        >
+                          <div>
+                            <Typography variant="body">
+                              Service Rate: {contractRate}
+                            </Typography>
+                          </div>
+                          <div style={{ paddingBottom: 20 }}>
+                            <Typography variant="body">
+                              Mileage Reimbursement: {totalMileageReimbursement}
+                            </Typography>
+                          </div>
+                          <CustomTextField
+                            name="approvedPayment"
+                            placeholder="Approved Payment"
+                            label="Approved Payment"
+                            onChange={inputHandler}
+                            value={approvedPayment}
+                            type="number"
+                          />
+                          <div style={{ paddingTop: 10 }}>
+                            <CustomTextField
+                              name="comments"
+                              placeholder="Comments"
+                              label="Comments"
+                              onChange={inputHandler}
+                              value={comments}
+                              type="text"
+                            />
+                          </div>
+                          <div style={{ paddingTop: 10 }}>
+                            <CustomCheckbox
+                              label="Is Approved for Payment?"
+                              isChecked={isApproved}
+                              name={"isApprovedPayment"}
+                              onChange={inputHandler}
+                            />
+                          </div>
+                        </div>
+                      </CardBody>
+                    </Card>
+                  </Grid>
+                </Grid>
+              )}
+
               <div
                 style={{
-                  paddingTop: 4,
+                  paddingTop: 30,
+                  paddingBottom: 10,
+                  borderTop: "1px solid #e0e0e0",
+                  marginTop: 20,
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: 10,
                 }}
               >
-                <Button
-                  variant="outlined"
-                  color="primary"
-                  style={{ fontSize: 14 }}
-                  onClick={() => addItemHandler()}
-                >
-                  Add Item
-                </Button>
-              </div>
-              <div
-                align="right"
-                style={{
-                  paddingTop: 4,
-                }}
-              >
-                <Button
-                  variant="contained"
-                  color="primary"
-                  style={{ fontSize: 14 }}
-                  onClick={() => validateFormHandler()}
-                >
-                  Submit
-                </Button>
-                <span>&nbsp;</span>
                 <Button
                   variant="contained"
                   color="secondary"
-                  style={{ fontSize: 14 }}
                   onClick={() => props.closeFormModalHandler()}
                 >
                   Cancel
+                </Button>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => validateFormHandler()}
+                  disabled={!clientService}
+                >
+                  Submit Routesheet
                 </Button>
               </div>
             </CardBody>

@@ -12,7 +12,7 @@ class RoutesheetHandler {
         name: "service",
         header: "Service Type",
       },
-      { defaultFlex: 1, minWidth: 120, name: "dos", header: "DOS" },
+      // { defaultFlex: 1, minWidth: 120, name: "dos", header: "DOS" },
       { defaultFlex: 1, minWidth: 120, name: "timeIn", header: "Time In" },
       { defaultFlex: 1, minWidth: 120, name: "timeOut", header: "Time Out" },
       { defaultFlex: 1, minWidth: 200, name: "requestor", header: "Employee" },
@@ -92,7 +92,10 @@ class RoutesheetHandler {
         parseFloat(item.serviceRate) +
           parseFloat(item.totalMileageReimbursement)
       ).toFixed(2);
+      item.timeIn = moment(new Date(item.dosStart)).format("YYYY-MM-DD HH:mm");
+      item.timeOut = moment(new Date(item.dosEnd)).format("YYYY-MM-DD HH:mm");
     });
+
     return items;
   }
 }
