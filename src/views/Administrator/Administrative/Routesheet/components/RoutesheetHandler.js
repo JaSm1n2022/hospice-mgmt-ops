@@ -80,6 +80,12 @@ class RoutesheetHandler {
       {
         defaultFlex: 1,
         minWidth: 200,
+        name: "comments",
+        header: "Comments",
+      },
+      {
+        defaultFlex: 1,
+        minWidth: 200,
         name: "status",
         header: "Status",
       },
