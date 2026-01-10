@@ -236,6 +236,9 @@ function RoutesheetForm(props) {
       setApprovedPayment(props.item.approvedPayment);
       setTotalMileageReimbursement(props.item.totalMileageReimbursement);
       setComments(props.item.comments);
+      if (props.item.signature_based) {
+        sigCanvas.current.fromDataURL(props.item.signature_based);
+      }
     }
   }, [props.employeeList, props.item, props.patientList]);
 
