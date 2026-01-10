@@ -122,6 +122,7 @@ function RoutesheetForm(props) {
   const [users, setUsers] = useState([]);
   const [employee, setEmployee] = useState(DEFAULT_ITEM);
   const [patient, setPatient] = useState(DEFAULT_ITEM);
+  const [patients, setPatients] = useState([]);
   const [clientService, setClientService] = useState(DEFAULT_ITEM);
   const [modalStyle] = React.useState(getModalStyle);
   const [isRefresh, setIsRefresh] = useState(false);
@@ -168,6 +169,21 @@ function RoutesheetForm(props) {
   useEffect(() => {
     console.log("[props.patientList]", props.patientList);
     let tempUsers = [];
+    const tempPatients = [];
+    if (props.patientList) {
+      props.patientList.forEach((p) => {
+        tempPatients.push({
+          value: p.patientCd,
+          name: p.patientCd,
+          label: p.patientCd,
+          category: "patient",
+          id: p.patientCd,
+          patientCd: p.patientCd,
+          description: p.patientCd,
+        });
+        setPatients(tempPatients);
+      });
+    }
     if (props.employeeList) {
       tempUsers = [...props.employeeList];
       tempUsers.forEach((c) => {
@@ -187,7 +203,41 @@ function RoutesheetForm(props) {
       serviceList = SortUtil.sortByAsc(cs, "name", false);
       setUsers(tempUsers);
     }
-  }, [props.employeeList, props.item]);
+    if (props.item && props.mode === "edit") {
+      console.log(
+        "[props.patientList]",
+        props.patientList,
+        props.employeeList,
+
+        props.item
+      );
+      setEmployee(
+        tempUsers.find((t) => t.id === props.item.requestorId) || DEFAULT_ITEM
+      );
+      setClientService(
+        serviceList.find((t) => t.name === props.item.service) || DEFAULT_ITEM
+      );
+      setPatient(
+        tempPatients.find((t) => t.name == props.item.patientCd) || DEFAULT_ITEM
+      );
+      setContractRate(props.item.serviceRate || 0);
+
+      setDosStartDate(new Date(props.item.dosStart));
+      setDosStartTime(dayjs(new Date(props.item.dosStart)).format("HH:mm"));
+      setDosEndDate(new Date(props.item.dosEnd));
+      setDosEndTime(dayjs(new Date(props.item.dosEnd)).format("HH:mm"));
+      setNotes(props.item.serviceNotes);
+      setMileage(props.item.mileage);
+      setContractRateHandler(
+        props.item.patientCd,
+        serviceList.find((t) => t.name === props.item.service) || DEFAULT_ITEM,
+        tempUsers.find((t) => t.id === props.item.requestorId) || DEFAULT_ITEM
+      );
+      setApprovedPayment(props.item.approvedPayment);
+      setTotalMileageReimbursement(props.item.totalMileageReimbursement);
+      setComments(props.item.comments);
+    }
+  }, [props.employeeList, props.item, props.patientList]);
 
   const titleHandler = () => {
     if (props.mode === "view") {
@@ -277,18 +327,19 @@ function RoutesheetForm(props) {
     }
   };
 
-  const setContractRateHandler = (patientCd, service) => {
+  const setContractRateHandler = (patientCd, service, emp) => {
+    const em = employee?.id ? employee : emp;
     let m = props.contractList.find(
       (c) =>
         c.serviceType?.toLowerCase() === service?.name?.toLowerCase() &&
         c.patientCd === patientCd &&
-        c.employeeId === employee.id
+        c.employeeId === emp.id
     );
     if (!m) {
       m = props.contractList.find(
         (c) =>
           c.serviceType?.toLowerCase() === service?.name?.toLowerCase() &&
-          c.employeeId === employee.id
+          c.employeeId === emp.id
       );
     }
     console.log("[CONTRACT WITH PATIENT]", m);
@@ -553,15 +604,7 @@ function RoutesheetForm(props) {
                     name={"patient"}
                     label="Select Client"
                     placeholder="Select Client"
-                    options={(props.patientList || []).map((item) => ({
-                      value: item.patientCd,
-                      name: item.patientCd,
-                      label: item.patientCd,
-                      category: "patient",
-                      id: item.patientCd,
-                      patientCd: item.patientCd,
-                      description: item.patientCd,
-                    }))}
+                    options={patients}
                     value={patient}
                     onSelectHandler={autoCompleteGeneralHander}
                     onChangeHandler={inputHandler}
@@ -928,13 +971,20 @@ function RoutesheetForm(props) {
                           }}
                         >
                           <div>
-                            <Typography variant="body">
-                              Service Rate: {contractRate}
+                            <Typography
+                              variant="body"
+                              style={{ fontWeight: "bold" }}
+                            >
+                              Service Rate: ${contractRate}
                             </Typography>
                           </div>
                           <div style={{ paddingBottom: 20 }}>
-                            <Typography variant="body">
-                              Mileage Reimbursement: {totalMileageReimbursement}
+                            <Typography
+                              variant="body"
+                              style={{ fontWeight: "bold" }}
+                            >
+                              Mileage Reimbursement: $
+                              {totalMileageReimbursement}
                             </Typography>
                           </div>
                           <CustomTextField
