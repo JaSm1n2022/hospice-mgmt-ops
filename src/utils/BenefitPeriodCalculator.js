@@ -22,7 +22,8 @@ class BenefitPeriodCalculator {
     // Calculate all benefit periods starting from admitted benefit
     const benefitPeriods = this.calculateBenefitPeriods(
       socDate,
-      admittedBenefit
+      admittedBenefit,
+      patient
     );
 
     // Find which benefit period the comparison date falls into
@@ -39,15 +40,21 @@ class BenefitPeriodCalculator {
    * Calculate all benefit periods starting from SOC
    * @param {Moment} socDate - Start of care date
    * @param {number} admittedBenefit - Admitted benefit period number
+   * @param {Object} patient - Optional patient object with prior hospice information
    * @returns {Array} Array of benefit period objects
    */
-  static calculateBenefitPeriods(socDate, admittedBenefit) {
+  static calculateBenefitPeriods(socDate, admittedBenefit, patient = null) {
     const periods = [];
     let currentDate = moment(socDate);
 
     // We need to calculate enough periods to cover potential EOC dates
     // Start from admitted benefit and calculate extra periods
     const totalPeriodsToCalculate = admittedBenefit + 10;
+
+    // Check if patient has prior hospice days to account for
+    // prior_last_day_care represents days used in the last benefit period at prior hospice
+    const priorDaysUsed = patient?.prior_last_day_care || patient?.lastDayCare || 0;
+    const hasPriorHospice = patient?.is_prior_hospice || patient?.isPriorHospice || false;
 
     for (let i = admittedBenefit; i <= totalPeriodsToCalculate; i++) {
       let daysInPeriod = 0;
@@ -60,6 +67,12 @@ class BenefitPeriodCalculator {
         daysInPeriod = 60;
       }
 
+      // For the first benefit period at this hospice (admitted benefit period),
+      // subtract days already used at prior hospice if benefits are continuing
+      if (i === admittedBenefit && hasPriorHospice && priorDaysUsed > 0) {
+        daysInPeriod = Math.max(1, daysInPeriod - priorDaysUsed);
+      }
+
       const endDate = moment(currentDate).add(daysInPeriod - 1, "days");
 
       periods.push({
@@ -67,6 +80,7 @@ class BenefitPeriodCalculator {
         startDate: currentDate.format("YYYY-MM-DD"),
         endDate: endDate.format("YYYY-MM-DD"),
         daysInPeriod: daysInPeriod,
+        priorDaysUsed: i === admittedBenefit && hasPriorHospice ? priorDaysUsed : 0,
       });
 
       // Next period starts the day after this period ends
@@ -129,7 +143,7 @@ class BenefitPeriodCalculator {
     const currentBenefit = this.getCurrentBenefitPeriod(patient);
     const socDate = moment(patient.soc);
     const admittedBenefit = parseInt(patient.admitted_benefits_period || 1);
-    const periods = this.calculateBenefitPeriods(socDate, admittedBenefit);
+    const periods = this.calculateBenefitPeriods(socDate, admittedBenefit, patient);
 
     const currentPeriod = periods.find(
       (p) => p.benefitNumber === currentBenefit
@@ -141,6 +155,7 @@ class BenefitPeriodCalculator {
       currentPeriodStart: currentPeriod ? currentPeriod.startDate : null,
       currentPeriodEnd: currentPeriod ? currentPeriod.endDate : null,
       daysInCurrentPeriod: currentPeriod ? currentPeriod.daysInPeriod : null,
+      priorDaysUsed: currentPeriod ? currentPeriod.priorDaysUsed : 0,
       hasEOC: !!patient.eoc,
       eocDate: patient.eoc || null,
     };

@@ -8,10 +8,11 @@ class RecertificationTimelineHandler {
         item.admitted_benefits_period || 1
       );
 
-      // Calculate recertification dates
+      // Calculate recertification dates, passing patient data for prior hospice consideration
       const recertifications = this.calculateRecertifications(
         soc,
-        admittedBenefitsPeriod
+        admittedBenefitsPeriod,
+        item
       );
 
       // Get the current recertification (the one we should display)
@@ -69,13 +70,18 @@ class RecertificationTimelineHandler {
     return nextRecert;
   }
 
-  static calculateRecertifications(socDate, admittedBenefitPeriod) {
+  static calculateRecertifications(socDate, admittedBenefitPeriod, patient = null) {
     const recerts = [];
     let currentDate = moment(socDate);
 
     // Start from the admitted benefit period and calculate a few more periods
     // This ensures if admitted benefit is 14, we calculate periods 14, 15, 16, etc.
     const periodsToCalculate = 6; // Calculate 6 periods ahead
+
+    // Check if patient has prior hospice days to account for
+    // prior_last_day_care represents days used in the last benefit period at prior hospice
+    const priorDaysUsed = patient?.prior_last_day_care || patient?.lastDayCare || 0;
+    const hasPriorHospice = patient?.is_prior_hospice || patient?.isPriorHospice || false;
 
     for (let i = 0; i < periodsToCalculate; i++) {
       const benefitNumber = admittedBenefitPeriod + i;
@@ -89,6 +95,12 @@ class RecertificationTimelineHandler {
         daysToAdd = 60;
       }
 
+      // For the first benefit period at this hospice (admitted benefit period),
+      // subtract days already used at prior hospice if benefits are continuing
+      if (benefitNumber === admittedBenefitPeriod && hasPriorHospice && priorDaysUsed > 0) {
+        daysToAdd = Math.max(1, daysToAdd - priorDaysUsed);
+      }
+
       const dueDate = moment(currentDate).add(daysToAdd, "days");
 
       recerts.push({
@@ -96,6 +108,7 @@ class RecertificationTimelineHandler {
         startDate: currentDate.format("YYYY-MM-DD"),
         dueDate: dueDate.format("YYYY-MM-DD"),
         daysInPeriod: daysToAdd,
+        priorDaysUsed: benefitNumber === admittedBenefitPeriod && hasPriorHospice ? priorDaysUsed : 0,
         status: this.getRecertStatus(dueDate),
       });
 
