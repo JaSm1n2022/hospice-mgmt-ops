@@ -655,6 +655,7 @@ const Distribution = (props) => {
 
       forStockUpdates.push({
         id: stock.id,
+        companyId: context.userProfile?.companyId,
         qty_on_hand: Math.abs(
           parseInt(stock.qty_on_hand || 0, 10) + parseInt(data.order_qty, 10)
         ),
@@ -708,6 +709,7 @@ const Distribution = (props) => {
           const balance = parseInt(stock.qty_on_hand, 10) - parseInt(qty, 10);
           forStockUpdates.push({
             id: stock.id,
+            companyId: context.userProfile?.companyId,
             qty_on_hand: balance < 1 ? 0 : balance,
           });
         }
@@ -807,6 +809,7 @@ const Distribution = (props) => {
         const balance = parseInt(stock.qty_on_hand, 10) - parseInt(qty, 10);
         forStockUpdates.push({
           id: stock.id,
+          companyId: context.userProfile?.companyId,
           qty_on_hand: balance < 1 ? 0 : balance,
         });
       }
