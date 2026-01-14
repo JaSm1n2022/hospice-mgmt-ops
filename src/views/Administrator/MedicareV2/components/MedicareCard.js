@@ -139,13 +139,14 @@ const MedicareCard = ({ data }) => {
 
   const fiscalYear = getFiscalYear();
 
-  // Get benefit labels as sequential periods
+  // Get benefit labels as sequential periods starting from admitted benefit
   const getBenefitLabels = () => {
+    const admittedBenefit = data.benefitCount || 1;
     return {
-      first: "Benefit Period 1",
-      second: "Benefit Period 2",
-      third: "Benefit Period 3",
-      fourth: "Benefit Period 4",
+      first: `Benefit Period ${admittedBenefit}`,
+      second: `Benefit Period ${admittedBenefit + 1}`,
+      third: `Benefit Period ${admittedBenefit + 2}`,
+      fourth: `Benefit Period ${admittedBenefit + 3}`,
     };
   };
 
