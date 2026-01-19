@@ -56,7 +56,8 @@ class RecertificationTimelineHandler {
         daysInNextPeriod = 90;
       }
 
-      const nextDueDate = moment(nextStartDate).add(daysInNextPeriod, "days");
+      // Calculate due date: subtract 1 because the start date counts as day 1
+      const nextDueDate = moment(nextStartDate).add(daysInNextPeriod - 1, "days");
 
       return {
         benefitPeriod: nextBenefitPeriod,
@@ -82,6 +83,12 @@ class RecertificationTimelineHandler {
     // prior_last_day_care represents days used in the last benefit period at prior hospice
     const priorDaysUsed = patient?.prior_last_day_care || patient?.lastDayCare || 0;
     const hasPriorHospice = patient?.is_prior_hospice || patient?.isPriorHospice || false;
+    const priorDischargeReason = patient?.prior_hospice_discharge || patient?.priorHospiceDischarge?.name || null;
+
+    // Check if this is a revocation case
+    // When a patient revokes, they move to the NEXT benefit period with FULL days
+    // (not reduced by prior hospice usage)
+    const isRevocation = priorDischargeReason === "Revocation";
 
     for (let i = 0; i < periodsToCalculate; i++) {
       const benefitNumber = admittedBenefitPeriod + i;
@@ -97,11 +104,14 @@ class RecertificationTimelineHandler {
 
       // For the first benefit period at this hospice (admitted benefit period),
       // subtract days already used at prior hospice if benefits are continuing
-      if (benefitNumber === admittedBenefitPeriod && hasPriorHospice && priorDaysUsed > 0) {
+      // BUT NOT if this is a revocation (revoked patients start fresh with full days)
+      if (benefitNumber === admittedBenefitPeriod && hasPriorHospice && priorDaysUsed > 0 && !isRevocation) {
         daysToAdd = Math.max(1, daysToAdd - priorDaysUsed);
       }
 
-      const dueDate = moment(currentDate).add(daysToAdd, "days");
+      // Calculate due date: subtract 1 because the start date counts as day 1
+      // For a 90-day period starting on 10/22, day 90 is 10/22 + 89 days = 01/19
+      const dueDate = moment(currentDate).add(daysToAdd - 1, "days");
 
       recerts.push({
         benefitPeriod: benefitNumber,

@@ -55,6 +55,12 @@ class BenefitPeriodCalculator {
     // prior_last_day_care represents days used in the last benefit period at prior hospice
     const priorDaysUsed = patient?.prior_last_day_care || patient?.lastDayCare || 0;
     const hasPriorHospice = patient?.is_prior_hospice || patient?.isPriorHospice || false;
+    const priorDischargeReason = patient?.prior_hospice_discharge || patient?.priorHospiceDischarge?.name || null;
+
+    // Check if this is a revocation case
+    // When a patient revokes, they move to the NEXT benefit period with FULL days
+    // (not reduced by prior hospice usage)
+    const isRevocation = priorDischargeReason === "Revocation";
 
     for (let i = admittedBenefit; i <= totalPeriodsToCalculate; i++) {
       let daysInPeriod = 0;
@@ -69,7 +75,8 @@ class BenefitPeriodCalculator {
 
       // For the first benefit period at this hospice (admitted benefit period),
       // subtract days already used at prior hospice if benefits are continuing
-      if (i === admittedBenefit && hasPriorHospice && priorDaysUsed > 0) {
+      // BUT NOT if this is a revocation (revoked patients start fresh with full days)
+      if (i === admittedBenefit && hasPriorHospice && priorDaysUsed > 0 && !isRevocation) {
         daysInPeriod = Math.max(1, daysInPeriod - priorDaysUsed);
       }
 
