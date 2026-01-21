@@ -45,6 +45,7 @@ import SettingsIcon from "@material-ui/icons/Settings";
 import PaymentIcon from "@material-ui/icons/PaymentOutlined";
 import TrendingUpIcon from "@material-ui/icons/TrendingUp";
 import MonetizationOnIcon from "@material-ui/icons/MonetizationOn";
+import FavoriteBorderIcon from "@material-ui/icons/FavoriteBorder";
 import StockRoom from "views/Administrator/Logistics/StockRoom/StockRoomMain";
 import Dme from "views/Administrator/Logistics/Dme/Equipment/EquipmentMain";
 import Transportation from "views/Administrator/Logistics/Transportation/TransportationMain";
@@ -82,6 +83,7 @@ import RevenueForecast from "views/Administrator/MedicareV2/RevenueForecast";
 import HospiceIncome from "views/Administrator/HospiceIncome/HospiceIncomeFunction";
 import Hope from "views/Administrator/Hope/HopeFunction";
 import RecertificationTimeline from "views/Administrator/RecertificationTimeline/RecertificationTimelineFunction";
+import BereavementTimeline from "views/Administrator/BereavementTimeline/BereavementTimelineFunction";
 import UpdateBenefits from "views/Administrator/Utilities/UpdateBenefits";
 var dashRoutes = [
   {
@@ -510,6 +512,14 @@ var dashRoutes = [
     rtlName: "الرسوم البيانية",
     icon: Timeline,
     component: RecertificationTimeline,
+    layout: "/admin",
+  },
+  {
+    path: "/bereavement",
+    name: "Bereavement Timeline",
+    rtlName: "الرسوم البيانية",
+    icon: FavoriteBorderIcon,
+    component: BereavementTimeline,
     layout: "/admin",
   },
   {
