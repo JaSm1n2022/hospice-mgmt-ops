@@ -35,7 +35,9 @@ import {
   Edit as EditIcon,
   Check as CheckIcon,
   CheckCircle as CheckCircleIcon,
+  AddAlert,
 } from "@material-ui/icons";
+import Snackbar from "components/Snackbar/Snackbar";
 import { attemptToFetchPatient } from "store/actions/patientAction";
 import { resetFetchPatientState } from "store/actions/patientAction";
 import { attemptToUpdatePatient } from "store/actions/patientAction";
@@ -136,6 +138,26 @@ function BereavementTimelineFunction(props) {
     bereavement_month_13: false,
   });
   const [completedFilter, setCompletedFilter] = useState("both"); // "both", "yes", "no"
+  const [tc, setTC] = useState(false);
+  const [message, setMessage] = useState("");
+  const [color, setColor] = useState("success");
+
+  const showNotification = (place, color, msg) => {
+    setMessage(msg);
+    switch (place) {
+      case "tc":
+        if (!tc) {
+          setTC(true);
+          setColor(color);
+          setTimeout(function () {
+            setTC(false);
+          }, 6000);
+        }
+        break;
+      default:
+        break;
+    }
+  };
 
   useEffect(() => {
     console.log("Bereavement Timeline - loading patient data");
@@ -156,36 +178,21 @@ function BereavementTimelineFunction(props) {
   // Handle update patient response
   useEffect(() => {
     if (props.patientUpdate?.status === ACTION_STATUSES.SUCCEED) {
-      // Update local data source
-      setDataSource((prevData) =>
-        prevData.map((p) =>
-          p.id === selectedPatient?.id
-            ? {
-                ...p,
-                bereavement_month_0: editFormData.bereavement_month_0,
-                bereavement_month_1: editFormData.bereavement_month_1,
-                bereavement_month_3: editFormData.bereavement_month_3,
-                bereavement_month_6: editFormData.bereavement_month_6,
-                bereavement_month_9: editFormData.bereavement_month_9,
-                bereavement_month_12: editFormData.bereavement_month_12,
-                bereavement_month_13: editFormData.bereavement_month_13,
-              }
-            : p
-        )
-      );
-
-      alert("Bereavement data updated successfully");
+      showNotification("tc", "success", "Bereavement data updated successfully");
       handleCloseDialog();
       props.resetUpdatePatient();
 
-      // Refresh patient list to recalculate milestones
+      // Refresh patient list to reload table data with updated milestones
+      setIsPatientsCollection(true);
       if (context.userProfile?.companyId) {
         props.listPatients({
           companyId: context.userProfile?.companyId,
         });
       }
     } else if (props.patientUpdate?.status === ACTION_STATUSES.FAILED) {
-      alert(
+      showNotification(
+        "tc",
+        "danger",
         "Failed to update bereavement data: " +
           (props.patientUpdate?.error || "Unknown error")
       );
@@ -258,15 +265,13 @@ function BereavementTimelineFunction(props) {
 
     const params = {
       id: selectedPatient.id,
-      bereavement_month_0_completed: editFormData.bereavement_month_0_completed,
-      bereavement_month_1_completed: editFormData.bereavement_month_1_completed,
-      bereavement_month_3_completed: editFormData.bereavement_month_3_completed,
-      bereavement_month_6_completed: editFormData.bereavement_month_6_completed,
-      bereavement_month_9_completed: editFormData.bereavement_month_9_completed,
-      bereavement_month_12_completed:
-        editFormData.bereavement_month_12_completed,
-      bereavement_month_13_completed:
-        editFormData.bereavement_month_13_completed,
+      bereavement_month_0: editFormData.bereavement_month_0,
+      bereavement_month_1: editFormData.bereavement_month_1,
+      bereavement_month_3: editFormData.bereavement_month_3,
+      bereavement_month_6: editFormData.bereavement_month_6,
+      bereavement_month_9: editFormData.bereavement_month_9,
+      bereavement_month_12: editFormData.bereavement_month_12,
+      bereavement_month_13: editFormData.bereavement_month_13,
       companyId: context.userProfile?.companyId,
       updatedUser: {
         name: context.userProfile.name,
@@ -337,6 +342,19 @@ function BereavementTimelineFunction(props) {
 
   return (
     <>
+      {tc && (
+        <div style={{ paddingTop: 10 }}>
+          <Snackbar
+            place="tc"
+            color={color}
+            icon={AddAlert}
+            message={message}
+            open={tc}
+            closeNotification={() => setTC(false)}
+            close
+          />
+        </div>
+      )}
       {!isProcessDone ? (
         <div style={{ textAlign: "center", padding: "40px" }}>
           <CircularProgress />
@@ -359,7 +377,7 @@ function BereavementTimelineFunction(props) {
                   </p>
                 </CardHeader>
                 <CardBody>
-                  <Box mb={2}>
+                  <Box mb={2} display="flex" justifyContent="space-between" alignItems="center">
                     <FormControl
                       variant="outlined"
                       size="small"
@@ -376,6 +394,17 @@ function BereavementTimelineFunction(props) {
                         <MenuItem value="no">No</MenuItem>
                       </Select>
                     </FormControl>
+                    <Box
+                      style={{
+                        padding: "8px 16px",
+                        backgroundColor: "#f5f5f5",
+                        borderRadius: "4px",
+                        fontWeight: 600,
+                        fontSize: "0.875rem",
+                      }}
+                    >
+                      Total Patients: {getFilteredData().length}
+                    </Box>
                   </Box>
                   <TableContainer
                     component={Paper}
@@ -384,6 +413,9 @@ function BereavementTimelineFunction(props) {
                     <Table size="small">
                       <TableHead>
                         <TableRow className={classes.tableHeader}>
+                          <TableCell className={classes.headerCell}>
+                            #
+                          </TableCell>
                           <TableCell className={classes.headerCell}>
                             Action
                           </TableCell>
@@ -427,6 +459,9 @@ function BereavementTimelineFunction(props) {
                             return (
                               <TableRow key={index} hover>
                                 <TableCell className={classes.tableCell}>
+                                  {index + 1}
+                                </TableCell>
+                                <TableCell className={classes.tableCell}>
                                   <IconButton
                                     size="small"
                                     color="primary"
@@ -462,7 +497,7 @@ function BereavementTimelineFunction(props) {
                           })
                         ) : (
                           <TableRow>
-                            <TableCell colSpan={11} align="center">
+                            <TableCell colSpan={12} align="center">
                               No patients with death discharge found (within 13
                               months)
                             </TableCell>
@@ -491,12 +526,9 @@ function BereavementTimelineFunction(props) {
                 <FormControlLabel
                   control={
                     <Checkbox
-                      checked={editFormData.bereavement_month_0_completed}
+                      checked={editFormData.bereavement_month_0}
                       onChange={(e) =>
-                        handleFormChange(
-                          "bereavement_month_0_completed",
-                          e.target.checked
-                        )
+                        handleFormChange("bereavement_month_0", e.target.checked)
                       }
                       color="primary"
                     />
@@ -506,12 +538,9 @@ function BereavementTimelineFunction(props) {
                 <FormControlLabel
                   control={
                     <Checkbox
-                      checked={editFormData.bereavement_month_1_completed}
+                      checked={editFormData.bereavement_month_1}
                       onChange={(e) =>
-                        handleFormChange(
-                          "bereavement_month_1_completed",
-                          e.target.checked
-                        )
+                        handleFormChange("bereavement_month_1", e.target.checked)
                       }
                       color="primary"
                     />
@@ -521,12 +550,9 @@ function BereavementTimelineFunction(props) {
                 <FormControlLabel
                   control={
                     <Checkbox
-                      checked={editFormData.bereavement_month_3_completed}
+                      checked={editFormData.bereavement_month_3}
                       onChange={(e) =>
-                        handleFormChange(
-                          "bereavement_month_3_completed",
-                          e.target.checked
-                        )
+                        handleFormChange("bereavement_month_3", e.target.checked)
                       }
                       color="primary"
                     />
@@ -536,12 +562,9 @@ function BereavementTimelineFunction(props) {
                 <FormControlLabel
                   control={
                     <Checkbox
-                      checked={editFormData.bereavement_month_6_completed}
+                      checked={editFormData.bereavement_month_6}
                       onChange={(e) =>
-                        handleFormChange(
-                          "bereavement_month_6_completed",
-                          e.target.checked
-                        )
+                        handleFormChange("bereavement_month_6", e.target.checked)
                       }
                       color="primary"
                     />
@@ -551,12 +574,9 @@ function BereavementTimelineFunction(props) {
                 <FormControlLabel
                   control={
                     <Checkbox
-                      checked={editFormData.bereavement_month_9_completed}
+                      checked={editFormData.bereavement_month_9}
                       onChange={(e) =>
-                        handleFormChange(
-                          "bereavement_month_9_completed",
-                          e.target.checked
-                        )
+                        handleFormChange("bereavement_month_9", e.target.checked)
                       }
                       color="primary"
                     />
@@ -566,10 +586,10 @@ function BereavementTimelineFunction(props) {
                 <FormControlLabel
                   control={
                     <Checkbox
-                      checked={editFormData.bereavement_month_12_completed}
+                      checked={editFormData.bereavement_month_12}
                       onChange={(e) =>
                         handleFormChange(
-                          "bereavement_month_12_completed",
+                          "bereavement_month_12",
                           e.target.checked
                         )
                       }
@@ -581,10 +601,10 @@ function BereavementTimelineFunction(props) {
                 <FormControlLabel
                   control={
                     <Checkbox
-                      checked={editFormData.bereavement_month_13_completed}
+                      checked={editFormData.bereavement_month_13}
                       onChange={(e) =>
                         handleFormChange(
-                          "bereavement_month_13_completed",
+                          "bereavement_month_13",
                           e.target.checked
                         )
                       }
