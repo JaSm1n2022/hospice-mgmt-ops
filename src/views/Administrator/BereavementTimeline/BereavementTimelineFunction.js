@@ -30,6 +30,7 @@ import {
   MenuItem,
   Box,
   Tooltip,
+  TextField,
 } from "@material-ui/core";
 import {
   Edit as EditIcon,
@@ -136,6 +137,8 @@ function BereavementTimelineFunction(props) {
     bereavement_month_9: false,
     bereavement_month_12: false,
     bereavement_month_13: false,
+    bereavement_closed: false,
+    bereavement_remarks: "",
   });
   const [completedFilter, setCompletedFilter] = useState("both"); // "both", "yes", "no"
   const [tc, setTC] = useState(false);
@@ -244,6 +247,8 @@ function BereavementTimelineFunction(props) {
       bereavement_month_9: patient.bereavement_month_9 || false,
       bereavement_month_12: patient.bereavement_month_12 || false,
       bereavement_month_13: patient.bereavement_month_13 || false,
+      bereavement_closed: patient.bereavement_closed || false,
+      bereavement_remarks: patient.bereavement_remarks || "",
     });
     setEditDialogOpen(true);
   };
@@ -254,14 +259,49 @@ function BereavementTimelineFunction(props) {
   };
 
   const handleFormChange = (field, value) => {
-    setEditFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    setEditFormData((prev) => {
+      const updated = {
+        ...prev,
+        [field]: value,
+      };
+
+      // If bereavement_month_13 is checked, also set bereavement_closed to true
+      if (field === "bereavement_month_13" && value === true) {
+        updated.bereavement_closed = true;
+      }
+
+      // If bereavement_closed is unchecked, clear remarks
+      if (field === "bereavement_closed" && value === false) {
+        updated.bereavement_remarks = "";
+      }
+
+      // If bereavement_month_13 is unchecked and bereavement_closed was auto-set, uncheck it
+      if (field === "bereavement_month_13" && value === false && prev.bereavement_closed) {
+        // Only uncheck bereavement_closed if it was likely auto-set (no remarks)
+        if (!prev.bereavement_remarks) {
+          updated.bereavement_closed = false;
+        }
+      }
+
+      return updated;
+    });
   };
 
   const handleSaveChanges = () => {
     if (!selectedPatient) return;
+
+    // Validate: if bereavement_closed or bereavement_month_13 is checked, remarks are required
+    if (
+      (editFormData.bereavement_closed || editFormData.bereavement_month_13) &&
+      !editFormData.bereavement_remarks?.trim()
+    ) {
+      showNotification(
+        "tc",
+        "warning",
+        "Please provide remarks when closing bereavement or completing Month 13"
+      );
+      return;
+    }
 
     const params = {
       id: selectedPatient.id,
@@ -272,6 +312,8 @@ function BereavementTimelineFunction(props) {
       bereavement_month_9: editFormData.bereavement_month_9,
       bereavement_month_12: editFormData.bereavement_month_12,
       bereavement_month_13: editFormData.bereavement_month_13,
+      bereavement_closed: editFormData.bereavement_closed,
+      bereavement_remarks: editFormData.bereavement_remarks,
       companyId: context.userProfile?.companyId,
       updatedUser: {
         name: context.userProfile.name,
@@ -613,6 +655,48 @@ function BereavementTimelineFunction(props) {
                   }
                   label="Month 13: Closure/Transition Letter (13 months)"
                 />
+
+                <div style={{ marginTop: "20px", borderTop: "1px solid #e0e0e0", paddingTop: "16px" }}>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={editFormData.bereavement_closed}
+                        onChange={(e) =>
+                          handleFormChange("bereavement_closed", e.target.checked)
+                        }
+                        color="secondary"
+                      />
+                    }
+                    label="Bereavement Closed"
+                  />
+
+                  {(editFormData.bereavement_closed || editFormData.bereavement_month_13) && (
+                    <TextField
+                      fullWidth
+                      label="Remarks (Required)"
+                      value={editFormData.bereavement_remarks}
+                      onChange={(e) =>
+                        handleFormChange("bereavement_remarks", e.target.value)
+                      }
+                      margin="normal"
+                      variant="outlined"
+                      multiline
+                      rows={3}
+                      placeholder="Enter remarks for closing bereavement or completing Month 13"
+                      required
+                      error={
+                        (editFormData.bereavement_closed || editFormData.bereavement_month_13) &&
+                        !editFormData.bereavement_remarks?.trim()
+                      }
+                      helperText={
+                        (editFormData.bereavement_closed || editFormData.bereavement_month_13) &&
+                        !editFormData.bereavement_remarks?.trim()
+                          ? "Remarks are required when closing bereavement or completing Month 13"
+                          : ""
+                      }
+                    />
+                  )}
+                </div>
               </div>
             </DialogContent>
             <DialogActions>
