@@ -493,6 +493,9 @@ function BereavementTimelineFunction(props) {
                           <TableCell className={classes.headerCell}>
                             Month 13
                           </TableCell>
+                          <TableCell className={classes.headerCell}>
+                            Remarks
+                          </TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -518,9 +521,18 @@ function BereavementTimelineFunction(props) {
                                   align="center"
                                 >
                                   {patient.bereavementCompleted && (
-                                    <CheckIcon
-                                      className={classes.completedIcon}
-                                    />
+                                    <Tooltip
+                                      title={
+                                        patient.bereavement_remarks
+                                          ? `Remarks: ${patient.bereavement_remarks}`
+                                          : "Bereavement completed"
+                                      }
+                                      placement="top"
+                                    >
+                                      <CheckIcon
+                                        className={classes.completedIcon}
+                                      />
+                                    </Tooltip>
                                   )}
                                 </TableCell>
                                 <TableCell className={classes.tableCell}>
@@ -534,12 +546,15 @@ function BereavementTimelineFunction(props) {
                                     {renderMilestoneCell(milestone)}
                                   </React.Fragment>
                                 ))}
+                                <TableCell className={classes.tableCell}>
+                                  {patient.bereavement_remarks || ""}
+                                </TableCell>
                               </TableRow>
                             );
                           })
                         ) : (
                           <TableRow>
-                            <TableCell colSpan={12} align="center">
+                            <TableCell colSpan={13} align="center">
                               No patients with death discharge found (within 13
                               months)
                             </TableCell>

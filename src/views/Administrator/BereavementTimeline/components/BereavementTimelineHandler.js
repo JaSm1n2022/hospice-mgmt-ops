@@ -41,7 +41,7 @@ class BereavementTimelineHandler {
           dateOfDeath: deathDate.format("YYYY-MM-DD"),
           monthsSinceDeath: moment().diff(deathDate, "months", true),
           milestones,
-          bereavementCompleted: this.checkBereavementCompleted(milestones),
+          bereavementCompleted: this.checkBereavementCompleted(milestones, item),
         };
       })
       .sort((a, b) => {
@@ -172,9 +172,14 @@ class BereavementTimelineHandler {
   }
 
   /**
-   * Check if all bereavement milestones are completed
+   * Check if all bereavement milestones are completed or bereavement is closed
    */
-  static checkBereavementCompleted(milestones) {
+  static checkBereavementCompleted(milestones, patient) {
+    // If bereavement_closed is true, mark as completed
+    if (patient.bereavement_closed) {
+      return true;
+    }
+    // Otherwise, check if all milestones are completed
     return milestones.every((m) => m.completed);
   }
 
