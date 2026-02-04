@@ -17,8 +17,7 @@ import CustomDatePicker from "components/Date/CustomDatePicker";
 import GridContainer from "components/Grid/GridContainer";
 import GridItem from "components/Grid/GridItem";
 import moment from "moment";
-import { useState } from "react";
-import { useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { connect } from "react-redux";
 import { resetFetchDistributionState } from "store/actions/distributionAction";
 import { attemptToFetchDistribution } from "store/actions/distributionAction";
@@ -43,6 +42,7 @@ import { ACTION_STATUSES } from "utils/constants";
 import Helper from "utils/helper";
 import SupplyPlot from "../components/SupplyPlot";
 import { profileListStateSelector } from "store/selectors/profileSelector";
+import { SupaContext } from "App";
 import { el } from "date-fns/locale";
 import { PRODUCT_CATEGORIES } from "utils/constants";
 
@@ -101,7 +101,6 @@ let distributionList = [];
 let numberActive = 0;
 let numberInactive = 0;
 let patientCnaList = [];
-let userProfile = {};
 
 let transactionDashboard = {
   name: "Invoice",
@@ -184,6 +183,7 @@ DATE_TYPE_SELECTION.forEach((c) => {
 
 const dates = Helper.formatDateRangeByCriteriaV2("thisMonth");
 const OrderPlot = (props) => {
+  const context = useContext(SupaContext);
   const {
     listStocks,
     resetListStocks,
@@ -224,19 +224,14 @@ const OrderPlot = (props) => {
     isTransactionDone = false;
     isProductListDone = false;
     isStockListDone = false;
-    if (
-      props.profileState &&
-      props.profileState.data &&
-      props.profileState.data.length
-    ) {
-      userProfile = props.profileState.data[0];
-      listStocks({ companyId: userProfile.companyId });
-      listProducts({ companyId: userProfile.companyId });
-      listPatients({ companyId: userProfile.companyId });
+    if (context.userProfile?.companyId) {
+      listStocks({ companyId: context.userProfile.companyId });
+      listProducts({ companyId: context.userProfile.companyId });
+      listPatients({ companyId: context.userProfile.companyId });
       listDistributions({
         from: dates.from,
         to: dates.to,
-        companyId: userProfile.companyId,
+        companyId: context.userProfile.companyId,
       });
       isTransactionDone = true; // not needed
     }
@@ -426,6 +421,8 @@ const OrderPlot = (props) => {
 
       temp.brief.unitPrice = item.unit_price;
       temp.brief.cnt = item.count;
+      temp.brief.cartonItemQty = item.carton_item_qty || 1;
+      temp.brief.price_per_pcs = item.price_per_pcs || 0;
       temp.brief.unitDist = item.unit_distribution;
       temp.brief.threshold = 40;
       const cna = briefs && briefs.length ? briefs[0] : {};
@@ -449,8 +446,10 @@ const OrderPlot = (props) => {
       );
       temp.underpad.vendor = item.vendor;
       temp.underpad.size = item.size;
+      temp.underpad.price_per_pcs = item.price_per_pcs || 0;
       temp.underpad.unitPrice = item.unit_price;
       temp.underpad.cnt = item.count;
+      temp.underpad.cartonItemQty = item.carton_item_qty || 1;
       temp.underpad.unitDist = item.unit_distribution;
       temp.underpad.threshold = 20; //item.count;
       const cna = underpads && underpads.length ? underpads[0] : [];
@@ -474,7 +473,9 @@ const OrderPlot = (props) => {
       temp.underwear.vendor = item.vendor;
       temp.underwear.size = item.size;
       temp.underwear.unitPrice = item.unit_price;
+      temp.underwear.price_per_pcs = item.price_per_pcs || 0;
       temp.underwear.cnt = item.count;
+      temp.underwear.cartonItemQty = item.carton_item_qty || 1;
       temp.underwear.unitDist = item.unit_distribution;
       temp.underwear.threshold = 40; //item.count;
       const cna = underwears && underwears.length ? underwears[0] : [];
@@ -497,6 +498,8 @@ const OrderPlot = (props) => {
       temp.wipe.size = item.size;
       temp.wipe.unitPrice = item.unit_price;
       temp.wipe.cnt = item.count;
+      temp.wipe.price_per_pcs = item.price_per_pcs || 0;
+      temp.wipe.cartonItemQty = item.carton_item_qty || 1;
       temp.wipe.unitDist = item.unit_distribution;
       temp.wipe.threshold = 2;
       const cna = wipes && wipes.length ? wipes[0] : [];
@@ -518,6 +521,8 @@ const OrderPlot = (props) => {
       temp.glove.size = item.size;
       temp.glove.unitPrice = item.unit_price;
       temp.glove.cnt = item.count;
+      temp.glove.price_per_pcs = item.price_per_pcs || 0;
+      temp.glove.cartonItemQty = item.carton_item_qty || 1;
       temp.glove.unitDist = item.unit_distribution;
       temp.glove.threshold = 1;
       const cna = gloves && gloves.length ? gloves[0] : [];
@@ -541,6 +546,8 @@ const OrderPlot = (props) => {
       temp.ensureVanilla.size = item.size;
       temp.ensureVanilla.unitPrice = item.unit_price;
       temp.ensureVanilla.cnt = item.count;
+      temp.ensureVanilla.price_per_pcs = item.price_per_pcs || 0;
+      temp.ensureVanilla.cartonItemQty = item.carton_item_qty || 1;
       temp.ensureVanilla.unitDist = item.unit_distribution;
       temp.ensureVanilla.threshold = 7;
       const cna =
@@ -566,6 +573,8 @@ const OrderPlot = (props) => {
       temp.ensureChocolate.size = item.size;
       temp.ensureChocolate.unitPrice = item.unit_price;
       temp.ensureChocolate.cnt = item.count;
+      temp.ensureChocolate.price_per_pcs = item.price_per_pcs || 0;
+      temp.ensureChocolate.cartonItemQty = item.carton_item_qty || 1;
       temp.ensureChocolate.unitDist = item.unit_distribution;
       temp.ensureChocolate.threshold = 7;
       const cna =
@@ -591,6 +600,8 @@ const OrderPlot = (props) => {
       temp.ensureStrawberry.size = item.size;
       temp.ensureStrawberry.unitPrice = item.unit_price;
       temp.ensureStrawberry.cnt = item.count;
+      temp.ensureStrawberry.price_per_pcs = item.price_per_pcs || 0;
+      temp.ensureStrawberry.cartonItemQty = item.carton_item_qty || 1;
       temp.ensureStrawberry.unitDist = item.unit_distribution;
       temp.ensureStrawberry.threshold = 7;
       const cna =
@@ -630,6 +641,7 @@ const OrderPlot = (props) => {
           plot.currentStock = 0;
           plot.order = plot.threshold || plot.qty;
         }
+
         plot.newThreshold = plot.threshold;
         plot.uuid = uuidv4();
         newPlot.push(plot);
@@ -658,6 +670,8 @@ const OrderPlot = (props) => {
         "[estimatedSupplyGrandTotal [sel]]",
         sel[0].product,
         source,
+        sel[0],
+        sel[0].price_per_pcs,
         sel[0].currentStock
       );
       let orders = 0;
@@ -673,21 +687,23 @@ const OrderPlot = (props) => {
           source
         );
         const forOrder = parseInt(orders) - parseInt(stock);
-        let cartonCnt =
-          Math.ceil(parseFloat(forOrder / sel[0].cnt)) === 0
-            ? 1
-            : Math.ceil(parseFloat(forOrder / sel[0].cnt));
-        cartonCnt = forOrder < 0 ? 0 : cartonCnt;
+        let cartonCnt = Math.ceil(forOrder / (sel[0].cartonItemQty || 1));
+        cartonCnt = forOrder <= 0 ? 0 : cartonCnt <= 0 ? 1 : cartonCnt;
         estimatedSupplyGrandTotal[source] =
           parseFloat(estimatedSupplyGrandTotal[source]) +
-          parseInt(cartonCnt) * sel[0].unitPrice;
+          parseInt(cartonCnt * sel[0].cartonItemQty || 1) *
+            sel[0].price_per_pcs;
 
         plotSummary[source].push({
           ...sel[0],
           stock,
           total: orders,
           carton: cartonCnt,
-          amt: parseInt(cartonCnt) * sel[0].unitPrice,
+          amt:
+            cartonCnt > 0
+              ? parseInt(cartonCnt * sel[0].cartonItemQty || 1) *
+                sel[0].price_per_pcs
+              : 0,
         });
       }
     });
@@ -1104,7 +1120,7 @@ const OrderPlot = (props) => {
       listDistributions({
         from: moment(new Date(value)).utc().format("YYYY-MM-DD"),
         to: moment(new Date(dateTo)).utc().format("YYYY-MM-DD"),
-        companyId: userProfile.companyId,
+        companyId: context.userProfile?.companyId,
       });
     } else if (name === "dateTo") {
       setDateTo(value);
@@ -1112,7 +1128,7 @@ const OrderPlot = (props) => {
       listDistributions({
         from: moment(new Date(dateFrom)).utc().format("YYYY-MM-DD"),
         to: moment(new Date(value)).utc().format("YYYY-MM-DD"),
-        companyId: userProfile.companyId,
+        companyId: context.userProfile?.companyId,
       });
     }
   };

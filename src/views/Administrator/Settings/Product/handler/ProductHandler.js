@@ -35,6 +35,7 @@ class ProductHandler {
       { defaultFlex: 1, minWidth: 100, name: "qty", header: "Qty" },
       { defaultFlex: 1, minWidth: 100, name: "qty_uom", header: "Qty Uom" },
       { defaultFlex: 1, minWidth: 100, name: "count", header: "Pcs/Qty Uom" },
+      { defaultFlex: 1, minWidth: 120, name: "carton_item_qty", header: "Carton Qty Item" },
       { defaultFlex: 1, minWidth: 100, name: "size", header: "Size" },
       { defaultFlex: 1, minWidth: 100, name: "flavor", header: "Flavor/Color" },
       { defaultFlex: 1, minWidth: 120, name: "dimension", header: "Dimension" },

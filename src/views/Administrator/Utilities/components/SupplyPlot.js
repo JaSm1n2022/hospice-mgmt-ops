@@ -96,11 +96,8 @@ const SupplyPlot = (props) => {
     console.log("[source2]", newTotalOrder);
     tempSummary.total = newTotalOrder;
     const forOrder = parseInt(newTotalOrder) - parseInt(tempSummary.stock);
-    let cartonCnt =
-      Math.ceil(parseFloat(forOrder / tempSummary.cnt)) === 0
-        ? 1
-        : Math.ceil(parseFloat(forOrder / tempSummary.cnt));
-    cartonCnt = forOrder < 0 ? 0 : cartonCnt;
+    let cartonCnt = Math.ceil(forOrder / (tempSummary.cartonItemQty || 1));
+    cartonCnt = forOrder <= 0 ? 0 : cartonCnt <= 0 ? 1 : cartonCnt;
     tempSummary.carton = cartonCnt;
 
     tempSummary.amt = parseInt(cartonCnt) * tempSummary.unitPrice;
@@ -142,11 +139,8 @@ const SupplyPlot = (props) => {
     console.log("[source2]", newTotalOrder);
     tempSummary.total = newTotalOrder;
     const forOrder = parseInt(newTotalOrder) - parseInt(tempSummary.stock);
-    let cartonCnt =
-      Math.ceil(parseFloat(forOrder / tempSummary.cnt)) === 0
-        ? 1
-        : Math.ceil(parseFloat(forOrder / tempSummary.cnt));
-    cartonCnt = forOrder < 0 ? 0 : cartonCnt;
+    let cartonCnt = Math.ceil(forOrder / (tempSummary.cartonItemQty || 1));
+    cartonCnt = forOrder <= 0 ? 0 : cartonCnt <= 0 ? 1 : cartonCnt;
     tempSummary.carton = cartonCnt;
 
     tempSummary.amt = parseInt(cartonCnt) * tempSummary.unitPrice;

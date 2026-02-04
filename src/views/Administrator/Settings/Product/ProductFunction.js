@@ -302,6 +302,7 @@ const ProductFunction = (props) => {
       vendorId: payload.vendor?.id,
       manufacturerId: payload.manufacturer?.id,
       count: payload.count,
+      carton_item_qty: payload.cartonItemQty || 1,
       unit_distribution: payload.unit,
       qty_distribution: payload.unitQtyUom,
       short_description: payload.shortDescription,

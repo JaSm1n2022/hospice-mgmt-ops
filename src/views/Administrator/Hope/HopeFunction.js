@@ -389,18 +389,15 @@ function HopeFunction(props) {
                         {getFilteredData().length > 0 ? (
                           getFilteredData().map((patient, index) => {
                             const timeline = calculateTimeline(patient.soc);
-                            const isFirstSymptomMild = ![
-                              "SEVERE",
-                              "MODERATE",
-                            ].includes(patient.first_symptom?.toUpperCase());
-                            const isSecondSymptomMild = ![
-                              "SEVERE",
-                              "MODERATE",
-                            ].includes(patient.second_symptom?.toUpperCase());
-                            const isThirdSymptomMild = ![
-                              "SEVERE",
-                              "MODERATE",
-                            ].includes(patient.third_symptom?.toUpperCase());
+                            const isFirstSymptomMildOrNA = ["MILD", "N/A"].includes(
+                              patient.first_symptom?.toUpperCase()
+                            );
+                            const isSecondSymptomMildOrNA = ["MILD", "N/A"].includes(
+                              patient.second_symptom?.toUpperCase()
+                            );
+                            const isThirdSymptomMildOrNA = ["MILD", "N/A"].includes(
+                              patient.third_symptom?.toUpperCase()
+                            );
 
                             return (
                               <TableRow key={index} hover>
@@ -432,7 +429,7 @@ function HopeFunction(props) {
                                   {patient.first_symptom || "-"}
                                 </TableCell>
                                 <TableCell className={classes.tableCell}>
-                                  {isFirstSymptomMild ? "N/A" : timeline.svfDue}
+                                  {isFirstSymptomMildOrNA ? "N/A" : timeline.svfDue}
                                 </TableCell>
                                 <TableCell className={classes.tableCell}>
                                   {timeline.comprehensiveAssessment}
@@ -447,7 +444,7 @@ function HopeFunction(props) {
                                   {patient.second_symptom || "-"}
                                 </TableCell>
                                 <TableCell className={classes.tableCell}>
-                                  {isSecondSymptomMild
+                                  {isSecondSymptomMildOrNA
                                     ? "N/A"
                                     : formatDateRange(
                                         timeline.sfvDueStart,
@@ -467,7 +464,7 @@ function HopeFunction(props) {
                                   {patient.third_symptom || "-"}
                                 </TableCell>
                                 <TableCell className={classes.tableCell}>
-                                  {isThirdSymptomMild
+                                  {isThirdSymptomMildOrNA
                                     ? "N/A"
                                     : formatDateRange(
                                         timeline.sfv2DueStart,

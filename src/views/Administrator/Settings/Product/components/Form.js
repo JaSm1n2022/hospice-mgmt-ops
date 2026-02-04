@@ -174,6 +174,15 @@ function ProductForm(props) {
       disabled: props.mode && props.mode === "view" ? true : false,
     },
     {
+      id: "cartonItemQty",
+      component: "textfield",
+      placeholder: "Carton Qty Item",
+      label: "Carton Qty Item",
+      name: "cartonItemQty",
+      type: "number",
+      disabled: props.mode && props.mode === "view" ? true : false,
+    },
+    {
       id: "size",
       component: "textfield",
       placeholder: "Size",
@@ -329,6 +338,7 @@ function ProductForm(props) {
         (cat) => cat.name === generalFm.unit_distribution
       );
       generalFm.shortDescription = generalFm.short_description;
+      generalFm.cartonItemQty = generalFm.carton_item_qty || 1;
 
       setGeneralForm(generalFm);
     }
