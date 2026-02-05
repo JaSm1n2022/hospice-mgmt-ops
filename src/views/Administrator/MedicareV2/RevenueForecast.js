@@ -22,7 +22,12 @@ import {
   TableHead,
   TableRow,
   Paper,
+  IconButton,
 } from "@material-ui/core";
+import {
+  KeyboardArrowDown,
+  KeyboardArrowUp,
+} from "@material-ui/icons";
 import { connect } from "react-redux";
 import moment from "moment";
 
@@ -145,6 +150,11 @@ function RevenueForecast(props) {
   const [selectedPatient, setSelectedPatient] = useState("");
   const [chartData, setChartData] = useState({ labels: [], series: [[]] });
   const [monthlyDetails, setMonthlyDetails] = useState([]);
+  const [fullMonthForecast, setFullMonthForecast] = useState({
+    label: "",
+    patients: [],
+  });
+  const [expandedMonths, setExpandedMonths] = useState({});
   const [isProcessDone, setIsProcessDone] = useState(false);
 
   useEffect(() => {
@@ -247,11 +257,22 @@ function RevenueForecast(props) {
               label: monthLabel,
               usedCap: 0,
               patientCount: new Set(),
+              patients: {},
             };
           }
 
           monthlyData[monthKey].usedCap += monthRevenue;
           monthlyData[monthKey].patientCount.add(patient.patientCd);
+
+          if (!monthlyData[monthKey].patients[patient.patientCd]) {
+            monthlyData[monthKey].patients[patient.patientCd] = {
+              days: 0,
+              revenue: 0,
+            };
+          }
+          monthlyData[monthKey].patients[patient.patientCd].days += daysInMonth;
+          monthlyData[monthKey].patients[patient.patientCd].revenue +=
+            monthRevenue;
 
           cumulativeDays += daysInMonth;
         }
@@ -268,9 +289,89 @@ function RevenueForecast(props) {
       month: monthlyData[key].label,
       usedCap: monthlyData[key].usedCap,
       patientCount: monthlyData[key].patientCount.size,
+      patients: Object.entries(monthlyData[key].patients)
+        .map(([patientCd, data]) => ({
+          patientCd,
+          days: data.days,
+          revenue: data.revenue,
+        }))
+        .sort((a, b) => b.revenue - a.revenue),
     }));
 
     return { labels, series: [values], monthlyData, details };
+  };
+
+  // Calculate full-month forecast for the current month, broken down per patient.
+  // Active patients are assumed to stay enrolled through the end of the month.
+  const calculateFullMonthForecast = () => {
+    const currentMonthStart = moment().startOf("month");
+    const currentMonthEnd = moment().endOf("month");
+    const currentMonthLabel = moment().format("MMMM YYYY");
+
+    const patientForecasts = [];
+
+    dataSource.forEach((patient) => {
+      if (!patient.soc) return;
+
+      const socDate = moment(patient.soc);
+      const eocDate = patient.eoc ? moment(patient.eoc) : null;
+
+      // Skip patients who ended before the current month started
+      if (eocDate && eocDate.isBefore(currentMonthStart, "day")) return;
+
+      // Skip patients who haven't started yet
+      if (socDate.isAfter(currentMonthEnd, "day")) return;
+
+      const rates = MedicareHandler.getRatesForLocation(
+        patient.state,
+        patient.county,
+        patient.soc
+      );
+
+      // Accumulate days from SOC up to (but not including) the current month
+      let cumulativeDays = 0;
+      let iterMonth = socDate.clone().startOf("month");
+
+      while (iterMonth.isBefore(currentMonthStart)) {
+        const monthStart = iterMonth.clone();
+        const monthEnd = iterMonth.clone().endOf("month");
+
+        const effStart = moment.max(socDate, monthStart);
+        // For prior months use actual EOC if patient already discharged
+        const effEnd = eocDate ? moment.min(eocDate, monthEnd) : monthEnd;
+
+        const days = effEnd.diff(effStart, "days") + 1;
+        if (days > 0) cumulativeDays += days;
+
+        iterMonth.add(1, "month");
+      }
+
+      // Current month: full calendar month, capped at EOC only if already discharged
+      const effStart = moment.max(socDate, currentMonthStart);
+      const effEnd = eocDate ? moment.min(eocDate, currentMonthEnd) : currentMonthEnd;
+      const fullDays = effEnd.diff(effStart, "days") + 1;
+
+      if (fullDays > 0) {
+        const claimBefore = parseFloat(
+          MedicareHandler.calculateClaim(cumulativeDays, rates)
+        );
+        const claimAfter = parseFloat(
+          MedicareHandler.calculateClaim(cumulativeDays + fullDays, rates)
+        );
+
+        patientForecasts.push({
+          patientCd: patient.patientCd,
+          status: patient.status,
+          days: fullDays,
+          revenue: claimAfter - claimBefore,
+        });
+      }
+    });
+
+    // Sort by revenue descending
+    patientForecasts.sort((a, b) => b.revenue - a.revenue);
+
+    return { label: currentMonthLabel, patients: patientForecasts };
   };
 
   // Update chart when patient selection changes
@@ -279,6 +380,7 @@ function RevenueForecast(props) {
       const { labels, series, details } = calculateMonthlyData(selectedPatient);
       setChartData({ labels, series });
       setMonthlyDetails(details);
+      setFullMonthForecast(calculateFullMonthForecast());
     }
   }, [selectedPatient, dataSource]);
 
@@ -440,6 +542,7 @@ function RevenueForecast(props) {
                             <Table stickyHeader>
                               <TableHead>
                                 <TableRow className={classes.tableHeader}>
+                                  <TableCell style={{ width: 40 }} />
                                   <TableCell>Month</TableCell>
                                   <TableCell align="right">
                                     Used Cap Revenue
@@ -452,24 +555,71 @@ function RevenueForecast(props) {
                                 </TableRow>
                               </TableHead>
                               <TableBody>
-                                {monthlyDetails.map((detail, index) => (
-                                  <TableRow
-                                    key={index}
-                                    className={classes.tableRow}
-                                  >
-                                    <TableCell>{detail.month}</TableCell>
-                                    <TableCell align="right">
-                                      {formatCurrency(detail.usedCap)}
-                                    </TableCell>
-                                    {!selectedPatient && (
-                                      <TableCell align="right">
-                                        {detail.patientCount}
-                                      </TableCell>
-                                    )}
-                                  </TableRow>
-                                ))}
+                                {monthlyDetails.map((detail, index) => {
+                                  const isOpen = !!expandedMonths[detail.month];
+                                  return (
+                                    <React.Fragment key={index}>
+                                      {/* Month summary row */}
+                                      <TableRow
+                                        className={classes.tableRow}
+                                        style={{ cursor: "pointer" }}
+                                        onClick={() =>
+                                          setExpandedMonths((prev) => ({
+                                            ...prev,
+                                            [detail.month]: !prev[detail.month],
+                                          }))
+                                        }
+                                      >
+                                        <TableCell style={{ padding: "4px 0 4px 4px" }}>
+                                          <IconButton size="small">
+                                            {isOpen ? (
+                                              <KeyboardArrowUp />
+                                            ) : (
+                                              <KeyboardArrowDown />
+                                            )}
+                                          </IconButton>
+                                        </TableCell>
+                                        <TableCell>{detail.month}</TableCell>
+                                        <TableCell align="right">
+                                          {formatCurrency(detail.usedCap)}
+                                        </TableCell>
+                                        {!selectedPatient && (
+                                          <TableCell align="right">
+                                            {detail.patientCount}
+                                          </TableCell>
+                                        )}
+                                      </TableRow>
+                                      {/* Per-patient detail rows */}
+                                      {isOpen &&
+                                        detail.patients.map((p, pIdx) => (
+                                          <TableRow
+                                            key={pIdx}
+                                            style={{
+                                              backgroundColor: "#eef2ff",
+                                            }}
+                                          >
+                                            <TableCell />
+                                            <TableCell
+                                              style={{ paddingLeft: 32, color: "#555" }}
+                                            >
+                                              {p.patientCd}
+                                            </TableCell>
+                                            <TableCell align="right" style={{ color: "#555" }}>
+                                              {formatCurrency(p.revenue)}
+                                            </TableCell>
+                                            {!selectedPatient && (
+                                              <TableCell align="right" style={{ color: "#555" }}>
+                                                {p.days} days
+                                              </TableCell>
+                                            )}
+                                          </TableRow>
+                                        ))}
+                                    </React.Fragment>
+                                  );
+                                })}
                                 {/* Total Row */}
                                 <TableRow className={classes.totalRow}>
+                                  <TableCell />
                                   <TableCell>
                                     <strong>TOTAL</strong>
                                   </TableCell>
@@ -494,6 +644,87 @@ function RevenueForecast(props) {
                                       </strong>
                                     </TableCell>
                                   )}
+                                </TableRow>
+                              </TableBody>
+                            </Table>
+                          </TableContainer>
+                        </CardBody>
+                      </Card>
+                    </GridItem>
+                  </GridContainer>
+
+                  {/* Full Month Forecast - per patient */}
+                  <GridContainer style={{ marginTop: 20 }}>
+                    <GridItem xs={12}>
+                      <Card>
+                        <CardHeader color="success">
+                          <h4
+                            className={classes.cardTitleWhite}
+                            style={{ margin: 0 }}
+                          >
+                            {fullMonthForecast.label} Full Forecast — Census: {fullMonthForecast.patients.length}
+                          </h4>
+                        </CardHeader>
+                        <CardBody>
+                          <Typography
+                            variant="body2"
+                            style={{ marginBottom: 8, color: "#666" }}
+                          >
+                            Forecasted revenue assuming all active patients
+                            remain enrolled through the end of{" "}
+                            {fullMonthForecast.label}.
+                          </Typography>
+                          <TableContainer className={classes.tableContainer}>
+                            <Table stickyHeader>
+                              <TableHead>
+                                <TableRow className={classes.tableHeader}>
+                                  <TableCell>Patient</TableCell>
+                                  <TableCell>Status</TableCell>
+                                  <TableCell align="right">Days</TableCell>
+                                  <TableCell align="right">
+                                    Forecasted Revenue
+                                  </TableCell>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                {fullMonthForecast.patients.map((p, index) => (
+                                  <TableRow
+                                    key={index}
+                                    className={classes.tableRow}
+                                  >
+                                    <TableCell>{p.patientCd}</TableCell>
+                                    <TableCell>{p.status}</TableCell>
+                                    <TableCell align="right">
+                                      {p.days}
+                                    </TableCell>
+                                    <TableCell align="right">
+                                      {formatCurrency(p.revenue)}
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                                <TableRow className={classes.totalRow}>
+                                  <TableCell>
+                                    <strong>TOTAL</strong>
+                                  </TableCell>
+                                  <TableCell />
+                                  <TableCell align="right">
+                                    <strong>
+                                      {fullMonthForecast.patients.reduce(
+                                        (sum, p) => sum + p.days,
+                                        0
+                                      )}
+                                    </strong>
+                                  </TableCell>
+                                  <TableCell align="right">
+                                    <strong>
+                                      {formatCurrency(
+                                        fullMonthForecast.patients.reduce(
+                                          (sum, p) => sum + p.revenue,
+                                          0
+                                        )
+                                      )}
+                                    </strong>
+                                  </TableCell>
                                 </TableRow>
                               </TableBody>
                             </Table>
