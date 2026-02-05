@@ -80,6 +80,7 @@ import Medicare from "views/Administrator/MedicareCap/Available/AvailableFunctio
 import MedicareV2 from "views/Administrator/MedicareV2/MedicareV2Function";
 import Routesheet from "views/Administrator/Administrative/Routesheet/RoutesheetFunction";
 import RevenueForecast from "views/Administrator/MedicareV2/RevenueForecast";
+import ExpensesClientForecast from "views/Administrator/MedicareV2/ExpensesClientForecast";
 import HospiceIncome from "views/Administrator/HospiceIncome/HospiceIncomeFunction";
 import Hope from "views/Administrator/Hope/HopeFunction";
 import RecertificationTimeline from "views/Administrator/RecertificationTimeline/RecertificationTimelineFunction";
@@ -488,6 +489,14 @@ var dashRoutes = [
     rtlName: "الرسوم البيانية",
     icon: TrendingUpIcon,
     component: RevenueForecast,
+    layout: "/admin",
+  },
+  {
+    path: "/expenses-client-forecast",
+    name: "Expenses Client Forecast",
+    rtlName: "الرسوم البيانية",
+    icon: TrendingUpIcon,
+    component: ExpensesClientForecast,
     layout: "/admin",
   },
   {
