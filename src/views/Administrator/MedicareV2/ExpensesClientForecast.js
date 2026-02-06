@@ -17,10 +17,19 @@ import {
   TableRow,
   Paper,
   IconButton,
+  Button,
 } from "@material-ui/core";
-import { KeyboardArrowDown, KeyboardArrowUp } from "@material-ui/icons";
+import { KeyboardArrowDown, KeyboardArrowUp, GetApp } from "@material-ui/icons";
 import { connect } from "react-redux";
 import moment from "moment";
+import {
+  Document,
+  Page,
+  Text,
+  View,
+  StyleSheet,
+  PDFDownloadLink,
+} from "@react-pdf/renderer";
 
 import { ACTION_STATUSES } from "utils/constants";
 import {
@@ -119,6 +128,238 @@ const EXPENSE_CONSTANTS = {
   DME: 200,
   PHARMACY: 200,
   SUPPLIES: 300,
+};
+
+// PDF Styles
+const pdfStyles = StyleSheet.create({
+  page: {
+    padding: 30,
+    fontSize: 10,
+    fontFamily: "Helvetica",
+  },
+  header: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  subHeader: {
+    fontSize: 12,
+    marginBottom: 15,
+    textAlign: "center",
+    color: "#666",
+  },
+  note: {
+    fontSize: 9,
+    fontStyle: "italic",
+    color: "#666",
+    marginBottom: 15,
+    padding: 10,
+    backgroundColor: "#f5f5f5",
+    borderRadius: 4,
+  },
+  patientSection: {
+    marginBottom: 15,
+    borderBottom: "1 solid #ddd",
+    paddingBottom: 10,
+  },
+  patientHeader: {
+    fontSize: 11,
+    fontWeight: "bold",
+    marginBottom: 5,
+    backgroundColor: "#667eea",
+    color: "white",
+    padding: 5,
+  },
+  patientInfo: {
+    fontSize: 9,
+    marginBottom: 3,
+    paddingLeft: 10,
+  },
+  sectionTitle: {
+    fontSize: 10,
+    fontWeight: "bold",
+    marginTop: 8,
+    marginBottom: 4,
+    paddingLeft: 15,
+    color: "#667eea",
+  },
+  detailRow: {
+    flexDirection: "row",
+    paddingLeft: 20,
+    paddingVertical: 2,
+    fontSize: 9,
+  },
+  detailLabel: {
+    width: "50%",
+  },
+  detailValue: {
+    width: "20%",
+    textAlign: "right",
+  },
+  detailAmount: {
+    width: "30%",
+    textAlign: "right",
+  },
+  socDetailRow: {
+    flexDirection: "row",
+    paddingLeft: 20,
+    paddingVertical: 2,
+    fontSize: 9,
+    fontStyle: "italic",
+    color: "#e65100",
+  },
+  totalRow: {
+    flexDirection: "row",
+    marginTop: 5,
+    paddingVertical: 3,
+    paddingLeft: 10,
+    fontSize: 10,
+    fontWeight: "bold",
+    backgroundColor: "#f0f0f0",
+  },
+  grandTotalSection: {
+    marginTop: 20,
+    padding: 10,
+    backgroundColor: "#667eea",
+    color: "white",
+  },
+  grandTotalRow: {
+    flexDirection: "row",
+    fontSize: 12,
+    fontWeight: "bold",
+    paddingVertical: 2,
+  },
+  grandTotalLabel: {
+    width: "70%",
+  },
+  grandTotalValue: {
+    width: "30%",
+    textAlign: "right",
+  },
+});
+
+// PDF Document Component
+const ExpensesForecastPDF = ({ data, currentMonthLabel }) => {
+  const totalRegular = data.reduce((sum, r) => sum + r.regularExpenses, 0);
+  const totalSOC = data.reduce((sum, r) => sum + r.socExpenses, 0);
+  const grandTotal = totalRegular + totalSOC;
+
+  return (
+    <Document>
+      <Page size="A4" style={pdfStyles.page}>
+        <Text style={pdfStyles.header}>
+          {currentMonthLabel} — Expenses Client Forecast
+        </Text>
+        <Text style={pdfStyles.subHeader}>Census: {data.length} patients</Text>
+        <Text style={pdfStyles.note}>
+          Note: Forecast visits and expenses are calculated based on Days of
+          Care. For active patients, Days of Care equals the full month. For
+          discharged patients (with EOC), Days of Care is from SOC (or month
+          start) to EOC date.
+        </Text>
+
+        {data.map((patient, idx) => (
+          <View key={idx} style={pdfStyles.patientSection} wrap={false}>
+            <Text style={pdfStyles.patientHeader}>
+              {patient.patientName} ({patient.patientCd})
+            </Text>
+            <View style={pdfStyles.patientInfo}>
+              <Text>Status: {patient.status}</Text>
+              <Text>SOC: {patient.soc} | EOC: {patient.eoc}</Text>
+              <Text>Days of Care: {patient.daysInCurrentMonth}</Text>
+            </View>
+
+            {/* Regular Expenses */}
+            {patient.regularDetails.length > 0 && (
+              <View>
+                <Text style={pdfStyles.sectionTitle}>Regular Visit Details</Text>
+                {patient.regularDetails.map((detail, dIdx) => (
+                  <View key={dIdx} style={pdfStyles.detailRow}>
+                    <Text style={pdfStyles.detailLabel}>
+                      {detail.disciplineName}
+                      {detail.frequencyVisit !== "—" &&
+                        ` (${detail.frequencyVisit}x/${detail.visitType})`}
+                    </Text>
+                    <Text style={pdfStyles.detailValue}>
+                      {detail.visits !== "—" ? `${detail.visits} visits` : "—"}
+                    </Text>
+                    <Text style={pdfStyles.detailAmount}>
+                      ${parseFloat(detail.amount).toFixed(2)}
+                    </Text>
+                  </View>
+                ))}
+                <View style={pdfStyles.totalRow}>
+                  <Text style={{ width: "70%" }}>Regular Expenses Total</Text>
+                  <Text style={{ width: "30%", textAlign: "right" }}>
+                    ${parseFloat(patient.regularExpenses).toFixed(2)}
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {/* SOC Expenses */}
+            {patient.socInCurrentMonth && patient.socDetails.length > 0 && (
+              <View>
+                <Text style={pdfStyles.sectionTitle}>
+                  SOC Expenses (SOC in current month)
+                </Text>
+                {patient.socDetails.map((detail, dIdx) => (
+                  <View key={dIdx} style={pdfStyles.socDetailRow}>
+                    <Text style={pdfStyles.detailLabel}>
+                      {detail.label} (x{detail.qty})
+                    </Text>
+                    <Text style={pdfStyles.detailValue}>
+                      @ ${parseFloat(detail.rate).toFixed(2)}
+                    </Text>
+                    <Text style={pdfStyles.detailAmount}>
+                      ${parseFloat(detail.amount).toFixed(2)}
+                    </Text>
+                  </View>
+                ))}
+                <View style={pdfStyles.totalRow}>
+                  <Text style={{ width: "70%" }}>SOC Expenses Total</Text>
+                  <Text style={{ width: "30%", textAlign: "right" }}>
+                    ${parseFloat(patient.socExpenses).toFixed(2)}
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {/* Patient Total */}
+            <View style={[pdfStyles.totalRow, { backgroundColor: "#667eea", color: "white" }]}>
+              <Text style={{ width: "70%" }}>Patient Total Expenses</Text>
+              <Text style={{ width: "30%", textAlign: "right" }}>
+                ${parseFloat(patient.totalExpenses).toFixed(2)}
+              </Text>
+            </View>
+          </View>
+        ))}
+
+        {/* Grand Total Section */}
+        <View style={pdfStyles.grandTotalSection}>
+          <View style={pdfStyles.grandTotalRow}>
+            <Text style={pdfStyles.grandTotalLabel}>Total Regular Expenses</Text>
+            <Text style={pdfStyles.grandTotalValue}>
+              ${parseFloat(totalRegular).toFixed(2)}
+            </Text>
+          </View>
+          <View style={pdfStyles.grandTotalRow}>
+            <Text style={pdfStyles.grandTotalLabel}>Total SOC Expenses</Text>
+            <Text style={pdfStyles.grandTotalValue}>
+              ${parseFloat(totalSOC).toFixed(2)}
+            </Text>
+          </View>
+          <View style={[pdfStyles.grandTotalRow, { borderTop: "1 solid white", marginTop: 5, paddingTop: 5 }]}>
+            <Text style={pdfStyles.grandTotalLabel}>GRAND TOTAL</Text>
+            <Text style={pdfStyles.grandTotalValue}>
+              ${parseFloat(grandTotal).toFixed(2)}
+            </Text>
+          </View>
+        </View>
+      </Page>
+    </Document>
+  );
 };
 
 let isPatientListDone = false;
@@ -476,12 +717,45 @@ function ExpensesClientForecast(props) {
           <GridItem xs={12} sm={12} md={12}>
             <Card>
               <CardHeader color="rose">
-                <h4 className={classes.cardTitleWhite}>
-                  {currentMonthLabel} — Expenses Client Forecast
-                </h4>
-                <p className={classes.cardCategoryWhite}>
-                  Census: {forecastData.length} patients
-                </p>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <h4 className={classes.cardTitleWhite}>
+                      {currentMonthLabel} — Expenses Client Forecast
+                    </h4>
+                    <p className={classes.cardCategoryWhite}>
+                      Census: {forecastData.length} patients
+                    </p>
+                  </div>
+                  <div>
+                    {forecastData.length > 0 && (
+                      <PDFDownloadLink
+                        document={
+                          <ExpensesForecastPDF
+                            data={forecastData}
+                            currentMonthLabel={currentMonthLabel}
+                          />
+                        }
+                        fileName={`Expenses_Forecast_${currentMonthLabel.replace(" ", "_")}.pdf`}
+                        style={{ textDecoration: "none" }}
+                      >
+                        {({ loading }) => (
+                          <Button
+                            variant="contained"
+                            style={{
+                              backgroundColor: "white",
+                              color: "#e91e63",
+                              fontWeight: "bold",
+                            }}
+                            startIcon={<GetApp />}
+                            disabled={loading}
+                          >
+                            {loading ? "Generating..." : "Download PDF"}
+                          </Button>
+                        )}
+                      </PDFDownloadLink>
+                    )}
+                  </div>
+                </div>
               </CardHeader>
               <CardBody>
                 <Typography
