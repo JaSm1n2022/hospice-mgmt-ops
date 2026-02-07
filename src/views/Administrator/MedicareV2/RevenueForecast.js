@@ -23,13 +23,23 @@ import {
   TableRow,
   Paper,
   IconButton,
+  Button,
 } from "@material-ui/core";
 import {
   KeyboardArrowDown,
   KeyboardArrowUp,
+  GetApp,
 } from "@material-ui/icons";
 import { connect } from "react-redux";
 import moment from "moment";
+import {
+  Document,
+  Page,
+  Text,
+  View,
+  StyleSheet,
+  PDFDownloadLink,
+} from "@react-pdf/renderer";
 
 import MedicareHandler from "./components/MedicareHandler";
 import { ACTION_STATUSES } from "utils/constants";
@@ -138,6 +148,198 @@ const styles = {
 };
 
 const useStyles = makeStyles(styles);
+
+// PDF Styles for Revenue Forecast
+const pdfStyles = StyleSheet.create({
+  page: {
+    padding: 30,
+    fontSize: 10,
+    fontFamily: "Helvetica",
+  },
+  header: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  subHeader: {
+    fontSize: 12,
+    marginBottom: 15,
+    textAlign: "center",
+    color: "#666",
+  },
+  section: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: "bold",
+    marginBottom: 10,
+    backgroundColor: "#667eea",
+    color: "white",
+    padding: 8,
+  },
+  table: {
+    marginTop: 10,
+  },
+  tableHeader: {
+    flexDirection: "row",
+    backgroundColor: "#f0f0f0",
+    padding: 5,
+    fontSize: 9,
+    fontWeight: "bold",
+    borderBottom: "1 solid #ddd",
+  },
+  tableRow: {
+    flexDirection: "row",
+    padding: 5,
+    fontSize: 9,
+    borderBottom: "1 solid #f0f0f0",
+  },
+  monthCell: {
+    width: "25%",
+  },
+  daysCell: {
+    width: "15%",
+    textAlign: "right",
+  },
+  revenueCell: {
+    width: "20%",
+    textAlign: "right",
+  },
+  patientCell: {
+    width: "40%",
+    paddingLeft: 20,
+    fontSize: 8,
+  },
+  totalRow: {
+    flexDirection: "row",
+    padding: 5,
+    fontSize: 10,
+    fontWeight: "bold",
+    backgroundColor: "#667eea",
+    color: "white",
+    marginTop: 5,
+  },
+  fullForecastSection: {
+    marginTop: 20,
+    pageBreakBefore: "always",
+  },
+  patientRow: {
+    flexDirection: "row",
+    padding: 4,
+    fontSize: 8,
+    borderBottom: "1 solid #f0f0f0",
+  },
+});
+
+// PDF Document Component for Revenue Forecast
+const RevenueForecastPDF = ({ monthlyDetails, fullMonthForecast, selectedPatient }) => {
+  const totalRevenue = monthlyDetails.reduce((sum, m) => sum + m.usedCap, 0);
+  const totalPatients = monthlyDetails.reduce((sum, m) => sum + (m.patientCount || 0), 0);
+
+  return (
+    <Document>
+      <Page size="A4" style={pdfStyles.page}>
+        <Text style={pdfStyles.header}>Revenue Forecast Report</Text>
+        <Text style={pdfStyles.subHeader}>
+          {selectedPatient ? `Patient: ${selectedPatient}` : "All Patients"}
+        </Text>
+
+        {/* Month-by-Month Breakdown */}
+        <View style={pdfStyles.section}>
+          <Text style={pdfStyles.sectionTitle}>Month-by-Month Revenue Breakdown</Text>
+          <View style={pdfStyles.table}>
+            <View style={pdfStyles.tableHeader}>
+              <Text style={pdfStyles.monthCell}>Month</Text>
+              <Text style={pdfStyles.revenueCell}>Revenue</Text>
+              {!selectedPatient && (
+                <Text style={pdfStyles.revenueCell}>Patient Count</Text>
+              )}
+            </View>
+            {monthlyDetails.map((detail, idx) => (
+              <View key={idx} wrap={false}>
+                <View style={pdfStyles.tableRow}>
+                  <Text style={pdfStyles.monthCell}>{detail.month}</Text>
+                  <Text style={pdfStyles.revenueCell}>
+                    ${parseFloat(detail.usedCap).toFixed(2)}
+                  </Text>
+                  {!selectedPatient && (
+                    <Text style={pdfStyles.revenueCell}>{detail.patientCount}</Text>
+                  )}
+                </View>
+                {/* Per-patient details if available */}
+                {detail.patients && detail.patients.length > 0 && (
+                  <View style={{ paddingLeft: 10, backgroundColor: "#f9f9f9" }}>
+                    {detail.patients.map((patient, pIdx) => (
+                      <View key={pIdx} style={pdfStyles.patientRow}>
+                        <Text style={pdfStyles.patientCell}>{patient.patientCd}</Text>
+                        <Text style={pdfStyles.revenueCell}>
+                          ${parseFloat(patient.revenue).toFixed(2)}
+                        </Text>
+                        {!selectedPatient && (
+                          <Text style={pdfStyles.revenueCell}>{patient.days} days</Text>
+                        )}
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+            ))}
+            <View style={pdfStyles.totalRow}>
+              <Text style={pdfStyles.monthCell}>TOTAL</Text>
+              <Text style={pdfStyles.revenueCell}>
+                ${parseFloat(totalRevenue).toFixed(2)}
+              </Text>
+              {!selectedPatient && (
+                <Text style={pdfStyles.revenueCell}></Text>
+              )}
+            </View>
+          </View>
+        </View>
+
+        {/* Full Month Forecast */}
+        {fullMonthForecast && fullMonthForecast.patients && fullMonthForecast.patients.length > 0 && (
+          <View style={pdfStyles.fullForecastSection} wrap={false}>
+            <Text style={pdfStyles.sectionTitle}>
+              {fullMonthForecast.label} Full Forecast — Census: {fullMonthForecast.patients.length}
+            </Text>
+            <View style={pdfStyles.table}>
+              <View style={pdfStyles.tableHeader}>
+                <Text style={{ width: "40%" }}>Patient</Text>
+                <Text style={{ width: "15%", textAlign: "right" }}>Days</Text>
+                <Text style={{ width: "25%", textAlign: "right" }}>Revenue</Text>
+                <Text style={{ width: "20%", textAlign: "right" }}>Status</Text>
+              </View>
+              {fullMonthForecast.patients.map((patient, idx) => (
+                <View key={idx} style={pdfStyles.patientRow}>
+                  <Text style={{ width: "40%" }}>{patient.patientCd}</Text>
+                  <Text style={{ width: "15%", textAlign: "right" }}>{patient.days}</Text>
+                  <Text style={{ width: "25%", textAlign: "right" }}>
+                    ${parseFloat(patient.revenue).toFixed(2)}
+                  </Text>
+                  <Text style={{ width: "20%", textAlign: "right" }}>{patient.status || "—"}</Text>
+                </View>
+              ))}
+              <View style={pdfStyles.totalRow}>
+                <Text style={{ width: "40%" }}>TOTAL</Text>
+                <Text style={{ width: "15%", textAlign: "right" }}>
+                  {fullMonthForecast.patients.reduce((sum, p) => sum + p.days, 0)}
+                </Text>
+                <Text style={{ width: "25%", textAlign: "right" }}>
+                  ${parseFloat(
+                    fullMonthForecast.patients.reduce((sum, p) => sum + p.revenue, 0)
+                  ).toFixed(2)}
+                </Text>
+                <Text style={{ width: "20%", textAlign: "right" }}></Text>
+              </View>
+            </View>
+          </View>
+        )}
+      </Page>
+    </Document>
+  );
+};
 
 let isPatientListDone = true;
 let originalSource = [];
@@ -436,13 +638,38 @@ function RevenueForecast(props) {
         <div>
           <GridContainer>
             <GridItem xs={12} sm={12} md={12}>
+              {/* PDF Download Button */}
+              {monthlyDetails && monthlyDetails.length > 0 && (
+                <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 15 }}>
+                  <PDFDownloadLink
+                    document={
+                      <RevenueForecastPDF
+                        monthlyDetails={monthlyDetails}
+                        fullMonthForecast={fullMonthForecast}
+                        selectedPatient={selectedPatient}
+                      />
+                    }
+                    fileName={`Revenue_Forecast_${moment().format("YYYY_MM")}.pdf`}
+                    style={{ textDecoration: "none" }}
+                  >
+                    {({ loading }) => (
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        startIcon={<GetApp />}
+                        disabled={loading}
+                      >
+                        {loading ? "Generating PDF..." : "Download PDF Report"}
+                      </Button>
+                    )}
+                  </PDFDownloadLink>
+                </div>
+              )}
               <Card>
                 <CardHeader color="success">
-                  <Grid container justifyContent="space-between">
-                    <h4 className={classes.cardTitleWhite}>
-                      Revenue Forecast - Monthly Used Cap Analysis
-                    </h4>
-                  </Grid>
+                  <h4 className={classes.cardTitleWhite}>
+                    Revenue Forecast - Monthly Used Cap Analysis
+                  </h4>
                 </CardHeader>
                 <CardBody>
                   {/* Filter Section */}
