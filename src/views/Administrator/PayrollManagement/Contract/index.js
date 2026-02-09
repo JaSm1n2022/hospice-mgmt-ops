@@ -266,7 +266,7 @@ function ContractFunction(props) {
       serviceType: payload.serviceType?.value,
       serviceCd: payload.serviceType?.code,
       serviceRate: payload.serviceRate,
-      serviceRateType: payload.rateType?.name,
+      serviceRateType: payload.serviceRateType?.name,
       comments: payload.comments,
       isMileageRate: payload.isMileageRate || false,
       maxReimbursement: payload.maxReimbursement || 0,

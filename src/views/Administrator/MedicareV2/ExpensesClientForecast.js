@@ -128,6 +128,7 @@ const EXPENSE_CONSTANTS = {
   DME: 200,
   PHARMACY: 200,
   SUPPLIES: 300,
+  DEATH_PRONOUNCEMENT: 120, // Default rate if no contract found
 };
 
 // PDF Styles
@@ -569,6 +570,37 @@ function ExpensesClientForecast(props) {
         rate: EXPENSE_CONSTANTS.SUPPLIES,
         amount: EXPENSE_CONSTANTS.SUPPLIES,
       });
+
+      // Add Death Pronouncement if patient has EOC (discharged)
+      if (eocDate) {
+        // Look for nurse contract with "Death Pronouncement" service type
+        let deathPronouncementContract = contractList.find(
+          (c) =>
+            c.patientCd === patient.patientCd &&
+            c.serviceType?.toLowerCase() === "death pronouncement"
+        );
+        if (!deathPronouncementContract) {
+          deathPronouncementContract = contractList.find(
+            (c) =>
+              (!c.patientCd || c.patientCd === "" || c.patientCd === "ALL") &&
+              c.serviceType?.toLowerCase() === "death pronouncement"
+          );
+        }
+
+        const deathPronouncementRate = deathPronouncementContract
+          ? parseFloat(deathPronouncementContract.serviceRate || 0)
+          : EXPENSE_CONSTANTS.DEATH_PRONOUNCEMENT;
+
+        regularExpenses += deathPronouncementRate;
+        regularDetails.push({
+          disciplineName: "Death Pronouncement",
+          frequencyVisit: "—",
+          visitType: "—",
+          visits: "—",
+          rate: deathPronouncementRate,
+          amount: deathPronouncementRate,
+        });
+      }
 
       // --- SOC Expenses ---
       let socExpenses = 0;

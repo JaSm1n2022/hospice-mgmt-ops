@@ -132,11 +132,11 @@ const general = [
     cols: 6,
   },
   {
-    id: "rateType",
+    id: "serviceRateType",
     component: "singlecomplete",
     placeholder: "Rate Type",
     label: "Rate Type",
-    name: "rateType",
+    name: "serviceRateType",
     //disabled: props.mode && props.mode === 'view' ? true : false,
     disabled: true,
     options: RATE_TYPE,
@@ -211,6 +211,9 @@ function ContractForm(props) {
       generalFm.title = generalFm.employee.position;
 
       setIsSubmitDisabled(false);
+      general.forEach((g) => {
+        g.disabled = false;
+      });
       setGeneralForm(generalFm);
     }
   }, [props.item]);
@@ -301,13 +304,13 @@ function ContractForm(props) {
       if (item?.name) {
         const p = general.find((s) => s.name === "patient");
         p.disabled = false;
-        const rt = general.find((s) => s.name === "rateType");
+        const rt = general.find((s) => s.name === "serviceRateType");
         rt.disabled = false;
         const c = general.find((s) => s.name === "comments");
         c.disabled = false;
       }
     } else if (item.category === "rateType") {
-      src["rateType"] = item;
+      src["serviceRateType"] = item;
       if (item?.name) {
         const r = general.find((s) => s.name === "serviceRate");
         r.disabled = false;

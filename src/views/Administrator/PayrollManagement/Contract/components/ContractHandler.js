@@ -34,7 +34,7 @@ class ContractHandler {
       {
         defaultFlex: 1,
         minWidth: 120,
-        name: "  serviceRateType",
+        name: "serviceRateType",
         header: "Rate Type",
       },
 
@@ -59,6 +59,7 @@ class ContractHandler {
     ];
   }
   static mapData(items, products) {
+    console.log("[MAP DATA CONTrACT]", items);
     items.forEach((item) => {
       if (!item.patientCd) {
         if (item.employeeTitle?.toLowerCase() === "office manager") {

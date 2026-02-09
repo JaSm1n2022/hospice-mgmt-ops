@@ -81,6 +81,7 @@ import MedicareV2 from "views/Administrator/MedicareV2/MedicareV2Function";
 import Routesheet from "views/Administrator/Administrative/Routesheet/RoutesheetFunction";
 import RevenueForecast from "views/Administrator/MedicareV2/RevenueForecast";
 import ExpensesClientForecast from "views/Administrator/MedicareV2/ExpensesClientForecast";
+import EmployeePayrollForecast from "views/Administrator/MedicareV2/EmployeePayrollForecast";
 import HospiceIncome from "views/Administrator/HospiceIncome/HospiceIncomeFunction";
 import Hope from "views/Administrator/Hope/HopeFunction";
 import RecertificationTimeline from "views/Administrator/RecertificationTimeline/RecertificationTimelineFunction";
@@ -484,20 +485,37 @@ var dashRoutes = [
     layout: "/admin",
   },
   {
-    path: "/revenue-forecast",
-    name: "Revenue Forecast",
+    collapse: true,
+    name: "Forecast",
     rtlName: "الرسوم البيانية",
     icon: TrendingUpIcon,
-    component: RevenueForecast,
-    layout: "/admin",
-  },
-  {
-    path: "/expenses-client-forecast",
-    name: "Expenses Client Forecast",
-    rtlName: "الرسوم البيانية",
-    icon: TrendingUpIcon,
-    component: ExpensesClientForecast,
-    layout: "/admin",
+    state: "forecastCollapse",
+    views: [
+      {
+        path: "/revenue-forecast",
+        name: "Revenue Forecast",
+        rtlName: "الرسوم البيانية",
+        icon: MonetizationOnIcon,
+        component: RevenueForecast,
+        layout: "/admin",
+      },
+      {
+        path: "/expenses-client-forecast",
+        name: "Expenses Client Forecast",
+        rtlName: "الرسوم البيانية",
+        icon: PaymentIcon,
+        component: ExpensesClientForecast,
+        layout: "/admin",
+      },
+      {
+        path: "/employee-payroll-forecast",
+        name: "Employee Payroll Forecast",
+        rtlName: "الرسوم البيانية",
+        icon: PaymentIcon,
+        component: EmployeePayrollForecast,
+        layout: "/admin",
+      },
+    ],
   },
   {
     path: "/hospice-income",
