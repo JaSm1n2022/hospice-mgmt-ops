@@ -853,6 +853,24 @@ export const EMPLOYEE_POSITION = [
     alias: "HR",
   },
   {
+    id: "cqa",
+    category: "position",
+    name: "Clinician QA",
+    label: "Clinician QA",
+    value: "Clinician QA",
+    code: "CQA",
+    alias: "CQA",
+  },
+  {
+    id: "cqa",
+    category: "position",
+    name: "Administrative QA",
+    label: "Administrative QA",
+    value: "Administrative QA",
+    code: "AQA",
+    alias: "AQA",
+  },
+  {
     id: "officeStaff",
     category: "position",
     name: "Office Staff",
@@ -923,6 +941,15 @@ export const EMPLOYEE_POSITION = [
     value: "Community Liaison",
     code: "CL",
     alias: "Liason",
+  },
+  {
+    id: "dirCommunityLiaison",
+    category: "position",
+    name: "Director Community Liaison",
+    label: "Director Community Liaison",
+    value: "Director Community Liaison",
+    code: "DCL",
+    alias: "DCLiason",
   },
   {
     id: "medicalDirector",
@@ -1702,7 +1729,8 @@ export const MEDICARE_CAP_AMOUNT = [
 
 // Overhead Forecast Constants
 export const OVERHEAD_CONSTANTS = {
-  MEDICAL_SUPPLY_RATE: 200.0,
+  MEDICAL_SUPPLY_RATE: 250.0,
+  PHARMACY_RATE: 200.0,
   DME_DAILY_RATE: 4.75,
   PAYROLL_TAX_RATE: 0.07,
   BILLING_FEE_RATE: 0.03,

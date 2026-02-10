@@ -17,7 +17,7 @@ import {
   Paper,
   Button,
 } from "@material-ui/core";
-import { GetApp } from "@material-ui/icons";
+import { GetApp, KeyboardArrowDown, KeyboardArrowUp } from "@material-ui/icons";
 import { connect } from "react-redux";
 import moment from "moment";
 import {
@@ -205,13 +205,26 @@ const OverheadForecastPDF = ({ data, currentMonthLabel }) => {
 
         {/* Projected ADC & Revenue */}
         <View style={pdfStyles.sectionRow}>
-          <Text style={pdfStyles.label}>Projected ADC (Average Daily Census)</Text>
+          <Text style={pdfStyles.label}>
+            Projected ADC (Average Daily Census)
+          </Text>
           <Text style={pdfStyles.value}>{data.projectedADC.toFixed(2)}</Text>
         </View>
         <View style={pdfStyles.sectionRow}>
           <Text style={pdfStyles.label}>Projected Revenue</Text>
-          <Text style={pdfStyles.value}>${data.projectedRevenue.toFixed(2)}</Text>
+          <Text style={pdfStyles.value}>
+            ${data.projectedRevenue.toFixed(2)}
+          </Text>
         </View>
+        {data.revenueDetails &&
+          data.revenueDetails.map((detail, idx) => (
+            <View key={`pdf-rev-${idx}`} style={pdfStyles.detailRow}>
+              <Text style={pdfStyles.label}>
+                {detail.patientName} ({detail.days} days)
+              </Text>
+              <Text style={pdfStyles.value}>${detail.revenue.toFixed(2)}</Text>
+            </View>
+          ))}
 
         {/* Expenses Section */}
         <View style={pdfStyles.sectionRow}>
@@ -224,12 +237,32 @@ const OverheadForecastPDF = ({ data, currentMonthLabel }) => {
           <Text style={pdfStyles.label}>Salaries & Wages</Text>
           <Text style={pdfStyles.value}>${data.salariesWages.toFixed(2)}</Text>
         </View>
+        {data.salariesDetails &&
+          data.salariesDetails.map((detail, idx) => (
+            <View key={`pdf-sal-${idx}`} style={pdfStyles.detailRow}>
+              <Text style={pdfStyles.label}>
+                {detail.employeeName} - {detail.position}
+              </Text>
+              <Text style={pdfStyles.value}>${detail.amount.toFixed(2)}</Text>
+            </View>
+          ))}
 
         {/* Contracted Services */}
         <View style={pdfStyles.subsectionRow}>
           <Text style={pdfStyles.label}>Contracted Services</Text>
-          <Text style={pdfStyles.value}>${data.contractedServices.toFixed(2)}</Text>
+          <Text style={pdfStyles.value}>
+            ${data.contractedServices.toFixed(2)}
+          </Text>
         </View>
+        {data.contractedDetails &&
+          data.contractedDetails.map((detail, idx) => (
+            <View key={`pdf-con-${idx}`} style={pdfStyles.detailRow}>
+              <Text style={pdfStyles.label}>
+                {detail.employeeName} - {detail.position}
+              </Text>
+              <Text style={pdfStyles.value}>${detail.amount.toFixed(2)}</Text>
+            </View>
+          ))}
 
         {/* Payroll Taxes */}
         <View style={pdfStyles.subsectionRow}>
@@ -240,7 +273,17 @@ const OverheadForecastPDF = ({ data, currentMonthLabel }) => {
         {/* Medical Supplies */}
         <View style={pdfStyles.subsectionRow}>
           <Text style={pdfStyles.label}>Medical Supplies</Text>
-          <Text style={pdfStyles.value}>${data.medicalSupplies.toFixed(2)}</Text>
+          <Text style={pdfStyles.value}>
+            ${data.medicalSupplies.toFixed(2)}
+          </Text>
+        </View>
+
+        {/* Pharmacy */}
+        <View style={pdfStyles.subsectionRow}>
+          <Text style={pdfStyles.label}>Pharmacy</Text>
+          <Text style={pdfStyles.value}>
+            ${data.pharmacy.toFixed(2)}
+          </Text>
         </View>
 
         {/* DME */}
@@ -251,7 +294,9 @@ const OverheadForecastPDF = ({ data, currentMonthLabel }) => {
 
         {/* Transportation */}
         <View style={pdfStyles.subsectionRow}>
-          <Text style={pdfStyles.label}>Transportation ({data.socCount} SOC patients)</Text>
+          <Text style={pdfStyles.label}>
+            Transportation ({data.socCount} SOC patients)
+          </Text>
           <Text style={pdfStyles.value}>${data.transportation.toFixed(2)}</Text>
         </View>
 
@@ -262,35 +307,51 @@ const OverheadForecastPDF = ({ data, currentMonthLabel }) => {
         </View>
         <View style={pdfStyles.detailRow}>
           <Text style={pdfStyles.label}>Rent/Office</Text>
-          <Text style={pdfStyles.value}>${data.fixedExpenses.rent.toFixed(2)}</Text>
+          <Text style={pdfStyles.value}>
+            ${data.fixedExpenses.rent.toFixed(2)}
+          </Text>
         </View>
         <View style={pdfStyles.detailRow}>
           <Text style={pdfStyles.label}>Utilities</Text>
-          <Text style={pdfStyles.value}>${data.fixedExpenses.utilities.toFixed(2)}</Text>
+          <Text style={pdfStyles.value}>
+            ${data.fixedExpenses.utilities.toFixed(2)}
+          </Text>
         </View>
         <View style={pdfStyles.detailRow}>
           <Text style={pdfStyles.label}>Office Supplies</Text>
-          <Text style={pdfStyles.value}>${data.fixedExpenses.officeSupplies.toFixed(2)}</Text>
+          <Text style={pdfStyles.value}>
+            ${data.fixedExpenses.officeSupplies.toFixed(2)}
+          </Text>
         </View>
         <View style={pdfStyles.detailRow}>
           <Text style={pdfStyles.label}>Liability Insurance</Text>
-          <Text style={pdfStyles.value}>${data.fixedExpenses.liabilityInsurance.toFixed(2)}</Text>
+          <Text style={pdfStyles.value}>
+            ${data.fixedExpenses.liabilityInsurance.toFixed(2)}
+          </Text>
         </View>
         <View style={pdfStyles.detailRow}>
           <Text style={pdfStyles.label}>Software/EHR</Text>
-          <Text style={pdfStyles.value}>${data.fixedExpenses.software.toFixed(2)}</Text>
+          <Text style={pdfStyles.value}>
+            ${data.fixedExpenses.software.toFixed(2)}
+          </Text>
         </View>
         <View style={pdfStyles.detailRow}>
           <Text style={pdfStyles.label}>Business Expenses</Text>
-          <Text style={pdfStyles.value}>${data.fixedExpenses.businessExpenses.toFixed(2)}</Text>
+          <Text style={pdfStyles.value}>
+            ${data.fixedExpenses.businessExpenses.toFixed(2)}
+          </Text>
         </View>
         <View style={pdfStyles.detailRow}>
           <Text style={pdfStyles.label}>Communication Expense</Text>
-          <Text style={pdfStyles.value}>${data.fixedExpenses.communicationExpense.toFixed(2)}</Text>
+          <Text style={pdfStyles.value}>
+            ${data.fixedExpenses.communicationExpense.toFixed(2)}
+          </Text>
         </View>
         <View style={pdfStyles.detailRow}>
           <Text style={pdfStyles.label}>Other Overhead</Text>
-          <Text style={pdfStyles.value}>${data.fixedExpenses.other.toFixed(2)}</Text>
+          <Text style={pdfStyles.value}>
+            ${data.fixedExpenses.other.toFixed(2)}
+          </Text>
         </View>
 
         {/* Billing Fees */}
@@ -301,7 +362,9 @@ const OverheadForecastPDF = ({ data, currentMonthLabel }) => {
 
         {/* Marketing */}
         <View style={pdfStyles.subsectionRow}>
-          <Text style={pdfStyles.label}>Marketing ({data.socCount} SOC patients)</Text>
+          <Text style={pdfStyles.label}>
+            Marketing ({data.socCount} SOC patients)
+          </Text>
           <Text style={pdfStyles.value}>${data.marketing.toFixed(2)}</Text>
         </View>
 
@@ -342,8 +405,20 @@ function OverheadForecast(props) {
 
   const [forecastData, setForecastData] = useState(null);
   const [isProcessDone, setIsProcessDone] = useState(false);
+  const [expandedSections, setExpandedSections] = useState({
+    revenue: false,
+    salaries: false,
+    contracted: false,
+  });
 
   const currentMonthLabel = moment().format("MMMM YYYY");
+
+  const toggleSection = (section) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
+  };
 
   // Fetch patients on mount
   useEffect(() => {
@@ -463,6 +538,7 @@ function OverheadForecast(props) {
     let totalRevenue = 0;
     let socCount = 0;
     let dmeTotalCost = 0;
+    const revenueDetails = []; // Store per-patient revenue details
 
     patientList.forEach((patient) => {
       if (!patient.soc) return;
@@ -500,7 +576,9 @@ function OverheadForecast(props) {
 
       // Current month: use actual days for revenue calculation
       const effStart = moment.max(socDate, currentMonthStart);
-      const effEnd = eocDate ? moment.min(eocDate, currentMonthEnd) : currentMonthEnd;
+      const effEnd = eocDate
+        ? moment.min(eocDate, currentMonthEnd)
+        : currentMonthEnd;
       const actualDaysInMonth = effEnd.diff(effStart, "days") + 1;
 
       if (actualDaysInMonth > 0) {
@@ -509,14 +587,27 @@ function OverheadForecast(props) {
           MedicareHandler.calculateClaim(cumulativeDays, rates)
         );
         const claimAfter = parseFloat(
-          MedicareHandler.calculateClaim(cumulativeDays + actualDaysInMonth, rates)
+          MedicareHandler.calculateClaim(
+            cumulativeDays + actualDaysInMonth,
+            rates
+          )
         );
         const monthRevenue = claimAfter - claimBefore;
         totalRevenue += monthRevenue;
 
+        // Store revenue detail for this patient
+        revenueDetails.push({
+          patientCd: patient.patientCd,
+          patientName: patient.name || patient.patientCd,
+          days: actualDaysInMonth,
+          revenue: monthRevenue,
+          status: patient.status || "Active",
+        });
+
         // ADC: Count full month for patients with EOC in current month
         // If patient has EOC in current month OR is active, count as full census
-        const isEOCInCurrentMonth = eocDate &&
+        const isEOCInCurrentMonth =
+          eocDate &&
           eocDate.isSameOrAfter(currentMonthStart, "day") &&
           eocDate.isSameOrBefore(currentMonthEnd, "day");
 
@@ -541,14 +632,19 @@ function OverheadForecast(props) {
       }
     });
 
+    // Sort revenue details by revenue descending
+    revenueDetails.sort((a, b) => b.revenue - a.revenue);
+
     const projectedADC = totalDaysForADC / daysInMonth;
     const projectedRevenue = totalRevenue;
 
     // 3. Salaries & Wages
-    const salariesWages = calculateSalariesWages(activeEmployees, contractList);
+    const salariesData = calculateSalariesWages(activeEmployees, contractList);
+    const salariesWages = salariesData.total;
+    const salariesDetails = salariesData.details;
 
     // 4. Contracted Services
-    const contractedServices = calculateContractedServices(
+    const contractedData = calculateContractedServices(
       patientList,
       assignmentList,
       contractList,
@@ -557,20 +653,26 @@ function OverheadForecast(props) {
       currentMonthEnd,
       daysInMonth
     );
+    const contractedServices = contractedData.total;
+    const contractedDetails = contractedData.details;
 
     // 5. Payroll Taxes (7% of salaries)
     const payrollTaxes = salariesWages * OVERHEAD_CONSTANTS.PAYROLL_TAX_RATE;
 
     // 6. Medical Supplies
-    const medicalSupplies = projectedADC * OVERHEAD_CONSTANTS.MEDICAL_SUPPLY_RATE;
+    const medicalSupplies =
+      projectedADC * OVERHEAD_CONSTANTS.MEDICAL_SUPPLY_RATE;
 
-    // 7. DME (calculated above)
+    // 7. Pharmacy
+    const pharmacy = projectedADC * OVERHEAD_CONSTANTS.PHARMACY_RATE;
+
+    // 8. DME (calculated above)
     const dme = dmeTotalCost;
 
-    // 8. Transportation ($165 per SOC)
+    // 9. Transportation ($165 per SOC)
     const transportation = socCount * OVERHEAD_CONSTANTS.TRANSPORTATION_PER_SOC;
 
-    // 9. Fixed Expenses
+    // 10. Fixed Expenses
     const fixedExpenses = {
       rent: OVERHEAD_CONSTANTS.RENT_OFFICE,
       utilities: OVERHEAD_CONSTANTS.UTILITIES,
@@ -586,11 +688,15 @@ function OverheadForecast(props) {
       0
     );
 
-    // 10. Billing Fees (3% of revenue, minimum $500)
-    const billingFeesCalc = projectedRevenue * OVERHEAD_CONSTANTS.BILLING_FEE_RATE;
-    const billingFees = Math.max(billingFeesCalc, OVERHEAD_CONSTANTS.BILLING_FEE_MINIMUM);
+    // 11. Billing Fees (3% of revenue, minimum $500)
+    const billingFeesCalc =
+      projectedRevenue * OVERHEAD_CONSTANTS.BILLING_FEE_RATE;
+    const billingFees = Math.max(
+      billingFeesCalc,
+      OVERHEAD_CONSTANTS.BILLING_FEE_MINIMUM
+    );
 
-    // 11. Marketing ($2,500 per SOC)
+    // 12. Marketing ($2,500 per SOC)
     const marketing = socCount * OVERHEAD_CONSTANTS.MARKETING_PER_SOC;
 
     // Total Expenses
@@ -599,6 +705,7 @@ function OverheadForecast(props) {
       contractedServices +
       payrollTaxes +
       medicalSupplies +
+      pharmacy +
       dme +
       transportation +
       totalFixedExpenses +
@@ -611,10 +718,14 @@ function OverheadForecast(props) {
     return {
       projectedADC,
       projectedRevenue,
+      revenueDetails,
       salariesWages,
+      salariesDetails,
       contractedServices,
+      contractedDetails,
       payrollTaxes,
       medicalSupplies,
+      pharmacy,
       dme,
       transportation,
       fixedExpenses,
@@ -629,6 +740,7 @@ function OverheadForecast(props) {
 
   const calculateSalariesWages = (activeEmployees, contracts) => {
     let total = 0;
+    const details = [];
 
     activeEmployees.forEach((employee) => {
       const salaryContract = contracts.find(
@@ -638,11 +750,22 @@ function OverheadForecast(props) {
       );
 
       if (salaryContract) {
-        total += parseFloat(salaryContract.serviceRate || 0);
+        const amount = parseFloat(salaryContract.serviceRate || 0);
+        total += amount;
+
+        details.push({
+          employeeName:
+            employee.name || `${employee.fn || ""} ${employee.ln || ""}`.trim(),
+          position: employee.position || "N/A",
+          amount: amount,
+        });
       }
     });
 
-    return total;
+    // Sort by amount descending
+    details.sort((a, b) => b.amount - a.amount);
+
+    return { total, details };
   };
 
   const calculateContractedServices = (
@@ -655,6 +778,7 @@ function OverheadForecast(props) {
     daysInMonth
   ) => {
     let total = 0;
+    const details = [];
 
     const activeEmployeeIds = activeEmployees.map((emp) => emp.id?.toString());
 
@@ -669,13 +793,17 @@ function OverheadForecast(props) {
       );
       if (salaryContract) return;
 
-      // Get assignments for this employee
+      let employeeTotal = 0;
+
+      // 1. REGULAR VISITS
       const employeeAssignments = assignments.filter(
         (a) => a.disciplineId?.toString() === employeeId
       );
 
       employeeAssignments.forEach((assignment) => {
-        const patient = patients.find((p) => p.patientCd === assignment.patientCd);
+        const patient = patients.find(
+          (p) => p.patientCd === assignment.patientCd
+        );
         if (!patient || !patient.soc) return;
 
         const socDate = moment(patient.soc);
@@ -703,7 +831,7 @@ function OverheadForecast(props) {
         }
         if (visits < 1) visits = 1;
 
-        // Find contract rate
+        // Find contract rate for regular visits
         let contract = contracts.find(
           (c) =>
             c.employeeId?.toString() === employeeId &&
@@ -720,11 +848,97 @@ function OverheadForecast(props) {
         }
 
         const rate = contract ? parseFloat(contract.serviceRate || 0) : 0;
-        total += visits * rate;
+        const amount = visits * rate;
+        employeeTotal += amount;
       });
+
+      // 2. SOC VISITS
+      // Check if employee has SOC patients in current month
+      const socPatients = patients.filter((p) => {
+        if (!p.soc) return false;
+        const socDate = moment(p.soc);
+        return (
+          socDate.isSameOrAfter(monthStart, "day") &&
+          socDate.isSameOrBefore(monthEnd, "day")
+        );
+      });
+
+      socPatients.forEach((patient) => {
+        // Check if this employee is assigned to this patient
+        const hasAssignment = employeeAssignments.find(
+          (a) => a.patientCd === patient.patientCd
+        );
+
+        if (hasAssignment) {
+          // Find SOC contract rate
+          let socContract = contracts.find(
+            (c) =>
+              c.employeeId?.toString() === employeeId &&
+              c.patientCd === patient.patientCd &&
+              (c.serviceType?.toLowerCase()?.includes("soc") ||
+                c.serviceType?.toLowerCase()?.includes("start of care"))
+          );
+          if (!socContract) {
+            socContract = contracts.find(
+              (c) =>
+                c.employeeId?.toString() === employeeId &&
+                (!c.patientCd || c.patientCd === "" || c.patientCd === "ALL") &&
+                (c.serviceType?.toLowerCase()?.includes("soc") ||
+                  c.serviceType?.toLowerCase()?.includes("start of care"))
+            );
+          }
+
+          if (socContract) {
+            const socRate = parseFloat(socContract.serviceRate || 0);
+            employeeTotal += socRate;
+          }
+        }
+      });
+
+      // 3. IDT MEETINGS
+      // Check if employee can do IDT (based on position)
+      const canDoIDT =
+        employee.position?.toLowerCase()?.includes("nurse") ||
+        employee.position?.toLowerCase() === "case manager" ||
+        employee.position?.toLowerCase() === "social worker" ||
+        employee.position?.toLowerCase() === "msw" ||
+        employee.position?.toLowerCase() === "chaplain" ||
+        employee.position?.toLowerCase() === "director of nurse";
+
+      if (canDoIDT) {
+        // Find IDT Meeting via Person contract (not patient-specific)
+        let idtContract = contracts.find(
+          (c) =>
+            c.employeeId?.toString() === employeeId &&
+            c.serviceType?.toLowerCase()?.includes("idt meeting") &&
+            (c.serviceType?.toLowerCase()?.includes("person") ||
+              c.serviceType?.toLowerCase()?.includes("in person")) &&
+            (!c.patientCd || c.patientCd === "" || c.patientCd === "ALL")
+        );
+
+        if (idtContract) {
+          const idtRate = parseFloat(idtContract.serviceRate || 0);
+          // Fixed IDT: 4 meetings per month
+          employeeTotal += idtRate * 4;
+        }
+      }
+
+      if (employeeTotal > 0) {
+        details.push({
+          employeeName:
+            employee.name || `${employee.fn || ""} ${employee.ln || ""}`.trim(),
+          position: employee.position || "N/A",
+          amount: employeeTotal,
+        });
+      }
+
+      total += employeeTotal;
     });
 
-    return total;
+    // Sort by amount descending
+    details.sort((a, b) => b.amount - a.amount);
+
+    return { total, details };
   };
 
   if (!isProcessDone) {
@@ -742,7 +956,13 @@ function OverheadForecast(props) {
           <GridItem xs={12} sm={12} md={12}>
             <Card>
               <CardHeader color="primary">
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
                   <div>
                     <h4 className={classes.cardTitleWhite}>
                       {currentMonthLabel} — Overhead Forecast
@@ -760,7 +980,10 @@ function OverheadForecast(props) {
                             currentMonthLabel={currentMonthLabel}
                           />
                         }
-                        fileName={`Overhead_Forecast_${currentMonthLabel.replace(" ", "_")}.pdf`}
+                        fileName={`Overhead_Forecast_${currentMonthLabel.replace(
+                          " ",
+                          "_"
+                        )}.pdf`}
                         style={{ textDecoration: "none" }}
                       >
                         {({ loading }) => (
@@ -783,7 +1006,10 @@ function OverheadForecast(props) {
                 </div>
               </CardHeader>
               <CardBody>
-                <TableContainer component={Paper} className={classes.tableContainer}>
+                <TableContainer
+                  component={Paper}
+                  className={classes.tableContainer}
+                >
                   <Table>
                     <TableHead>
                       <TableRow>
@@ -791,7 +1017,11 @@ function OverheadForecast(props) {
                           Description
                         </TableCell>
                         <TableCell
-                          style={{ width: "30%", fontWeight: "bold", textAlign: "right" }}
+                          style={{
+                            width: "30%",
+                            fontWeight: "bold",
+                            textAlign: "right",
+                          }}
                         >
                           Amount
                         </TableCell>
@@ -800,19 +1030,52 @@ function OverheadForecast(props) {
                     <TableBody>
                       {/* Projected ADC */}
                       <TableRow className={classes.sectionHeader}>
-                        <TableCell>Projected ADC (Average Daily Census)</TableCell>
+                        <TableCell>
+                          Projected ADC (Average Daily Census)
+                        </TableCell>
                         <TableCell style={{ textAlign: "right" }}>
                           {forecastData.projectedADC.toFixed(2)}
                         </TableCell>
                       </TableRow>
 
                       {/* Projected Revenue */}
-                      <TableRow className={classes.sectionHeader}>
-                        <TableCell>Projected Revenue</TableCell>
+                      <TableRow
+                        className={classes.sectionHeader}
+                        style={{ cursor: "pointer" }}
+                        onClick={() => toggleSection("revenue")}
+                      >
+                        <TableCell>
+                          <div
+                            style={{ display: "flex", alignItems: "center" }}
+                          >
+                            {expandedSections.revenue ? (
+                              <KeyboardArrowUp />
+                            ) : (
+                              <KeyboardArrowDown />
+                            )}
+                            <span style={{ marginLeft: 8 }}>
+                              Projected Revenue
+                            </span>
+                          </div>
+                        </TableCell>
                         <TableCell style={{ textAlign: "right" }}>
                           ${forecastData.projectedRevenue.toFixed(2)}
                         </TableCell>
                       </TableRow>
+                      {expandedSections.revenue &&
+                        forecastData.revenueDetails.map((detail, idx) => (
+                          <TableRow
+                            key={`revenue-${idx}`}
+                            className={classes.detailRow}
+                          >
+                            <TableCell>
+                              {detail.patientName} ({detail.days} days)
+                            </TableCell>
+                            <TableCell style={{ textAlign: "right" }}>
+                              ${detail.revenue.toFixed(2)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
 
                       {/* Expenses Header */}
                       <TableRow className={classes.sectionHeader}>
@@ -820,25 +1083,91 @@ function OverheadForecast(props) {
                       </TableRow>
 
                       {/* Salaries & Wages */}
-                      <TableRow className={classes.subsectionHeader}>
-                        <TableCell>Salaries & Wages</TableCell>
+                      <TableRow
+                        className={classes.subsectionHeader}
+                        style={{ cursor: "pointer" }}
+                        onClick={() => toggleSection("salaries")}
+                      >
+                        <TableCell>
+                          <div
+                            style={{ display: "flex", alignItems: "center" }}
+                          >
+                            {expandedSections.salaries ? (
+                              <KeyboardArrowUp />
+                            ) : (
+                              <KeyboardArrowDown />
+                            )}
+                            <span style={{ marginLeft: 8 }}>
+                              Salaries & Wages
+                            </span>
+                          </div>
+                        </TableCell>
                         <TableCell style={{ textAlign: "right" }}>
                           ${forecastData.salariesWages.toFixed(2)}
                         </TableCell>
                       </TableRow>
+                      {expandedSections.salaries &&
+                        forecastData.salariesDetails.map((detail, idx) => (
+                          <TableRow
+                            key={`salary-${idx}`}
+                            className={classes.detailRow}
+                          >
+                            <TableCell style={{ paddingLeft: "70px" }}>
+                              {detail.employeeName} - {detail.position}
+                            </TableCell>
+                            <TableCell style={{ textAlign: "right" }}>
+                              ${detail.amount.toFixed(2)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
 
                       {/* Contracted Services */}
-                      <TableRow className={classes.subsectionHeader}>
-                        <TableCell>Contracted Services</TableCell>
+                      <TableRow
+                        className={classes.subsectionHeader}
+                        style={{ cursor: "pointer" }}
+                        onClick={() => toggleSection("contracted")}
+                      >
+                        <TableCell>
+                          <div
+                            style={{ display: "flex", alignItems: "center" }}
+                          >
+                            {expandedSections.contracted ? (
+                              <KeyboardArrowUp />
+                            ) : (
+                              <KeyboardArrowDown />
+                            )}
+                            <span style={{ marginLeft: 8 }}>
+                              Contracted Services
+                            </span>
+                          </div>
+                        </TableCell>
                         <TableCell style={{ textAlign: "right" }}>
                           ${forecastData.contractedServices.toFixed(2)}
                         </TableCell>
                       </TableRow>
+                      {expandedSections.contracted &&
+                        forecastData.contractedDetails.map((detail, idx) => (
+                          <TableRow
+                            key={`contracted-${idx}`}
+                            className={classes.detailRow}
+                          >
+                            <TableCell style={{ paddingLeft: "70px" }}>
+                              {detail.employeeName} - {detail.position}
+                            </TableCell>
+                            <TableCell style={{ textAlign: "right" }}>
+                              ${detail.amount.toFixed(2)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
 
                       {/* Payroll Taxes */}
                       <TableRow className={classes.subsectionHeader}>
                         <TableCell>
-                          Payroll Taxes ({(OVERHEAD_CONSTANTS.PAYROLL_TAX_RATE * 100).toFixed(0)}%)
+                          Payroll Taxes (
+                          {(OVERHEAD_CONSTANTS.PAYROLL_TAX_RATE * 100).toFixed(
+                            0
+                          )}
+                          %)
                         </TableCell>
                         <TableCell style={{ textAlign: "right" }}>
                           ${forecastData.payrollTaxes.toFixed(2)}
@@ -853,9 +1182,19 @@ function OverheadForecast(props) {
                         </TableCell>
                       </TableRow>
 
+                      {/* Pharmacy */}
+                      <TableRow className={classes.subsectionHeader}>
+                        <TableCell>Pharmacy</TableCell>
+                        <TableCell style={{ textAlign: "right" }}>
+                          ${forecastData.pharmacy.toFixed(2)}
+                        </TableCell>
+                      </TableRow>
+
                       {/* DME */}
                       <TableRow className={classes.subsectionHeader}>
-                        <TableCell>DME (Durable Medical Equipment)</TableCell>
+                        <TableCell>
+                          DME (Durable Medical Equipment) @ 4.75/daily
+                        </TableCell>
                         <TableCell style={{ textAlign: "right" }}>
                           ${forecastData.dme.toFixed(2)}
                         </TableCell>
@@ -864,7 +1203,8 @@ function OverheadForecast(props) {
                       {/* Transportation */}
                       <TableRow className={classes.subsectionHeader}>
                         <TableCell>
-                          Transportation ({forecastData.socCount} SOC patient{forecastData.socCount !== 1 ? "s" : ""})
+                          Transportation ({forecastData.socCount} SOC patient
+                          {forecastData.socCount !== 1 ? "s" : ""})
                         </TableCell>
                         <TableCell style={{ textAlign: "right" }}>
                           ${forecastData.transportation.toFixed(2)}
@@ -893,13 +1233,17 @@ function OverheadForecast(props) {
                       <TableRow className={classes.detailRow}>
                         <TableCell>Office Supplies</TableCell>
                         <TableCell style={{ textAlign: "right" }}>
-                          ${forecastData.fixedExpenses.officeSupplies.toFixed(2)}
+                          $
+                          {forecastData.fixedExpenses.officeSupplies.toFixed(2)}
                         </TableCell>
                       </TableRow>
                       <TableRow className={classes.detailRow}>
                         <TableCell>Liability Insurance</TableCell>
                         <TableCell style={{ textAlign: "right" }}>
-                          ${forecastData.fixedExpenses.liabilityInsurance.toFixed(2)}
+                          $
+                          {forecastData.fixedExpenses.liabilityInsurance.toFixed(
+                            2
+                          )}
                         </TableCell>
                       </TableRow>
                       <TableRow className={classes.detailRow}>
@@ -911,13 +1255,19 @@ function OverheadForecast(props) {
                       <TableRow className={classes.detailRow}>
                         <TableCell>Business Expenses</TableCell>
                         <TableCell style={{ textAlign: "right" }}>
-                          ${forecastData.fixedExpenses.businessExpenses.toFixed(2)}
+                          $
+                          {forecastData.fixedExpenses.businessExpenses.toFixed(
+                            2
+                          )}
                         </TableCell>
                       </TableRow>
                       <TableRow className={classes.detailRow}>
                         <TableCell>Communication Expense</TableCell>
                         <TableCell style={{ textAlign: "right" }}>
-                          ${forecastData.fixedExpenses.communicationExpense.toFixed(2)}
+                          $
+                          {forecastData.fixedExpenses.communicationExpense.toFixed(
+                            2
+                          )}
                         </TableCell>
                       </TableRow>
                       <TableRow className={classes.detailRow}>
@@ -938,7 +1288,8 @@ function OverheadForecast(props) {
                       {/* Marketing */}
                       <TableRow className={classes.subsectionHeader}>
                         <TableCell>
-                          Marketing ({forecastData.socCount} SOC patient{forecastData.socCount !== 1 ? "s" : ""})
+                          Marketing ({forecastData.socCount} SOC patient
+                          {forecastData.socCount !== 1 ? "s" : ""})
                         </TableCell>
                         <TableCell style={{ textAlign: "right" }}>
                           ${forecastData.marketing.toFixed(2)}
