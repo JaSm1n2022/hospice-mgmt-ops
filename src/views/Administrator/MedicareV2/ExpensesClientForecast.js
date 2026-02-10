@@ -47,6 +47,11 @@ import {
   resetFetchContractState,
 } from "store/actions/contractAction";
 import { contractListStateSelector } from "store/selectors/contractSelector";
+import {
+  attemptToFetchEmployee,
+  resetFetchEmployeeState,
+} from "store/actions/employeeAction";
+import { employeeListStateSelector } from "store/selectors/employeeSelector";
 import { SupaContext } from "App";
 
 const styles = {
@@ -366,9 +371,11 @@ const ExpensesForecastPDF = ({ data, currentMonthLabel }) => {
 let isPatientListDone = false;
 let isAssignmentListDone = false;
 let isContractListDone = false;
+let isEmployeeListDone = false;
 let patientList = [];
 let assignmentList = [];
 let contractList = [];
+let employeeList = [];
 
 function ExpensesClientForecast(props) {
   const context = useContext(SupaContext);
@@ -377,6 +384,7 @@ function ExpensesClientForecast(props) {
   const [isPatientCollection, setIsPatientCollection] = useState(true);
   const [isAssignmentCollection, setIsAssignmentCollection] = useState(true);
   const [isContractCollection, setIsContractCollection] = useState(true);
+  const [isEmployeeCollection, setIsEmployeeCollection] = useState(true);
 
   const [forecastData, setForecastData] = useState([]);
   const [expandedRows, setExpandedRows] = useState({});
@@ -387,6 +395,7 @@ function ExpensesClientForecast(props) {
     isPatientListDone = false;
     isAssignmentListDone = false;
     isContractListDone = false;
+    isEmployeeListDone = false;
     if (context.userProfile?.companyId) {
       props.listPatients({
         companyId: context.userProfile.companyId,
@@ -396,6 +405,7 @@ function ExpensesClientForecast(props) {
       props.resetListPatients();
       props.resetListAssignments();
       props.resetListContracts();
+      props.resetListEmployees();
     };
   }, []);
 
@@ -435,7 +445,7 @@ function ExpensesClientForecast(props) {
     }
   }
 
-  // Gate: contracts arrive → calculate forecast
+  // Gate: contracts arrive → fetch employees
   if (
     isContractCollection &&
     props.contracts?.status === ACTION_STATUSES.SUCCEED
@@ -444,16 +454,34 @@ function ExpensesClientForecast(props) {
     isContractListDone = true;
     props.resetListContracts();
     setIsContractCollection(false);
+
+    // Trigger employee fetch
+    if (context.userProfile?.companyId) {
+      props.listEmployees({
+        companyId: context.userProfile.companyId,
+      });
+    }
   }
 
-  // Calculate once all three datasets are ready
+  // Gate: employees arrive → calculate forecast
+  if (
+    isEmployeeCollection &&
+    props.employees?.status === ACTION_STATUSES.SUCCEED
+  ) {
+    employeeList = props.employees.data || [];
+    isEmployeeListDone = true;
+    props.resetListEmployees();
+    setIsEmployeeCollection(false);
+  }
+
+  // Calculate once all four datasets are ready
   useEffect(() => {
-    if (isPatientListDone && isAssignmentListDone && isContractListDone) {
+    if (isPatientListDone && isAssignmentListDone && isContractListDone && isEmployeeListDone) {
       const result = calculateExpensesForecast();
       setForecastData(result);
       setIsProcessDone(true);
     }
-  }, [isPatientCollection, isAssignmentCollection, isContractCollection]);
+  }, [isPatientCollection, isAssignmentCollection, isContractCollection, isEmployeeCollection]);
 
   const calculateExpensesForecast = () => {
     const today = moment();
@@ -482,9 +510,18 @@ function ExpensesClientForecast(props) {
       if (daysInCurrentMonth <= 0) return;
 
       // --- Regular Visit Expenses ---
-      const patientAssignments = assignmentList.filter(
-        (a) => a.patientCd === patient.patientCd
-      );
+      // Filter assignments for this patient AND only include active employees
+      const patientAssignments = assignmentList.filter((a) => {
+        if (a.patientCd !== patient.patientCd) return false;
+
+        // Check if the employee assigned to this assignment is active
+        const employee = employeeList.find(
+          (emp) => emp.id?.toString() === a.disciplineId?.toString()
+        );
+
+        // Only include if employee exists and is active (or status is not set, for backward compatibility)
+        return employee && (!employee.status || employee.status.toLowerCase() === "active");
+      });
 
       let regularExpenses = 0;
       const regularDetails = [];
@@ -1004,6 +1041,7 @@ const mapStateToProps = (store) => ({
   patients: patientListStateSelector(store),
   assignmentState: assignmentListStateSelector(store),
   contracts: contractListStateSelector(store),
+  employees: employeeListStateSelector(store),
 });
 
 const mapDispatchToProps = (dispatch) => ({
@@ -1013,6 +1051,8 @@ const mapDispatchToProps = (dispatch) => ({
   resetListAssignments: () => dispatch(resetFetchAssignmentState()),
   listContracts: (data) => dispatch(attemptToFetchContract(data)),
   resetListContracts: () => dispatch(resetFetchContractState()),
+  listEmployees: (data) => dispatch(attemptToFetchEmployee(data)),
+  resetListEmployees: () => dispatch(resetFetchEmployeeState()),
 });
 
 export default connect(

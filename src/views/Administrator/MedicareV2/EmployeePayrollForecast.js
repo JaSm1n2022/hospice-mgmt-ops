@@ -468,6 +468,11 @@ function EmployeePayrollForecast(props) {
     const results = [];
 
     employeeList.forEach((employee) => {
+      // Skip inactive employees
+      if (employee.status && employee.status.toLowerCase() === "inactive") {
+        return;
+      }
+
       const employeeName = employee.name || `${employee.fn || ""} ${employee.ln || ""}`.trim() || "Unknown";
       const employeeId = employee.id; // Use id for matching with assignments/contracts
       const employeePosition = employee.position || "";

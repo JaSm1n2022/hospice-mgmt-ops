@@ -14,6 +14,7 @@ import CardBody from "components/Card/CardBody";
 import { useTheme } from "@material-ui/core";
 import { EMPLOYEE_TYPE } from "utils/constants";
 import { EMPLOYEE_POSITION } from "utils/constants";
+import { EMPLOYEE_STATUS } from "utils/constants";
 import CardHeader from "components/Card/CardHeader";
 import ModalFooter from "components/Modal/ModalFooter/ModalFooter";
 import { Clear } from "@material-ui/icons";
@@ -138,7 +139,17 @@ const general = [
     cols: 4,
     options: EMPLOYEE_POSITION,
   },
-
+  {
+    id: "status",
+    component: "singlecomplete",
+    placeholder: "Status",
+    label: "Status",
+    name: "status",
+    //disabled: props.mode && props.mode === 'view' ? true : false,
+    value: DEFAULT_ITEM,
+    cols: 4,
+    options: EMPLOYEE_STATUS,
+  },
   {
     id: "email",
     component: "textfield",
@@ -198,6 +209,9 @@ function EmployeeForm(props) {
       );
       generalFm.position = EMPLOYEE_POSITION.find(
         (c) => c.value === generalFm.position
+      );
+      generalFm.status = EMPLOYEE_STATUS.find(
+        (c) => c.value === generalFm.status
       );
       setIsSubmitDisabled(false);
       setGeneralForm(generalFm);
@@ -288,6 +302,8 @@ function EmployeeForm(props) {
       const posObj = tempList.find((c) => c.name === "position");
       posObj.isError = false;
       posObj.errorMsg = "";
+    } else if (item.category === "status") {
+      src["status"] = item;
     }
 
     setGeneralForm(src);
@@ -323,6 +339,7 @@ function EmployeeForm(props) {
       src &&
       src.name &&
       src.name !== "employeeType" &&
+      src.name !== "status" &&
       JSON.stringify(generalForm) !== "{}" &&
       generalForm.employeeType &&
       !generalForm.employeeType.name
@@ -332,6 +349,7 @@ function EmployeeForm(props) {
       src &&
       src.name &&
       src.name !== "employeeType" &&
+      src.name !== "status" &&
       !generalForm.employeeType
     ) {
       return true;

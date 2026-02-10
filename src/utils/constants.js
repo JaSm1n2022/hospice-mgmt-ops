@@ -943,6 +943,24 @@ export const EMPLOYEE_POSITION = [
     alias: "NP",
   },
 ];
+
+export const EMPLOYEE_STATUS = [
+  {
+    id: "active",
+    category: "status",
+    name: "Active",
+    label: "Active",
+    value: "Active",
+  },
+  {
+    id: "inactive",
+    category: "status",
+    name: "Inactive",
+    label: "Inactive",
+    value: "Inactive",
+  },
+];
+
 export const STATUS_ACTIVE_OPTIONS = ["Active", "Inactive"];
 
 export const CARE_TYPE = ["Assisted Living", "Home", "Group Home"];

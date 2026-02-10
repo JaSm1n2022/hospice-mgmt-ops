@@ -22,6 +22,7 @@ import HeaderModal from "components/Modal/HeaderModal";
 import { useTheme } from "@material-ui/core";
 import { EMPLOYEE_TYPE } from "utils/constants";
 import { EMPLOYEE_POSITION } from "utils/constants";
+import { EMPLOYEE_STATUS } from "utils/constants";
 
 let categoryList = [];
 let uoms = [];
@@ -141,7 +142,17 @@ const general = [
     cols: 4,
     options: EMPLOYEE_POSITION,
   },
-
+  {
+    id: "status",
+    component: "singlecomplete",
+    placeholder: "Status",
+    label: "Status",
+    name: "status",
+    //disabled: props.mode && props.mode === 'view' ? true : false,
+    value: DEFAULT_ITEM,
+    cols: 4,
+    options: EMPLOYEE_STATUS,
+  },
   {
     id: "email",
     component: "textfield",
@@ -201,6 +212,9 @@ function EmployeeForm(props) {
       );
       generalFm.position = EMPLOYEE_POSITION.find(
         (c) => c.value === generalFm.position
+      );
+      generalFm.status = EMPLOYEE_STATUS.find(
+        (c) => c.value === generalFm.status
       );
       setIsSubmitDisabled(false);
       setGeneralForm(generalFm);
@@ -270,6 +284,8 @@ function EmployeeForm(props) {
       const posObj = tempList.find((c) => c.name === "position");
       posObj.isError = false;
       posObj.errorMsg = "";
+    } else if (item.category === "status") {
+      src["status"] = item;
     }
 
     setGeneralForm(src);

@@ -22,7 +22,12 @@ class EmployeeHandler {
         name: "position",
         header: "Position",
       },
-
+      {
+        defaultFlex: 1,
+        minWidth: 150,
+        name: "status",
+        header: "Status",
+      },
       {
         defaultFlex: 1,
         minWidth: 200,
