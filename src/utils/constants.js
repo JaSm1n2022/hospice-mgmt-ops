@@ -1699,6 +1699,22 @@ export const MEDICARE_CAP_AMOUNT = [
   { from: "2024-10-01", to: "2025-09-30", amount: 34465.34 },
   { from: "2025-10-01", to: "2026-09-30", amount: 35361.44 },
 ];
+
+// Overhead Forecast Constants
+export const OVERHEAD_CONSTANTS = {
+  MEDICAL_SUPPLY_RATE: 200.0,
+  DME_DAILY_RATE: 4.75,
+  PAYROLL_TAX_RATE: 0.07,
+  BILLING_FEE_RATE: 0.03,
+  BILLING_FEE_MINIMUM: 500.0,
+  MARKETING_PER_SOC: 2500.0,
+  RENT_OFFICE: 1200.0,
+  UTILITIES: 100.0,
+  OFFICE_SUPPLIES: 300.0,
+  INSURANCE: 250.0,
+  SOFTWARE_EHR: 100.0,
+  OTHER_OVERHEAD: 500.0,
+};
 export const DISCHARGE_REASON = [
   {
     name: "Death Discharge",

@@ -82,6 +82,7 @@ import Routesheet from "views/Administrator/Administrative/Routesheet/Routesheet
 import RevenueForecast from "views/Administrator/MedicareV2/RevenueForecast";
 import ExpensesClientForecast from "views/Administrator/MedicareV2/ExpensesClientForecast";
 import EmployeePayrollForecast from "views/Administrator/MedicareV2/EmployeePayrollForecast";
+import OverheadForecast from "views/Administrator/MedicareV2/OverheadForecast";
 import HospiceIncome from "views/Administrator/HospiceIncome/HospiceIncomeFunction";
 import Hope from "views/Administrator/Hope/HopeFunction";
 import RecertificationTimeline from "views/Administrator/RecertificationTimeline/RecertificationTimelineFunction";
@@ -513,6 +514,14 @@ var dashRoutes = [
         rtlName: "الرسوم البيانية",
         icon: PaymentIcon,
         component: EmployeePayrollForecast,
+        layout: "/admin",
+      },
+      {
+        path: "/overhead-forecast",
+        name: "Overhead Forecast",
+        rtlName: "الرسوم البيانية",
+        icon: TrendingUpIcon,
+        component: OverheadForecast,
         layout: "/admin",
       },
     ],
