@@ -249,6 +249,12 @@ const OverheadForecastPDF = ({ data, currentMonthLabel }) => {
           <Text style={pdfStyles.value}>${data.dme.toFixed(2)}</Text>
         </View>
 
+        {/* Transportation */}
+        <View style={pdfStyles.subsectionRow}>
+          <Text style={pdfStyles.label}>Transportation ({data.socCount} SOC patients)</Text>
+          <Text style={pdfStyles.value}>${data.transportation.toFixed(2)}</Text>
+        </View>
+
         {/* Fixed Expenses */}
         <View style={pdfStyles.subsectionRow}>
           <Text style={pdfStyles.label}>Fixed Expenses</Text>
@@ -267,12 +273,20 @@ const OverheadForecastPDF = ({ data, currentMonthLabel }) => {
           <Text style={pdfStyles.value}>${data.fixedExpenses.officeSupplies.toFixed(2)}</Text>
         </View>
         <View style={pdfStyles.detailRow}>
-          <Text style={pdfStyles.label}>Insurance</Text>
-          <Text style={pdfStyles.value}>${data.fixedExpenses.insurance.toFixed(2)}</Text>
+          <Text style={pdfStyles.label}>Liability Insurance</Text>
+          <Text style={pdfStyles.value}>${data.fixedExpenses.liabilityInsurance.toFixed(2)}</Text>
         </View>
         <View style={pdfStyles.detailRow}>
           <Text style={pdfStyles.label}>Software/EHR</Text>
           <Text style={pdfStyles.value}>${data.fixedExpenses.software.toFixed(2)}</Text>
+        </View>
+        <View style={pdfStyles.detailRow}>
+          <Text style={pdfStyles.label}>Business Expenses</Text>
+          <Text style={pdfStyles.value}>${data.fixedExpenses.businessExpenses.toFixed(2)}</Text>
+        </View>
+        <View style={pdfStyles.detailRow}>
+          <Text style={pdfStyles.label}>Communication Expense</Text>
+          <Text style={pdfStyles.value}>${data.fixedExpenses.communicationExpense.toFixed(2)}</Text>
         </View>
         <View style={pdfStyles.detailRow}>
           <Text style={pdfStyles.label}>Other Overhead</Text>
@@ -553,13 +567,18 @@ function OverheadForecast(props) {
     // 7. DME (calculated above)
     const dme = dmeTotalCost;
 
-    // 8. Fixed Expenses
+    // 8. Transportation ($165 per SOC)
+    const transportation = socCount * OVERHEAD_CONSTANTS.TRANSPORTATION_PER_SOC;
+
+    // 9. Fixed Expenses
     const fixedExpenses = {
       rent: OVERHEAD_CONSTANTS.RENT_OFFICE,
       utilities: OVERHEAD_CONSTANTS.UTILITIES,
       officeSupplies: OVERHEAD_CONSTANTS.OFFICE_SUPPLIES,
-      insurance: OVERHEAD_CONSTANTS.INSURANCE,
+      liabilityInsurance: OVERHEAD_CONSTANTS.LIABILITY_INSURANCE,
       software: OVERHEAD_CONSTANTS.SOFTWARE_EHR,
+      businessExpenses: OVERHEAD_CONSTANTS.BUSINESS_EXPENSES,
+      communicationExpense: OVERHEAD_CONSTANTS.COMMUNICATION_EXPENSE,
       other: OVERHEAD_CONSTANTS.OTHER_OVERHEAD,
     };
     const totalFixedExpenses = Object.values(fixedExpenses).reduce(
@@ -567,11 +586,11 @@ function OverheadForecast(props) {
       0
     );
 
-    // 9. Billing Fees (3% of revenue, minimum $500)
+    // 10. Billing Fees (3% of revenue, minimum $500)
     const billingFeesCalc = projectedRevenue * OVERHEAD_CONSTANTS.BILLING_FEE_RATE;
     const billingFees = Math.max(billingFeesCalc, OVERHEAD_CONSTANTS.BILLING_FEE_MINIMUM);
 
-    // 10. Marketing ($2,500 per SOC)
+    // 11. Marketing ($2,500 per SOC)
     const marketing = socCount * OVERHEAD_CONSTANTS.MARKETING_PER_SOC;
 
     // Total Expenses
@@ -581,6 +600,7 @@ function OverheadForecast(props) {
       payrollTaxes +
       medicalSupplies +
       dme +
+      transportation +
       totalFixedExpenses +
       billingFees +
       marketing;
@@ -596,6 +616,7 @@ function OverheadForecast(props) {
       payrollTaxes,
       medicalSupplies,
       dme,
+      transportation,
       fixedExpenses,
       totalFixedExpenses,
       billingFees,
@@ -840,6 +861,16 @@ function OverheadForecast(props) {
                         </TableCell>
                       </TableRow>
 
+                      {/* Transportation */}
+                      <TableRow className={classes.subsectionHeader}>
+                        <TableCell>
+                          Transportation ({forecastData.socCount} SOC patient{forecastData.socCount !== 1 ? "s" : ""})
+                        </TableCell>
+                        <TableCell style={{ textAlign: "right" }}>
+                          ${forecastData.transportation.toFixed(2)}
+                        </TableCell>
+                      </TableRow>
+
                       {/* Fixed Expenses */}
                       <TableRow className={classes.subsectionHeader}>
                         <TableCell>Fixed Expenses</TableCell>
@@ -866,15 +897,27 @@ function OverheadForecast(props) {
                         </TableCell>
                       </TableRow>
                       <TableRow className={classes.detailRow}>
-                        <TableCell>Insurance</TableCell>
+                        <TableCell>Liability Insurance</TableCell>
                         <TableCell style={{ textAlign: "right" }}>
-                          ${forecastData.fixedExpenses.insurance.toFixed(2)}
+                          ${forecastData.fixedExpenses.liabilityInsurance.toFixed(2)}
                         </TableCell>
                       </TableRow>
                       <TableRow className={classes.detailRow}>
                         <TableCell>Software/EHR</TableCell>
                         <TableCell style={{ textAlign: "right" }}>
                           ${forecastData.fixedExpenses.software.toFixed(2)}
+                        </TableCell>
+                      </TableRow>
+                      <TableRow className={classes.detailRow}>
+                        <TableCell>Business Expenses</TableCell>
+                        <TableCell style={{ textAlign: "right" }}>
+                          ${forecastData.fixedExpenses.businessExpenses.toFixed(2)}
+                        </TableCell>
+                      </TableRow>
+                      <TableRow className={classes.detailRow}>
+                        <TableCell>Communication Expense</TableCell>
+                        <TableCell style={{ textAlign: "right" }}>
+                          ${forecastData.fixedExpenses.communicationExpense.toFixed(2)}
                         </TableCell>
                       </TableRow>
                       <TableRow className={classes.detailRow}>
