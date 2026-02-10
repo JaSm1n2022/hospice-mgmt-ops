@@ -139,23 +139,39 @@ function App({
       );
     }
 
-    if (userProfile?.companyId && employeeProfile?.id) {
-      return userProfile.role === "admin" ? (
-        <Switch>
-          <Route path="/admin" component={Admin} />
-          <Redirect from="/" to="/admin/dashboard" />
-        </Switch>
-      ) : userProfile.role === "clinician" ? (
-        <Switch>
-          <Route path="/discipline" component={Discipline} />
-          <Redirect from="/" to="/discipline/dashboard" />
-        </Switch>
-      ) : (
-        <Switch>
-          <Route path="/role" component={Role} />
-          <Redirect from="/" to="/role" />
-        </Switch>
-      );
+    // For admin: only require userProfile, employee profile is optional
+    // For clinician: require both userProfile and employeeProfile
+    if (userProfile?.companyId) {
+      if (userProfile.role === "admin") {
+        return (
+          <Switch>
+            <Route path="/admin" component={Admin} />
+            <Redirect from="/" to="/admin/dashboard" />
+          </Switch>
+        );
+      } else if (userProfile.role === "clinician" && employeeProfile?.id) {
+        return (
+          <Switch>
+            <Route path="/discipline" component={Discipline} />
+            <Redirect from="/" to="/discipline/dashboard" />
+          </Switch>
+        );
+      } else if (userProfile.role === "clinician" && !employeeProfile?.id) {
+        // Clinician needs employee profile, keep waiting
+        return (
+          <Switch>
+            <Route path="/auth" component={AuthLayout} />
+            <Redirect from="/" to="/auth" />
+          </Switch>
+        );
+      } else {
+        return (
+          <Switch>
+            <Route path="/role" component={Role} />
+            <Redirect from="/" to="/role" />
+          </Switch>
+        );
+      }
     }
 
     return (
