@@ -16,8 +16,14 @@ import {
   TableRow,
   Paper,
   Button,
+  Tooltip,
 } from "@material-ui/core";
-import { GetApp, KeyboardArrowDown, KeyboardArrowUp } from "@material-ui/icons";
+import {
+  GetApp,
+  KeyboardArrowDown,
+  KeyboardArrowUp,
+  Info,
+} from "@material-ui/icons";
 import { connect } from "react-redux";
 import moment from "moment";
 import {
@@ -266,7 +272,7 @@ const OverheadForecastPDF = ({ data, currentMonthLabel }) => {
 
         {/* Payroll Taxes */}
         <View style={pdfStyles.subsectionRow}>
-          <Text style={pdfStyles.label}>Payroll Taxes (7%)</Text>
+          <Text style={pdfStyles.label}>Payroll Taxes (7.6%)</Text>
           <Text style={pdfStyles.value}>${data.payrollTaxes.toFixed(2)}</Text>
         </View>
 
@@ -281,15 +287,53 @@ const OverheadForecastPDF = ({ data, currentMonthLabel }) => {
         {/* Pharmacy */}
         <View style={pdfStyles.subsectionRow}>
           <Text style={pdfStyles.label}>Pharmacy</Text>
-          <Text style={pdfStyles.value}>
-            ${data.pharmacy.toFixed(2)}
-          </Text>
+          <Text style={pdfStyles.value}>${data.pharmacy.toFixed(2)}</Text>
         </View>
 
         {/* DME */}
         <View style={pdfStyles.subsectionRow}>
           <Text style={pdfStyles.label}>DME (Durable Medical Equipment)</Text>
           <Text style={pdfStyles.value}>${data.dme.toFixed(2)}</Text>
+        </View>
+
+        {/* On-Call Phone */}
+        <View style={pdfStyles.subsectionRow}>
+          <Text style={pdfStyles.label}>
+            On-Call Phone ($3/hr weekdays & $4/hr weekend)
+          </Text>
+          <Text style={pdfStyles.value}>${data.onCallPhone.toFixed(2)}</Text>
+        </View>
+        <View style={pdfStyles.detailRow}>
+          <Text style={pdfStyles.label}>
+            Weekdays: {data.onCallWeekdayCount} days ÷ 5 × 75 hrs ={" "}
+            {data.onCallWeekdayHours} hrs × $3/hr
+          </Text>
+          <Text style={pdfStyles.value}>
+            ${data.onCallWeekdayCost.toFixed(2)}
+          </Text>
+        </View>
+        <View style={pdfStyles.detailRow}>
+          <Text style={pdfStyles.label}>
+            Weekends: {data.onCallWeekendCount} days ÷ 2 × 48 hrs ={" "}
+            {data.onCallWeekendHours} hrs × $4/hr
+          </Text>
+          <Text style={pdfStyles.value}>
+            ${data.onCallWeekendCost.toFixed(2)}
+          </Text>
+        </View>
+        <View style={pdfStyles.detailRow}>
+          <Text style={pdfStyles.label}>
+            Total Hours: {data.onCallTotalHours}
+          </Text>
+          <Text style={pdfStyles.value}></Text>
+        </View>
+
+        {/* Potential Admission */}
+        <View style={pdfStyles.subsectionRow}>
+          <Text style={pdfStyles.label}>Potential Admission</Text>
+          <Text style={pdfStyles.value}>
+            ${data.potentialAdmission.toFixed(2)}
+          </Text>
         </View>
 
         {/* Transportation */}
@@ -356,7 +400,9 @@ const OverheadForecastPDF = ({ data, currentMonthLabel }) => {
 
         {/* Billing Fees */}
         <View style={pdfStyles.subsectionRow}>
-          <Text style={pdfStyles.label}>Billing Fees</Text>
+          <Text style={pdfStyles.label}>
+            Billing Fees (Hospice MD @ 3% of revenue)
+          </Text>
           <Text style={pdfStyles.value}>${data.billingFees.toFixed(2)}</Text>
         </View>
 
@@ -656,7 +702,7 @@ function OverheadForecast(props) {
     const contractedServices = contractedData.total;
     const contractedDetails = contractedData.details;
 
-    // 5. Payroll Taxes (7% of salaries)
+    // 5. Payroll Taxes (7.6% of salaries)
     const payrollTaxes = salariesWages * OVERHEAD_CONSTANTS.PAYROLL_TAX_RATE;
 
     // 6. Medical Supplies
@@ -669,10 +715,42 @@ function OverheadForecast(props) {
     // 8. DME (calculated above)
     const dme = dmeTotalCost;
 
-    // 9. Transportation ($165 per SOC)
+    // 9. On-Call Phone
+    // Count weekdays and weekend days in current month
+    let weekdayCount = 0;
+    let weekendCount = 0;
+    const daysIterator = currentMonthStart.clone();
+    while (daysIterator.isSameOrBefore(currentMonthEnd, "day")) {
+      const dayOfWeek = daysIterator.day(); // 0=Sunday, 6=Saturday
+      if (dayOfWeek === 0 || dayOfWeek === 6) {
+        weekendCount++;
+      } else {
+        weekdayCount++;
+      }
+      daysIterator.add(1, "day");
+    }
+    // Weekdays: divide by 5 (days in a week) then multiply by 75 hrs/week
+    const numberOfWeeks = weekdayCount / 5;
+    const onCallWeekdayHours =
+      numberOfWeeks * OVERHEAD_CONSTANTS.ONCALL_WEEKDAY_HOURS;
+    const onCallWeekdayCost =
+      onCallWeekdayHours * OVERHEAD_CONSTANTS.ONCALL_WEEKDAY_RATE;
+    // Weekends: divide by 2 (days in a weekend) then multiply by 48 hrs/weekend
+    const numberOfWeekends = weekendCount / 2;
+    const onCallWeekendHours =
+      numberOfWeekends * OVERHEAD_CONSTANTS.ONCALL_WEEKEND_HOURS;
+    const onCallWeekendCost =
+      onCallWeekendHours * OVERHEAD_CONSTANTS.ONCALL_WEEKEND_RATE;
+    const onCallTotalHours = onCallWeekdayHours + onCallWeekendHours;
+    const onCallPhone = onCallWeekdayCost + onCallWeekendCost;
+
+    // 10. Potential Admission
+    const potentialAdmission = OVERHEAD_CONSTANTS.POTENTIAL_ADMISSION;
+
+    // 11. Transportation ($165 per SOC)
     const transportation = socCount * OVERHEAD_CONSTANTS.TRANSPORTATION_PER_SOC;
 
-    // 10. Fixed Expenses
+    // 12. Fixed Expenses
     const fixedExpenses = {
       rent: OVERHEAD_CONSTANTS.RENT_OFFICE,
       utilities: OVERHEAD_CONSTANTS.UTILITIES,
@@ -688,7 +766,7 @@ function OverheadForecast(props) {
       0
     );
 
-    // 11. Billing Fees (3% of revenue, minimum $500)
+    // 13. Billing Fees (3% of revenue, minimum $500)
     const billingFeesCalc =
       projectedRevenue * OVERHEAD_CONSTANTS.BILLING_FEE_RATE;
     const billingFees = Math.max(
@@ -696,7 +774,7 @@ function OverheadForecast(props) {
       OVERHEAD_CONSTANTS.BILLING_FEE_MINIMUM
     );
 
-    // 12. Marketing ($2,500 per SOC)
+    // 14. Marketing ($2,500 per SOC)
     const marketing = socCount * OVERHEAD_CONSTANTS.MARKETING_PER_SOC;
 
     // Total Expenses
@@ -707,6 +785,8 @@ function OverheadForecast(props) {
       medicalSupplies +
       pharmacy +
       dme +
+      onCallPhone +
+      potentialAdmission +
       transportation +
       totalFixedExpenses +
       billingFees +
@@ -727,6 +807,15 @@ function OverheadForecast(props) {
       medicalSupplies,
       pharmacy,
       dme,
+      onCallPhone,
+      onCallWeekdayCount: weekdayCount,
+      onCallWeekendCount: weekendCount,
+      onCallWeekdayHours,
+      onCallWeekendHours,
+      onCallWeekdayCost,
+      onCallWeekendCost,
+      onCallTotalHours,
+      potentialAdmission,
       transportation,
       fixedExpenses,
       totalFixedExpenses,
@@ -1200,6 +1289,73 @@ function OverheadForecast(props) {
                         </TableCell>
                       </TableRow>
 
+                      {/* On-Call Phone */}
+                      <TableRow className={classes.subsectionHeader}>
+                        <TableCell>
+                          On-Call Phone ($3/hr weekdays & $4/hr weekend)
+                        </TableCell>
+                        <TableCell style={{ textAlign: "right" }}>
+                          ${forecastData.onCallPhone.toFixed(2)}
+                        </TableCell>
+                      </TableRow>
+                      <TableRow className={classes.detailRow}>
+                        <TableCell>
+                          Weekdays: {forecastData.onCallWeekdayCount} days ÷ 5 ×{" "}
+                          {OVERHEAD_CONSTANTS.ONCALL_WEEKDAY_HOURS} hrs ={" "}
+                          {forecastData.onCallWeekdayHours} hrs × $3/hr
+                        </TableCell>
+                        <TableCell style={{ textAlign: "right" }}>
+                          ${forecastData.onCallWeekdayCost.toFixed(2)}
+                        </TableCell>
+                      </TableRow>
+                      <TableRow className={classes.detailRow}>
+                        <TableCell>
+                          Weekends: {forecastData.onCallWeekendCount} days ÷ 2 ×{" "}
+                          {OVERHEAD_CONSTANTS.ONCALL_WEEKEND_HOURS} hrs ={" "}
+                          {forecastData.onCallWeekendHours} hrs × $4/hr
+                        </TableCell>
+                        <TableCell style={{ textAlign: "right" }}>
+                          ${forecastData.onCallWeekendCost.toFixed(2)}
+                        </TableCell>
+                      </TableRow>
+                      <TableRow className={classes.detailRow}>
+                        <TableCell>
+                          Total Hours: {forecastData.onCallTotalHours}
+                        </TableCell>
+                        <TableCell style={{ textAlign: "right" }}></TableCell>
+                      </TableRow>
+
+                      {/* Potential Admission */}
+                      <TableRow className={classes.subsectionHeader}>
+                        <TableCell>
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "8px",
+                            }}
+                          >
+                            Potential Admission
+                            <Tooltip
+                              title="A patient that were not admitted but services were done (e.g. NP evaluation, nurse admission, supplies, DME, etc)"
+                              placement="top"
+                              arrow
+                            >
+                              <Info
+                                style={{
+                                  fontSize: "18px",
+                                  color: "#666",
+                                  cursor: "help",
+                                }}
+                              />
+                            </Tooltip>
+                          </div>
+                        </TableCell>
+                        <TableCell style={{ textAlign: "right" }}>
+                          ${forecastData.potentialAdmission.toFixed(2)}
+                        </TableCell>
+                      </TableRow>
+
                       {/* Transportation */}
                       <TableRow className={classes.subsectionHeader}>
                         <TableCell>
@@ -1247,7 +1403,9 @@ function OverheadForecast(props) {
                         </TableCell>
                       </TableRow>
                       <TableRow className={classes.detailRow}>
-                        <TableCell>Software/EHR</TableCell>
+                        <TableCell>
+                          Software/EHR (include E-Prescibe MD,etc)
+                        </TableCell>
                         <TableCell style={{ textAlign: "right" }}>
                           ${forecastData.fixedExpenses.software.toFixed(2)}
                         </TableCell>
@@ -1279,7 +1437,9 @@ function OverheadForecast(props) {
 
                       {/* Billing Fees */}
                       <TableRow className={classes.subsectionHeader}>
-                        <TableCell>Billing Fees</TableCell>
+                        <TableCell>
+                          Billing Fees (Hospice MD @ 3% of revenue)
+                        </TableCell>
                         <TableCell style={{ textAlign: "right" }}>
                           ${forecastData.billingFees.toFixed(2)}
                         </TableCell>

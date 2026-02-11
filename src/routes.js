@@ -56,6 +56,7 @@ import Category from "views/Administrator/Settings/Category/CategoryFunction";
 import SubCategory from "views/Administrator/Settings/SubCategory/SubCategoryFunction";
 import Employee from "views/Administrator/Settings/Employee/EmployeeFunction";
 import Location from "views/Administrator/Settings/Location/LocationFunction";
+import OverheadConfiguration from "views/Administrator/Settings/OverheadConfiguration/OverheadConfigurationFunction";
 import Transaction from "views/Administrator/Transaction";
 import Supply from "views/Administrator/Reports/Supply";
 import Order from "views/Administrator/Reports/Order";
@@ -165,6 +166,15 @@ var dashRoutes = [
         mini: "S",
         rtlMini: "ع",
         component: Location,
+        layout: "/admin",
+      },
+      {
+        path: "/overhead-configuration",
+        name: "Overhead Configuration",
+        rtlName: "عالتسعير",
+        mini: "OC",
+        rtlMini: "ع",
+        component: OverheadConfiguration,
         layout: "/admin",
       },
     ],
