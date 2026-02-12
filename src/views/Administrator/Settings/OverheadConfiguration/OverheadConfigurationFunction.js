@@ -153,7 +153,8 @@ const DEFAULT_CONSTANTS = [
     key: "POTENTIAL_ADMISSION",
     value: 500.0,
     label: "Potential Admission",
-    description: "A patient that were not admitted but services were done (e.g. NP evaluation, nurse admission, supplies, DME, etc)",
+    description:
+      "A patient that were not admitted but services were done (e.g. NP evaluation, nurse admission, supplies, DME, etc)",
     category: "Operations",
   },
   {
@@ -227,10 +228,12 @@ function OverheadConfigurationFunction(props) {
   );
   const [overheadRecord, setOverheadRecord] = useState(null);
   const [isOverheadCollection, setIsOverheadCollection] = useState(true);
-  const [isCreateOverheadCollection, setIsCreateOverheadCollection] =
-    useState(true);
-  const [isUpdateOverheadCollection, setIsUpdateOverheadCollection] =
-    useState(true);
+  const [isCreateOverheadCollection, setIsCreateOverheadCollection] = useState(
+    true
+  );
+  const [isUpdateOverheadCollection, setIsUpdateOverheadCollection] = useState(
+    true
+  );
   const [isFormModal, setIsFormModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(undefined);
   const [mode, setMode] = useState("edit");
@@ -283,7 +286,11 @@ function OverheadConfigurationFunction(props) {
     ) {
       props.resetCreateOverhead();
       setIsCreateOverheadCollection(true);
-      showNotification("tc", "success", "Overhead configuration created successfully");
+      showNotification(
+        "tc",
+        "success",
+        "Overhead configuration created successfully"
+      );
       // Refetch after create
       if (context.userProfile?.companyId) {
         props.listOverhead({ companyId: context.userProfile?.companyId });
@@ -298,7 +305,11 @@ function OverheadConfigurationFunction(props) {
     ) {
       props.resetUpdateOverhead();
       setIsUpdateOverheadCollection(true);
-      showNotification("tc", "success", "Overhead configuration updated successfully");
+      showNotification(
+        "tc",
+        "success",
+        "Overhead configuration updated successfully"
+      );
       // Refetch after update
       if (context.userProfile?.companyId) {
         props.listOverhead({ companyId: context.userProfile?.companyId });
@@ -366,7 +377,10 @@ function OverheadConfigurationFunction(props) {
       const payload = {
         companyId: context.userProfile?.companyId,
         constants: DEFAULT_CONSTANTS,
-        createdUser: context.userProfile?.username || context.userProfile?.email,
+        createdUser:
+          context.userProfile?.username || context.userProfile?.email,
+        updatedUser:
+          context.userProfile?.username || context.userProfile?.email,
       };
       props.createOverhead(payload);
       setIsOverheadCollection(false);
@@ -383,7 +397,11 @@ function OverheadConfigurationFunction(props) {
       (constant) => constant.key === newConstant.key
     );
     if (existingConstant) {
-      showNotification("tc", "danger", `A constant with key "${newConstant.key}" already exists`);
+      showNotification(
+        "tc",
+        "danger",
+        `A constant with key "${newConstant.key}" already exists`
+      );
       return;
     }
 
@@ -394,6 +412,7 @@ function OverheadConfigurationFunction(props) {
     const payload = {
       id: overheadRecord.id,
       constants: updatedConstants,
+      companyId: context.userProfile?.companyId,
       updatedUser: context.userProfile?.username || context.userProfile?.email,
     };
 
@@ -417,6 +436,7 @@ function OverheadConfigurationFunction(props) {
     const payload = {
       id: overheadRecord.id,
       constants: updatedConstants,
+      companyId: context.userProfile?.companyId,
       updatedUser: context.userProfile?.username || context.userProfile?.email,
     };
 
@@ -477,20 +497,29 @@ function OverheadConfigurationFunction(props) {
                 </p>
               </CardHeader>
               <CardBody>
-                <GridContainer alignItems="center" style={{ paddingLeft: 12, marginBottom: 20 }}>
+                <GridContainer
+                  alignItems="center"
+                  style={{ paddingLeft: 12, marginBottom: 20 }}
+                >
                   <Grid item xs={12} md={6}>
                     <div style={{ display: "inline-flex", gap: 10 }}>
                       <Button
                         color="info"
-                        onClick={() => createFormHandler({
-                          key: "",
-                          value: "",
-                          label: "",
-                          description: "",
-                          category: "",
-                        }, "add")}
+                        onClick={() =>
+                          createFormHandler(
+                            {
+                              key: "",
+                              value: "",
+                              label: "",
+                              description: "",
+                              category: "",
+                            },
+                            "add"
+                          )
+                        }
                       >
-                        <AddIcon className={classes.icons} /> Add Overhead Constant
+                        <AddIcon className={classes.icons} /> Add Overhead
+                        Constant
                       </Button>
                     </div>
                   </Grid>

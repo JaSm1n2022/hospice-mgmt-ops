@@ -1727,7 +1727,8 @@ export const MEDICARE_CAP_AMOUNT = [
   { from: "2025-10-01", to: "2026-09-30", amount: 35361.44 },
 ];
 
-// Overhead Forecast Constants
+// Overhead Forecast Constants - DEFAULT VALUES ONLY
+// These serve as fallback when overhead table configuration is not available
 export const OVERHEAD_CONSTANTS = {
   MEDICAL_SUPPLY_RATE: 250.0,
   PHARMACY_RATE: 200.0,
@@ -1750,6 +1751,31 @@ export const OVERHEAD_CONSTANTS = {
   BUSINESS_EXPENSES: 4000.0,
   COMMUNICATION_EXPENSE: 100.0,
   OTHER_OVERHEAD: 500.0,
+};
+
+/**
+ * Helper function to get overhead value with fallback
+ * Priority logic:
+ * 1. If overhead.table.constants has the key: USE that value
+ * 2. If overhead.table.constants does NOT have the key: USE the OVERHEAD_CONSTANTS default
+ *
+ * @param {string} key - The constant key to retrieve (e.g., 'MEDICAL_SUPPLY_RATE')
+ * @param {Object|null} overheadTableData - The overhead table data from database
+ * @returns {number} The overhead value (from table or fallback to default)
+ */
+export const getOverheadValue = (key, overheadTableData) => {
+  // Check if overhead table data exists and has constants array
+  if (overheadTableData && Array.isArray(overheadTableData.constants)) {
+    const tableConstant = overheadTableData.constants.find(c => c.key === key);
+    if (tableConstant !== undefined && tableConstant.value !== undefined) {
+      return parseFloat(tableConstant.value);
+    }
+  }
+
+  // Fallback to default constant
+  return OVERHEAD_CONSTANTS[key] !== undefined
+    ? OVERHEAD_CONSTANTS[key]
+    : 0;
 };
 export const DISCHARGE_REASON = [
   {
