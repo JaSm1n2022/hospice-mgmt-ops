@@ -291,8 +291,10 @@ function OverheadConfigurationFunction(props) {
         "success",
         "Overhead configuration created successfully"
       );
-      // Refetch after create
+      // Refetch after create - reset overhead state first, then set flag and fetch
       if (context.userProfile?.companyId) {
+        props.resetListOverhead();
+        setIsOverheadCollection(true);
         props.listOverhead({ companyId: context.userProfile?.companyId });
       }
     }
@@ -310,8 +312,10 @@ function OverheadConfigurationFunction(props) {
         "success",
         "Overhead configuration updated successfully"
       );
-      // Refetch after update
+      // Refetch after update - reset overhead state first, then set flag and fetch
       if (context.userProfile?.companyId) {
+        props.resetListOverhead();
+        setIsOverheadCollection(true);
         props.listOverhead({ companyId: context.userProfile?.companyId });
       }
     }
@@ -319,6 +323,9 @@ function OverheadConfigurationFunction(props) {
     isOverheadCollection,
     isCreateOverheadCollection,
     isUpdateOverheadCollection,
+    props.overhead,
+    props.createOverheadState,
+    props.updateOverheadState,
   ]);
 
   // Initial fetch
@@ -442,6 +449,7 @@ function OverheadConfigurationFunction(props) {
 
     props.updateOverhead(payload);
     setIsUpdateOverheadCollection(false);
+    setIsFormModal(false);
   };
 
   // Handle search/filter
