@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useContext } from "react";
 import { makeStyles } from "@material-ui/core/styles";
+import { Grid } from "@material-ui/core";
 import GridItem from "components/Grid/GridItem.js";
 import GridContainer from "components/Grid/GridContainer.js";
 import OverheadConfigurationHandler from "./handler/OverheadConfigurationHandler";
@@ -10,6 +11,8 @@ import Card from "components/Card/Card.js";
 import CardHeader from "components/Card/CardHeader.js";
 import CardBody from "components/Card/CardBody.js";
 import HospiceTable from "components/Table/HospiceTable";
+import Button from "components/CustomButtons/Button.js";
+import AddIcon from "@material-ui/icons/Add";
 
 import OverheadForm from "./components/Form";
 import {
@@ -50,6 +53,11 @@ const styles = {
     fontFamily: "'Roboto', 'Helvetica', 'Arial', sans-serif",
     marginBottom: "3px",
     textDecoration: "none",
+  },
+  icons: {
+    width: "17px",
+    height: "17px",
+    color: "#FFFFFF",
   },
 };
 
@@ -362,8 +370,37 @@ function OverheadConfigurationFunction(props) {
       };
       props.createOverhead(payload);
       setIsOverheadCollection(false);
+      setIsCreateOverheadCollection(false);
     }
   }
+
+  // Add new constant
+  const addConstantHandler = (newConstant) => {
+    if (!overheadRecord) return;
+
+    // Check for duplicate key
+    const existingConstant = overheadRecord.constants.find(
+      (constant) => constant.key === newConstant.key
+    );
+    if (existingConstant) {
+      showNotification("tc", "danger", `A constant with key "${newConstant.key}" already exists`);
+      return;
+    }
+
+    // Add the new constant to the array
+    const updatedConstants = [...overheadRecord.constants, newConstant];
+
+    // Prepare update payload
+    const payload = {
+      id: overheadRecord.id,
+      constants: updatedConstants,
+      updatedUser: context.userProfile?.username || context.userProfile?.email,
+    };
+
+    props.updateOverhead(payload);
+    setIsUpdateOverheadCollection(false);
+    setIsFormModal(false);
+  };
 
   // Update constant value
   const updateConstantHandler = (updatedConstant) => {
@@ -384,6 +421,7 @@ function OverheadConfigurationFunction(props) {
     };
 
     props.updateOverhead(payload);
+    setIsUpdateOverheadCollection(false);
   };
 
   // Handle search/filter
@@ -422,7 +460,7 @@ function OverheadConfigurationFunction(props) {
       <OverheadForm
         open={isFormModal}
         onClose={closeFormModalHandler}
-        onSubmit={updateConstantHandler}
+        onSubmit={mode === "add" ? addConstantHandler : updateConstantHandler}
         item={selectedItem}
         mode={mode}
       />
@@ -439,16 +477,29 @@ function OverheadConfigurationFunction(props) {
                 </p>
               </CardHeader>
               <CardBody>
+                <GridContainer alignItems="center" style={{ paddingLeft: 12, marginBottom: 20 }}>
+                  <Grid item xs={12} md={6}>
+                    <div style={{ display: "inline-flex", gap: 10 }}>
+                      <Button
+                        color="info"
+                        onClick={() => createFormHandler({
+                          key: "",
+                          value: "",
+                          label: "",
+                          description: "",
+                          category: "",
+                        }, "add")}
+                      >
+                        <AddIcon className={classes.icons} /> Add Overhead Constant
+                      </Button>
+                    </div>
+                  </Grid>
+                </GridContainer>
                 <HospiceTable
-                  keywordValue={keywordValue}
-                  setKeywordValue={handleSearch}
                   columns={columns}
                   dataSource={dataSource}
-                  pageSize={20}
-                  title="Overhead Constants"
-                  isNoAddEnabled={true}
-                  isNoDeleteEnabled={true}
-                  isNoCheckBoxEnabled={true}
+                  loading={false}
+                  onCheckboxSelectionHandler={() => {}}
                 />
               </CardBody>
             </Card>

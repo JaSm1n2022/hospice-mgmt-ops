@@ -55,6 +55,19 @@ const OverheadForm = ({
   };
 
   const handleSubmit = () => {
+    // Validate required fields
+    if (mode === "add") {
+      if (!formData.key || !formData.label || !formData.category) {
+        alert("Key, Label, and Category are required");
+        return;
+      }
+      // Validate key format (uppercase with underscores)
+      if (!/^[A-Z_]+$/.test(formData.key)) {
+        alert("Key must contain only uppercase letters and underscores");
+        return;
+      }
+    }
+
     // Validate value is numeric
     const numericValue = parseFloat(formData.value);
     if (isNaN(numericValue)) {
@@ -70,7 +83,8 @@ const OverheadForm = ({
   };
 
   const isViewMode = mode === "view";
-  const title = isViewMode ? "View Constant" : "Edit Constant";
+  const isAddMode = mode === "add";
+  const title = isViewMode ? "View Constant" : isAddMode ? "Add Constant" : "Edit Constant";
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
@@ -80,10 +94,26 @@ const OverheadForm = ({
           <Grid item xs={12}>
             <TextField
               fullWidth
+              label="Key"
+              value={formData.key}
+              onChange={handleChange("key")}
+              disabled={!isAddMode}
+              className={classes.textField}
+              placeholder="e.g., NEW_OVERHEAD_ITEM"
+              helperText={isAddMode ? "Uppercase letters and underscores only" : ""}
+              required={isAddMode}
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <TextField
+              fullWidth
               label="Label"
               value={formData.label}
-              disabled
+              onChange={handleChange("label")}
+              disabled={!isAddMode}
               className={classes.textField}
+              placeholder="e.g., New Overhead Item"
+              required={isAddMode}
             />
           </Grid>
           <Grid item xs={12}>
@@ -98,6 +128,7 @@ const OverheadForm = ({
               inputProps={{
                 step: "0.01",
               }}
+              required
             />
           </Grid>
           <Grid item xs={12}>
@@ -105,8 +136,11 @@ const OverheadForm = ({
               fullWidth
               label="Category"
               value={formData.category}
-              disabled
+              onChange={handleChange("category")}
+              disabled={!isAddMode}
               className={classes.textField}
+              placeholder="e.g., Operations"
+              required={isAddMode}
             />
           </Grid>
           <Grid item xs={12}>
@@ -114,10 +148,12 @@ const OverheadForm = ({
               fullWidth
               label="Description"
               value={formData.description}
-              disabled
+              onChange={handleChange("description")}
+              disabled={!isAddMode}
               multiline
               rows={3}
               className={classes.textField}
+              placeholder="Description of this overhead constant"
             />
           </Grid>
         </Grid>
