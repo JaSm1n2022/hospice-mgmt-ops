@@ -49,6 +49,7 @@ function App({
 
   const [userProfile, setUserProfile] = useState(undefined);
   const [employeeProfile, setEmployeeProfile] = useState(undefined);
+  const [isEmployeeCollection, setIsEmployeeCollection] = useState(false);
 
   // Initialize session and auth listener
   useEffect(() => {
@@ -113,17 +114,38 @@ function App({
   }, [profileState, userProfile, listEmployee, resetProfiles]);
 
   useEffect(() => {
-    if (employeeState.status === ACTION_STATUSES.SUCCEED && !employeeProfile) {
-      console.log("[Are You resetting me]");
+    console.log(
+      "[Are You resetting me 0]",
+      isEmployeeCollection,
+      employeeState,
+      employeeProfile
+    );
+    if (
+      employeeState.status === ACTION_STATUSES.SUCCEED &&
+      !isEmployeeCollection
+    ) {
+      console.log("[Are You resetting me1]", employeeState?.data);
       const employee = employeeState?.data?.[0];
+
+      // If no employee data returned, or if it's for a user without an employee record
+      // (e.g., admin users), just mark as collected and move on
+      if (!employeeState.data?.length) {
+        console.log("[No employee record found - marking as collected]");
+        setIsEmployeeCollection(true);
+        resetListEmployee();
+        return;
+      }
+
       // Only set and reset if this fetch was for the user's employee profile
       // (single result matching the user's email)
       if (employee && employee.email === userProfile?.username) {
+        console.log("[Employee profile found and matched]");
+        setIsEmployeeCollection(true);
         setEmployeeProfile(employee);
         resetListEmployee();
       }
     }
-  }, [employeeState, employeeProfile, resetListEmployee, userProfile]);
+  }, [employeeState, employeeProfile, resetListEmployee, userProfile, isEmployeeCollection]);
 
   // Determine routes based on user role
   console.log(
