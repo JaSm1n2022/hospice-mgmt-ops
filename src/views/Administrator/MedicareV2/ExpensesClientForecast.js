@@ -733,22 +733,22 @@ function ExpensesClientForecast(props) {
                 emp.id?.toString() === assignment.disciplineId?.toString()
             );
             console.log("[EMPLOYEE]", employee);
-            if (!employee || !employee.position) return false;
+            if (!employee || !assignment.disciplinePosition) return false;
 
-            // Find mapping that matches this SOC visit label and has roles that include the employee's title
+            // Find mapping that matches this SOC visit label and has roles that include the assignment's discipline position
             const mapping = socServiceMapping.find(
               (m) =>
                 m.label === soc.label &&
                 m.roles.some(
                   (role) =>
-                    role.toLowerCase() === employee.position.toLowerCase()
+                    role.toLowerCase() === assignment.disciplinePosition.toLowerCase()
                 )
             );
 
             return !!mapping;
           });
 
-          // If we found a matching assignment, use its employee to find the mapping
+          // If we found a matching assignment, use its discipline position to find the mapping
           let mapping = null;
           console.log("[matching Assignments]", matchingAssignment);
           if (matchingAssignment) {
@@ -763,7 +763,7 @@ function ExpensesClientForecast(props) {
                 m.label === soc.label &&
                 m.roles.some(
                   (role) =>
-                    role.toLowerCase() === employee.position?.toLowerCase()
+                    role.toLowerCase() === matchingAssignment.disciplinePosition?.toLowerCase()
                 )
             );
           }
