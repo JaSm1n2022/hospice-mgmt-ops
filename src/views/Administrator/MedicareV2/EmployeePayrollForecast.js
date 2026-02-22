@@ -569,18 +569,19 @@ function EmployeePayrollForecast(props) {
           }
 
           // --- SOC Expenses ---
-          // Only for nurse, MSW, chaplain using SOC/Assessment contract rate
+          // Check based on IDT assignment disciplinePosition, not employee position
           const isSocInCurrentMonth =
             socDate.isSameOrAfter(currentMonthStart, "day") &&
             socDate.isSameOrBefore(currentMonthEnd, "day");
 
-          const position = employeePosition.toLowerCase();
+          const assignedPosition = (assignment.disciplinePosition || "").toLowerCase();
           const canDoSocAssessment =
-            position.includes("nurse") ||
-            position.includes("rn") ||
-            position.includes("msw") ||
-            position.includes("social worker") ||
-            position.includes("chaplain");
+            assignedPosition.includes("nurse") ||
+            assignedPosition.includes("rn") ||
+            assignedPosition.includes("admission nurse") ||
+            assignedPosition.includes("msw") ||
+            assignedPosition.includes("social worker") ||
+            assignedPosition.includes("chaplain");
 
           if (isSocInCurrentMonth && canDoSocAssessment) {
             // Look for SOC/Assessment contract
@@ -616,16 +617,16 @@ function EmployeePayrollForecast(props) {
           }
 
           // --- Death Pronouncement (EOC - goes in Regular Visits) ---
-          // Only Case Manager or Registered Nurse can do Death Pronouncement
+          // Check based on IDT assignment disciplinePosition, not employee position
           const isEocInCurrentMonth =
             eocDate &&
             eocDate.isSameOrAfter(currentMonthStart, "day") &&
             eocDate.isSameOrBefore(currentMonthEnd, "day");
 
           const canDoDeathPronouncement =
-            position.includes("case manager") ||
-            position.includes("registered nurse") ||
-            position.includes("rn");
+            assignedPosition.includes("case manager") ||
+            assignedPosition.includes("registered nurse") ||
+            assignedPosition.includes("rn");
 
           if (isEocInCurrentMonth && canDoDeathPronouncement) {
             let deathPronouncementContract = contractList.find(
