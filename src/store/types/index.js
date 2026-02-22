@@ -103,6 +103,31 @@ export type EmployeeState = {
   },
 };
 
+export type EmployeeChecklistState = {
+  employeeChecklistList: {
+    data: ?Object,
+    error: ?string,
+    status: ?string,
+  },
+
+  employeeChecklistUpdate: {
+    data: ?Object,
+    error: ?string,
+    status: ?string,
+  },
+
+  employeeChecklistDelete: {
+    data: ?Object,
+    error: ?string,
+    status: ?string,
+  },
+  employeeChecklistCreate: {
+    data: ?Object,
+    error: ?string,
+    status: ?string,
+  },
+};
+
 export type CategoryState = {
   categoryList: {
     data: ?Object,

@@ -8,9 +8,9 @@ import CustomDatePicker from "components/Date/CustomDatePicker";
 import GridContainer from "components/Grid/GridContainer";
 import GridItem from "components/Grid/GridItem";
 import moment from "moment";
-import { useState } from "react";
-import { useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { connect } from "react-redux";
+import { SupaContext } from "App";
 import { resetFetchDistributionState } from "store/actions/distributionAction";
 import { attemptToFetchDistribution } from "store/actions/distributionAction";
 import { resetFetchPatientState } from "store/actions/patientAction";
@@ -251,6 +251,7 @@ const PatientSupplies = (props) => {
     listAssignments,
   } = props;
   const classes = useStyles();
+  const context = useContext(SupaContext);
   const [value, setValue] = useState("one");
   const [isPatientCollection, setIsPatientCollection] = useState(true);
   const [isDistributionCollection, setIsDistributionCollection] = useState(
@@ -268,39 +269,51 @@ const PatientSupplies = (props) => {
   const [isRefresh, setIsRefresh] = useState(false);
   const [product, setProduct] = useState(DEFAULT_ITEM);
   useEffect(() => {
-    if (
-      props.profileState &&
-      props.profileState.data &&
-      props.profileState.data.length
-    ) {
-      userProfile = props.profileState.data[0];
-      listStocks({ companyId: userProfile.companyId });
-      listProducts({ companyId: userProfile.companyId });
-      listPatients({ companyId: userProfile.companyId });
-      listAssignments({ companyId: userProfile.companyId });
+    console.log("🚀 COMPONENT MOUNTED - Initializing data fetch");
+    // Reset module-level flags on mount
+    isDistributionListDone = false;
+    isPatientListDone = false;
+    isTransactionDone = false;
+    isProductListDone = false;
+    isStockListDone = false;
+    isAssignmentListDone = false;
+
+    if (context.userProfile?.companyId) {
+      const companyId = context.userProfile.companyId;
+      console.log("📡 Fetching data for companyId:", companyId);
+      listStocks({ companyId });
+      listProducts({ companyId });
+      listPatients({ companyId });
+      listAssignments({ companyId });
       listDistributions({
         from: dates.from,
         to: dates.to,
-        companyId: userProfile.companyId,
+        companyId,
       });
       isTransactionDone = true; // not needed
+    } else {
+      console.error("❌ NO CONTEXT USER PROFILE - Cannot fetch data!", context.userProfile);
     }
     //  listTransactions({ from: dates.from, to: dates.to });
-  }, []);
+  }, [context.userProfile?.companyId]);
 
+  // Trigger re-render when any data arrives from Redux
   useEffect(() => {
-    if (!isPatientCollection && patients.status === ACTION_STATUSES.SUCCEED) {
-      resetListPatients();
-      setIsPatientCollection(true);
-    }
-    if (
-      !isDistributionCollection &&
-      distributions.status === ACTION_STATUSES.SUCCEED
-    ) {
-      resetListDistribution();
-      setIsDistributionCollection(true);
-    }
-  }, [isPatientCollection, isDistributionCollection]);
+    console.log("🔄 DATA CHANGE DETECTED", {
+      stocksStatus: props.stocks?.status,
+      productsStatus: products?.status,
+      assignmentsStatus: assignments?.status,
+      patientsStatus: patients?.status,
+      distributionsStatus: distributions?.status
+    });
+    setIsRefresh(prev => !prev);
+  }, [
+    props.stocks?.status,
+    products?.status,
+    assignments?.status,
+    patients?.status,
+    distributions?.status
+  ]);
 
   const sortByProductId = (data, attr) => {
     console.log("[data]", data);
@@ -351,21 +364,34 @@ const PatientSupplies = (props) => {
     return items;
   };
 
+  // Debug: Log all data statuses
+  console.log("📊 DATA STATUS CHECK:", {
+    stocks: props.stocks?.status || "undefined",
+    products: products?.status || "undefined",
+    assignments: assignments?.status || "undefined",
+    patients: patients?.status || "undefined",
+    distributions: distributions?.status || "undefined",
+    isPatientCollection,
+    isDistributionCollection
+  });
+
   if (props.stocks && props.stocks.status === ACTION_STATUSES.SUCCEED) {
     stockList = [...props.stocks.data];
-
     isStockListDone = true;
+    console.log("✅ STOCKS LOADED - Count:", stockList.length);
     props.resetListStocks();
   }
   console.log("[Products[", products);
   if (products && products.status === ACTION_STATUSES.SUCCEED) {
     productList = [...products.data];
     isProductListDone = true;
+    console.log("✅ PRODUCTS LOADED - Count:", productList.length);
     resetListProducts();
   }
   if (assignments && assignments.status === ACTION_STATUSES.SUCCEED) {
     assignmentList = [...assignments.data];
     isAssignmentListDone = true;
+    console.log("✅ ASSIGNMENTS LOADED - Count:", assignmentList.length);
     resetListAssignments();
   }
   if (
@@ -377,6 +403,7 @@ const PatientSupplies = (props) => {
     setIsPatientCollection(false);
     isPatientListDone = true;
     patientList = patients.data || [];
+    console.log("✅ PATIENTS LOADED - Count:", patientList.length);
     patientCnaList = [];
     patientList.forEach((p) => {
       if (!patientCnaList.find((c) => c.name === p.name)) {
@@ -404,18 +431,19 @@ const PatientSupplies = (props) => {
     numberActive = patientList.length - numberInactive;
   }
   if (
-    stockList.length &&
-    productList.length &&
-    patientList.length &&
     isDistributionCollection &&
     distributions &&
     distributions.status === ACTION_STATUSES.SUCCEED
   ) {
     isDistributionListDone = true;
     setIsDistributionCollection(false);
-    patientGrandTotal = 0.0;
+    console.log("✅ DISTRIBUTIONS LOADED - Count:", distributions.data?.length || 0);
 
-    distributionList = distributions.data || [];
+    // Only process data if we have the required lists
+    if (stockList.length && productList.length && patientList.length) {
+      patientGrandTotal = 0.0;
+
+      distributionList = distributions.data || [];
 
     patientDashboard = [];
 
@@ -649,7 +677,7 @@ const PatientSupplies = (props) => {
       }
     }
     patientOptions = [...patientDashboard];
-    setIsRefresh(!isRefresh);
+    }
   }
 
   const autoCompleteGeneralInputHander = (item) => {
@@ -679,7 +707,7 @@ const PatientSupplies = (props) => {
       listDistributions({
         from: moment(new Date(value)).format("YYYY-MM-DD"),
         to: moment(new Date(dateTo)).format("YYYY-MM-DD"),
-        companyId: userProfile.companyId,
+        companyId: context.userProfile?.companyId,
       });
     } else if (name === "dateTo") {
       setDateTo(value);
@@ -687,7 +715,7 @@ const PatientSupplies = (props) => {
       listDistributions({
         from: moment(new Date(dateFrom)).format("YYYY-MM-DD"),
         to: moment(new Date(value)).format("YYYY-MM-DD"),
-        companyId: userProfile.companyId,
+        companyId: context.userProfile?.companyId,
       });
     }
   };
@@ -705,6 +733,15 @@ const PatientSupplies = (props) => {
     }
   };
   console.log("[Patient Dashboard]", dateFrom, dateTo, patientDashboard);
+  console.log("🔍 LOADING FLAGS STATUS:", {
+    isDistributionListDone,
+    isPatientListDone,
+    isTransactionDone,
+    isProductListDone,
+    isAssignmentListDone,
+    isStockListDone,
+    showSpinner: !isDistributionListDone || !isPatientListDone || !isTransactionDone || !isProductListDone || !isAssignmentListDone || !isStockListDone
+  });
   return (
     <>
       <div>

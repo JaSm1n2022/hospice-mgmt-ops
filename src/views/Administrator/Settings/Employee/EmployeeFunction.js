@@ -134,6 +134,7 @@ function EmployeeFunction(props) {
       props.employees &&
       props.employees.status === ACTION_STATUSES.SUCCEED
     ) {
+      console.log("[Are You resetting me]");
       props.resetListEmployees();
       setIsEmployeesCollection(true);
     }

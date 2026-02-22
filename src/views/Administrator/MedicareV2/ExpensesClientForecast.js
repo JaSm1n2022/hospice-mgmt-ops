@@ -272,14 +272,18 @@ const ExpensesForecastPDF = ({ data, currentMonthLabel }) => {
             </Text>
             <View style={pdfStyles.patientInfo}>
               <Text>Status: {patient.status}</Text>
-              <Text>SOC: {patient.soc} | EOC: {patient.eoc}</Text>
+              <Text>
+                SOC: {patient.soc} | EOC: {patient.eoc}
+              </Text>
               <Text>Days of Care: {patient.daysInCurrentMonth}</Text>
             </View>
 
             {/* Regular Expenses */}
             {patient.regularDetails.length > 0 && (
               <View>
-                <Text style={pdfStyles.sectionTitle}>Regular Visit Details</Text>
+                <Text style={pdfStyles.sectionTitle}>
+                  Regular Visit Details
+                </Text>
                 {patient.regularDetails.map((detail, dIdx) => (
                   <View key={dIdx} style={pdfStyles.detailRow}>
                     <Text style={pdfStyles.detailLabel}>
@@ -333,7 +337,12 @@ const ExpensesForecastPDF = ({ data, currentMonthLabel }) => {
             )}
 
             {/* Patient Total */}
-            <View style={[pdfStyles.totalRow, { backgroundColor: "#667eea", color: "white" }]}>
+            <View
+              style={[
+                pdfStyles.totalRow,
+                { backgroundColor: "#667eea", color: "white" },
+              ]}
+            >
               <Text style={{ width: "70%" }}>Patient Total Expenses</Text>
               <Text style={{ width: "30%", textAlign: "right" }}>
                 ${parseFloat(patient.totalExpenses).toFixed(2)}
@@ -345,7 +354,9 @@ const ExpensesForecastPDF = ({ data, currentMonthLabel }) => {
         {/* Grand Total Section */}
         <View style={pdfStyles.grandTotalSection}>
           <View style={pdfStyles.grandTotalRow}>
-            <Text style={pdfStyles.grandTotalLabel}>Total Regular Expenses</Text>
+            <Text style={pdfStyles.grandTotalLabel}>
+              Total Regular Expenses
+            </Text>
             <Text style={pdfStyles.grandTotalValue}>
               ${parseFloat(totalRegular).toFixed(2)}
             </Text>
@@ -356,7 +367,12 @@ const ExpensesForecastPDF = ({ data, currentMonthLabel }) => {
               ${parseFloat(totalSOC).toFixed(2)}
             </Text>
           </View>
-          <View style={[pdfStyles.grandTotalRow, { borderTop: "1 solid white", marginTop: 5, paddingTop: 5 }]}>
+          <View
+            style={[
+              pdfStyles.grandTotalRow,
+              { borderTop: "1 solid white", marginTop: 5, paddingTop: 5 },
+            ]}
+          >
             <Text style={pdfStyles.grandTotalLabel}>GRAND TOTAL</Text>
             <Text style={pdfStyles.grandTotalValue}>
               ${parseFloat(grandTotal).toFixed(2)}
@@ -476,12 +492,22 @@ function ExpensesClientForecast(props) {
 
   // Calculate once all four datasets are ready
   useEffect(() => {
-    if (isPatientListDone && isAssignmentListDone && isContractListDone && isEmployeeListDone) {
+    if (
+      isPatientListDone &&
+      isAssignmentListDone &&
+      isContractListDone &&
+      isEmployeeListDone
+    ) {
       const result = calculateExpensesForecast();
       setForecastData(result);
       setIsProcessDone(true);
     }
-  }, [isPatientCollection, isAssignmentCollection, isContractCollection, isEmployeeCollection]);
+  }, [
+    isPatientCollection,
+    isAssignmentCollection,
+    isContractCollection,
+    isEmployeeCollection,
+  ]);
 
   const calculateExpensesForecast = () => {
     const today = moment();
@@ -505,7 +531,9 @@ function ExpensesClientForecast(props) {
       // If EOC exists: use EOC (capped at month end)
       // If no EOC (active): use full month end for forecast
       const effStart = moment.max(socDate, currentMonthStart);
-      const effEnd = eocDate ? moment.min(eocDate, currentMonthEnd) : currentMonthEnd;
+      const effEnd = eocDate
+        ? moment.min(eocDate, currentMonthEnd)
+        : currentMonthEnd;
       const daysInCurrentMonth = effEnd.diff(effStart, "days") + 1;
       if (daysInCurrentMonth <= 0) return;
 
@@ -520,7 +548,10 @@ function ExpensesClientForecast(props) {
         );
 
         // Only include if employee exists and is active (or status is not set, for backward compatibility)
-        return employee && (!employee.status || employee.status.toLowerCase() === "active");
+        return (
+          employee &&
+          (!employee.status || employee.status.toLowerCase() === "active")
+        );
       });
 
       let regularExpenses = 0;
@@ -662,25 +693,125 @@ function ExpensesClientForecast(props) {
 
         // Map SOC labels to serviceType or serviceCd to look up contract rates
         const socServiceMapping = [
-          { label: "HUV", serviceCd: "HUV" },
-          { label: "SFV", serviceCd: "SFV" },
-          { label: "SOC Assessment - Nurse", serviceType: "SOC/Assessment" },
-          { label: "SOC Assessment - MSW", serviceType: "SOC/Assessment" },
-          { label: "SOC Assessment - Chaplain", serviceType: "SOC/Assessment" },
-          { label: "NP Evaluation", serviceType: "Evaluation Visit" },
+          {
+            label: "HUV",
+            serviceCd: "HUV",
+            roles: ["Registered Nurse", "DON", "Case Manager"],
+          },
+          {
+            label: "SFV",
+            serviceCd: "SFV",
+            roles: ["LPN", "Registered Nurse", "DON", "Case Manager"],
+          },
+          {
+            label: "SOC Assessment - Nurse",
+            serviceType: "SOC/Assessment",
+            roles: ["Admission Nurse"],
+          },
+          {
+            label: "SOC Assessment - MSW",
+            serviceType: "SOC/Assessment",
+            roles: ["MSW"],
+          },
+          {
+            label: "SOC Assessment - Chaplain",
+            serviceType: "SOC/Assessment",
+            roles: ["Chaplain"],
+          },
+          {
+            label: "NP Evaluation",
+            serviceType: "Evaluation Visit",
+            roles: ["NP", "Nurse Practitioner"],
+          },
         ];
+        console.log("[patient Assignments]", patientAssignments, employeeList);
+        socVisitTypes.forEach((soc) => {
+          // Find a matching assignment/employee for this SOC visit type
+          const matchingAssignment = patientAssignments.find((assignment) => {
+            const employee = employeeList.find(
+              (emp) =>
+                emp.id?.toString() === assignment.disciplineId?.toString()
+            );
+            console.log("[EMPLOYEE]", employee);
+            if (!employee || !employee.position) return false;
 
-        socVisitTypes.forEach((soc, idx) => {
-          const mapping = socServiceMapping[idx];
+            // Find mapping that matches this SOC visit label and has roles that include the employee's title
+            const mapping = socServiceMapping.find(
+              (m) =>
+                m.label === soc.label &&
+                m.roles.some(
+                  (role) =>
+                    role.toLowerCase() === employee.position.toLowerCase()
+                )
+            );
+
+            return !!mapping;
+          });
+
+          // If we found a matching assignment, use its employee to find the mapping
+          let mapping = null;
+          console.log("[matching Assignments]", matchingAssignment);
+          if (matchingAssignment) {
+            const employee = employeeList.find(
+              (emp) =>
+                emp.id?.toString() ===
+                matchingAssignment.disciplineId?.toString()
+            );
+
+            mapping = socServiceMapping.find(
+              (m) =>
+                m.label === soc.label &&
+                m.roles.some(
+                  (role) =>
+                    role.toLowerCase() === employee.position?.toLowerCase()
+                )
+            );
+          }
+
+          // Fallback: if no matching assignment found, just use label matching
+          if (!mapping) {
+            mapping = socServiceMapping.find((m) => m.label === soc.label);
+          }
+
+          if (!mapping) return; // skip if no matching mapping found
 
           // Find rate from contracts — patient-specific first, then company-wide
+          // Also match by employee ID when we have a matching assignment
           let contract = null;
+          const employeeId = matchingAssignment?.disciplineId?.toString();
+
           if (mapping.serviceCd) {
-            contract = contractList.find(
-              (c) =>
-                c.patientCd === patient.patientCd &&
-                c.serviceCd?.toLowerCase() === mapping.serviceCd.toLowerCase()
-            );
+            // First try: patient-specific contract with employee match
+            if (employeeId) {
+              contract = contractList.find(
+                (c) =>
+                  c.patientCd === patient.patientCd &&
+                  c.serviceCd?.toLowerCase() ===
+                    mapping.serviceCd.toLowerCase() &&
+                  c.employeeId?.toString() === employeeId
+              );
+            }
+            // Second try: patient-specific contract without employee match
+            if (!contract) {
+              contract = contractList.find(
+                (c) =>
+                  c.patientCd === patient.patientCd &&
+                  c.serviceCd?.toLowerCase() === mapping.serviceCd.toLowerCase()
+              );
+            }
+            // Third try: company-wide contract with employee match
+            if (!contract && employeeId) {
+              contract = contractList.find(
+                (c) =>
+                  (!c.patientCd ||
+                    c.patientCd === "" ||
+                    c.patientCd === "ALL") &&
+                  c.serviceCd?.toLowerCase() ===
+                    mapping.serviceCd.toLowerCase() &&
+                  c.employeeId?.toString() === employeeId
+              );
+            }
+            // Fourth try: company-wide contract without employee match
             if (!contract) {
               contract = contractList.find(
                 (c) =>
@@ -691,12 +822,38 @@ function ExpensesClientForecast(props) {
               );
             }
           } else if (mapping.serviceType) {
-            contract = contractList.find(
-              (c) =>
-                c.patientCd === patient.patientCd &&
-                c.serviceType?.toLowerCase() ===
-                  mapping.serviceType.toLowerCase()
-            );
+            // First try: patient-specific contract with employee match
+            if (employeeId) {
+              contract = contractList.find(
+                (c) =>
+                  c.patientCd === patient.patientCd &&
+                  c.serviceType?.toLowerCase() ===
+                    mapping.serviceType.toLowerCase() &&
+                  c.employeeId?.toString() === employeeId
+              );
+            }
+            // Second try: patient-specific contract without employee match
+            if (!contract) {
+              contract = contractList.find(
+                (c) =>
+                  c.patientCd === patient.patientCd &&
+                  c.serviceType?.toLowerCase() ===
+                    mapping.serviceType.toLowerCase()
+              );
+            }
+            // Third try: company-wide contract with employee match
+            if (!contract && employeeId) {
+              contract = contractList.find(
+                (c) =>
+                  (!c.patientCd ||
+                    c.patientCd === "" ||
+                    c.patientCd === "ALL") &&
+                  c.serviceType?.toLowerCase() ===
+                    mapping.serviceType.toLowerCase() &&
+                  c.employeeId?.toString() === employeeId
+              );
+            }
+            // Fourth try: company-wide contract without employee match
             if (!contract) {
               contract = contractList.find(
                 (c) =>
@@ -786,7 +943,13 @@ function ExpensesClientForecast(props) {
           <GridItem xs={12} sm={12} md={12}>
             <Card>
               <CardHeader color="rose">
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
                   <div>
                     <h4 className={classes.cardTitleWhite}>
                       {currentMonthLabel} — Expenses Client Forecast
@@ -804,7 +967,10 @@ function ExpensesClientForecast(props) {
                             currentMonthLabel={currentMonthLabel}
                           />
                         }
-                        fileName={`Expenses_Forecast_${currentMonthLabel.replace(" ", "_")}.pdf`}
+                        fileName={`Expenses_Forecast_${currentMonthLabel.replace(
+                          " ",
+                          "_"
+                        )}.pdf`}
                         style={{ textDecoration: "none" }}
                       >
                         {({ loading }) => (
@@ -838,10 +1004,10 @@ function ExpensesClientForecast(props) {
                     color: "#666",
                   }}
                 >
-                  <strong>Note:</strong> Forecast visits and expenses are calculated
-                  based on Days of Care. For active patients, Days of Care equals
-                  the full month. For discharged patients (with EOC), Days of Care
-                  is from SOC (or month start) to EOC date.
+                  <strong>Note:</strong> Forecast visits and expenses are
+                  calculated based on Days of Care. For active patients, Days of
+                  Care equals the full month. For discharged patients (with
+                  EOC), Days of Care is from SOC (or month start) to EOC date.
                 </Typography>
                 <TableContainer
                   component={Paper}

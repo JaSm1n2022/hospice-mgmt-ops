@@ -492,6 +492,7 @@ function OverheadForecast(props) {
     }
 
     return () => {
+      console.log("[Are You resetting me]");
       props.resetListPatients();
       props.resetListEmployees();
       props.resetListAssignments();
@@ -693,7 +694,9 @@ function OverheadForecast(props) {
         }
 
         // DME calculation: actual days × DME_DAILY_RATE
-        dmeTotalCost += actualDaysInMonth * getOverheadValue('DME_DAILY_RATE', overheadTableData);
+        dmeTotalCost +=
+          actualDaysInMonth *
+          getOverheadValue("DME_DAILY_RATE", overheadTableData);
       }
 
       // Count SOC in current month
@@ -730,14 +733,16 @@ function OverheadForecast(props) {
     const contractedDetails = contractedData.details;
 
     // 5. Payroll Taxes
-    const payrollTaxes = salariesWages * getOverheadValue('PAYROLL_TAX_RATE', overheadTableData);
+    const payrollTaxes =
+      salariesWages * getOverheadValue("PAYROLL_TAX_RATE", overheadTableData);
 
     // 6. Medical Supplies
     const medicalSupplies =
-      projectedADC * getOverheadValue('MEDICAL_SUPPLY_RATE', overheadTableData);
+      projectedADC * getOverheadValue("MEDICAL_SUPPLY_RATE", overheadTableData);
 
     // 7. Pharmacy
-    const pharmacy = projectedADC * getOverheadValue('PHARMACY_RATE', overheadTableData);
+    const pharmacy =
+      projectedADC * getOverheadValue("PHARMACY_RATE", overheadTableData);
 
     // 8. DME (calculated above)
     const dme = dmeTotalCost;
@@ -759,34 +764,51 @@ function OverheadForecast(props) {
     // Weekdays: divide by 5 (days in a week) then multiply by ONCALL_WEEKDAY_HOURS
     const numberOfWeeks = weekdayCount / 5;
     const onCallWeekdayHours =
-      numberOfWeeks * getOverheadValue('ONCALL_WEEKDAY_HOURS', overheadTableData);
+      numberOfWeeks *
+      getOverheadValue("ONCALL_WEEKDAY_HOURS", overheadTableData);
     const onCallWeekdayCost =
-      onCallWeekdayHours * getOverheadValue('ONCALL_WEEKDAY_RATE', overheadTableData);
+      onCallWeekdayHours *
+      getOverheadValue("ONCALL_WEEKDAY_RATE", overheadTableData);
     // Weekends: divide by 2 (days in a weekend) then multiply by ONCALL_WEEKEND_HOURS
     const numberOfWeekends = weekendCount / 2;
     const onCallWeekendHours =
-      numberOfWeekends * getOverheadValue('ONCALL_WEEKEND_HOURS', overheadTableData);
+      numberOfWeekends *
+      getOverheadValue("ONCALL_WEEKEND_HOURS", overheadTableData);
     const onCallWeekendCost =
-      onCallWeekendHours * getOverheadValue('ONCALL_WEEKEND_RATE', overheadTableData);
+      onCallWeekendHours *
+      getOverheadValue("ONCALL_WEEKEND_RATE", overheadTableData);
     const onCallTotalHours = onCallWeekdayHours + onCallWeekendHours;
     const onCallPhone = onCallWeekdayCost + onCallWeekendCost;
 
     // 10. Potential Admission
-    const potentialAdmission = getOverheadValue('POTENTIAL_ADMISSION', overheadTableData);
+    const potentialAdmission = getOverheadValue(
+      "POTENTIAL_ADMISSION",
+      overheadTableData
+    );
 
     // 11. Transportation (per SOC)
-    const transportation = socCount * getOverheadValue('TRANSPORTATION_PER_SOC', overheadTableData);
+    const transportation =
+      socCount * getOverheadValue("TRANSPORTATION_PER_SOC", overheadTableData);
 
     // 12. Fixed Expenses
     const fixedExpenses = {
-      rent: getOverheadValue('RENT_OFFICE', overheadTableData),
-      utilities: getOverheadValue('UTILITIES', overheadTableData),
-      officeSupplies: getOverheadValue('OFFICE_SUPPLIES', overheadTableData),
-      liabilityInsurance: getOverheadValue('LIABILITY_INSURANCE', overheadTableData),
-      software: getOverheadValue('SOFTWARE_EHR', overheadTableData),
-      businessExpenses: getOverheadValue('BUSINESS_EXPENSES', overheadTableData),
-      communicationExpense: getOverheadValue('COMMUNICATION_EXPENSE', overheadTableData),
-      other: getOverheadValue('OTHER_OVERHEAD', overheadTableData),
+      rent: getOverheadValue("RENT_OFFICE", overheadTableData),
+      utilities: getOverheadValue("UTILITIES", overheadTableData),
+      officeSupplies: getOverheadValue("OFFICE_SUPPLIES", overheadTableData),
+      liabilityInsurance: getOverheadValue(
+        "LIABILITY_INSURANCE",
+        overheadTableData
+      ),
+      software: getOverheadValue("SOFTWARE_EHR", overheadTableData),
+      businessExpenses: getOverheadValue(
+        "BUSINESS_EXPENSES",
+        overheadTableData
+      ),
+      communicationExpense: getOverheadValue(
+        "COMMUNICATION_EXPENSE",
+        overheadTableData
+      ),
+      other: getOverheadValue("OTHER_OVERHEAD", overheadTableData),
     };
     const totalFixedExpenses = Object.values(fixedExpenses).reduce(
       (sum, val) => sum + val,
@@ -795,14 +817,16 @@ function OverheadForecast(props) {
 
     // 13. Billing Fees (percentage of revenue, with minimum)
     const billingFeesCalc =
-      projectedRevenue * getOverheadValue('BILLING_FEE_RATE', overheadTableData);
+      projectedRevenue *
+      getOverheadValue("BILLING_FEE_RATE", overheadTableData);
     const billingFees = Math.max(
       billingFeesCalc,
-      getOverheadValue('BILLING_FEE_MINIMUM', overheadTableData)
+      getOverheadValue("BILLING_FEE_MINIMUM", overheadTableData)
     );
 
     // 14. Marketing (per SOC)
-    const marketing = socCount * getOverheadValue('MARKETING_PER_SOC', overheadTableData);
+    const marketing =
+      socCount * getOverheadValue("MARKETING_PER_SOC", overheadTableData);
 
     // Total Expenses
     const totalExpenses =
@@ -1280,9 +1304,12 @@ function OverheadForecast(props) {
                       <TableRow className={classes.subsectionHeader}>
                         <TableCell>
                           Payroll Taxes (
-                          {(getOverheadValue('PAYROLL_TAX_RATE', overheadTableData) * 100).toFixed(
-                            1
-                          )}
+                          {(
+                            getOverheadValue(
+                              "PAYROLL_TAX_RATE",
+                              overheadTableData
+                            ) * 100
+                          ).toFixed(1)}
                           %)
                         </TableCell>
                         <TableCell style={{ textAlign: "right" }}>
@@ -1309,7 +1336,12 @@ function OverheadForecast(props) {
                       {/* DME */}
                       <TableRow className={classes.subsectionHeader}>
                         <TableCell>
-                          DME (Durable Medical Equipment) @ ${getOverheadValue('DME_DAILY_RATE', overheadTableData)}/daily
+                          DME (Durable Medical Equipment) @ $
+                          {getOverheadValue(
+                            "DME_DAILY_RATE",
+                            overheadTableData
+                          )}
+                          /daily
                         </TableCell>
                         <TableCell style={{ textAlign: "right" }}>
                           ${forecastData.dme.toFixed(2)}
@@ -1319,7 +1351,17 @@ function OverheadForecast(props) {
                       {/* On-Call Phone */}
                       <TableRow className={classes.subsectionHeader}>
                         <TableCell>
-                          On-Call Phone (${getOverheadValue('ONCALL_WEEKDAY_RATE', overheadTableData)}/hr weekdays & ${getOverheadValue('ONCALL_WEEKEND_RATE', overheadTableData)}/hr weekend)
+                          On-Call Phone ($
+                          {getOverheadValue(
+                            "ONCALL_WEEKDAY_RATE",
+                            overheadTableData
+                          )}
+                          /hr weekdays & $
+                          {getOverheadValue(
+                            "ONCALL_WEEKEND_RATE",
+                            overheadTableData
+                          )}
+                          /hr weekend)
                         </TableCell>
                         <TableCell style={{ textAlign: "right" }}>
                           ${forecastData.onCallPhone.toFixed(2)}
@@ -1328,8 +1370,16 @@ function OverheadForecast(props) {
                       <TableRow className={classes.detailRow}>
                         <TableCell>
                           Weekdays: {forecastData.onCallWeekdayCount} days ÷ 5 ×{" "}
-                          {getOverheadValue('ONCALL_WEEKDAY_HOURS', overheadTableData)} hrs ={" "}
-                          {forecastData.onCallWeekdayHours} hrs × ${getOverheadValue('ONCALL_WEEKDAY_RATE', overheadTableData)}/hr
+                          {getOverheadValue(
+                            "ONCALL_WEEKDAY_HOURS",
+                            overheadTableData
+                          )}{" "}
+                          hrs = {forecastData.onCallWeekdayHours} hrs × $
+                          {getOverheadValue(
+                            "ONCALL_WEEKDAY_RATE",
+                            overheadTableData
+                          )}
+                          /hr
                         </TableCell>
                         <TableCell style={{ textAlign: "right" }}>
                           ${forecastData.onCallWeekdayCost.toFixed(2)}
@@ -1338,8 +1388,16 @@ function OverheadForecast(props) {
                       <TableRow className={classes.detailRow}>
                         <TableCell>
                           Weekends: {forecastData.onCallWeekendCount} days ÷ 2 ×{" "}
-                          {getOverheadValue('ONCALL_WEEKEND_HOURS', overheadTableData)} hrs ={" "}
-                          {forecastData.onCallWeekendHours} hrs × ${getOverheadValue('ONCALL_WEEKEND_RATE', overheadTableData)}/hr
+                          {getOverheadValue(
+                            "ONCALL_WEEKEND_HOURS",
+                            overheadTableData
+                          )}{" "}
+                          hrs = {forecastData.onCallWeekendHours} hrs × $
+                          {getOverheadValue(
+                            "ONCALL_WEEKEND_RATE",
+                            overheadTableData
+                          )}
+                          /hr
                         </TableCell>
                         <TableCell style={{ textAlign: "right" }}>
                           ${forecastData.onCallWeekendCost.toFixed(2)}

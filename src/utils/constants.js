@@ -969,6 +969,15 @@ export const EMPLOYEE_POSITION = [
     code: "NP",
     alias: "NP",
   },
+  {
+    id: "an",
+    category: "position",
+    name: "Admission Nurse",
+    label: "Admission Nurse",
+    value: "Admission Nurse",
+    code: "AN",
+    alias: "AN",
+  },
 ];
 
 export const EMPLOYEE_STATUS = [
@@ -1766,16 +1775,16 @@ export const OVERHEAD_CONSTANTS = {
 export const getOverheadValue = (key, overheadTableData) => {
   // Check if overhead table data exists and has constants array
   if (overheadTableData && Array.isArray(overheadTableData.constants)) {
-    const tableConstant = overheadTableData.constants.find(c => c.key === key);
+    const tableConstant = overheadTableData.constants.find(
+      (c) => c.key === key
+    );
     if (tableConstant !== undefined && tableConstant.value !== undefined) {
       return parseFloat(tableConstant.value);
     }
   }
 
   // Fallback to default constant
-  return OVERHEAD_CONSTANTS[key] !== undefined
-    ? OVERHEAD_CONSTANTS[key]
-    : 0;
+  return OVERHEAD_CONSTANTS[key] !== undefined ? OVERHEAD_CONSTANTS[key] : 0;
 };
 export const DISCHARGE_REASON = [
   {
@@ -1960,6 +1969,15 @@ export const IDT_POSITION = [
     name: "Nurse Practitioner",
     label: "Nurse Practitioner",
     value: "Nurse Practitioner",
+    code: "NP",
+    alias: "NP",
+  },
+  {
+    id: "an",
+    category: "position",
+    name: "Admission Nurse",
+    label: "Admission Nurse",
+    value: "Admission Nurse",
     code: "NP",
     alias: "NP",
   },

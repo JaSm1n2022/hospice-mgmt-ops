@@ -80,6 +80,7 @@ import Admittance from "views/Administrator/Admittance/AdmittanceMain";
 import Medicare from "views/Administrator/MedicareCap/Available/AvailableFunction";
 import MedicareV2 from "views/Administrator/MedicareV2/MedicareV2Function";
 import Routesheet from "views/Administrator/Administrative/Routesheet/RoutesheetFunction";
+import HROnboardingChecklist from "views/Administrator/Administrative/HROnboardingChecklist/HROnboardingChecklistFunction";
 import RevenueForecast from "views/Administrator/MedicareV2/RevenueForecast";
 import ExpensesClientForecast from "views/Administrator/MedicareV2/ExpensesClientForecast";
 import EmployeePayrollForecast from "views/Administrator/MedicareV2/EmployeePayrollForecast";
@@ -139,6 +140,15 @@ var dashRoutes = [
         mini: "S",
         rtlMini: "ع",
         component: Employee,
+        layout: "/admin",
+      },
+      {
+        path: "/hr-onboarding-checklist",
+        name: "HR Onboarding Checklist",
+        rtlName: "عالتسعير",
+        mini: "HR",
+        rtlMini: "ع",
+        component: HROnboardingChecklist,
         layout: "/admin",
       },
       {

@@ -123,6 +123,17 @@ function AssignmentFunction(props) {
   const [mode, setMode] = useState("create");
   const [isAddGroupButtons, setIsAddGroupButtons] = useState(false);
   const [keywordValue, setKeywordValue] = useState("");
+  const [isEmployeeCollection, setIsEmployeeCollection] = useState(true);
+  const [isPatientCollection, setIsPatientCollection] = useState(true);
+
+  // Reset module-level flags on mount
+  useEffect(() => {
+    console.log("🚀 COMPONENT MOUNTED - Resetting flags");
+    isProcessDone = false;
+    isPatientListDone = props.main ? false : true;
+    isAssignmentListDone = false;
+    isEmployeeListDone = props.main ? false : true;
+  }, []);
 
   const createFormHandler = (data, mode) => {
     setItem(data);
@@ -188,12 +199,49 @@ function AssignmentFunction(props) {
       props.resetListProducts();
       setIsProductCollection(true);
     }
+
+    if (
+      !isEmployeeCollection &&
+      props.employees &&
+      props.employees.status === ACTION_STATUSES.SUCCEED
+    ) {
+      console.log("✅ EMPLOYEES DATA LOADED IN EFFECT", {
+        count: props.employees.data?.length,
+      });
+      isEmployeeListDone = true;
+      employeeList = props.employees.data;
+      // DON'T call props.resetListEmployees() - App.js already does it!
+      setIsEmployeeCollection(true);
+    }
+
+    if (
+      !isPatientCollection &&
+      props.patients &&
+      props.patients.status === ACTION_STATUSES.SUCCEED
+    ) {
+      console.log("✅ PATIENTS DATA LOADED IN EFFECT", {
+        count: props.patients.data?.length,
+      });
+      isPatientListDone = true;
+      patientList = [];
+      if (props.patients.data?.length) {
+        props.patients.data.forEach((f) => {
+          if (f.status?.toLowerCase() === "active") {
+            patientList.push(f);
+          }
+        });
+      }
+      props.resetListPatients();
+      setIsPatientCollection(true);
+    }
   }, [
     isProductCollection,
     isAssignmentsCollection,
     isCreateAssignmentCollection,
     isUpdateAssignmentCollection,
     isDeleteAssignmentCollection,
+    isEmployeeCollection,
+    isPatientCollection,
   ]);
   useEffect(() => {
     console.log("list assignments", props.main);
@@ -202,23 +250,61 @@ function AssignmentFunction(props) {
 
       props.listAssignments({ companyId: context.userProfile?.companyId });
     }
-  }, []);
+  }, [context.userProfile?.companyId]);
   useEffect(() => {
-    console.log("[Props.main]", props.main);
-    if (props.main) {
-      if (context.userProfile?.companyId) {
-        isPatientListDone = false;
-        isEmployeeListDone = false;
+    console.log(
+      "[Props.main]",
+      props.main,
+      "companyId:",
+      context.userProfile?.companyId
+    );
+    if (context.userProfile?.companyId) {
+      console.log("🔥 FETCHING EMPLOYEES AND PATIENTS", {
+        companyId: context.userProfile?.companyId,
+      });
+      isPatientListDone = false;
+      isEmployeeListDone = false;
+      setIsEmployeeCollection(false);
+      setIsPatientCollection(false);
 
-        props.listEmployees({ companyId: context.userProfile?.companyId });
-        props.listPatients({ companyId: context.userProfile?.companyId });
-      }
+      props.listEmployees({ companyId: context.userProfile?.companyId });
+      props.listPatients({ companyId: context.userProfile?.companyId });
     } else {
-      isPatientListDone = true;
-      isEmployeeListDone = true;
+      console.log("⚠️ NO COMPANY ID AVAILABLE YET");
     }
-  }, [props.main]);
-  console.log("[props.Assignments]", props.assignments, props.patients);
+  }, [context.userProfile?.companyId]);
+
+  // Trigger re-render when data arrives from Redux
+  useEffect(() => {
+    console.log("🔄 DATA CHANGE DETECTED", {
+      assignmentsStatus: props.assignments?.status,
+      patientsStatus: props.patients?.status,
+      employeesStatus: props.employees?.status,
+    });
+    setIsRefresh((prev) => !prev);
+  }, [
+    props.assignments?.status,
+    props.patients?.status,
+    props.employees?.status,
+  ]);
+
+  console.log(
+    "[props.Assignments]",
+    props.employees,
+    props.assignments,
+    props.patients
+  );
+  console.log("📊 LOADING STATUS:", {
+    isProcessDone,
+    isPatientListDone,
+    isAssignmentListDone,
+    isEmployeeListDone,
+    contextReady: !!context.userProfile?.companyId,
+    assignmentsStatus: props.assignments?.status,
+    patientsStatus: props.patients?.status,
+    employeesStatus: props.employees?.status,
+  });
+
   const showNotification = (place, color, msg) => {
     setMessage(msg);
     switch (place) {
@@ -256,6 +342,7 @@ function AssignmentFunction(props) {
     props.assignments &&
     props.assignments.status === ACTION_STATUSES.SUCCEED
   ) {
+    console.log("✅ ASSIGNMENTS DATA LOADED");
     isAssignmentListDone = true;
     grandTotal = 0.0;
     let source = props.assignments.data;
@@ -397,23 +484,7 @@ function AssignmentFunction(props) {
     props.listAssignments({ companyId: context.userProfile?.companyId });
   }
 
-  if (
-    props.main &&
-    props.patients &&
-    props.patients.status === ACTION_STATUSES.SUCCEED
-  ) {
-    isPatientListDone = true;
-    patientList = [];
-    if (props.patients.data?.length) {
-      props.patients.data.forEach((f) => {
-        if (f.status?.toLowerCase() === "active") {
-          patientList.push(f);
-        }
-      });
-    }
-
-    props.resetListPatients();
-  }
+  // Patients are now handled in the first useEffect
 
   const filterRecordHandler = (keyword) => {
     console.log("[Keyword]", keyword);
@@ -481,12 +552,7 @@ function AssignmentFunction(props) {
     }
   };
 
-  if (props.employees && props.employees.status === ACTION_STATUSES.SUCCEED) {
-    isEmployeeListDone = true;
-
-    employeeList = props.employees.data;
-    props.resetListEmployees();
-  }
+  // Employees and patients are now handled in the first useEffect
   console.log(
     "[done]",
     isPatientListDone,

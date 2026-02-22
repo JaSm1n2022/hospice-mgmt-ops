@@ -6,6 +6,7 @@ import stockSaga from "./stockSaga";
 import transactionSaga from "./transactionSaga";
 import distributionSaga from "./distributionSaga";
 import employeeSaga from "./employeeSaga";
+import employeeChecklistSaga from "./employeeChecklistSaga";
 import patientSaga from "./patientSaga";
 import vendorSaga from "./vendorSaga";
 import templateSaga from "./templateSaga";
@@ -41,6 +42,7 @@ export function* rootSaga() {
     transactionSaga(),
     distributionSaga(),
     employeeSaga(),
+    employeeChecklistSaga(),
     patientSaga(),
     assignmentSaga(),
     admittanceSaga(),

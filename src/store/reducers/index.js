@@ -6,6 +6,7 @@ import transactionReducer from "./transaction";
 import distributionReducer from "./distribution";
 import orderReducer from "./order";
 import employeeReducer from "./employee";
+import employeeChecklistReducer from "./employeeChecklist";
 import patientReducer from "./patient";
 import thresholdReducer from "./threshold";
 import vendorReducer from "./vendor";
@@ -37,6 +38,7 @@ export default combineReducers({
   transaction: transactionReducer,
   distribution: distributionReducer,
   employee: employeeReducer,
+  employeeChecklist: employeeChecklistReducer,
   category: categoryReducer,
   subCategory: subCategoryReducer,
   patient: patientReducer,

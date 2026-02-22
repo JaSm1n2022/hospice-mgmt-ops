@@ -8,9 +8,9 @@ import CustomDatePicker from "components/Date/CustomDatePicker";
 import GridContainer from "components/Grid/GridContainer";
 import GridItem from "components/Grid/GridItem";
 import moment from "moment";
-import { useState } from "react";
-import { useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { connect } from "react-redux";
+import { SupaContext } from "App";
 import { resetFetchDistributionState } from "store/actions/distributionAction";
 import { attemptToFetchDistribution } from "store/actions/distributionAction";
 import { resetFetchPatientState } from "store/actions/patientAction";
@@ -250,6 +250,7 @@ const PatientDistribution = (props) => {
     listAssignments,
   } = props;
   const classes = useStyles();
+  const context = useContext(SupaContext);
   const [value, setValue] = useState("one");
   const [isPatientCollection, setIsPatientCollection] = useState(true);
   const [isDistributionCollection, setIsDistributionCollection] = useState(
@@ -267,20 +268,16 @@ const PatientDistribution = (props) => {
   const [isRefresh, setIsRefresh] = useState(false);
   const [product, setProduct] = useState(DEFAULT_ITEM);
   useEffect(() => {
-    if (
-      props.profileState &&
-      props.profileState.data &&
-      props.profileState.data.length
-    ) {
-      userProfile = props.profileState.data[0];
-      listStocks({ companyId: userProfile.companyId });
-      listProducts({ companyId: userProfile.companyId });
-      listPatients({ companyId: userProfile.companyId });
-      listAssignments({ companyId: userProfile.companyId });
+    if (context.userProfile?.companyId) {
+      const companyId = context.userProfile.companyId;
+      listStocks({ companyId });
+      listProducts({ companyId });
+      listPatients({ companyId });
+      listAssignments({ companyId });
       listDistributions({
         from: dates.from,
         to: dates.to,
-        companyId: userProfile.companyId,
+        companyId,
       });
       isTransactionDone = true; // not needed
     }
@@ -677,7 +674,7 @@ const PatientDistribution = (props) => {
       listDistributions({
         from: moment(new Date(value)).format("YYYY-MM-DD"),
         to: moment(new Date(dateTo)).format("YYYY-MM-DD"),
-        companyId: userProfile.companyId,
+        companyId: context.userProfile?.companyId,
       });
     } else if (name === "dateTo") {
       setDateTo(value);
@@ -685,7 +682,7 @@ const PatientDistribution = (props) => {
       listDistributions({
         from: moment(new Date(dateFrom)).format("YYYY-MM-DD"),
         to: moment(new Date(value)).format("YYYY-MM-DD"),
-        companyId: userProfile.companyId,
+        companyId: context.userProfile?.companyId,
       });
     }
   };

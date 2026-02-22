@@ -201,6 +201,11 @@ function IDGForm(props) {
       "case manager",
     ],
     "director of nurse": ["registered nurse", "director of nurse"],
+    "admission nurse": [
+      "case manager",
+      "admission nurse",
+      "director of nurse",
+    ],
     chaplain: ["chaplain", "bereavement"],
     bereavement: ["chaplain", "bereavement"],
   };

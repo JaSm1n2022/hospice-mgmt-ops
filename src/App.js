@@ -114,11 +114,16 @@ function App({
 
   useEffect(() => {
     if (employeeState.status === ACTION_STATUSES.SUCCEED && !employeeProfile) {
+      console.log("[Are You resetting me]");
       const employee = employeeState?.data?.[0];
-      setEmployeeProfile(employee);
-      resetListEmployee();
+      // Only set and reset if this fetch was for the user's employee profile
+      // (single result matching the user's email)
+      if (employee && employee.email === userProfile?.username) {
+        setEmployeeProfile(employee);
+        resetListEmployee();
+      }
     }
-  }, [employeeState, employeeProfile, resetListEmployee]);
+  }, [employeeState, employeeProfile, resetListEmployee, userProfile]);
 
   // Determine routes based on user role
   console.log(
