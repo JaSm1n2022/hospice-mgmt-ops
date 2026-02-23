@@ -78,65 +78,65 @@ const useStyles = makeStyles(styles);
 const CHECKLIST_STRUCTURE = {
   section1: {
     items: [
-      { key: "applicationForm", hasExpiration: false },
-      { key: "resume", hasExpiration: false },
+      { key: "applicationForm", hasExpiration: false, mandatory: true },
+      { key: "resume", hasExpiration: false, mandatory: true },
     ],
   },
   section2: {
     items: [
-      { key: "licenseVerification", hasExpiration: true },
-      { key: "diploma", hasExpiration: true },
-      { key: "pli", hasExpiration: true },
-      { key: "ssc", hasExpiration: false },
-      { key: "cprCard", hasExpiration: true },
-      { key: "driversLicense", hasExpiration: true },
-      { key: "autoInsurance", hasExpiration: true },
+      { key: "licenseVerification", hasExpiration: true, mandatory: true },
+      { key: "diploma", hasExpiration: true, mandatory: true },
+      { key: "pli", hasExpiration: true, mandatory: false },
+      { key: "ssc", hasExpiration: false, mandatory: true },
+      { key: "cprCard", hasExpiration: true, mandatory: true },
+      { key: "driversLicense", hasExpiration: true, mandatory: true },
+      { key: "autoInsurance", hasExpiration: true, mandatory: true },
     ],
   },
   section3: {
     items: [
-      { key: "jobDescription", hasExpiration: false },
-      { key: "offerLetter", hasExpiration: false },
-      { key: "orientation", hasExpiration: false },
-      { key: "competency", hasExpiration: false },
-      { key: "performanceEvaluations", hasExpiration: false },
+      { key: "jobDescription", hasExpiration: false, mandatory: true },
+      { key: "offerLetter", hasExpiration: false, mandatory: true },
+      { key: "orientation", hasExpiration: false, mandatory: true },
+      { key: "competency", hasExpiration: false, mandatory: true },
+      { key: "performanceEvaluations", hasExpiration: false, mandatory: true },
     ],
   },
   section4: {
     items: [
-      { key: "confidentiality", hasExpiration: false },
-      { key: "eSig", hasExpiration: false },
-      { key: "fieldPractices", hasExpiration: false },
-      { key: "handbook", hasExpiration: false },
-      { key: "compliance", hasExpiration: false },
-      { key: "policies", hasExpiration: false },
-      { key: "ppe", hasExpiration: false },
-      { key: "hipaa", hasExpiration: false },
+      { key: "confidentiality", hasExpiration: false, mandatory: true },
+      { key: "eSig", hasExpiration: false, mandatory: true },
+      { key: "fieldPractices", hasExpiration: false, mandatory: true },
+      { key: "handbook", hasExpiration: false, mandatory: true },
+      { key: "compliance", hasExpiration: false, mandatory: true },
+      { key: "policies", hasExpiration: false, mandatory: true },
+      { key: "ppe", hasExpiration: false, mandatory: true },
+      { key: "hipaa", hasExpiration: false, mandatory: true },
     ],
   },
   section5: {
     items: [
-      { key: "inServicesHire", hasExpiration: false },
-      { key: "inServicesAnnual", hasExpiration: false },
-      { key: "ceus", hasExpiration: false },
+      { key: "inServicesHire", hasExpiration: false, mandatory: false },
+      { key: "inServicesAnnual", hasExpiration: false, mandatory: false },
+      { key: "ceus", hasExpiration: false, mandatory: false },
     ],
   },
   section6: {
     items: [
-      { key: "physicalExam", hasExpiration: false },
-      { key: "hepatitisB", hasExpiration: false },
-      { key: "tbCxr", hasExpiration: false },
-      { key: "tbQuestionnaire", hasExpiration: false },
-      { key: "criminalHistory", hasExpiration: false },
+      { key: "physicalExam", hasExpiration: false, mandatory: true },
+      { key: "hepatitisB", hasExpiration: false, mandatory: true },
+      { key: "tbCxr", hasExpiration: false, mandatory: true },
+      { key: "tbQuestionnaire", hasExpiration: false, mandatory: true },
+      { key: "criminalHistory", hasExpiration: false, mandatory: true },
     ],
   },
   section7: {
-    items: [{ key: "backgroundCheck", hasExpiration: false }],
+    items: [{ key: "backgroundCheck", hasExpiration: false, mandatory: true }],
   },
   section8: {
     items: [
-      { key: "formI9", hasExpiration: false },
-      { key: "w4W9", hasExpiration: false },
+      { key: "formI9", hasExpiration: false, mandatory: true },
+      { key: "w4W9", hasExpiration: false, mandatory: true },
     ],
   },
 };
@@ -150,9 +150,18 @@ function HROnboardingChecklistFunction(props) {
   const [employeeList, setEmployeeList] = useState([]);
   const [isEmployeeCollection, setIsEmployeeCollection] = useState(true);
   const [isChecklistCollection, setIsChecklistCollection] = useState(true);
-  const [isCreateChecklistCollection, setIsCreateChecklistCollection] = useState(true);
-  const [isUpdateChecklistCollection, setIsUpdateChecklistCollection] = useState(true);
-  const [isDeleteChecklistCollection, setIsDeleteChecklistCollection] = useState(true);
+  const [
+    isCreateChecklistCollection,
+    setIsCreateChecklistCollection,
+  ] = useState(true);
+  const [
+    isUpdateChecklistCollection,
+    setIsUpdateChecklistCollection,
+  ] = useState(true);
+  const [
+    isDeleteChecklistCollection,
+    setIsDeleteChecklistCollection,
+  ] = useState(true);
   const [isFormModal, setIsFormModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(undefined);
   const [mode, setMode] = useState("create");
@@ -188,7 +197,11 @@ function HROnboardingChecklistFunction(props) {
   };
 
   const deleteRecordItemHandler = (data) => {
-    if (window.confirm(`Are you sure you want to delete the checklist for ${data.employeeName}?`)) {
+    if (
+      window.confirm(
+        `Are you sure you want to delete the checklist for ${data.employeeName}?`
+      )
+    ) {
       props.deleteChecklist(data.id);
       setIsDeleteChecklistCollection(false);
     }
@@ -363,7 +376,9 @@ function HROnboardingChecklistFunction(props) {
         section6Status.completed +
         section7Status.completed +
         section8Status.completed;
-      const overallProgress = `${Math.round((completedItems / totalItems) * 100)}%`;
+      const overallProgress = `${Math.round(
+        (completedItems / totalItems) * 100
+      )}%`;
 
       // Get employee name from checklist or look up from employee list
       const employeeName = checklist.employeeName || "Unknown Employee";
@@ -460,8 +475,12 @@ function HROnboardingChecklistFunction(props) {
       section6: sections.section6,
       section7: sections.section7,
       section8: sections.section8,
-      created_user: context.userProfile?.username || context.userProfile?.email,
-      updated_user: context.userProfile?.username || context.userProfile?.email,
+
+      updatedUser: {
+        name: context.userProfile?.name,
+        userId: context.userProfile?.id,
+        date: new Date(),
+      },
     };
 
     if (mode === "edit" && selectedItem?.id) {
@@ -471,6 +490,11 @@ function HROnboardingChecklistFunction(props) {
       setIsUpdateChecklistCollection(false);
     } else {
       // Create new
+      payload.createdUser = {
+        name: context.userProfile?.name,
+        userId: context.userProfile?.id,
+        date: new Date(),
+      };
       props.createChecklist(payload);
       setIsCreateChecklistCollection(false);
     }
@@ -515,7 +539,10 @@ function HROnboardingChecklistFunction(props) {
                 </Grid>
               </CardHeader>
               <CardBody>
-                <GridContainer alignItems="center" style={{ paddingLeft: 12, marginBottom: 20 }}>
+                <GridContainer
+                  alignItems="center"
+                  style={{ paddingLeft: 12, marginBottom: 20 }}
+                >
                   <Grid item xs={12} md={6}>
                     <div style={{ display: "inline-flex", gap: 10 }}>
                       <Button
