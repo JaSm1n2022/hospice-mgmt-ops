@@ -90,6 +90,7 @@ import Hope from "views/Administrator/Hope/HopeFunction";
 import RecertificationTimeline from "views/Administrator/RecertificationTimeline/RecertificationTimelineFunction";
 import BereavementTimeline from "views/Administrator/BereavementTimeline/BereavementTimelineFunction";
 import UpdateBenefits from "views/Administrator/Utilities/UpdateBenefits";
+import QAChart from "views/Administrator/Utilities/QAChart";
 var dashRoutes = [
   {
     path: "/dashboard",
@@ -374,6 +375,15 @@ var dashRoutes = [
         mini: "PM",
         rtlMini: "ع",
         component: UpdateBenefits,
+        layout: "/admin",
+      },
+      {
+        path: "/qaChart",
+        name: "QA Chart",
+        rtlName: "عالتسعير",
+        mini: "QA",
+        rtlMini: "ع",
+        component: QAChart,
         layout: "/admin",
       },
     ],
