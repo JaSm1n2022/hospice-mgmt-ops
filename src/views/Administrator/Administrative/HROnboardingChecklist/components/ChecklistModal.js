@@ -64,16 +64,28 @@ const CHECKLIST_STRUCTURE = {
   section1: {
     title: "Section 1: Application Documents",
     items: [
-      { key: "applicationForm", label: "Application Form", hasExpiration: false },
+      {
+        key: "applicationForm",
+        label: "Application Form",
+        hasExpiration: false,
+      },
       { key: "resume", label: "Resume", hasExpiration: false },
     ],
   },
   section2: {
     title: "Section 2: License & Credentials",
     items: [
-      { key: "licenseVerification", label: "License Verification", hasExpiration: true },
-      { key: "diploma", label: "Diploma", hasExpiration: true },
-      { key: "pli", label: "PLI (Professional Liability Insurance)", hasExpiration: true },
+      {
+        key: "licenseVerification",
+        label: "License Verification",
+        hasExpiration: true,
+      },
+      { key: "diploma", label: "Diploma", hasExpiration: false },
+      {
+        key: "pli",
+        label: "PLI (Professional Liability Insurance)",
+        hasExpiration: true,
+      },
       { key: "ssc", label: "SSC (Social Security Card)", hasExpiration: false },
       { key: "cprCard", label: "CPR Card", hasExpiration: true },
       { key: "driversLicense", label: "Driver's License", hasExpiration: true },
@@ -87,44 +99,100 @@ const CHECKLIST_STRUCTURE = {
       { key: "offerLetter", label: "Offer Letter", hasExpiration: false },
       { key: "orientation", label: "Orientation", hasExpiration: false },
       { key: "competency", label: "Competency", hasExpiration: false },
-      { key: "performanceEvaluations", label: "Performance Evaluations", hasExpiration: false },
+      {
+        key: "performanceEvaluations",
+        label: "Performance Evaluations",
+        hasExpiration: false,
+      },
     ],
   },
   section4: {
     title: "Section 4: Policies & Agreements",
     items: [
-      { key: "confidentiality", label: "Confidentiality Agreement", hasExpiration: false },
+      {
+        key: "confidentiality",
+        label: "Confidentiality Agreement",
+        hasExpiration: false,
+      },
       { key: "eSig", label: "E-Signature Agreement", hasExpiration: false },
-      { key: "fieldPractices", label: "Field Practices Agreement", hasExpiration: false },
+      {
+        key: "fieldPractices",
+        label: "Field Practices Agreement",
+        hasExpiration: false,
+      },
       { key: "handbook", label: "Employee Handbook", hasExpiration: false },
-      { key: "compliance", label: "Compliance Agreement", hasExpiration: false },
-      { key: "policies", label: "Policies Acknowledgment", hasExpiration: false },
-      { key: "ppe", label: "PPE (Personal Protective Equipment)", hasExpiration: false },
-      { key: "hipaa", label: "HIPAA Training & Agreement", hasExpiration: false },
+      {
+        key: "compliance",
+        label: "Compliance Agreement",
+        hasExpiration: false,
+      },
+      {
+        key: "policies",
+        label: "Policies Acknowledgment",
+        hasExpiration: false,
+      },
+      {
+        key: "ppe",
+        label: "PPE (Personal Protective Equipment)",
+        hasExpiration: false,
+      },
+      {
+        key: "hipaa",
+        label: "HIPAA Training & Agreement",
+        hasExpiration: false,
+      },
     ],
   },
   section5: {
     title: "Section 5: Training & Education",
     items: [
-      { key: "inServicesHire", label: "In-services (Hire)", hasExpiration: false },
-      { key: "inServicesAnnual", label: "In-services (Annual)", hasExpiration: false },
-      { key: "ceus", label: "CEUs (Continuing Education Units)", hasExpiration: false },
+      {
+        key: "inServicesHire",
+        label: "In-services (Hire)",
+        hasExpiration: false,
+      },
+      {
+        key: "inServicesAnnual",
+        label: "In-services (Annual)",
+        hasExpiration: false,
+      },
+      {
+        key: "ceus",
+        label: "CEUs (Continuing Education Units)",
+        hasExpiration: false,
+      },
     ],
   },
   section6: {
     title: "Section 6: Health & Background",
     items: [
       { key: "physicalExam", label: "Physical Exam", hasExpiration: false },
-      { key: "hepatitisB", label: "Hepatitis B Vaccination", hasExpiration: false },
+      {
+        key: "hepatitisB",
+        label: "Hepatitis B Vaccination",
+        hasExpiration: false,
+      },
       { key: "tbCxr", label: "TB/CXR (Chest X-Ray)", hasExpiration: false },
-      { key: "tbQuestionnaire", label: "TB Questionnaire", hasExpiration: false },
-      { key: "criminalHistory", label: "Criminal History Check", hasExpiration: false },
+      {
+        key: "tbQuestionnaire",
+        label: "TB Questionnaire",
+        hasExpiration: false,
+      },
+      {
+        key: "criminalHistory",
+        label: "Criminal History Check",
+        hasExpiration: false,
+      },
     ],
   },
   section7: {
     title: "Section 7: Background Verification",
     items: [
-      { key: "backgroundCheck", label: "Background Check (NABS)", hasExpiration: false },
+      {
+        key: "backgroundCheck",
+        label: "Background Check (NABS)",
+        hasExpiration: false,
+      },
     ],
   },
   section8: {
@@ -136,7 +204,14 @@ const CHECKLIST_STRUCTURE = {
   },
 };
 
-const ChecklistModal = ({ open, onClose, onSubmit, item, mode, employeeList }) => {
+const ChecklistModal = ({
+  open,
+  onClose,
+  onSubmit,
+  item,
+  mode,
+  employeeList,
+}) => {
   const classes = useStyles();
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [checklistData, setChecklistData] = useState({});
@@ -270,13 +345,19 @@ const ChecklistModal = ({ open, onClose, onSubmit, item, mode, employeeList }) =
     onSubmit({
       employee: selectedEmployee,
       employeeId: selectedEmployee.id,
-      employeeName: selectedEmployee.value || selectedEmployee.name || selectedEmployee.label,
+      employeeName:
+        selectedEmployee.value ||
+        selectedEmployee.name ||
+        selectedEmployee.label,
       checklistData: checklistData,
     });
   };
 
   const renderChecklistItem = (checkItem) => {
-    const itemData = checklistData[checkItem.key] || { checked: false, expirationDate: null };
+    const itemData = checklistData[checkItem.key] || {
+      checked: false,
+      expirationDate: null,
+    };
 
     return (
       <Box key={checkItem.key} className={classes.checkboxItem}>
@@ -313,7 +394,8 @@ const ChecklistModal = ({ open, onClose, onSubmit, item, mode, employeeList }) =
                 style={{ maxWidth: "300px" }}
                 error={
                   itemData.checked &&
-                  (!itemData.expirationDate || isExpired(itemData.expirationDate))
+                  (!itemData.expirationDate ||
+                    isExpired(itemData.expirationDate))
                 }
                 helperText={
                   itemData.checked && !itemData.expirationDate
@@ -334,9 +416,15 @@ const ChecklistModal = ({ open, onClose, onSubmit, item, mode, employeeList }) =
     const section = CHECKLIST_STRUCTURE[sectionKey];
 
     return (
-      <Accordion key={sectionKey} defaultExpanded={false} className={classes.section}>
+      <Accordion
+        key={sectionKey}
+        defaultExpanded={false}
+        className={classes.section}
+      >
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <Typography className={classes.sectionHeader}>{section.title}</Typography>
+          <Typography className={classes.sectionHeader}>
+            {section.title}
+          </Typography>
         </AccordionSummary>
         <AccordionDetails>
           <Box style={{ width: "100%" }}>

@@ -801,7 +801,13 @@ function PayrollFunction(props) {
         const currentCategory = payrollProductList.find(
           (f) => f.subCategory === dd.employeeTitle
         );
-        console.log("[Current Category]", currentCategory);
+
+        console.log(
+          "[Current Category]",
+          currentCategory,
+          payrollProductList,
+          d
+        );
         const isDistributed = dd.isDistributed || false;
         payrollIds.push(dd.id);
         const obj = {

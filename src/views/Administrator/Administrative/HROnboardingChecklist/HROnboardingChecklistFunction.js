@@ -85,7 +85,7 @@ const CHECKLIST_STRUCTURE = {
   section2: {
     items: [
       { key: "licenseVerification", hasExpiration: true, mandatory: true },
-      { key: "diploma", hasExpiration: true, mandatory: true },
+      { key: "diploma", hasExpiration: false, mandatory: true },
       { key: "pli", hasExpiration: true, mandatory: false },
       { key: "ssc", hasExpiration: false, mandatory: true },
       { key: "cprCard", hasExpiration: true, mandatory: true },
