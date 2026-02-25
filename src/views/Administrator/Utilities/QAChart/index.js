@@ -193,6 +193,7 @@ function QAChart(props) {
         patientCd: patient.patientCd || "N/A",
         patientName: patient.name || `${patient.fn || ""} ${patient.ln || ""}`.trim() || "Unknown",
         socDate: socDate.format("MM/DD/YYYY"),
+        socDateSort: socDate.valueOf(), // Keep timestamp for sorting
         eocDate: eocDate ? moment(eocDate).format("MM/DD/YYYY") : "—",
         monthWeeks: {},
         totalWeeks: 0,
@@ -209,6 +210,9 @@ function QAChart(props) {
 
       return row;
     });
+
+    // Sort by SOC date ascending (oldest first)
+    patientRows.sort((a, b) => a.socDateSort - b.socDateSort);
 
     return { months, patientRows };
   };
