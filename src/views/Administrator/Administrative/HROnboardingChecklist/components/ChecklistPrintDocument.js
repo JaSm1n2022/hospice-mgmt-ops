@@ -65,14 +65,16 @@ const styles = StyleSheet.create({
     borderColor: "#f44336",
   },
   checkmark: {
-    fontSize: 10,
+    fontSize: 12,
     color: "white",
     fontWeight: "bold",
+    lineHeight: 1,
   },
   xmark: {
-    fontSize: 10,
+    fontSize: 11,
     color: "#f44336",
     fontWeight: "bold",
+    lineHeight: 1,
   },
   itemText: {
     fontSize: 11,
@@ -160,13 +162,7 @@ const ChecklistPrintDocument = ({ employeeData, checklistData }) => {
               ? styles.checkboxContainerChecked
               : styles.checkboxContainerUnchecked,
           ]}
-        >
-          {isChecked ? (
-            <Text style={styles.checkmark}>✓</Text>
-          ) : (
-            <Text style={styles.xmark}>✗</Text>
-          )}
-        </View>
+        />
         <Text style={styles.itemText}>{ITEM_LABELS[itemKey] || itemKey}</Text>
         {hasExpiration && (
           <>
@@ -221,7 +217,7 @@ const ChecklistPrintDocument = ({ employeeData, checklistData }) => {
 
         <View style={styles.footer}>
           <Text>
-            Legend: Green checkbox (✓) = Completed | Red checkbox (✗) = Incomplete | ⚠ = Expired
+            Legend: Green box = Completed | Red border box = Incomplete | ⚠ = Expired
           </Text>
         </View>
       </Page>
