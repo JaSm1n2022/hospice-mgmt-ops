@@ -6,7 +6,7 @@ import { Warning as WarningIcon } from "@material-ui/icons";
 class HROnboardingHandler {
   static columns(main) {
     return [
-      { width: 92, name: "actions", header: "Actions", visible: main },
+      { width: 120, name: "actions", header: "Actions", visible: main },
       {
         defaultFlex: 1,
         minWidth: 200,

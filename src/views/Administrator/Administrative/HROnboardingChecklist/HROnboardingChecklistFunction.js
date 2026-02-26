@@ -12,6 +12,7 @@ import AddIcon from "@material-ui/icons/Add";
 import Snackbar from "components/Snackbar/Snackbar";
 import AddAlert from "@material-ui/icons/AddAlert";
 import ActionsFunction from "components/Actions/ActionsFunction";
+import ChecklistActionsFunction from "./components/ChecklistActionsFunction";
 import { connect } from "react-redux";
 import { SupaContext } from "App";
 import { ACTION_STATUSES } from "utils/constants";
@@ -19,6 +20,9 @@ import moment from "moment";
 
 import HROnboardingHandler from "./handler/HROnboardingHandler";
 import ChecklistModal from "./components/ChecklistModal";
+import PrintModal from "./components/PrintModal";
+import PrintAllModal from "./components/PrintAllModal";
+import { Print as PrintIcon } from "@material-ui/icons";
 
 // Redux imports for Employee
 import { employeeListStateSelector } from "store/selectors/employeeSelector";
@@ -168,6 +172,9 @@ function HROnboardingChecklistFunction(props) {
   const [tc, setTC] = useState(false);
   const [message, setMessage] = useState("");
   const [color, setColor] = useState("success");
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+  const [selectedPrintData, setSelectedPrintData] = useState(null);
+  const [isPrintAllModalOpen, setIsPrintAllModalOpen] = useState(false);
 
   const showNotification = (place, color, msg) => {
     setMessage(msg);
@@ -205,6 +212,26 @@ function HROnboardingChecklistFunction(props) {
       props.deleteChecklist(data.id);
       setIsDeleteChecklistCollection(false);
     }
+  };
+
+  const printChecklistHandler = (data) => {
+    console.log("Print checklist for:", data);
+    setSelectedPrintData(data);
+    setIsPrintModalOpen(true);
+  };
+
+  const closePrintModal = () => {
+    setIsPrintModalOpen(false);
+    setSelectedPrintData(null);
+  };
+
+  const printAllChecklistsHandler = () => {
+    console.log("Print all checklists");
+    setIsPrintAllModalOpen(true);
+  };
+
+  const closePrintAllModal = () => {
+    setIsPrintAllModalOpen(false);
   };
 
   // Handle status changes
@@ -427,9 +454,10 @@ function HROnboardingChecklistFunction(props) {
           ...col,
           editable: () => false,
           render: (cellProps) => (
-            <ActionsFunction
+            <ChecklistActionsFunction
               deleteRecordItemHandler={deleteRecordItemHandler}
               createFormHandler={createFormHandler}
+              printChecklistHandler={printChecklistHandler}
               data={{ ...cellProps.data }}
               isNoDeleteEnabled={false}
             />
@@ -522,6 +550,26 @@ function HROnboardingChecklistFunction(props) {
         mode={mode}
         employeeList={employeeList}
       />
+      <PrintModal
+        isOpen={isPrintModalOpen}
+        onClose={closePrintModal}
+        employeeData={selectedPrintData}
+        checklistData={selectedPrintData ? {
+          section1: selectedPrintData.section1,
+          section2: selectedPrintData.section2,
+          section3: selectedPrintData.section3,
+          section4: selectedPrintData.section4,
+          section5: selectedPrintData.section5,
+          section6: selectedPrintData.section6,
+          section7: selectedPrintData.section7,
+          section8: selectedPrintData.section8,
+        } : null}
+      />
+      <PrintAllModal
+        isOpen={isPrintAllModalOpen}
+        onClose={closePrintAllModal}
+        employeesData={dataSource}
+      />
       <div style={{ marginTop: "10px" }}>
         <GridContainer>
           <GridItem xs={12} sm={12} md={12}>
@@ -550,6 +598,13 @@ function HROnboardingChecklistFunction(props) {
                         onClick={() => createFormHandler({}, "create")}
                       >
                         <AddIcon className={classes.icons} /> Add Checklist
+                      </Button>
+                      <Button
+                        color="success"
+                        onClick={printAllChecklistsHandler}
+                        disabled={dataSource.length === 0}
+                      >
+                        <PrintIcon className={classes.icons} /> Print All
                       </Button>
                     </div>
                   </Grid>
