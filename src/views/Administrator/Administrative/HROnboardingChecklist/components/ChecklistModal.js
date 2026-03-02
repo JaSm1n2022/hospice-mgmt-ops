@@ -349,6 +349,7 @@ const ChecklistModal = ({
         selectedEmployee.value ||
         selectedEmployee.name ||
         selectedEmployee.label,
+      employeePosition: selectedEmployee.position,
       checklistData: checklistData,
     });
   };

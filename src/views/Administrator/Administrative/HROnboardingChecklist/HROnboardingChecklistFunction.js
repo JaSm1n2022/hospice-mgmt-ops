@@ -339,6 +339,7 @@ function HROnboardingChecklistFunction(props) {
       name: emp.name || `${emp.fn || ""} ${emp.ln || ""}`.trim(),
       value: emp.name || `${emp.fn || ""} ${emp.ln || ""}`.trim(),
       label: emp.name || `${emp.fn || ""} ${emp.ln || ""}`.trim(),
+      position: emp.position,
     }));
 
     setEmployeeList(employeeOptions);
@@ -409,12 +410,14 @@ function HROnboardingChecklistFunction(props) {
 
       // Get employee name from checklist or look up from employee list
       const employeeName = checklist.employeeName || "Unknown Employee";
+      const employeePosition = checklist.employeePosition;
 
       return {
         ...checklist,
         id: checklist.id,
         employeeId: checklist.employeeId,
         employeeName: employeeName,
+        employeePosition: employeePosition,
         section1Status,
         section2Status,
         section3Status,
@@ -441,6 +444,7 @@ function HROnboardingChecklistFunction(props) {
           name: employeeName,
           value: employeeName,
           label: employeeName,
+          position: employeePosition,
         },
       };
     });
@@ -494,6 +498,7 @@ function HROnboardingChecklistFunction(props) {
     const payload = {
       employeeId: data.employeeId,
       employeeName: data.employeeName,
+      employeePosition: data.employeePosition,
       companyId: context.userProfile?.companyId,
       section1: sections.section1,
       section2: sections.section2,

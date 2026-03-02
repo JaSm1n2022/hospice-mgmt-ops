@@ -80,6 +80,10 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     borderColor: "#f44336",
   },
+  checkboxContainerUncheckedBlack: {
+    backgroundColor: "white",
+    borderColor: "#000000",
+  },
   checkmark: {
     fontSize: 12,
     color: "white",
@@ -134,7 +138,7 @@ const ITEM_LABELS = {
   resume: "Resume",
   licenseVerification: "License Verification",
   diploma: "Diploma",
-  pli: "PLI (Professional Liability Insurance)",
+  pli: "PLI (Professional Liability Insurance) (if any)",
   ssc: "SSC (Social Security Card)",
   cprCard: "CPR Card",
   driversLicense: "Driver's License",
@@ -165,21 +169,79 @@ const ITEM_LABELS = {
   w4W9: "W-4/W-9 Tax Forms",
 };
 
+// Roles that require License Verification
+const ROLES_REQUIRING_LICENSE = [
+  "Case Manager",
+  "Certified Nurse Assistant",
+  "Registered Nurse",
+  "Director of Nurse",
+  "LPN",
+  "Admission Nurse",
+  "Medical Director",
+  "Nurse Practitioner",
+];
+
+// Roles that require CPR Card (excluding Medical Director)
+const ROLES_REQUIRING_CPR = [
+  "Case Manager",
+  "Certified Nurse Assistant",
+  "Registered Nurse",
+  "Director of Nurse",
+  "LPN",
+  "Admission Nurse",
+  "Nurse Practitioner",
+];
+
 const ChecklistPrintAllDocument = ({ employeesData }) => {
-  const renderItem = (itemKey, itemData) => {
+  const shouldUseBlackBorder = (itemKey, isChecked, employeePosition) => {
+    // If item is checked, don't apply black border
+    if (isChecked) return false;
+
+    // PLI - always show black border if missing (optional for all)
+    if (itemKey === "pli") return true;
+
+    // Performance Evaluation - always show black border if missing (optional for all)
+    if (itemKey === "performanceEvaluations") return true;
+
+    // License Verification - black border for roles where it's NOT required (optional)
+    // Red border for roles where it IS required (mandatory)
+    if (itemKey === "licenseVerification") {
+      return !ROLES_REQUIRING_LICENSE.includes(employeePosition);
+    }
+
+    // CPR Card - black border for roles where it's NOT required (optional)
+    // Red border for roles where it IS required (mandatory)
+    if (itemKey === "cprCard") {
+      return !ROLES_REQUIRING_CPR.includes(employeePosition);
+    }
+
+    return false;
+  };
+
+  const renderItem = (itemKey, itemData, sectionKey, employeePosition) => {
     const isChecked = itemData && itemData.checked;
     const hasExpiration = itemData && itemData.expirationDate;
     const isExpired =
       hasExpiration && moment(itemData.expirationDate).isBefore(moment(), "day");
+
+    // Determine checkbox style
+    let checkboxStyle;
+    if (isChecked) {
+      checkboxStyle = styles.checkboxContainerChecked;
+    } else if (sectionKey === "section5" || shouldUseBlackBorder(itemKey, isChecked, employeePosition)) {
+      // Section 5 items or special conditional items get black border
+      checkboxStyle = styles.checkboxContainerUncheckedBlack;
+    } else {
+      // Default red border
+      checkboxStyle = styles.checkboxContainerUnchecked;
+    }
 
     return (
       <View style={styles.itemRow} key={itemKey}>
         <View
           style={[
             styles.checkboxContainer,
-            isChecked
-              ? styles.checkboxContainerChecked
-              : styles.checkboxContainerUnchecked,
+            checkboxStyle,
           ]}
         />
         <Text style={styles.itemText}>{ITEM_LABELS[itemKey] || itemKey}</Text>
@@ -195,7 +257,7 @@ const ChecklistPrintAllDocument = ({ employeesData }) => {
     );
   };
 
-  const renderSection = (sectionKey, sectionData) => {
+  const renderSection = (sectionKey, sectionData, employeePosition) => {
     if (!sectionData || Object.keys(sectionData).length === 0) {
       return null;
     }
@@ -206,13 +268,15 @@ const ChecklistPrintAllDocument = ({ employeesData }) => {
           {SECTION_LABELS[sectionKey] || sectionKey}
         </Text>
         {Object.keys(sectionData).map((itemKey) =>
-          renderItem(itemKey, sectionData[itemKey])
+          renderItem(itemKey, sectionData[itemKey], sectionKey, employeePosition)
         )}
       </View>
     );
   };
 
   const renderEmployee = (employee, index) => {
+    const employeePosition = employee.employeePosition;
+
     return (
       <View key={employee.id || index} style={styles.employeeSection} break={index > 0}>
         <View style={styles.employeeHeader}>
@@ -221,14 +285,14 @@ const ChecklistPrintAllDocument = ({ employeesData }) => {
           </Text>
         </View>
 
-        {employee.section1 && renderSection("section1", employee.section1)}
-        {employee.section2 && renderSection("section2", employee.section2)}
-        {employee.section3 && renderSection("section3", employee.section3)}
-        {employee.section4 && renderSection("section4", employee.section4)}
-        {employee.section5 && renderSection("section5", employee.section5)}
-        {employee.section6 && renderSection("section6", employee.section6)}
-        {employee.section7 && renderSection("section7", employee.section7)}
-        {employee.section8 && renderSection("section8", employee.section8)}
+        {employee.section1 && renderSection("section1", employee.section1, employeePosition)}
+        {employee.section2 && renderSection("section2", employee.section2, employeePosition)}
+        {employee.section3 && renderSection("section3", employee.section3, employeePosition)}
+        {employee.section4 && renderSection("section4", employee.section4, employeePosition)}
+        {employee.section5 && renderSection("section5", employee.section5, employeePosition)}
+        {employee.section6 && renderSection("section6", employee.section6, employeePosition)}
+        {employee.section7 && renderSection("section7", employee.section7, employeePosition)}
+        {employee.section8 && renderSection("section8", employee.section8, employeePosition)}
       </View>
     );
   };
@@ -256,7 +320,7 @@ const ChecklistPrintAllDocument = ({ employeesData }) => {
 
         <View style={styles.footer}>
           <Text>
-            Legend: Green box = Completed | Red border box = Incomplete | ⚠ = Expired
+            Legend: Green box = Completed | Red border = Incomplete | Black border = Conditional/Optional | ⚠ = Expired
           </Text>
         </View>
       </Page>
