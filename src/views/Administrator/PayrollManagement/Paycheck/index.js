@@ -32,6 +32,9 @@ import {
   Menu,
   MenuItem,
   Typography,
+  Select,
+  FormControl,
+  InputLabel,
 } from "@material-ui/core";
 import AddIcon from "@material-ui/icons/Add";
 import UploadIcon from "@material-ui/icons/CloudUpload";
@@ -154,6 +157,12 @@ function PayrollFunction(props) {
   const [mode, setMode] = useState("create");
   const [isAddGroupButtons, setIsAddGroupButtons] = useState(false);
   const [keywordValue, setKeywordValue] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedYear, setSelectedYear] = useState("");
+  const [payDateFrom, setPayDateFrom] = useState("");
+  const [payDateTo, setPayDateTo] = useState("");
+  const [isDOSFilter, setIsDOSFilter] = useState(false);
+  const [activeFilterLabel, setActiveFilterLabel] = useState("Filter By Pay Date");
 
   const createFormHandler = (data, mode) => {
     setItem(data);
@@ -225,6 +234,9 @@ function PayrollFunction(props) {
       const dates = Helper.formatDateRangeByCriteriaV2("thisMonth");
       setDateFrom(dates.from);
       setDateTo(dates.to);
+      setPayDateFrom(dates.from);
+      setPayDateTo(dates.to);
+      setActiveFilterLabel("Filter By Pay Date (This Month)");
 
       props.listPayrolls({
         from: dates.from,
@@ -270,6 +282,25 @@ function PayrollFunction(props) {
     let source = props.payrolls.data;
     if (source && source.length) {
       source = PayrollHandler.mapData(source);
+    }
+
+    // If DOS filter is active, filter by DOS array
+    if (isDOSFilter && selectedMonth && selectedYear) {
+      source = source.filter((record) => {
+        // Check if dos exists and is an array
+        if (!record.dos || !Array.isArray(record.dos) || record.dos.length === 0) {
+          return false;
+        }
+
+        // Check if any DOS falls within the selected month and year
+        return record.dos.some((dosDate) => {
+          const date = moment(dosDate);
+          const dosMonth = date.month() + 1; // moment months are 0-indexed
+          const dosYear = date.year();
+
+          return dosMonth === parseInt(selectedMonth) && dosYear === parseInt(selectedYear);
+        });
+      });
     }
 
     const cols = PayrollHandler.columns().map((col, index) => {
@@ -387,6 +418,7 @@ function PayrollFunction(props) {
   ) {
     setIsCreatePayrollCollection(false);
     showNotification("tc", "success", "Payroll successfully created.");
+    setIsDOSFilter(false);
 
     props.listPayrolls({
       from: dateFrom,
@@ -401,6 +433,8 @@ function PayrollFunction(props) {
   ) {
     showNotification("tc", "success", "Payroll successfully updated.");
     setIsUpdatePayrollCollection(false);
+    setIsDOSFilter(false);
+
     props.listPayrolls({
       from: dateFrom,
       to: dateTo,
@@ -419,6 +453,7 @@ function PayrollFunction(props) {
   ) {
     showNotification("tc", "success", "Payroll successfully deleted.");
     setIsDeletePayrollCollection(false);
+    setIsDOSFilter(false);
 
     props.listPayrolls({
       from: dateFrom,
@@ -687,14 +722,84 @@ function PayrollFunction(props) {
   };
 
   const filterByDateHandler = (dates) => {
-    setDateTo(dates.to);
+    // Just store the dates, don't call API yet
+    setPayDateFrom(dates.from);
+    setPayDateTo(dates.to);
     setDateFrom(dates.from);
+    setDateTo(dates.to);
+  };
 
+  const filterByPayDateHandler = () => {
+    if (!payDateFrom || !payDateTo) {
+      TOAST.error("Please select a date range");
+      return;
+    }
+
+    setIsDOSFilter(false);
+    setActiveFilterLabel(`Filter By Pay Date (${payDateFrom} to ${payDateTo})`);
     props.listPayrolls({
-      from: dates.from,
-      to: dates.to,
+      from: payDateFrom,
+      to: payDateTo,
       companyId: context.userProfile.companyId,
     });
+  };
+
+  const filterByDOSMonthYearHandler = () => {
+    if (!selectedMonth || !selectedYear) {
+      TOAST.error("Please select both month and year");
+      return;
+    }
+
+    // Calculate first day of month
+    const firstDayOfMonth = moment()
+      .year(parseInt(selectedYear))
+      .month(parseInt(selectedMonth) - 1)
+      .date(1)
+      .format("YYYY-MM-DD");
+
+    // Calculate first day of month + 90 days
+    const endDate = moment(firstDayOfMonth)
+      .add(90, "days")
+      .format("YYYY-MM-DD");
+
+    setDateFrom(firstDayOfMonth);
+    setDateTo(endDate);
+    setIsDOSFilter(true);
+
+    // Get month name for label
+    const monthName = moment().month(parseInt(selectedMonth) - 1).format("MMMM");
+    setActiveFilterLabel(`Filter By DOS (${monthName} ${selectedYear})`);
+
+    // Call API with calculated date range
+    props.listPayrolls({
+      from: firstDayOfMonth,
+      to: endDate,
+      companyId: context.userProfile.companyId,
+    });
+  };
+
+  const clearDOSFilter = () => {
+    setSelectedMonth("");
+    setSelectedYear("");
+    setIsDOSFilter(false);
+
+    // Reload with current pay date filter if exists, otherwise this month
+    if (payDateFrom && payDateTo) {
+      setActiveFilterLabel(`Filter By Pay Date (${payDateFrom} to ${payDateTo})`);
+      props.listPayrolls({
+        from: payDateFrom,
+        to: payDateTo,
+        companyId: context.userProfile.companyId,
+      });
+    } else {
+      const dates = Helper.formatDateRangeByCriteriaV2("thisMonth");
+      setActiveFilterLabel("Filter By Pay Date (This Month)");
+      props.listPayrolls({
+        from: dates.from,
+        to: dates.to,
+        companyId: context.userProfile.companyId,
+      });
+    }
   };
   const changeReportHandler = (event) => {
     setAnchorEl(event.currentTarget);
@@ -937,22 +1042,107 @@ function PayrollFunction(props) {
               </CardHeader>
               <CardBody>
                 <GridContainer style={{ paddingLeft: 20 }}>
-                  <GridItem md={12} sm={12} xs={12}>
-                    <FilterTable
-                      filterRecordHandler={filterRecordHandler}
-                      filterByDateHandler={filterByDateHandler}
-                    />
+                  <GridItem md={6} sm={12} xs={12}>
+                    <div style={{ display: "flex", alignItems: "flex-end", gap: "5px" }}>
+                      <FilterTable
+                        filterRecordHandler={filterRecordHandler}
+                        filterByDateHandler={filterByDateHandler}
+                        isNoSearch={true}
+                      />
+                      <Button
+                        color="primary"
+                        onClick={filterByPayDateHandler}
+                        style={{ height: "36px", marginBottom: "10px", whiteSpace: "nowrap", marginLeft: "5px" }}
+                      >
+                        Filter By Pay Date
+                      </Button>
+                    </div>
+                  </GridItem>
+                  <GridItem md={6} sm={12} xs={12}>
+                    <div style={{ display: "flex", alignItems: "flex-end", gap: "10px", justifyContent: "flex-end", paddingBottom: "10px" }}>
+                      <FormControl style={{ minWidth: 120 }}>
+                        <InputLabel>Month</InputLabel>
+                        <Select
+                          value={selectedMonth}
+                          onChange={(e) => setSelectedMonth(e.target.value)}
+                          native
+                        >
+                          <option value=""></option>
+                          <option value="1">January</option>
+                          <option value="2">February</option>
+                          <option value="3">March</option>
+                          <option value="4">April</option>
+                          <option value="5">May</option>
+                          <option value="6">June</option>
+                          <option value="7">July</option>
+                          <option value="8">August</option>
+                          <option value="9">September</option>
+                          <option value="10">October</option>
+                          <option value="11">November</option>
+                          <option value="12">December</option>
+                        </Select>
+                      </FormControl>
+                      <FormControl style={{ minWidth: 100 }}>
+                        <InputLabel>Year</InputLabel>
+                        <Select
+                          value={selectedYear}
+                          onChange={(e) => setSelectedYear(e.target.value)}
+                          native
+                        >
+                          <option value=""></option>
+                          {Array.from({ length: 10 }, (_, i) => {
+                            const year = new Date().getFullYear() - i;
+                            return <option key={year} value={year}>{year}</option>;
+                          })}
+                        </Select>
+                      </FormControl>
+                      <Button
+                        color="primary"
+                        onClick={filterByDOSMonthYearHandler}
+                        style={{ height: "36px" }}
+                      >
+                        Filter DOS
+                      </Button>
+                      <Button
+                        color="default"
+                        onClick={clearDOSFilter}
+                        style={{ height: "36px" }}
+                      >
+                        Clear
+                      </Button>
+                    </div>
                   </GridItem>
                 </GridContainer>
                 <GridContainer style={{ paddingLeft: 14 }}>
                   <GridItem md={12} sm={12} xs={12}>
-                    <Button
-                      color="info"
-                      className={classes.marginRight}
-                      onClick={() => createFormHandler()}
-                    >
-                      <AddIcon className={classes.icons} /> Add Payroll
-                    </Button>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
+                      <Button
+                        color="info"
+                        className={classes.marginRight}
+                        onClick={() => createFormHandler()}
+                      >
+                        <AddIcon className={classes.icons} /> Add Payroll
+                      </Button>
+                      <div style={{ flex: "0 0 300px" }}>
+                        <SearchCustomTextField
+                          background={"white"}
+                          onChange={(e) => setKeywordValue(e.target.value)}
+                          placeholder={"Search Item"}
+                          label={"Search Item"}
+                          name={"keywordValue"}
+                          onPressEnterKeyHandler={filterRecordHandler}
+                          isAllowEnterKey={true}
+                          value={keywordValue}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Active Filter Label */}
+                    <div style={{ marginBottom: "10px", paddingLeft: "5px" }}>
+                      <Typography variant="body2" style={{ color: "#667eea", fontWeight: 500 }}>
+                        Active Filter: {activeFilterLabel}
+                      </Typography>
+                    </div>
 
                     {isAddGroupButtons && (
                       <>

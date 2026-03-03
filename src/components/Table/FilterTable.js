@@ -163,18 +163,20 @@ const FilterTable = (props) => {
           </GridItem>
         )}
 
-        <GridItem md={props.search || 3} sm={6} xs={12}>
-          <SearchCustomTextField
-            background={"white"}
-            onChange={inputHandler}
-            placeholder={"Search Item"}
-            label={"Search Item"}
-            name={"keywordValue"}
-            onPressEnterKeyHandler={onPressEnterKeyHandler}
-            isAllowEnterKey={true}
-            value={keywordValue}
-          />
-        </GridItem>
+        {!props.isNoSearch && (
+          <GridItem md={props.search || 3} sm={6} xs={12}>
+            <SearchCustomTextField
+              background={"white"}
+              onChange={inputHandler}
+              placeholder={"Search Item"}
+              label={"Search Item"}
+              name={"keywordValue"}
+              onPressEnterKeyHandler={onPressEnterKeyHandler}
+              isAllowEnterKey={true}
+              value={keywordValue}
+            />
+          </GridItem>
+        )}
       </GridContainer>
     </React.Fragment>
   );

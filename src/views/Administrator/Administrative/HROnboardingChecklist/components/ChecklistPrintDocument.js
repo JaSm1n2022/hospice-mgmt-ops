@@ -152,29 +152,39 @@ const ITEM_LABELS = {
 
 // Roles that require License Verification
 const ROLES_REQUIRING_LICENSE = [
-  "Case Manager",
+  "CNA",
   "Certified Nurse Assistant",
+  "Certified Nursing Assistant", // Alternative spelling variation
   "Registered Nurse",
-  "Director of Nurse",
+  "Case Manager",
   "LPN",
   "Admission Nurse",
-  "Medical Director",
-  "Nurse Practitioner",
+  "Director of Nursing",
+  "Director of Nurse", // Keep for backward compatibility
 ];
 
-// Roles that require CPR Card (excluding Medical Director)
+// Roles that require CPR Card
 const ROLES_REQUIRING_CPR = [
-  "Case Manager",
+  "CNA",
   "Certified Nurse Assistant",
+  "Certified Nursing Assistant", // Alternative spelling variation
   "Registered Nurse",
-  "Director of Nurse",
+  "Case Manager",
   "LPN",
   "Admission Nurse",
-  "Nurse Practitioner",
+  "Director of Nursing",
+  "Director of Nurse", // Keep for backward compatibility
 ];
 
 const ChecklistPrintDocument = ({ employeeData, checklistData }) => {
   const employeePosition = employeeData?.employeePosition;
+
+  // Debug logging
+  console.log("=== ChecklistPrintDocument Debug ===");
+  console.log("Employee Data:", employeeData);
+  console.log("Employee Position:", employeePosition);
+  console.log("ROLES_REQUIRING_CPR:", ROLES_REQUIRING_CPR);
+  console.log("ROLES_REQUIRING_LICENSE:", ROLES_REQUIRING_LICENSE);
 
   const shouldUseBlackBorder = (itemKey, isChecked) => {
     // If item is checked, don't apply black border
@@ -186,16 +196,29 @@ const ChecklistPrintDocument = ({ employeeData, checklistData }) => {
     // Performance Evaluation - always show black border if missing (optional for all)
     if (itemKey === "performanceEvaluations") return true;
 
-    // License Verification - black border for roles where it's NOT required (optional)
-    // Red border for roles where it IS required (mandatory)
+    // Normalize position for comparison (trim and case-insensitive)
+    const normalizedPosition = employeePosition ? employeePosition.trim() : "";
+
+    // License Verification - red border for specific roles (CNA, Certified Nurse Assistant, RN, Case Manager, LPN, Admission Nurse, Director of Nursing)
+    // Black border for roles where it's NOT required (optional)
     if (itemKey === "licenseVerification") {
-      return !ROLES_REQUIRING_LICENSE.includes(employeePosition);
+      const isRequired = ROLES_REQUIRING_LICENSE.some(role =>
+        role.toLowerCase() === normalizedPosition.toLowerCase()
+      );
+      const shouldBeBlack = !isRequired;
+      console.log(`License Verification - Position: "${employeePosition}", Normalized: "${normalizedPosition}", Should be black: ${shouldBeBlack}, Is required: ${isRequired}`);
+      return shouldBeBlack;
     }
 
-    // CPR Card - black border for roles where it's NOT required (optional)
-    // Red border for roles where it IS required (mandatory)
+    // CPR Card - red border for specific roles (CNA, Certified Nurse Assistant, RN, Case Manager, LPN, Admission Nurse, Director of Nursing)
+    // Black border for roles where it's NOT required (optional)
     if (itemKey === "cprCard") {
-      return !ROLES_REQUIRING_CPR.includes(employeePosition);
+      const isRequired = ROLES_REQUIRING_CPR.some(role =>
+        role.toLowerCase() === normalizedPosition.toLowerCase()
+      );
+      const shouldBeBlack = !isRequired;
+      console.log(`CPR Card - Position: "${employeePosition}", Normalized: "${normalizedPosition}", Should be black: ${shouldBeBlack}, Is required: ${isRequired}`);
+      return shouldBeBlack;
     }
 
     return false;
@@ -209,14 +232,21 @@ const ChecklistPrintDocument = ({ employeeData, checklistData }) => {
 
     // Determine checkbox style
     let checkboxStyle;
-    if (isChecked) {
+    if (isChecked && !isExpired) {
+      // Checked and not expired -> green
       checkboxStyle = styles.checkboxContainerChecked;
-    } else if (sectionKey === "section5" || shouldUseBlackBorder(itemKey, isChecked)) {
-      // Section 5 items or special conditional items get black border
-      checkboxStyle = styles.checkboxContainerUncheckedBlack;
-    } else {
-      // Default red border
+    } else if (isExpired) {
+      // Expired date -> red border (regardless of checked status)
       checkboxStyle = styles.checkboxContainerUnchecked;
+    } else if (!isChecked && (sectionKey === "section5" || shouldUseBlackBorder(itemKey, isChecked))) {
+      // Not checked, not expired, and (section 5 or conditional) -> black border
+      checkboxStyle = styles.checkboxContainerUncheckedBlack;
+    } else if (!isChecked) {
+      // Not checked and not expired -> red border
+      checkboxStyle = styles.checkboxContainerUnchecked;
+    } else {
+      // Default
+      checkboxStyle = styles.checkboxContainerChecked;
     }
 
     return (

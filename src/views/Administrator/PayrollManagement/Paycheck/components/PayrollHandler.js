@@ -105,13 +105,25 @@ class PayrollHandler {
         name: "comments",
         header: "Comments",
       },
+      {
+        defaultFlex: 1,
+        minWidth: 200,
+        name: "dos",
+        header: "Date of Service",
+        render: ({ value }) => {
+          if (Array.isArray(value) && value.length > 0) {
+            return value.join(", ");
+          }
+          return "-";
+        },
+      },
     ];
   }
   static mapData(items) {
     items.forEach((item) => {
       item.payDate = moment(item.payDate).format("YYYY-MM-DD");
-
       item.created_at = moment(item.created_at).format("YYYY-MM-DD");
+      // Keep dos as array for filtering purposes
     });
 
     return items;

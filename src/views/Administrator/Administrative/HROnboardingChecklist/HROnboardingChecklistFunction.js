@@ -334,12 +334,16 @@ function HROnboardingChecklistFunction(props) {
     props.employees.status === ACTION_STATUSES.SUCCEED
   ) {
     const fetchedEmployees = props.employees.data || [];
+    console.log("=== Employee Data Debug ===");
+    console.log("First employee:", fetchedEmployees[0]);
+    console.log("Employee fields:", Object.keys(fetchedEmployees[0] || {}));
+
     const employeeOptions = fetchedEmployees.map((emp) => ({
       id: emp.id,
       name: emp.name || `${emp.fn || ""} ${emp.ln || ""}`.trim(),
       value: emp.name || `${emp.fn || ""} ${emp.ln || ""}`.trim(),
       label: emp.name || `${emp.fn || ""} ${emp.ln || ""}`.trim(),
-      position: emp.position,
+      position: emp.position || emp.title || emp.pos,
     }));
 
     setEmployeeList(employeeOptions);
@@ -410,7 +414,16 @@ function HROnboardingChecklistFunction(props) {
 
       // Get employee name from checklist or look up from employee list
       const employeeName = checklist.employeeName || "Unknown Employee";
-      const employeePosition = checklist.employeePosition;
+
+      // Get employee position from checklist, or look it up from employee list if missing
+      let employeePosition = checklist.employeePosition;
+      if (!employeePosition && checklist.employeeId) {
+        const matchingEmployee = employeeList.find(emp => emp.id === checklist.employeeId);
+        if (matchingEmployee) {
+          employeePosition = matchingEmployee.position;
+          console.log(`Looked up position for ${employeeName}: ${employeePosition}`);
+        }
+      }
 
       return {
         ...checklist,
