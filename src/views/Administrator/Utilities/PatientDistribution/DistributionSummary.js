@@ -24,8 +24,91 @@ let grandTotal = 0.0;
 const DistributionSummary = (props) => {
   const [details, setDetails] = useState(undefined);
   const [chartData, setChartData] = useState({ categories: [], series: [] });
+  const [suppliesChartData, setSuppliesChartData] = useState({ categories: [], series: [] });
+  const [dmeChartData, setDmeChartData] = useState({ categories: [], series: [] });
+  const [pharmacyChartData, setPharmacyChartData] = useState({ categories: [], series: [] });
+  const [transportationChartData, setTransportationChartData] = useState({ categories: [], series: [] });
+  const [clinicianChartData, setClinicianChartData] = useState({ categories: [], series: [] });
 
   const classes = useStyles();
+
+  // Reusable chart render function
+  const renderBarChart = (title, chartData, color = "#667eea") => {
+    if (!chartData.categories || chartData.categories.length === 0) {
+      return null;
+    }
+
+    return (
+      <Grid item xs={12} md={6} style={{ marginTop: 40, width: "100%" }}>
+        <Typography variant="h6" style={{ marginBottom: 20, textAlign: "center" }}>
+          {title}
+        </Typography>
+        <div style={{ width: "100%", overflowX: "auto" }}>
+          <Chart
+            options={{
+              chart: {
+                id: `chart-${title.toLowerCase().replace(/\s+/g, '-')}`,
+                toolbar: {
+                  show: true,
+                },
+              },
+              xaxis: {
+                categories: chartData.categories,
+                labels: {
+                  rotate: -45,
+                  style: {
+                    fontSize: "10px",
+                  },
+                },
+              },
+              yaxis: {
+                title: {
+                  text: "Amount ($)",
+                },
+                labels: {
+                  formatter: (value) => `$${value}`,
+                },
+              },
+              plotOptions: {
+                bar: {
+                  distributed: true,
+                  dataLabels: {
+                    position: "top",
+                  },
+                },
+              },
+              dataLabels: {
+                enabled: true,
+                formatter: (val) => `$${val}`,
+                offsetY: -20,
+                style: {
+                  fontSize: "10px",
+                  colors: ["#304758"],
+                },
+              },
+              colors: [color],
+              legend: {
+                show: false,
+              },
+              title: {
+                text: "",
+                align: "center",
+              },
+            }}
+            series={[
+              {
+                name: title,
+                data: chartData.series,
+              },
+            ]}
+            type="bar"
+            height={400}
+          />
+        </div>
+      </Grid>
+    );
+  };
+
   useEffect(() => {
     const tempData = [];
     grandTotal = 0.0;
@@ -97,12 +180,51 @@ const DistributionSummary = (props) => {
         return eocDate.isSameOrAfter(dateFrom, 'day'); // EOC is on or after the start date
       });
 
-      const chartCategories = chartFilteredData.map((d) => d.patient);
-      const chartSeries = chartFilteredData.map((d) => parseFloat(d.grand || 0).toFixed(2));
+      // Helper function to prepare chart data and sort by highest value
+      const prepareChartData = (dataKey) => {
+        const filtered = chartFilteredData
+          .map((d) => ({
+            patient: d.patient,
+            value: parseFloat(d[dataKey] || 0),
+          }))
+          .filter((d) => d.value > 0) // Only include patients with values > 0
+          .sort((a, b) => b.value - a.value); // Sort by highest to lowest
 
+        return {
+          categories: filtered.map((d) => d.patient),
+          series: filtered.map((d) => d.value.toFixed(2)),
+        };
+      };
+
+      // Grand Total Chart
+      const grandTotalData = chartFilteredData
+        .map((d) => ({
+          patient: d.patient,
+          value: parseFloat(d.grand || 0),
+        }))
+        .sort((a, b) => b.value - a.value);
       setChartData({
-        categories: chartCategories,
-        series: chartSeries,
+        categories: grandTotalData.map((d) => d.patient),
+        series: grandTotalData.map((d) => d.value.toFixed(2)),
+      });
+
+      // Individual category charts
+      setSuppliesChartData(prepareChartData('medical'));
+      setDmeChartData(prepareChartData('dme'));
+      setPharmacyChartData(prepareChartData('pharmacy'));
+      setTransportationChartData(prepareChartData('transportation'));
+
+      // Clinician Chart (CNA + Nurse + LPN + MSW + Chaplain)
+      const clinicianData = chartFilteredData
+        .map((d) => ({
+          patient: d.patient,
+          value: parseFloat(d.cna || 0) + parseFloat(d.nurse || 0) + parseFloat(d.lpn || 0) + parseFloat(d.msw || 0) + parseFloat(d.chaplain || 0),
+        }))
+        .filter((d) => d.value > 0)
+        .sort((a, b) => b.value - a.value);
+      setClinicianChartData({
+        categories: clinicianData.map((d) => d.patient),
+        series: clinicianData.map((d) => d.value.toFixed(2)),
       });
     }
     setDetails(tempData);
@@ -438,11 +560,18 @@ const DistributionSummary = (props) => {
             </div>
           </Grid>
 
-          {/* Bar Chart - Grand Total by Patient */}
+          {/* Charts Section */}
+          <Grid item xs={12} style={{ marginTop: 40 }}>
+            <Typography variant="h5" style={{ marginBottom: 20, textAlign: "center", fontWeight: "bold" }}>
+              Distribution Charts (Active Patients or EOC ≥ Start Date)
+            </Typography>
+          </Grid>
+
+          {/* Grand Total Chart - Full Width */}
           {chartData.categories.length > 0 && (
-            <Grid item xs={12} style={{ marginTop: 40, width: "100%" }}>
+            <Grid item xs={12} style={{ marginTop: 20, width: "100%" }}>
               <Typography variant="h6" style={{ marginBottom: 20, textAlign: "center" }}>
-                Grand Total by Patient (Active Patients or EOC within Date Range)
+                Grand Total by Patient
               </Typography>
               <div style={{ width: "100%", overflowX: "auto" }}>
                 <Chart
@@ -508,6 +637,13 @@ const DistributionSummary = (props) => {
               </div>
             </Grid>
           )}
+
+          {/* Category Charts in 2-column grid */}
+          {renderBarChart("Supplies by Patient", suppliesChartData, "#5CACEE")}
+          {renderBarChart("DME by Patient", dmeChartData, "#0000FF")}
+          {renderBarChart("Pharmacy by Patient", pharmacyChartData, "#FFA500")}
+          {renderBarChart("Transportation by Patient", transportationChartData, "#967bb6")}
+          {renderBarChart("Clinician Total by Patient", clinicianChartData, "#EE4B2B")}
         </Grid>
       )}
     </React.Fragment>
