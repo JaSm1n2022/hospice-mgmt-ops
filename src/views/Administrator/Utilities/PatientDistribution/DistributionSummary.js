@@ -10,14 +10,27 @@ const useStyles = makeStyles({
   },
   tableRowGray: {
     height: 32,
-    background: "gray",
+    background: "#667eea",
     fontWeight: "bold",
+    color: "white",
   },
   tableRow2: {
     height: 42,
   },
   tableCell: {
     padding: "0px 16px",
+  },
+  printButton: {
+    marginBottom: 20,
+  },
+  "@media print": {
+    "@page": {
+      size: "landscape",
+      margin: "10mm",
+    },
+    ".no-print": {
+      display: "none !important",
+    },
   },
 });
 let grandTotal = 0.0;
@@ -39,7 +52,7 @@ const DistributionSummary = (props) => {
     }
 
     return (
-      <Grid item xs={12} md={6} style={{ marginTop: 40, width: "100%" }}>
+      <Grid item xs={12} style={{ marginTop: 40, width: "100%" }}>
         <Typography variant="h6" style={{ marginBottom: 20, textAlign: "center" }}>
           {title}
         </Typography>
@@ -123,11 +136,37 @@ const DistributionSummary = (props) => {
     let pharmacy = 0.0;
     if (props?.details.length) {
       console.log("[Props details]", props.details);
+      const dateFrom = moment(props.from);
+      const dateTo = moment(props.to);
+      const totalDaysInRange = dateTo.diff(dateFrom, 'days') + 1;
+
       props.details.forEach((d) => {
+        // Calculate #day cares
+        let dayCares = 0;
+        const patientSOC = d.soc ? moment(d.soc) : null;
+        const patientEOC = d.eoc ? moment(d.eoc) : null;
+
+        // Determine the effective start and end dates within the range
+        const effectiveStart = patientSOC && patientSOC.isAfter(dateFrom) ? patientSOC : dateFrom;
+        const effectiveEnd = patientEOC && patientEOC.isBefore(dateTo) ? patientEOC : dateTo;
+
+        // Calculate day cares
+        if (patientSOC || patientEOC) {
+          // If we have SOC or EOC, calculate days between effective dates
+          dayCares = effectiveEnd.diff(effectiveStart, 'days') + 1;
+        } else {
+          // No SOC and no EOC means patient was active the entire range
+          dayCares = totalDaysInRange;
+        }
+
+        // Ensure day cares is not negative
+        dayCares = Math.max(0, dayCares);
+
         tempData.push({
           patient: d.name,
           soc: d.soc || "",
           eoc: d.eoc || "",
+          dayCares: dayCares,
           medical: d.series[0],
           dme: d.series[1],
           transportation: d.series[2],
@@ -158,6 +197,7 @@ const DistributionSummary = (props) => {
         patient: "TOTAL",
         soc: "",
         eoc: "",
+        dayCares: "",
         medical: parseFloat(medical, 2),
         dme: parseFloat(dme, 2),
         transportation: parseFloat(transportation, 2),
@@ -171,8 +211,7 @@ const DistributionSummary = (props) => {
       });
 
       // Prepare chart data: Include only patients without EOC or EOC >= starting date range
-      const dateFrom = moment(props.from);
-      const dateTo = moment(props.to);
+      // dateFrom and dateTo already declared above
       const chartFilteredData = tempData.filter((d) => {
         if (d.patient === "TOTAL") return false;
         if (!d.eoc) return true; // No EOC means patient is still active
@@ -276,6 +315,17 @@ const DistributionSummary = (props) => {
                         scope="row"
                       >
                         EOC
+                      </TableCell>
+                      <TableCell
+                        className={classes.tableCell}
+                        style={{
+                          height: "auto !important",
+                          border: "solid 1px black",
+                        }}
+                        component="th"
+                        scope="row"
+                      >
+                        #Day Cares
                       </TableCell>
                       <TableCell
                         className={classes.tableCell}
@@ -395,20 +445,23 @@ const DistributionSummary = (props) => {
                     {details &&
                       details.length &&
                       details.map((map, indx) => {
+                        const isTotalRow = indx === details.length - 1;
+                        const cellStyle = {
+                          height: "auto !important",
+                          border: "solid 1px black",
+                          color: isTotalRow ? "white" : "inherit",
+                        };
                         return (
                           <TableRow
                             className={
-                              indx === details.length - 1
+                              isTotalRow
                                 ? classes.tableRowGray
                                 : classes.tableRow
                             }
                           >
                             <TableCell
                               className={classes.tableCell}
-                              style={{
-                                height: "auto !important",
-                                border: "solid 1px black",
-                              }}
+                              style={cellStyle}
                               component="th"
                               scope="row"
                             >
@@ -416,10 +469,7 @@ const DistributionSummary = (props) => {
                             </TableCell>
                             <TableCell
                               className={classes.tableCell}
-                              style={{
-                                height: "auto !important",
-                                border: "solid 1px black",
-                              }}
+                              style={cellStyle}
                               component="th"
                               scope="row"
                             >
@@ -427,10 +477,7 @@ const DistributionSummary = (props) => {
                             </TableCell>
                             <TableCell
                               className={classes.tableCell}
-                              style={{
-                                height: "auto !important",
-                                border: "solid 1px black",
-                              }}
+                              style={cellStyle}
                               component="th"
                               scope="row"
                             >
@@ -438,10 +485,15 @@ const DistributionSummary = (props) => {
                             </TableCell>
                             <TableCell
                               className={classes.tableCell}
-                              style={{
-                                height: "auto !important",
-                                border: "solid 1px black",
-                              }}
+                              style={cellStyle}
+                              component="th"
+                              scope="row"
+                            >
+                              {map.dayCares}
+                            </TableCell>
+                            <TableCell
+                              className={classes.tableCell}
+                              style={cellStyle}
                               component="th"
                               scope="row"
                             >{`$${parseFloat(map.medical || 0.0).toFixed(
@@ -450,10 +502,7 @@ const DistributionSummary = (props) => {
 
                             <TableCell
                               className={classes.tableCell}
-                              style={{
-                                height: "auto !important",
-                                border: "solid 1px black",
-                              }}
+                              style={cellStyle}
                               component="th"
                               scope="row"
                             >{`$${parseFloat(map.dme || 0.0).toFixed(
@@ -461,10 +510,7 @@ const DistributionSummary = (props) => {
                             )}`}</TableCell>
                             <TableCell
                               className={classes.tableCell}
-                              style={{
-                                height: "auto !important",
-                                border: "solid 1px black",
-                              }}
+                              style={cellStyle}
                               component="th"
                               scope="row"
                             >{`$${parseFloat(map.pharmacy || 0.0).toFixed(
@@ -472,10 +518,7 @@ const DistributionSummary = (props) => {
                             )}`}</TableCell>
                             <TableCell
                               className={classes.tableCell}
-                              style={{
-                                height: "auto !important",
-                                border: "solid 1px black",
-                              }}
+                              style={cellStyle}
                               component="th"
                               scope="row"
                             >{`$${parseFloat(map.transportation || 0.0).toFixed(
@@ -483,10 +526,7 @@ const DistributionSummary = (props) => {
                             )}`}</TableCell>
                             <TableCell
                               className={classes.tableCell}
-                              style={{
-                                height: "auto !important",
-                                border: "solid 1px black",
-                              }}
+                              style={cellStyle}
                               component="th"
                               scope="row"
                             >{`$${parseFloat(map.cna || 0.0).toFixed(
@@ -494,10 +534,7 @@ const DistributionSummary = (props) => {
                             )}`}</TableCell>
                             <TableCell
                               className={classes.tableCell}
-                              style={{
-                                height: "auto !important",
-                                border: "solid 1px black",
-                              }}
+                              style={cellStyle}
                               component="th"
                               scope="row"
                             >{`$${parseFloat(map.nurse || 0.0).toFixed(
@@ -505,10 +542,7 @@ const DistributionSummary = (props) => {
                             )}`}</TableCell>
                             <TableCell
                               className={classes.tableCell}
-                              style={{
-                                height: "auto !important",
-                                border: "solid 1px black",
-                              }}
+                              style={cellStyle}
                               component="th"
                               scope="row"
                             >{`$${parseFloat(map.lpn || 0.0).toFixed(
@@ -516,10 +550,7 @@ const DistributionSummary = (props) => {
                             )}`}</TableCell>
                             <TableCell
                               className={classes.tableCell}
-                              style={{
-                                height: "auto !important",
-                                border: "solid 1px black",
-                              }}
+                              style={cellStyle}
                               component="th"
                               scope="row"
                             >{`$${parseFloat(map.msw || 0.0).toFixed(
@@ -528,10 +559,7 @@ const DistributionSummary = (props) => {
 
                             <TableCell
                               className={classes.tableCell}
-                              style={{
-                                height: "auto !important",
-                                border: "solid 1px black",
-                              }}
+                              style={cellStyle}
                               component="th"
                               scope="row"
                             >{`$${parseFloat(map.chaplain || 0.0).toFixed(
@@ -541,9 +569,8 @@ const DistributionSummary = (props) => {
                             <TableCell
                               className={classes.tableCell}
                               style={{
-                                height: "auto !important",
-                                border: "solid 1px black",
-                                color: "blue",
+                                ...cellStyle,
+                                color: isTotalRow ? "white" : "blue",
                                 fontWeight: "bold",
                               }}
                               component="th"
@@ -563,7 +590,7 @@ const DistributionSummary = (props) => {
           {/* Charts Section */}
           <Grid item xs={12} style={{ marginTop: 40 }}>
             <Typography variant="h5" style={{ marginBottom: 20, textAlign: "center", fontWeight: "bold" }}>
-              Distribution Charts (Active Patients or EOC ≥ Start Date)
+              Distribution Charts (Active Patients within the date range)
             </Typography>
           </Grid>
 

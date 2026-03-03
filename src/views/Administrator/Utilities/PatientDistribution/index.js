@@ -1,5 +1,6 @@
-import { CircularProgress, makeStyles, Typography } from "@material-ui/core";
+import { CircularProgress, makeStyles, Typography, Button } from "@material-ui/core";
 import { Card } from "@material-ui/core";
+import { Print as PrintIcon } from "@material-ui/icons";
 import { v4 as uuidv4 } from "uuid";
 import CustomSingleAutoComplete from "components/AutoComplete/CustomSingleAutoComplete";
 import CardBody from "components/Card/CardBody";
@@ -778,7 +779,7 @@ const PatientSupplies = (props) => {
                     onChange={dateInputHandler}
                   />
                 </GridItem>
-                <GridItem xs={12} sm={12} md={4}>
+                <GridItem xs={12} sm={12} md={3}>
                   <CustomSingleAutoComplete
                     label="Patients"
                     placeholder="Patients"
@@ -788,6 +789,18 @@ const PatientSupplies = (props) => {
                     value={patient}
                     options={patientOptions || [DEFAULT_ITEM]}
                   />
+                </GridItem>
+                <GridItem xs={12} sm={12} md={1} style={{ display: "flex", alignItems: "flex-end", paddingBottom: 8 }}>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    startIcon={<PrintIcon />}
+                    onClick={() => window.print()}
+                    className="no-print"
+                    fullWidth
+                  >
+                    Print PDF
+                  </Button>
                 </GridItem>
                 <GridItem xs={12} sm={12} md={12}>
                   <div align="center" style={{ paddingTop: 20 }}>
