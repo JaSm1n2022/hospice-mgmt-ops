@@ -2,6 +2,7 @@ import { TableBody, TableCell, TableHead, TableRow } from "@material-ui/core";
 import { Grid, makeStyles, Table, Typography } from "@material-ui/core";
 import moment from "moment";
 import React, { useEffect, useState } from "react";
+import Chart from "react-apexcharts";
 
 const useStyles = makeStyles({
   tableRow: {
@@ -22,6 +23,7 @@ const useStyles = makeStyles({
 let grandTotal = 0.0;
 const DistributionSummary = (props) => {
   const [details, setDetails] = useState(undefined);
+  const [chartData, setChartData] = useState({ categories: [], series: [] });
 
   const classes = useStyles();
   useEffect(() => {
@@ -41,6 +43,8 @@ const DistributionSummary = (props) => {
       props.details.forEach((d) => {
         tempData.push({
           patient: d.name,
+          soc: d.soc || "",
+          eoc: d.eoc || "",
           medical: d.series[0],
           dme: d.series[1],
           transportation: d.series[2],
@@ -63,8 +67,14 @@ const DistributionSummary = (props) => {
         lpn += parseFloat(d.series[8], 2);
         grandTotal += d.estimatedAmt;
       });
+
+      // Sort by Grand Total descending
+      tempData.sort((a, b) => b.grand - a.grand);
+
       tempData.push({
         patient: "TOTAL",
+        soc: "",
+        eoc: "",
         medical: parseFloat(medical, 2),
         dme: parseFloat(dme, 2),
         transportation: parseFloat(transportation, 2),
@@ -75,6 +85,24 @@ const DistributionSummary = (props) => {
         chaplain: parseFloat(chaplain, 2),
         lpn: parseFloat(lpn, 2),
         grand: grandTotal,
+      });
+
+      // Prepare chart data: Include only patients without EOC or EOC >= starting date range
+      const dateFrom = moment(props.from);
+      const dateTo = moment(props.to);
+      const chartFilteredData = tempData.filter((d) => {
+        if (d.patient === "TOTAL") return false;
+        if (!d.eoc) return true; // No EOC means patient is still active
+        const eocDate = moment(d.eoc);
+        return eocDate.isSameOrAfter(dateFrom, 'day'); // EOC is on or after the start date
+      });
+
+      const chartCategories = chartFilteredData.map((d) => d.patient);
+      const chartSeries = chartFilteredData.map((d) => parseFloat(d.grand || 0).toFixed(2));
+
+      setChartData({
+        categories: chartCategories,
+        series: chartSeries,
       });
     }
     setDetails(tempData);
@@ -104,6 +132,28 @@ const DistributionSummary = (props) => {
                         scope="row"
                       >
                         Patient
+                      </TableCell>
+                      <TableCell
+                        className={classes.tableCell}
+                        style={{
+                          height: "auto !important",
+                          border: "solid 1px black",
+                        }}
+                        component="th"
+                        scope="row"
+                      >
+                        SOC
+                      </TableCell>
+                      <TableCell
+                        className={classes.tableCell}
+                        style={{
+                          height: "auto !important",
+                          border: "solid 1px black",
+                        }}
+                        component="th"
+                        scope="row"
+                      >
+                        EOC
                       </TableCell>
                       <TableCell
                         className={classes.tableCell}
@@ -250,6 +300,28 @@ const DistributionSummary = (props) => {
                               }}
                               component="th"
                               scope="row"
+                            >
+                              {map.soc}
+                            </TableCell>
+                            <TableCell
+                              className={classes.tableCell}
+                              style={{
+                                height: "auto !important",
+                                border: "solid 1px black",
+                              }}
+                              component="th"
+                              scope="row"
+                            >
+                              {map.eoc}
+                            </TableCell>
+                            <TableCell
+                              className={classes.tableCell}
+                              style={{
+                                height: "auto !important",
+                                border: "solid 1px black",
+                              }}
+                              component="th"
+                              scope="row"
                             >{`$${parseFloat(map.medical || 0.0).toFixed(
                               2
                             )}`}</TableCell>
@@ -365,6 +437,77 @@ const DistributionSummary = (props) => {
               </div>
             </div>
           </Grid>
+
+          {/* Bar Chart - Grand Total by Patient */}
+          {chartData.categories.length > 0 && (
+            <Grid item xs={12} style={{ marginTop: 40, width: "100%" }}>
+              <Typography variant="h6" style={{ marginBottom: 20, textAlign: "center" }}>
+                Grand Total by Patient (Active Patients or EOC within Date Range)
+              </Typography>
+              <div style={{ width: "100%", overflowX: "auto" }}>
+                <Chart
+                  options={{
+                    chart: {
+                      id: "patient-grand-total-bar",
+                      toolbar: {
+                        show: true,
+                      },
+                    },
+                    xaxis: {
+                      categories: chartData.categories,
+                      labels: {
+                        rotate: -45,
+                        style: {
+                          fontSize: "10px",
+                        },
+                      },
+                    },
+                    yaxis: {
+                      title: {
+                        text: "Grand Total ($)",
+                      },
+                      labels: {
+                        formatter: (value) => `$${value}`,
+                      },
+                    },
+                    plotOptions: {
+                      bar: {
+                        distributed: true,
+                        dataLabels: {
+                          position: "top",
+                        },
+                      },
+                    },
+                    dataLabels: {
+                      enabled: true,
+                      formatter: (val) => `$${val}`,
+                      offsetY: -20,
+                      style: {
+                        fontSize: "10px",
+                        colors: ["#304758"],
+                      },
+                    },
+                    colors: ["#667eea"],
+                    legend: {
+                      show: false,
+                    },
+                    title: {
+                      text: "",
+                      align: "center",
+                    },
+                  }}
+                  series={[
+                    {
+                      name: "Grand Total",
+                      data: chartData.series,
+                    },
+                  ]}
+                  type="bar"
+                  height={400}
+                />
+              </div>
+            </Grid>
+          )}
         </Grid>
       )}
     </React.Fragment>
