@@ -575,13 +575,8 @@ function EmployeePayrollForecast(props) {
             socDate.isSameOrBefore(currentMonthEnd, "day");
 
           const assignedPosition = (assignment.disciplinePosition || "").toLowerCase();
-          const canDoSocAssessment =
-            assignedPosition.includes("nurse") ||
-            assignedPosition.includes("rn") ||
-            assignedPosition.includes("admission nurse") ||
-            assignedPosition.includes("msw") ||
-            assignedPosition.includes("social worker") ||
-            assignedPosition.includes("chaplain");
+          // SOC/Assessment should ONLY be for Admission Nurse position
+          const canDoSocAssessment = assignedPosition.includes("admission nurse");
 
           if (isSocInCurrentMonth && canDoSocAssessment) {
             // Look for SOC/Assessment contract
