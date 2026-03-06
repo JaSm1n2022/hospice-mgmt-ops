@@ -17,6 +17,8 @@ import { connect } from "react-redux";
 import { SupaContext } from "App";
 import { ACTION_STATUSES } from "utils/constants";
 import moment from "moment";
+import TextField from "@material-ui/core/TextField";
+import SearchIcon from "@material-ui/icons/Search";
 
 import HROnboardingHandler from "./handler/HROnboardingHandler";
 import ChecklistModal from "./components/ChecklistModal";
@@ -150,6 +152,8 @@ function HROnboardingChecklistFunction(props) {
   const context = useContext(SupaContext);
 
   const [dataSource, setDataSource] = useState([]);
+  const [filteredDataSource, setFilteredDataSource] = useState([]);
+  const [searchKeyword, setSearchKeyword] = useState("");
   const [columns, setColumns] = useState(HROnboardingHandler.columns(true));
   const [employeeList, setEmployeeList] = useState([]);
   const [isEmployeeCollection, setIsEmployeeCollection] = useState(true);
@@ -233,6 +237,27 @@ function HROnboardingChecklistFunction(props) {
   const closePrintAllModal = () => {
     setIsPrintAllModalOpen(false);
   };
+
+  const handleSearchChange = (event) => {
+    const keyword = event.target.value;
+    setSearchKeyword(keyword);
+  };
+
+  // Filter data based on search keyword
+  useEffect(() => {
+    if (searchKeyword.trim() === "") {
+      setFilteredDataSource(dataSource);
+    } else {
+      const filtered = dataSource.filter((item) => {
+        const employeeName = item.employeeName?.toLowerCase() || "";
+        const employeePosition = item.employeePosition?.toLowerCase() || "";
+        const keyword = searchKeyword.toLowerCase();
+
+        return employeeName.includes(keyword) || employeePosition.includes(keyword);
+      });
+      setFilteredDataSource(filtered);
+    }
+  }, [searchKeyword, dataSource]);
 
   // Handle status changes
   useEffect(() => {
@@ -626,11 +651,24 @@ function HROnboardingChecklistFunction(props) {
                       </Button>
                     </div>
                   </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      label="Search by Employee Name or Position"
+                      variant="outlined"
+                      size="small"
+                      fullWidth
+                      value={searchKeyword}
+                      onChange={handleSearchChange}
+                      InputProps={{
+                        startAdornment: <SearchIcon style={{ marginRight: 8, color: "#999" }} />,
+                      }}
+                    />
+                  </Grid>
                 </GridContainer>
 
                 <HospiceTable
                   columns={columns}
-                  dataSource={dataSource}
+                  dataSource={filteredDataSource}
                   loading={false}
                   onCheckboxSelectionHandler={() => {}}
                 />

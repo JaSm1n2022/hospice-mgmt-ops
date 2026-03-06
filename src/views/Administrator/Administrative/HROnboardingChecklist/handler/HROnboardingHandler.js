@@ -15,6 +15,12 @@ class HROnboardingHandler {
       },
       {
         defaultFlex: 1,
+        minWidth: 150,
+        name: "employeePosition",
+        header: "Position",
+      },
+      {
+        defaultFlex: 1,
         minWidth: 180,
         name: "section1Status",
         header: "S1: Application",

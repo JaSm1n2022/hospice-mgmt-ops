@@ -295,6 +295,9 @@ const ChecklistPrintDocument = ({ employeeData, checklistData }) => {
           <Text style={styles.employeeName}>
             Employee: {employeeData?.employeeName || "N/A"}
           </Text>
+          <Text style={styles.employeeName}>
+            Position: {employeeData?.employeePosition || "N/A"}
+          </Text>
           <Text style={styles.expirationText}>
             Generated: {moment().format("MM/DD/YYYY hh:mm A")}
           </Text>

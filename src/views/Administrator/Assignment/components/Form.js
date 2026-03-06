@@ -203,7 +203,9 @@ function IDGForm(props) {
     "director of nurse": ["registered nurse", "director of nurse"],
     "admission nurse": [
       "case manager",
+      "registered nurse",
       "admission nurse",
+      "director of nursing",
       "director of nurse",
     ],
     chaplain: ["chaplain", "bereavement"],
@@ -236,6 +238,15 @@ function IDGForm(props) {
   const filterEmployeeByPositionHandler = (job) => {
     const next = filterByJob(job, props.employeeList);
     console.log("[NEXT]", next, patientTeam);
+    const normalizedJob = normalize(job);
+
+    // For Admission Nurse, allow employees even if already assigned (can have dual roles)
+    if (normalizedJob === "admission nurse") {
+      setEmployeeList(next);
+      return;
+    }
+
+    // For other positions, filter out already assigned employees
     const anotherFilter = [];
     next.forEach((n) => {
       if (

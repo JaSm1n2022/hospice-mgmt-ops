@@ -315,6 +315,9 @@ const ChecklistPrintAllDocument = ({ employeesData }) => {
           <Text style={styles.employeeName}>
             {employee.employeeName || "N/A"}
           </Text>
+          <Text style={styles.expirationText}>
+            Position: {employee.employeePosition || "N/A"}
+          </Text>
         </View>
 
         {employee.section1 && renderSection("section1", employee.section1, employeePosition)}
