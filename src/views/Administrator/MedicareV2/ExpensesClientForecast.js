@@ -563,6 +563,30 @@ function ExpensesClientForecast(props) {
 
         if (freq <= 0) return;
 
+        // Check if this is an Admission Nurse assignment
+        const assignedPosition = (assignment.disciplinePosition || "").toLowerCase();
+        const isAdmissionNurse = assignedPosition.includes("admission nurse");
+
+        // For Admission Nurse: only calculate visits if SOC is within the current month
+        if (isAdmissionNurse) {
+          const isSocInCurrentMonth =
+            socDate.isSameOrAfter(currentMonthStart, "day") &&
+            socDate.isSameOrBefore(currentMonthEnd, "day");
+
+          if (!isSocInCurrentMonth) {
+            // SOC is not in current month, so Admission Nurse frequency is 0
+            regularDetails.push({
+              disciplineName: assignment.disciplineName || "N/A",
+              frequencyVisit: assignment.frequencyVisit,
+              visitType: assignment.visitType,
+              visits: 0,
+              rate: 0,
+              amount: 0,
+            });
+            return; // Skip this assignment
+          }
+        }
+
         // Calculate number of visits based on patient's days of care
         // If EOC: use actual days (SOC to EOC)
         // If active: use full month days
@@ -578,20 +602,34 @@ function ExpensesClientForecast(props) {
           visits = 1;
         }
 
-        // Find matching contract rate: first try patient-specific, then fallback to company-wide (empty patientCd)
-        let contract = contractList.find(
+        // Find matching contract rate
+        // For Admission Nurse: use SOC/Assessment rate
+        // For others: use Regular Visit rate
+        let contract;
+        const serviceTypeToFind = isAdmissionNurse ? "soc/assessment" : "regular visit";
+
+        // First try patient-specific contract
+        contract = contractList.find(
           (c) =>
             c.employeeId?.toString() === assignment.disciplineId?.toString() &&
             c.patientCd === patient.patientCd &&
-            c.serviceType?.toLowerCase() === "regular visit"
+            (c.serviceType?.toLowerCase() === serviceTypeToFind ||
+              (isAdmissionNurse &&
+                (c.serviceType?.toLowerCase() === "soc" ||
+                 c.serviceType?.toLowerCase() === "assessment")))
         );
+
+        // Fallback to company-wide contract (empty patientCd or "ALL")
         if (!contract) {
           contract = contractList.find(
             (c) =>
               c.employeeId?.toString() ===
                 assignment.disciplineId?.toString() &&
               (!c.patientCd || c.patientCd === "" || c.patientCd === "ALL") &&
-              c.serviceType?.toLowerCase() === "regular visit"
+              (c.serviceType?.toLowerCase() === serviceTypeToFind ||
+                (isAdmissionNurse &&
+                  (c.serviceType?.toLowerCase() === "soc" ||
+                   c.serviceType?.toLowerCase() === "assessment")))
           );
         }
 
