@@ -81,6 +81,7 @@ import Medicare from "views/Administrator/MedicareCap/Available/AvailableFunctio
 import MedicareV2 from "views/Administrator/MedicareV2/MedicareV2Function";
 import Routesheet from "views/Administrator/Administrative/Routesheet/RoutesheetFunction";
 import HROnboardingChecklist from "views/Administrator/Administrative/HROnboardingChecklist/HROnboardingChecklistFunction";
+import PatientOnboardingChecklist from "views/Administrator/Settings/PatientOnboardingChecklist/PatientOnboardingChecklistFunction";
 import RevenueForecast from "views/Administrator/MedicareV2/RevenueForecast";
 import ExpensesClientForecast from "views/Administrator/MedicareV2/ExpensesClientForecast";
 import EmployeePayrollForecast from "views/Administrator/MedicareV2/EmployeePayrollForecast";
@@ -150,6 +151,15 @@ var dashRoutes = [
         mini: "HR",
         rtlMini: "ع",
         component: HROnboardingChecklist,
+        layout: "/admin",
+      },
+      {
+        path: "/patient-onboarding-checklist",
+        name: "Patient Onboarding Checklist",
+        rtlName: "عالتسعير",
+        mini: "POC",
+        rtlMini: "ع",
+        component: PatientOnboardingChecklist,
         layout: "/admin",
       },
       {

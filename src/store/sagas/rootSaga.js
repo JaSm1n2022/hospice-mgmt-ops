@@ -8,6 +8,7 @@ import distributionSaga from "./distributionSaga";
 import employeeSaga from "./employeeSaga";
 import employeeChecklistSaga from "./employeeChecklistSaga";
 import patientSaga from "./patientSaga";
+import patientChecklistSaga from "./patientChecklistSaga";
 import vendorSaga from "./vendorSaga";
 import templateSaga from "./templateSaga";
 import thresholdSaga from "./thresholdSaga";
@@ -44,6 +45,7 @@ export function* rootSaga() {
     employeeSaga(),
     employeeChecklistSaga(),
     patientSaga(),
+    patientChecklistSaga(),
     assignmentSaga(),
     admittanceSaga(),
     vendorSaga(),

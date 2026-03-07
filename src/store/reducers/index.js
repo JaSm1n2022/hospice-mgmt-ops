@@ -8,6 +8,7 @@ import orderReducer from "./order";
 import employeeReducer from "./employee";
 import employeeChecklistReducer from "./employeeChecklist";
 import patientReducer from "./patient";
+import patientChecklistReducer from "./patientChecklist";
 import thresholdReducer from "./threshold";
 import vendorReducer from "./vendor";
 import templateReducer from "./template";
@@ -42,6 +43,7 @@ export default combineReducers({
   category: categoryReducer,
   subCategory: subCategoryReducer,
   patient: patientReducer,
+  patientChecklist: patientChecklistReducer,
   assignment: assignmentReducer,
   vendor: vendorReducer,
   template: templateReducer,
