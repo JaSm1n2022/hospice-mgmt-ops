@@ -319,7 +319,7 @@ export default function PaycheckDocument(props) {
                             fontWeight: 500,
                           }}
                         >
-                          EMPLOYEE : {m.employee.name}
+                          EMPLOYEE : {m.employee.name} {m.employee.position}
                         </Text>
                         <Text
                           style={{

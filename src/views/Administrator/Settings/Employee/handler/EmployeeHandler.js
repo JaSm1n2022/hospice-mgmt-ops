@@ -46,6 +46,15 @@ class EmployeeHandler {
         name: "employeeId",
         header: "Employee ID",
       },
+      {
+        defaultFlex: 1,
+        minWidth: 150,
+        name: "dateHired",
+        header: "Date Hired",
+        render: ({ value }) => {
+          return value ? moment(value).format("MM/DD/YYYY") : "N/A";
+        },
+      },
     ];
   }
   static mapData(items) {

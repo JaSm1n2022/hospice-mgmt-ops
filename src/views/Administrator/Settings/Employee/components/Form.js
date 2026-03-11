@@ -180,6 +180,16 @@ const general = [
 
     cols: 4,
   },
+  {
+    id: "dateHired",
+    component: "datepicker",
+    placeholder: "Date Hired",
+    label: "Date Hired",
+    name: "dateHired",
+    //disabled: props.mode && props.mode === 'view' ? true : false,
+
+    cols: 4,
+  },
 ];
 
 function EmployeeForm(props) {

@@ -252,6 +252,7 @@ function EmployeeFunction(props) {
       ln: payload.ln,
       position: payload.position.value,
       status: payload.status?.value || "Active",
+      dateHired: payload.dateHired,
 
       companyId: context.userProfile?.companyId,
       updatedUser: {
