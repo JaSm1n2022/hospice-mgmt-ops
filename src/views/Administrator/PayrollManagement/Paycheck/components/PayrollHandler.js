@@ -71,6 +71,18 @@ class PayrollHandler {
       },
       {
         defaultFlex: 1,
+        minWidth: 200,
+        name: "dos",
+        header: "Date of Service",
+        render: ({ value }) => {
+          if (Array.isArray(value) && value.length > 0) {
+            return value.join(", ");
+          }
+          return "-";
+        },
+      },
+      {
+        defaultFlex: 1,
         minWidth: 120,
         name: "totalRate",
         header: "Total Rate",
@@ -104,18 +116,6 @@ class PayrollHandler {
         minWidth: 120,
         name: "comments",
         header: "Comments",
-      },
-      {
-        defaultFlex: 1,
-        minWidth: 200,
-        name: "dos",
-        header: "Date of Service",
-        render: ({ value }) => {
-          if (Array.isArray(value) && value.length > 0) {
-            return value.join(", ");
-          }
-          return "-";
-        },
       },
     ];
   }

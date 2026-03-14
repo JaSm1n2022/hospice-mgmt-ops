@@ -35,6 +35,11 @@ import {
   Select,
   FormControl,
   InputLabel,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
 } from "@material-ui/core";
 import AddIcon from "@material-ui/icons/Add";
 import UploadIcon from "@material-ui/icons/CloudUpload";
@@ -163,6 +168,9 @@ function PayrollFunction(props) {
   const [payDateTo, setPayDateTo] = useState("");
   const [isDOSFilter, setIsDOSFilter] = useState(false);
   const [activeFilterLabel, setActiveFilterLabel] = useState("Filter By Pay Date");
+  const [isDatePickerModalOpen, setIsDatePickerModalOpen] = useState(false);
+  const [uploadType, setUploadType] = useState(""); // "distribution" or "transaction"
+  const [selectedUploadDate, setSelectedUploadDate] = useState("");
 
   const createFormHandler = (data, mode) => {
     setItem(data);
@@ -807,6 +815,22 @@ function PayrollFunction(props) {
   const closeChangeReportMenuHandler = () => {
     setAnchorEl(null);
   };
+
+  const handleDatePickerConfirm = () => {
+    setIsDatePickerModalOpen(false);
+    if (uploadType === "transaction") {
+      uploadToTransactionHandler();
+    } else if (uploadType === "distribution") {
+      uploadToDistributionHandler();
+    }
+  };
+
+  const handleDatePickerCancel = () => {
+    setIsDatePickerModalOpen(false);
+    setUploadType("");
+    setSelectedUploadDate("");
+  };
+
   const uploadToTransactionHandler = () => {
     const data = formatEmployeeReportHandler();
 
@@ -822,7 +846,8 @@ function PayrollFunction(props) {
         const isTransaction = dd.isTransaction || false;
         payrollIds.push(dd.id);
         const obj = {
-          ordered_at: dd.payDate ? `${dd.payDate}T17:00:00.000Z` : new Date(),
+          created_dt: selectedUploadDate ? `${selectedUploadDate}T17:00:00.000Z` : new Date(),
+          ordered_at: selectedUploadDate ? `${selectedUploadDate}T17:00:00.000Z` : new Date(),
           order_number: `${dd.employeeName} ${dd.paymentInfo}`,
           description: currentCategory?.description,
           category: currentCategory.category,
@@ -842,13 +867,13 @@ function PayrollFunction(props) {
           vendor: currentCategory.vendor,
           status: "Delivered",
           product_id: currentCategory?.id,
-          expected_delivery_at: dd.payDate
-            ? `${dd.payDate}T17:00:00.000Z`
+          expected_delivery_at: selectedUploadDate
+            ? `${selectedUploadDate}T17:00:00.000Z`
             : new Date(),
           payment_method: dd.paymentType,
           payment_info: dd.paymentInfo,
-          payment_transaction_at: dd.payDate
-            ? `${dd.payDate}T17:00:00.000Z`
+          payment_transaction_at: selectedUploadDate
+            ? `${selectedUploadDate}T17:00:00.000Z`
             : new Date(),
           grand_total: parseFloat(dd.totalRate || 0).toFixed(2),
           companyId: context.userProfile.companyId,
@@ -916,6 +941,7 @@ function PayrollFunction(props) {
         const isDistributed = dd.isDistributed || false;
         payrollIds.push(dd.id);
         const obj = {
+          created_dt: selectedUploadDate ? `${selectedUploadDate}T17:00:00.000Z` : new Date(),
           created_at: new Date(),
 
           description: currentCategory?.description,
@@ -929,7 +955,7 @@ function PayrollFunction(props) {
           estimated_total_amt: dd.totalRate,
           order_status: "Delivered",
           order_qty: 1,
-          order_at: dd.payDate ? `${dd.payDate}T17:00:00.000Z` : new Date(),
+          order_at: selectedUploadDate ? `${selectedUploadDate}T17:00:00.000Z` : new Date(),
           comments: dd.dos?.length
             ? `${dd.dos.toString()}${dd.comments ? `/${dd.comments}` : ""}`
             : dd.comments,
@@ -1156,7 +1182,11 @@ function PayrollFunction(props) {
 
                         <Button
                           color="success"
-                          onClick={() => uploadToTransactionHandler()}
+                          onClick={() => {
+                            setUploadType("transaction");
+                            setSelectedUploadDate(moment().format("YYYY-MM-DD"));
+                            setIsDatePickerModalOpen(true);
+                          }}
                           className={classes.marginRight}
                         >
                           <UploadIcon className={classes.icons} /> Upload to
@@ -1164,7 +1194,11 @@ function PayrollFunction(props) {
                         </Button>
                         <Button
                           color="success"
-                          onClick={() => uploadToDistributionHandler()}
+                          onClick={() => {
+                            setUploadType("distribution");
+                            setSelectedUploadDate(moment().format("YYYY-MM-DD"));
+                            setIsDatePickerModalOpen(true);
+                          }}
                           variant="outlined"
                           style={{
                             fontFamily: "Roboto",
@@ -1276,6 +1310,41 @@ function PayrollFunction(props) {
           closePrintModalHandler={closePrintModalHandler}
         />
       )}
+
+      {/* Date Picker Modal for Upload */}
+      <Dialog
+        open={isDatePickerModalOpen}
+        onClose={handleDatePickerCancel}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          {uploadType === "transaction"
+            ? "Select Transaction Date"
+            : "Select Distribution Date"}
+        </DialogTitle>
+        <DialogContent>
+          <TextField
+            label={uploadType === "transaction" ? "Transaction Date" : "Distribution Date"}
+            type="date"
+            value={selectedUploadDate}
+            onChange={(e) => setSelectedUploadDate(e.target.value)}
+            InputLabelProps={{
+              shrink: true,
+            }}
+            fullWidth
+            style={{ marginTop: "10px" }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDatePickerCancel} color="default">
+            Cancel
+          </Button>
+          <Button onClick={handleDatePickerConfirm} color="primary">
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }
