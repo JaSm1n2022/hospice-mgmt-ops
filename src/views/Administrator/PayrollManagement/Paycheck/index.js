@@ -941,8 +941,7 @@ function PayrollFunction(props) {
         const isDistributed = dd.isDistributed || false;
         payrollIds.push(dd.id);
         const obj = {
-          created_dt: selectedUploadDate ? `${selectedUploadDate}T17:00:00.000Z` : new Date(),
-          created_at: new Date(),
+          created_at: selectedUploadDate ? `${selectedUploadDate}T17:00:00.000Z` : new Date(),
 
           description: currentCategory?.description,
           short_description: currentCategory?.short_description,
@@ -1177,7 +1176,7 @@ function PayrollFunction(props) {
                           onClick={() => exportToExcelHandler()}
                           className={classes.marginRight}
                         >
-                          <UploadIcon className={classes.icons} /> Export Excel
+                          <UploadIcon className={classes.icons} /> Export Excel ({dataSource.filter((r) => r.isChecked).length})
                         </Button>
 
                         <Button
@@ -1190,7 +1189,7 @@ function PayrollFunction(props) {
                           className={classes.marginRight}
                         >
                           <UploadIcon className={classes.icons} /> Upload to
-                          Transaction
+                          Transaction ({dataSource.filter((r) => r.isChecked).length})
                         </Button>
                         <Button
                           color="success"
@@ -1215,7 +1214,7 @@ function PayrollFunction(props) {
                           startIcon={<ImportExport />}
                         >
                           {" "}
-                          Upload to Distribution{" "}
+                          Upload to Distribution ({dataSource.filter((r) => r.isChecked).length}){" "}
                         </Button>
 
                         <Button
