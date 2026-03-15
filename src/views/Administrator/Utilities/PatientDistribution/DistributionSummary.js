@@ -439,6 +439,17 @@ const DistributionSummary = (props) => {
                       >
                         GRAND TOTAL
                       </TableCell>
+                      <TableCell
+                        className={classes.tableCell}
+                        style={{
+                          height: "auto !important",
+                          border: "solid 1px black",
+                        }}
+                        component="th"
+                        scope="row"
+                      >
+                        % Revenue
+                      </TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -578,6 +589,20 @@ const DistributionSummary = (props) => {
                             >{`$${parseFloat(map.grand || 0.0).toFixed(
                               2
                             )}`}</TableCell>
+                            <TableCell
+                              className={classes.tableCell}
+                              style={{
+                                ...cellStyle,
+                                color: isTotalRow ? "white" : "purple",
+                                fontWeight: "bold",
+                              }}
+                              component="th"
+                              scope="row"
+                            >
+                              {props.revenueForecast > 0
+                                ? `${((parseFloat(map.grand || 0.0) / props.revenueForecast) * 100).toFixed(2)}%`
+                                : "0.00%"}
+                            </TableCell>
                           </TableRow>
                         );
                       })}
