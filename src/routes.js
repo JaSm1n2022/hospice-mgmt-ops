@@ -353,7 +353,7 @@ var dashRoutes = [
       },
       {
         path: "/patientDistribution",
-        name: "Client Distribution Category",
+        name: "Direct Patient Care Cost",
         rtlName: "عالتسعير",
         mini: "PM",
         rtlMini: "ع",

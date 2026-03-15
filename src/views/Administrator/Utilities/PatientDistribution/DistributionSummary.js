@@ -587,6 +587,1237 @@ const DistributionSummary = (props) => {
             </div>
           </Grid>
 
+          {/* Revenue vs Direct Patient Care Cost Table */}
+          <Grid item xs={12} style={{ marginTop: 40 }}>
+            <Typography variant="h6" style={{ marginBottom: 20, textAlign: "center", fontWeight: "bold" }}>
+              Revenue vs Direct Patient Care Cost
+            </Typography>
+            <Table sx={{ minWidth: 650 }} aria-label="revenue vs cost table">
+              <TableBody>
+                <TableRow className={classes.tableRow}>
+                  <TableCell
+                    className={classes.tableCell}
+                    style={{
+                      height: "auto !important",
+                      border: "solid 1px black",
+                      fontWeight: "bold",
+                    }}
+                    component="th"
+                    scope="row"
+                  >
+                    Forecast Revenue
+                  </TableCell>
+                  <TableCell
+                    className={classes.tableCell}
+                    style={{
+                      height: "auto !important",
+                      border: "solid 1px black",
+                      textAlign: "right",
+                      fontWeight: "bold",
+                      color: "green",
+                    }}
+                    component="th"
+                    scope="row"
+                  >
+                    ${parseFloat(props.revenueForecast || 0).toFixed(2)}
+                  </TableCell>
+                </TableRow>
+                <TableRow className={classes.tableRow}>
+                  <TableCell
+                    className={classes.tableCell}
+                    style={{
+                      height: "auto !important",
+                      border: "solid 1px black",
+                      fontWeight: "bold",
+                    }}
+                    component="th"
+                    scope="row"
+                  >
+                    Direct Patient Care Cost
+                  </TableCell>
+                  <TableCell
+                    className={classes.tableCell}
+                    style={{
+                      height: "auto !important",
+                      border: "solid 1px black",
+                      textAlign: "right",
+                      fontWeight: "bold",
+                      color: "red",
+                    }}
+                    component="th"
+                    scope="row"
+                  >
+                    ${parseFloat(grandTotal || 0).toFixed(2)}
+                  </TableCell>
+                </TableRow>
+                <TableRow className={classes.tableRowGray}>
+                  <TableCell
+                    className={classes.tableCell}
+                    style={{
+                      height: "auto !important",
+                      border: "solid 1px black",
+                      fontWeight: "bold",
+                      color: "white",
+                    }}
+                    component="th"
+                    scope="row"
+                  >
+                    Direct Care Cost Percentage
+                  </TableCell>
+                  <TableCell
+                    className={classes.tableCell}
+                    style={{
+                      height: "auto !important",
+                      border: "solid 1px black",
+                      textAlign: "right",
+                      fontWeight: "bold",
+                      color: "white",
+                    }}
+                    component="th"
+                    scope="row"
+                  >
+                    {props.revenueForecast > 0
+                      ? `${((grandTotal / props.revenueForecast) * 100).toFixed(2)}%`
+                      : "0.00%"}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </Grid>
+
+          {/* Breakdown of Direct Patient Care Costs Table */}
+          <Grid item xs={12} style={{ marginTop: 40 }}>
+            <Typography variant="h6" style={{ marginBottom: 20, textAlign: "center", fontWeight: "bold" }}>
+              Breakdown of Direct Patient Care Costs
+            </Typography>
+            <Table sx={{ minWidth: 650 }} aria-label="clinical services breakdown table">
+              <TableHead>
+                <TableRow className={classes.tableRowGray}>
+                  <TableCell
+                    className={classes.tableCell}
+                    style={{
+                      height: "auto !important",
+                      border: "solid 1px black",
+                      fontWeight: "bold",
+                      color: "white",
+                    }}
+                    component="th"
+                    scope="row"
+                  >
+                    Clinical Service
+                  </TableCell>
+                  <TableCell
+                    className={classes.tableCell}
+                    style={{
+                      height: "auto !important",
+                      border: "solid 1px black",
+                      fontWeight: "bold",
+                      color: "white",
+                      textAlign: "right",
+                    }}
+                    component="th"
+                    scope="row"
+                  >
+                    Cost
+                  </TableCell>
+                  <TableCell
+                    className={classes.tableCell}
+                    style={{
+                      height: "auto !important",
+                      border: "solid 1px black",
+                      fontWeight: "bold",
+                      color: "white",
+                      textAlign: "right",
+                    }}
+                    component="th"
+                    scope="row"
+                  >
+                    % of Revenue
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {details && details.length > 0 && (() => {
+                  // Get the TOTAL row (last row in details array)
+                  const totalRow = details[details.length - 1];
+
+                  // Define clinical services to display
+                  const clinicalServices = [
+                    { label: "CNA", value: totalRow.cna },
+                    { label: "Nurse (RN)", value: totalRow.nurse },
+                    { label: "LPN", value: totalRow.lpn },
+                    { label: "MSW", value: totalRow.msw },
+                    { label: "Chaplain", value: totalRow.chaplain },
+                  ];
+
+                  return clinicalServices.map((service, index) => {
+                    const cost = parseFloat(service.value || 0);
+                    const percentOfRevenue = props.revenueForecast > 0
+                      ? ((cost / props.revenueForecast) * 100).toFixed(2)
+                      : "0.00";
+
+                    return (
+                      <TableRow key={index} className={classes.tableRow}>
+                        <TableCell
+                          className={classes.tableCell}
+                          style={{
+                            height: "auto !important",
+                            border: "solid 1px black",
+                            fontWeight: "bold",
+                          }}
+                          component="th"
+                          scope="row"
+                        >
+                          {service.label}
+                        </TableCell>
+                        <TableCell
+                          className={classes.tableCell}
+                          style={{
+                            height: "auto !important",
+                            border: "solid 1px black",
+                            textAlign: "right",
+                          }}
+                          component="th"
+                          scope="row"
+                        >
+                          ${cost.toFixed(2)}
+                        </TableCell>
+                        <TableCell
+                          className={classes.tableCell}
+                          style={{
+                            height: "auto !important",
+                            border: "solid 1px black",
+                            textAlign: "right",
+                          }}
+                          component="th"
+                          scope="row"
+                        >
+                          {percentOfRevenue}%
+                        </TableCell>
+                      </TableRow>
+                    );
+                  });
+                })()}
+              </TableBody>
+            </Table>
+          </Grid>
+
+          {/* Haloes Touch Hospice Performance Category Table */}
+          <Grid item xs={12} style={{ marginTop: 40 }}>
+            <Typography variant="h6" style={{ marginBottom: 20, textAlign: "center", fontWeight: "bold" }}>
+              Haloes Touch Hospice Performance Category
+            </Typography>
+            <Table sx={{ minWidth: 650 }} aria-label="performance category table">
+              <TableHead>
+                <TableRow className={classes.tableRowGray}>
+                  <TableCell
+                    className={classes.tableCell}
+                    style={{
+                      height: "auto !important",
+                      border: "solid 1px black",
+                      fontWeight: "bold",
+                      color: "white",
+                    }}
+                    component="th"
+                    scope="row"
+                  >
+                    Category
+                  </TableCell>
+                  <TableCell
+                    className={classes.tableCell}
+                    style={{
+                      height: "auto !important",
+                      border: "solid 1px black",
+                      fontWeight: "bold",
+                      color: "white",
+                      textAlign: "right",
+                    }}
+                    component="th"
+                    scope="row"
+                  >
+                    Haloes Touch
+                  </TableCell>
+                  <TableCell
+                    className={classes.tableCell}
+                    style={{
+                      height: "auto !important",
+                      border: "solid 1px black",
+                      fontWeight: "bold",
+                      color: "white",
+                      textAlign: "right",
+                    }}
+                    component="th"
+                    scope="row"
+                  >
+                    Benchmark
+                  </TableCell>
+                  <TableCell
+                    className={classes.tableCell}
+                    style={{
+                      height: "auto !important",
+                      border: "solid 1px black",
+                      fontWeight: "bold",
+                      color: "white",
+                      textAlign: "center",
+                    }}
+                    component="th"
+                    scope="row"
+                  >
+                    Remark
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {details && details.length > 0 && (() => {
+                  // Get the TOTAL row (last row in details array)
+                  const totalRow = details[details.length - 1];
+
+                  // Helper function to calculate percentage
+                  const calculatePercentage = (value) => {
+                    return props.revenueForecast > 0
+                      ? ((parseFloat(value || 0) / props.revenueForecast) * 100)
+                      : 0;
+                  };
+
+                  // Helper function to determine remark
+                  const getRemark = (percentage, minBenchmark, maxBenchmark) => {
+                    if (percentage < minBenchmark) {
+                      return { text: "Low", color: "#1976d2" }; // Blue
+                    } else if (percentage >= minBenchmark && percentage <= maxBenchmark) {
+                      return { text: "Within Range", color: "#388e3c" }; // Green
+                    } else {
+                      return { text: "High", color: "#d32f2f" }; // Red
+                    }
+                  };
+
+                  // Calculate category values
+                  const clinicalLabor = parseFloat(totalRow.cna || 0) +
+                                       parseFloat(totalRow.nurse || 0) +
+                                       parseFloat(totalRow.lpn || 0) +
+                                       parseFloat(totalRow.msw || 0) +
+                                       parseFloat(totalRow.chaplain || 0);
+                  const pharmacy = parseFloat(totalRow.pharmacy || 0);
+                  const dme = parseFloat(totalRow.dme || 0);
+                  const supplies = parseFloat(totalRow.medical || 0);
+                  const transportation = parseFloat(totalRow.transportation || 0);
+                  const totalPatientCare = parseFloat(totalRow.grand || 0);
+
+                  // Define performance categories with benchmarks
+                  const performanceCategories = [
+                    {
+                      category: "Clinical Labor",
+                      value: clinicalLabor,
+                      percentage: calculatePercentage(clinicalLabor),
+                      benchmark: "40–55%",
+                      minBenchmark: 40,
+                      maxBenchmark: 55,
+                    },
+                    {
+                      category: "Pharmacy",
+                      value: pharmacy,
+                      percentage: calculatePercentage(pharmacy),
+                      benchmark: "10–20%",
+                      minBenchmark: 10,
+                      maxBenchmark: 20,
+                    },
+                    {
+                      category: "DME",
+                      value: dme,
+                      percentage: calculatePercentage(dme),
+                      benchmark: "5–10%",
+                      minBenchmark: 5,
+                      maxBenchmark: 10,
+                    },
+                    {
+                      category: "Supplies",
+                      value: supplies,
+                      percentage: calculatePercentage(supplies),
+                      benchmark: "2–5%",
+                      minBenchmark: 2,
+                      maxBenchmark: 5,
+                    },
+                    {
+                      category: "Transportation",
+                      value: transportation,
+                      percentage: calculatePercentage(transportation),
+                      benchmark: "2–4%",
+                      minBenchmark: 2,
+                      maxBenchmark: 4,
+                    },
+                    {
+                      category: "Total Patient Care Cost",
+                      value: totalPatientCare,
+                      percentage: calculatePercentage(totalPatientCare),
+                      benchmark: "65–75%",
+                      minBenchmark: 65,
+                      maxBenchmark: 75,
+                    },
+                  ];
+
+                  return performanceCategories.map((cat, index) => {
+                    const remark = getRemark(cat.percentage, cat.minBenchmark, cat.maxBenchmark);
+                    const isTotalRow = cat.category === "Total Patient Care Cost";
+
+                    return (
+                      <TableRow
+                        key={index}
+                        className={isTotalRow ? classes.tableRowGray : classes.tableRow}
+                      >
+                        <TableCell
+                          className={classes.tableCell}
+                          style={{
+                            height: "auto !important",
+                            border: "solid 1px black",
+                            fontWeight: isTotalRow ? "bold" : "normal",
+                            color: isTotalRow ? "white" : "inherit",
+                          }}
+                          component="th"
+                          scope="row"
+                        >
+                          {cat.category}
+                        </TableCell>
+                        <TableCell
+                          className={classes.tableCell}
+                          style={{
+                            height: "auto !important",
+                            border: "solid 1px black",
+                            textAlign: "right",
+                            fontWeight: isTotalRow ? "bold" : "normal",
+                            color: isTotalRow ? "white" : "inherit",
+                          }}
+                          component="th"
+                          scope="row"
+                        >
+                          {cat.percentage.toFixed(2)}%
+                        </TableCell>
+                        <TableCell
+                          className={classes.tableCell}
+                          style={{
+                            height: "auto !important",
+                            border: "solid 1px black",
+                            textAlign: "right",
+                            fontWeight: isTotalRow ? "bold" : "normal",
+                            color: isTotalRow ? "white" : "inherit",
+                          }}
+                          component="th"
+                          scope="row"
+                        >
+                          {cat.benchmark}
+                        </TableCell>
+                        <TableCell
+                          className={classes.tableCell}
+                          style={{
+                            height: "auto !important",
+                            border: "solid 1px black",
+                            textAlign: "center",
+                            fontWeight: "bold",
+                            color: isTotalRow ? "white" : remark.color,
+                          }}
+                          component="th"
+                          scope="row"
+                        >
+                          {remark.text}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  });
+                })()}
+              </TableBody>
+            </Table>
+          </Grid>
+
+          {/* Estimated Revenue Remaining for Operations */}
+          <Grid item xs={12} style={{ marginTop: 40 }}>
+            <Typography variant="h6" style={{ marginBottom: 20, textAlign: "center", fontWeight: "bold" }}>
+              Estimated Revenue Remaining for Operations
+            </Typography>
+            <Table sx={{ minWidth: 650 }} aria-label="revenue remaining table">
+              <TableBody>
+                {(() => {
+                  const forecastRevenue = parseFloat(props.revenueForecast || 0);
+                  const directPatientCareCost = parseFloat(grandTotal || 0);
+                  const remainingRevenue = forecastRevenue - directPatientCareCost;
+                  const remainingRevenuePercent = forecastRevenue > 0
+                    ? ((remainingRevenue / forecastRevenue) * 100)
+                    : 0;
+
+                  const revenueRows = [
+                    {
+                      label: "Forecast Revenue",
+                      value: forecastRevenue,
+                      isPercentage: false,
+                      color: "green",
+                    },
+                    {
+                      label: "Direct Patient Care Cost",
+                      value: directPatientCareCost,
+                      isPercentage: false,
+                      color: "red",
+                    },
+                    {
+                      label: "Remaining Revenue",
+                      value: remainingRevenue,
+                      isPercentage: false,
+                      color: "blue",
+                      isBold: true,
+                    },
+                    {
+                      label: "Remaining Revenue %",
+                      value: remainingRevenuePercent,
+                      isPercentage: true,
+                      color: "blue",
+                      isBold: true,
+                    },
+                  ];
+
+                  return revenueRows.map((row, index) => {
+                    const isLastTwo = index >= 2;
+                    return (
+                      <TableRow
+                        key={index}
+                        className={isLastTwo ? classes.tableRowGray : classes.tableRow}
+                      >
+                        <TableCell
+                          className={classes.tableCell}
+                          style={{
+                            height: "auto !important",
+                            border: "solid 1px black",
+                            fontWeight: row.isBold || isLastTwo ? "bold" : "normal",
+                            color: isLastTwo ? "white" : "inherit",
+                            width: "50%",
+                          }}
+                          component="th"
+                          scope="row"
+                        >
+                          {row.label}
+                        </TableCell>
+                        <TableCell
+                          className={classes.tableCell}
+                          style={{
+                            height: "auto !important",
+                            border: "solid 1px black",
+                            textAlign: "right",
+                            fontWeight: row.isBold || isLastTwo ? "bold" : "normal",
+                            color: isLastTwo ? "white" : row.color,
+                            width: "50%",
+                          }}
+                          component="th"
+                          scope="row"
+                        >
+                          {row.isPercentage
+                            ? `${row.value.toFixed(2)}%`
+                            : `$${row.value.toFixed(2)}`}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  });
+                })()}
+              </TableBody>
+            </Table>
+
+            {/* Notes Section */}
+            <div style={{
+              marginTop: 20,
+              padding: "15px 20px",
+              backgroundColor: "#f5f5f5",
+              borderRadius: "4px",
+              border: "1px solid #ddd",
+            }}>
+              <Typography variant="body1" style={{ fontWeight: "bold", marginBottom: 10 }}>
+                The remaining revenue will support:
+              </Typography>
+              <ul style={{ margin: 0, paddingLeft: 20, lineHeight: 1.8 }}>
+                <li>Administrator and Director of Nursing salaries</li>
+                <li>Administrative staff</li>
+                <li>Office operations</li>
+                <li>Billing and compliance functions</li>
+                <li>Insurance and utilities</li>
+                <li>EHR system (HospiceMD)</li>
+                <li>Other operational overhead expenses</li>
+              </ul>
+            </div>
+          </Grid>
+
+          {/* Top 5 Highest Total Care Cost */}
+          <Grid item xs={12} style={{ marginTop: 40 }}>
+            <Typography variant="h6" style={{ marginBottom: 20, textAlign: "center", fontWeight: "bold" }}>
+              Top 5 Highest Total Care Cost
+            </Typography>
+            <Table sx={{ minWidth: 650 }} aria-label="top 5 highest cost table">
+              <TableHead>
+                <TableRow className={classes.tableRowGray}>
+                  <TableCell
+                    className={classes.tableCell}
+                    style={{
+                      height: "auto !important",
+                      border: "solid 1px black",
+                      fontWeight: "bold",
+                      color: "white",
+                    }}
+                    component="th"
+                    scope="row"
+                  >
+                    Patient Name
+                  </TableCell>
+                  <TableCell
+                    className={classes.tableCell}
+                    style={{
+                      height: "auto !important",
+                      border: "solid 1px black",
+                      fontWeight: "bold",
+                      color: "white",
+                      textAlign: "right",
+                    }}
+                    component="th"
+                    scope="row"
+                  >
+                    Cost
+                  </TableCell>
+                  <TableCell
+                    className={classes.tableCell}
+                    style={{
+                      height: "auto !important",
+                      border: "solid 1px black",
+                      fontWeight: "bold",
+                      color: "white",
+                      textAlign: "right",
+                    }}
+                    component="th"
+                    scope="row"
+                  >
+                    % of Revenue
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {details && details.length > 0 && (() => {
+                  // Filter out the TOTAL row and get top 5 patients (already sorted by grand total descending)
+                  const topPatients = details
+                    .filter((d) => d.patient !== "TOTAL")
+                    .slice(0, 5);
+
+                  return topPatients.map((patient, index) => {
+                    const cost = parseFloat(patient.grand || 0);
+                    const percentOfRevenue = props.revenueForecast > 0
+                      ? ((cost / props.revenueForecast) * 100).toFixed(2)
+                      : "0.00";
+
+                    return (
+                      <TableRow key={index} className={classes.tableRow}>
+                        <TableCell
+                          className={classes.tableCell}
+                          style={{
+                            height: "auto !important",
+                            border: "solid 1px black",
+                            fontWeight: "bold",
+                          }}
+                          component="th"
+                          scope="row"
+                        >
+                          {patient.patient}
+                        </TableCell>
+                        <TableCell
+                          className={classes.tableCell}
+                          style={{
+                            height: "auto !important",
+                            border: "solid 1px black",
+                            textAlign: "right",
+                          }}
+                          component="th"
+                          scope="row"
+                        >
+                          ${cost.toFixed(2)}
+                        </TableCell>
+                        <TableCell
+                          className={classes.tableCell}
+                          style={{
+                            height: "auto !important",
+                            border: "solid 1px black",
+                            textAlign: "right",
+                          }}
+                          component="th"
+                          scope="row"
+                        >
+                          {percentOfRevenue}%
+                        </TableCell>
+                      </TableRow>
+                    );
+                  });
+                })()}
+              </TableBody>
+            </Table>
+          </Grid>
+
+          {/* Top 5 Highest Care Cost - Supplies */}
+          <Grid item xs={12} style={{ marginTop: 40 }}>
+            <Typography variant="h6" style={{ marginBottom: 20, textAlign: "center", fontWeight: "bold" }}>
+              Top 5 Highest Care Cost – Supplies
+            </Typography>
+            <Table sx={{ minWidth: 650 }} aria-label="top 5 supplies cost table">
+              <TableHead>
+                <TableRow className={classes.tableRowGray}>
+                  <TableCell
+                    className={classes.tableCell}
+                    style={{
+                      height: "auto !important",
+                      border: "solid 1px black",
+                      fontWeight: "bold",
+                      color: "white",
+                    }}
+                    component="th"
+                    scope="row"
+                  >
+                    Patient Name
+                  </TableCell>
+                  <TableCell
+                    className={classes.tableCell}
+                    style={{
+                      height: "auto !important",
+                      border: "solid 1px black",
+                      fontWeight: "bold",
+                      color: "white",
+                      textAlign: "right",
+                    }}
+                    component="th"
+                    scope="row"
+                  >
+                    Supplies Cost
+                  </TableCell>
+                  <TableCell
+                    className={classes.tableCell}
+                    style={{
+                      height: "auto !important",
+                      border: "solid 1px black",
+                      fontWeight: "bold",
+                      color: "white",
+                      textAlign: "right",
+                    }}
+                    component="th"
+                    scope="row"
+                  >
+                    % of Patient's Total Direct Cost
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {details && details.length > 0 && (() => {
+                  // Filter out the TOTAL row, filter patients with supplies > 0, sort by supplies cost descending, and get top 5
+                  const topSuppliesPatients = details
+                    .filter((d) => d.patient !== "TOTAL" && parseFloat(d.medical || 0) > 0)
+                    .sort((a, b) => parseFloat(b.medical || 0) - parseFloat(a.medical || 0))
+                    .slice(0, 5);
+
+                  return topSuppliesPatients.map((patient, index) => {
+                    const suppliesCost = parseFloat(patient.medical || 0);
+                    const patientGrandTotal = parseFloat(patient.grand || 0);
+                    const percentOfPatientTotal = patientGrandTotal > 0
+                      ? ((suppliesCost / patientGrandTotal) * 100).toFixed(2)
+                      : "0.00";
+
+                    return (
+                      <TableRow key={index} className={classes.tableRow}>
+                        <TableCell
+                          className={classes.tableCell}
+                          style={{
+                            height: "auto !important",
+                            border: "solid 1px black",
+                            fontWeight: "bold",
+                          }}
+                          component="th"
+                          scope="row"
+                        >
+                          {patient.patient}
+                        </TableCell>
+                        <TableCell
+                          className={classes.tableCell}
+                          style={{
+                            height: "auto !important",
+                            border: "solid 1px black",
+                            textAlign: "right",
+                          }}
+                          component="th"
+                          scope="row"
+                        >
+                          ${suppliesCost.toFixed(2)}
+                        </TableCell>
+                        <TableCell
+                          className={classes.tableCell}
+                          style={{
+                            height: "auto !important",
+                            border: "solid 1px black",
+                            textAlign: "right",
+                          }}
+                          component="th"
+                          scope="row"
+                        >
+                          {percentOfPatientTotal}%
+                        </TableCell>
+                      </TableRow>
+                    );
+                  });
+                })()}
+              </TableBody>
+            </Table>
+          </Grid>
+
+          {/* Top 5 Highest Care Cost - DME */}
+          <Grid item xs={12} style={{ marginTop: 40 }}>
+            <Typography variant="h6" style={{ marginBottom: 20, textAlign: "center", fontWeight: "bold" }}>
+              Top 5 Highest Care Cost – DME
+            </Typography>
+            <Table sx={{ minWidth: 650 }} aria-label="top 5 dme cost table">
+              <TableHead>
+                <TableRow className={classes.tableRowGray}>
+                  <TableCell
+                    className={classes.tableCell}
+                    style={{
+                      height: "auto !important",
+                      border: "solid 1px black",
+                      fontWeight: "bold",
+                      color: "white",
+                    }}
+                    component="th"
+                    scope="row"
+                  >
+                    Patient Name
+                  </TableCell>
+                  <TableCell
+                    className={classes.tableCell}
+                    style={{
+                      height: "auto !important",
+                      border: "solid 1px black",
+                      fontWeight: "bold",
+                      color: "white",
+                      textAlign: "right",
+                    }}
+                    component="th"
+                    scope="row"
+                  >
+                    DME Cost
+                  </TableCell>
+                  <TableCell
+                    className={classes.tableCell}
+                    style={{
+                      height: "auto !important",
+                      border: "solid 1px black",
+                      fontWeight: "bold",
+                      color: "white",
+                      textAlign: "right",
+                    }}
+                    component="th"
+                    scope="row"
+                  >
+                    % of Patient's Total Direct Cost
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {details && details.length > 0 && (() => {
+                  const topDMEPatients = details
+                    .filter((d) => d.patient !== "TOTAL" && parseFloat(d.dme || 0) > 0)
+                    .sort((a, b) => parseFloat(b.dme || 0) - parseFloat(a.dme || 0))
+                    .slice(0, 5);
+
+                  return topDMEPatients.map((patient, index) => {
+                    const dmeCost = parseFloat(patient.dme || 0);
+                    const patientGrandTotal = parseFloat(patient.grand || 0);
+                    const percentOfPatientTotal = patientGrandTotal > 0
+                      ? ((dmeCost / patientGrandTotal) * 100).toFixed(2)
+                      : "0.00";
+
+                    return (
+                      <TableRow key={index} className={classes.tableRow}>
+                        <TableCell
+                          className={classes.tableCell}
+                          style={{
+                            height: "auto !important",
+                            border: "solid 1px black",
+                            fontWeight: "bold",
+                          }}
+                          component="th"
+                          scope="row"
+                        >
+                          {patient.patient}
+                        </TableCell>
+                        <TableCell
+                          className={classes.tableCell}
+                          style={{
+                            height: "auto !important",
+                            border: "solid 1px black",
+                            textAlign: "right",
+                          }}
+                          component="th"
+                          scope="row"
+                        >
+                          ${dmeCost.toFixed(2)}
+                        </TableCell>
+                        <TableCell
+                          className={classes.tableCell}
+                          style={{
+                            height: "auto !important",
+                            border: "solid 1px black",
+                            textAlign: "right",
+                          }}
+                          component="th"
+                          scope="row"
+                        >
+                          {percentOfPatientTotal}%
+                        </TableCell>
+                      </TableRow>
+                    );
+                  });
+                })()}
+              </TableBody>
+            </Table>
+          </Grid>
+
+          {/* Top 5 Highest Care Cost - Pharmacy */}
+          <Grid item xs={12} style={{ marginTop: 40 }}>
+            <Typography variant="h6" style={{ marginBottom: 20, textAlign: "center", fontWeight: "bold" }}>
+              Top 5 Highest Care Cost – Pharmacy
+            </Typography>
+            <Table sx={{ minWidth: 650 }} aria-label="top 5 pharmacy cost table">
+              <TableHead>
+                <TableRow className={classes.tableRowGray}>
+                  <TableCell
+                    className={classes.tableCell}
+                    style={{
+                      height: "auto !important",
+                      border: "solid 1px black",
+                      fontWeight: "bold",
+                      color: "white",
+                    }}
+                    component="th"
+                    scope="row"
+                  >
+                    Patient Name
+                  </TableCell>
+                  <TableCell
+                    className={classes.tableCell}
+                    style={{
+                      height: "auto !important",
+                      border: "solid 1px black",
+                      fontWeight: "bold",
+                      color: "white",
+                      textAlign: "right",
+                    }}
+                    component="th"
+                    scope="row"
+                  >
+                    Pharmacy Cost
+                  </TableCell>
+                  <TableCell
+                    className={classes.tableCell}
+                    style={{
+                      height: "auto !important",
+                      border: "solid 1px black",
+                      fontWeight: "bold",
+                      color: "white",
+                      textAlign: "right",
+                    }}
+                    component="th"
+                    scope="row"
+                  >
+                    % of Patient's Total Direct Cost
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {details && details.length > 0 && (() => {
+                  const topPharmacyPatients = details
+                    .filter((d) => d.patient !== "TOTAL" && parseFloat(d.pharmacy || 0) > 0)
+                    .sort((a, b) => parseFloat(b.pharmacy || 0) - parseFloat(a.pharmacy || 0))
+                    .slice(0, 5);
+
+                  return topPharmacyPatients.map((patient, index) => {
+                    const pharmacyCost = parseFloat(patient.pharmacy || 0);
+                    const patientGrandTotal = parseFloat(patient.grand || 0);
+                    const percentOfPatientTotal = patientGrandTotal > 0
+                      ? ((pharmacyCost / patientGrandTotal) * 100).toFixed(2)
+                      : "0.00";
+
+                    return (
+                      <TableRow key={index} className={classes.tableRow}>
+                        <TableCell
+                          className={classes.tableCell}
+                          style={{
+                            height: "auto !important",
+                            border: "solid 1px black",
+                            fontWeight: "bold",
+                          }}
+                          component="th"
+                          scope="row"
+                        >
+                          {patient.patient}
+                        </TableCell>
+                        <TableCell
+                          className={classes.tableCell}
+                          style={{
+                            height: "auto !important",
+                            border: "solid 1px black",
+                            textAlign: "right",
+                          }}
+                          component="th"
+                          scope="row"
+                        >
+                          ${pharmacyCost.toFixed(2)}
+                        </TableCell>
+                        <TableCell
+                          className={classes.tableCell}
+                          style={{
+                            height: "auto !important",
+                            border: "solid 1px black",
+                            textAlign: "right",
+                          }}
+                          component="th"
+                          scope="row"
+                        >
+                          {percentOfPatientTotal}%
+                        </TableCell>
+                      </TableRow>
+                    );
+                  });
+                })()}
+              </TableBody>
+            </Table>
+          </Grid>
+
+          {/* Top 5 Highest Care Cost - Transportation */}
+          <Grid item xs={12} style={{ marginTop: 40 }}>
+            <Typography variant="h6" style={{ marginBottom: 20, textAlign: "center", fontWeight: "bold" }}>
+              Top 5 Highest Care Cost – Transportation
+            </Typography>
+            <Table sx={{ minWidth: 650 }} aria-label="top 5 transportation cost table">
+              <TableHead>
+                <TableRow className={classes.tableRowGray}>
+                  <TableCell
+                    className={classes.tableCell}
+                    style={{
+                      height: "auto !important",
+                      border: "solid 1px black",
+                      fontWeight: "bold",
+                      color: "white",
+                    }}
+                    component="th"
+                    scope="row"
+                  >
+                    Patient Name
+                  </TableCell>
+                  <TableCell
+                    className={classes.tableCell}
+                    style={{
+                      height: "auto !important",
+                      border: "solid 1px black",
+                      fontWeight: "bold",
+                      color: "white",
+                      textAlign: "right",
+                    }}
+                    component="th"
+                    scope="row"
+                  >
+                    Transportation Cost
+                  </TableCell>
+                  <TableCell
+                    className={classes.tableCell}
+                    style={{
+                      height: "auto !important",
+                      border: "solid 1px black",
+                      fontWeight: "bold",
+                      color: "white",
+                      textAlign: "right",
+                    }}
+                    component="th"
+                    scope="row"
+                  >
+                    % of Patient's Total Direct Cost
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {details && details.length > 0 && (() => {
+                  const topTransportationPatients = details
+                    .filter((d) => d.patient !== "TOTAL" && parseFloat(d.transportation || 0) > 0)
+                    .sort((a, b) => parseFloat(b.transportation || 0) - parseFloat(a.transportation || 0))
+                    .slice(0, 5);
+
+                  return topTransportationPatients.map((patient, index) => {
+                    const transportationCost = parseFloat(patient.transportation || 0);
+                    const patientGrandTotal = parseFloat(patient.grand || 0);
+                    const percentOfPatientTotal = patientGrandTotal > 0
+                      ? ((transportationCost / patientGrandTotal) * 100).toFixed(2)
+                      : "0.00";
+
+                    return (
+                      <TableRow key={index} className={classes.tableRow}>
+                        <TableCell
+                          className={classes.tableCell}
+                          style={{
+                            height: "auto !important",
+                            border: "solid 1px black",
+                            fontWeight: "bold",
+                          }}
+                          component="th"
+                          scope="row"
+                        >
+                          {patient.patient}
+                        </TableCell>
+                        <TableCell
+                          className={classes.tableCell}
+                          style={{
+                            height: "auto !important",
+                            border: "solid 1px black",
+                            textAlign: "right",
+                          }}
+                          component="th"
+                          scope="row"
+                        >
+                          ${transportationCost.toFixed(2)}
+                        </TableCell>
+                        <TableCell
+                          className={classes.tableCell}
+                          style={{
+                            height: "auto !important",
+                            border: "solid 1px black",
+                            textAlign: "right",
+                          }}
+                          component="th"
+                          scope="row"
+                        >
+                          {percentOfPatientTotal}%
+                        </TableCell>
+                      </TableRow>
+                    );
+                  });
+                })()}
+              </TableBody>
+            </Table>
+          </Grid>
+
+          {/* Top 5 Highest Care Cost - Clinical Labor */}
+          <Grid item xs={12} style={{ marginTop: 40 }}>
+            <Typography variant="h6" style={{ marginBottom: 20, textAlign: "center", fontWeight: "bold" }}>
+              Top 5 Highest Care Cost – Clinical Labor
+            </Typography>
+            <Table sx={{ minWidth: 650 }} aria-label="top 5 clinical labor cost table">
+              <TableHead>
+                <TableRow className={classes.tableRowGray}>
+                  <TableCell
+                    className={classes.tableCell}
+                    style={{
+                      height: "auto !important",
+                      border: "solid 1px black",
+                      fontWeight: "bold",
+                      color: "white",
+                    }}
+                    component="th"
+                    scope="row"
+                  >
+                    Patient Name
+                  </TableCell>
+                  <TableCell
+                    className={classes.tableCell}
+                    style={{
+                      height: "auto !important",
+                      border: "solid 1px black",
+                      fontWeight: "bold",
+                      color: "white",
+                      textAlign: "right",
+                    }}
+                    component="th"
+                    scope="row"
+                  >
+                    Clinical Labor Cost
+                  </TableCell>
+                  <TableCell
+                    className={classes.tableCell}
+                    style={{
+                      height: "auto !important",
+                      border: "solid 1px black",
+                      fontWeight: "bold",
+                      color: "white",
+                      textAlign: "right",
+                    }}
+                    component="th"
+                    scope="row"
+                  >
+                    % of Patient's Total Direct Cost
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {details && details.length > 0 && (() => {
+                  // Calculate clinical labor for each patient and create a new array with this data
+                  const patientsWithClinicalLabor = details
+                    .filter((d) => d.patient !== "TOTAL")
+                    .map((patient) => {
+                      const clinicalLaborCost =
+                        parseFloat(patient.cna || 0) +
+                        parseFloat(patient.nurse || 0) +
+                        parseFloat(patient.lpn || 0) +
+                        parseFloat(patient.msw || 0) +
+                        parseFloat(patient.chaplain || 0);
+                      return {
+                        ...patient,
+                        clinicalLaborCost: clinicalLaborCost
+                      };
+                    })
+                    .filter((d) => d.clinicalLaborCost > 0)
+                    .sort((a, b) => b.clinicalLaborCost - a.clinicalLaborCost)
+                    .slice(0, 5);
+
+                  return patientsWithClinicalLabor.map((patient, index) => {
+                    const clinicalLaborCost = patient.clinicalLaborCost;
+                    const patientGrandTotal = parseFloat(patient.grand || 0);
+                    const percentOfPatientTotal = patientGrandTotal > 0
+                      ? ((clinicalLaborCost / patientGrandTotal) * 100).toFixed(2)
+                      : "0.00";
+
+                    return (
+                      <TableRow key={index} className={classes.tableRow}>
+                        <TableCell
+                          className={classes.tableCell}
+                          style={{
+                            height: "auto !important",
+                            border: "solid 1px black",
+                            fontWeight: "bold",
+                          }}
+                          component="th"
+                          scope="row"
+                        >
+                          {patient.patient}
+                        </TableCell>
+                        <TableCell
+                          className={classes.tableCell}
+                          style={{
+                            height: "auto !important",
+                            border: "solid 1px black",
+                            textAlign: "right",
+                          }}
+                          component="th"
+                          scope="row"
+                        >
+                          ${clinicalLaborCost.toFixed(2)}
+                        </TableCell>
+                        <TableCell
+                          className={classes.tableCell}
+                          style={{
+                            height: "auto !important",
+                            border: "solid 1px black",
+                            textAlign: "right",
+                          }}
+                          component="th"
+                          scope="row"
+                        >
+                          {percentOfPatientTotal}%
+                        </TableCell>
+                      </TableRow>
+                    );
+                  });
+                })()}
+              </TableBody>
+            </Table>
+          </Grid>
+
           {/* Charts Section */}
           <Grid item xs={12} style={{ marginTop: 40 }}>
             <Typography variant="h5" style={{ marginBottom: 20, textAlign: "center", fontWeight: "bold" }}>

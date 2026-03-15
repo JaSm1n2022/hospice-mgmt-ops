@@ -349,6 +349,14 @@ const OverheadForecastPDF = ({ data, currentMonthLabel }) => {
           <Text style={pdfStyles.value}>${data.transportation.toFixed(2)}</Text>
         </View>
 
+        {/* NP Evaluation */}
+        <View style={pdfStyles.subsectionRow}>
+          <Text style={pdfStyles.label}>
+            NP Evaluation ({data.socCount} SOC patients)
+          </Text>
+          <Text style={pdfStyles.value}>${data.npEvaluation.toFixed(2)}</Text>
+        </View>
+
         {/* Fixed Expenses */}
         <View style={pdfStyles.subsectionRow}>
           <Text style={pdfStyles.label}>Fixed Expenses</Text>
@@ -790,6 +798,10 @@ function OverheadForecast(props) {
     const transportation =
       socCount * getOverheadValue("TRANSPORTATION_PER_SOC", overheadTableData);
 
+    // 11b. NP Evaluation (per SOC)
+    const npEvaluation =
+      socCount * getOverheadValue("NP_EVALUATION", overheadTableData);
+
     // 12. Fixed Expenses
     const fixedExpenses = {
       rent: getOverheadValue("RENT_OFFICE", overheadTableData),
@@ -839,6 +851,7 @@ function OverheadForecast(props) {
       onCallPhone +
       potentialAdmission +
       transportation +
+      npEvaluation +
       totalFixedExpenses +
       billingFees +
       marketing;
@@ -868,6 +881,7 @@ function OverheadForecast(props) {
       onCallTotalHours,
       potentialAdmission,
       transportation,
+      npEvaluation,
       fixedExpenses,
       totalFixedExpenses,
       billingFees,
@@ -1449,6 +1463,17 @@ function OverheadForecast(props) {
                         </TableCell>
                         <TableCell style={{ textAlign: "right" }}>
                           ${forecastData.transportation.toFixed(2)}
+                        </TableCell>
+                      </TableRow>
+
+                      {/* NP Evaluation */}
+                      <TableRow className={classes.subsectionHeader}>
+                        <TableCell>
+                          NP Evaluation ({forecastData.socCount} SOC patient
+                          {forecastData.socCount !== 1 ? "s" : ""})
+                        </TableCell>
+                        <TableCell style={{ textAlign: "right" }}>
+                          ${forecastData.npEvaluation.toFixed(2)}
                         </TableCell>
                       </TableRow>
 

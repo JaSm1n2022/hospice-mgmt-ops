@@ -40,6 +40,7 @@ import { attemptToFetchAssignment } from "store/actions/assignmentAction";
 import { resetFetchAssignmentState } from "store/actions/assignmentAction";
 import { assignmentListStateSelector } from "store/selectors/assignmentSelector";
 import DistributionSummary from "./DistributionSummary";
+import MedicareHandler from "../../MedicareV2/components/MedicareHandler";
 
 const productCategories = [
   {
@@ -159,6 +160,7 @@ let patientGrandTotal = 0.0;
 let patientSupplyPlot = {};
 let supplyPlot = [];
 let assignmentList = [];
+let revenueForecast = 0.0;
 
 let patientDashboard = [
   {
@@ -443,6 +445,7 @@ const PatientSupplies = (props) => {
     // Only process data if we have the required lists
     if (stockList.length && productList.length && patientList.length) {
       patientGrandTotal = 0.0;
+      revenueForecast = 0.0;
 
       distributionList = distributions.data || [];
 
@@ -678,6 +681,55 @@ const PatientSupplies = (props) => {
       }
     }
     patientOptions = [...patientDashboard];
+
+    // Calculate revenue forecast for the selected date range
+    const dateFromMoment = moment(dateFrom);
+    const dateToMoment = moment(dateTo);
+
+    patientList.forEach((patient) => {
+      if (!patient.soc) return;
+
+      const socDate = moment(patient.soc);
+      const eocDate = patient.eoc ? moment(patient.eoc) : null;
+
+      // Skip patients not active in the selected date range
+      if (eocDate && eocDate.isBefore(dateFromMoment, "day")) return;
+      if (socDate.isAfter(dateToMoment, "day")) return;
+
+      // Get rates for this patient
+      const rates = MedicareHandler.getRatesForLocation(
+        patient.state,
+        patient.county,
+        patient.soc
+      );
+
+      // Calculate effective start and end dates within the selected range
+      const effectiveStart = moment.max(socDate, dateFromMoment);
+      const effectiveEnd = eocDate
+        ? moment.min(eocDate, dateToMoment)
+        : dateToMoment;
+
+      const daysInRange = effectiveEnd.diff(effectiveStart, "days") + 1;
+
+      if (daysInRange > 0) {
+        // Calculate cumulative days from SOC to start of range
+        const daysBeforeRange = effectiveStart.diff(socDate, "days");
+
+        // Calculate cumulative days from SOC to end of range
+        const daysAfterRange = daysBeforeRange + daysInRange;
+
+        // Calculate revenue for this period
+        const claimAfterRange = parseFloat(
+          MedicareHandler.calculateClaim(daysAfterRange, rates)
+        );
+        const claimBeforeRange = parseFloat(
+          MedicareHandler.calculateClaim(daysBeforeRange, rates)
+        );
+
+        const patientRevenue = claimAfterRange - claimBeforeRange;
+        revenueForecast += patientRevenue;
+      }
+    });
     }
   }
 
@@ -838,6 +890,7 @@ const PatientSupplies = (props) => {
                       details={patientDashboard}
                       from={dateFrom}
                       to={dateTo}
+                      revenueForecast={revenueForecast}
                     />
                   )}
                   {/*
