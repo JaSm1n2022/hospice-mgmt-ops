@@ -39,6 +39,9 @@ import { profileListStateSelector } from "store/selectors/profileSelector";
 import { attemptToFetchAssignment } from "store/actions/assignmentAction";
 import { resetFetchAssignmentState } from "store/actions/assignmentAction";
 import { assignmentListStateSelector } from "store/selectors/assignmentSelector";
+import { attemptToFetchPayroll } from "store/actions/payrollAction";
+import { resetFetchPayrollState } from "store/actions/payrollAction";
+import { payrollListStateSelector } from "store/selectors/payrollSelector";
 import DistributionSummary from "./DistributionSummary";
 import MedicareHandler from "../../MedicareV2/components/MedicareHandler";
 
@@ -147,6 +150,7 @@ let isTransactionDone = false;
 let isProductListDone = false;
 let isStockListDone = false;
 let isAssignmentListDone = false;
+let isPayrollListDone = false;
 let patientList = [];
 let stockList = [];
 let patientOptions = [];
@@ -160,7 +164,9 @@ let patientGrandTotal = 0.0;
 let patientSupplyPlot = {};
 let supplyPlot = [];
 let assignmentList = [];
+let payrollList = [];
 let revenueForecast = 0.0;
+let onCallNursingTotal = 0.0;
 
 let patientDashboard = [
   {
@@ -252,6 +258,9 @@ const PatientSupplies = (props) => {
     assignments,
     resetListAssignments,
     listAssignments,
+    payrolls,
+    resetListPayrolls,
+    listPayrolls,
   } = props;
   const classes = useStyles();
   const context = useContext(SupaContext);
@@ -261,6 +270,7 @@ const PatientSupplies = (props) => {
     true
   );
   const [isTransactionCollection, setIsTransactionCollection] = useState(true);
+  const [isPayrollCollection, setIsPayrollCollection] = useState(true);
   const [patient, setPatient] = useState(DEFAULT_ITEM);
   const [dateFrom, setDateFrom] = useState(dates.from);
   const [dateTo, setDateTo] = useState(dates.to);
@@ -280,6 +290,7 @@ const PatientSupplies = (props) => {
     isProductListDone = false;
     isStockListDone = false;
     isAssignmentListDone = false;
+    isPayrollListDone = false;
 
     if (context.userProfile?.companyId) {
       const companyId = context.userProfile.companyId;
@@ -288,6 +299,10 @@ const PatientSupplies = (props) => {
       listProducts({ companyId });
       listPatients({ companyId });
       listAssignments({ companyId });
+      // Fetch payrolls with extended date range (start date + 90 days)
+      // This allows capturing payroll records whose DOS fall within the selected range
+      const payrollToDate = moment(dates.to).add(90, 'days').format('YYYY-MM-DD');
+      listPayrolls({ from: dates.from, to: payrollToDate, companyId });
       listDistributions({
         from: dates.from,
         to: dates.to,
@@ -307,7 +322,8 @@ const PatientSupplies = (props) => {
       productsStatus: products?.status,
       assignmentsStatus: assignments?.status,
       patientsStatus: patients?.status,
-      distributionsStatus: distributions?.status
+      distributionsStatus: distributions?.status,
+      payrollsStatus: payrolls?.status
     });
     setIsRefresh(prev => !prev);
   }, [
@@ -315,7 +331,8 @@ const PatientSupplies = (props) => {
     products?.status,
     assignments?.status,
     patients?.status,
-    distributions?.status
+    distributions?.status,
+    payrolls?.status
   ]);
 
   const sortByProductId = (data, attr) => {
@@ -398,6 +415,17 @@ const PatientSupplies = (props) => {
     resetListAssignments();
   }
   if (
+    isPayrollCollection &&
+    payrolls &&
+    payrolls.status === ACTION_STATUSES.SUCCEED
+  ) {
+    payrollList = [...payrolls.data];
+    isPayrollListDone = true;
+    setIsPayrollCollection(false);
+    console.log("✅ PAYROLLS LOADED - Count:", payrollList.length);
+    resetListPayrolls();
+  }
+  if (
     isPatientCollection &&
     patients &&
     patients.status === ACTION_STATUSES.SUCCEED
@@ -446,6 +474,7 @@ const PatientSupplies = (props) => {
     if (stockList.length && productList.length && patientList.length) {
       patientGrandTotal = 0.0;
       revenueForecast = 0.0;
+      onCallNursingTotal = 0.0;
 
       distributionList = distributions.data || [];
 
@@ -730,6 +759,108 @@ const PatientSupplies = (props) => {
         revenueForecast += patientRevenue;
       }
     });
+
+    // Calculate On-Call Nursing total from payroll data
+    // Filter payroll records for "On Call" or "Phone" service type
+    // where dateOfServices fall within the selected date range
+    const dateFromMoment2 = moment(dateFrom);
+    const dateToMoment2 = moment(dateTo);
+
+    console.log("🔍 ON-CALL CALCULATION - Date Range:", {
+      from: dateFromMoment2.format('YYYY-MM-DD'),
+      to: dateToMoment2.format('YYYY-MM-DD'),
+      payrollRecordsCount: payrollList.length
+    });
+
+    // First, log all unique service names to see what we're working with
+    const uniqueServices = [...new Set(payrollList.map(p => p.serviceType))];
+    console.log("📝 ALL UNIQUE SERVICE NAMES IN PAYROLL:", uniqueServices);
+
+    let onCallMatchCount = 0;
+
+    // Log all records with "call" or "phone" with exact string comparison
+    console.log("🔍 CHECKING ALL RECORDS WITH 'CALL' OR 'PHONE':");
+    payrollList.forEach((p, idx) => {
+      const st = (p.serviceType || "").toLowerCase();
+      if (st.includes("call") || st.includes("phone")) {
+        const trimmed = st.trim();
+        console.log(`  Record ${idx + 1}:`, {
+          original: `"${p.serviceType}"`,
+          lowercase: `"${st}"`,
+          trimmed: `"${trimmed}"`,
+          exactMatch: trimmed === "on call/day phone",
+          charCodes: trimmed.split('').map((c, i) => `${c}(${c.charCodeAt(0)})`).join(' ')
+        });
+      }
+    });
+
+    payrollList.forEach((payroll, index) => {
+      // Check if this is an "On Call/Day Phone" service - EXACT match only
+      const serviceName = (payroll.serviceType || "").toLowerCase().trim();
+
+      // Match ONLY "On Call/Day Phone" exactly - no IDT, no other services
+      const isOnCallService = serviceName === "on call/day phone";
+
+      if (isOnCallService) {
+        onCallMatchCount++;
+        console.log(`\n📋 ========== MATCHED PAYROLL #${index + 1} ==========`);
+        console.log(`   Record ID: ${payroll.id}`);
+        console.log(`   Service Type: "${payroll.serviceType}"`);
+        console.log(`   Service Amount: $${payroll.serviceAmt || 0}`);
+        console.log(`   Amount: $${payroll.amount || 0}`);
+        console.log(`   Total Rate: $${payroll.totalRate || 0}`);
+
+        // Check both dateOfServices and dos fields
+        const dosArray = payroll.dateOfServices || payroll.dos || [];
+        console.log(`   DOS Array Length: ${dosArray.length}`);
+        console.log(`   DOS Array Sample:`, dosArray.slice(0, 3));
+
+        if (dosArray && Array.isArray(dosArray) && dosArray.length > 0) {
+          // Count how many dateOfServices fall within the selected date range
+          const dosInRange = dosArray.filter((dosEntry) => {
+            // DOS entry could be a string, object with 'dos' field, or object with 'date' field
+            let dosDate;
+            if (typeof dosEntry === 'string') {
+              dosDate = moment(dosEntry);
+            } else if (dosEntry && typeof dosEntry === 'object') {
+              dosDate = moment(dosEntry.dos || dosEntry.date);
+            }
+
+            const isInRange = dosDate && dosDate.isValid() &&
+                   dosDate.isSameOrAfter(dateFromMoment2, 'day') &&
+                   dosDate.isSameOrBefore(dateToMoment2, 'day');
+
+            if (dosDate && dosDate.isValid()) {
+              console.log(`  📅 DOS: ${dosDate.format('YYYY-MM-DD')} - In Range: ${isInRange}`);
+            }
+
+            return isInRange;
+          });
+
+          if (dosInRange.length > 0) {
+            // Apportion the service amount based on how many DOS are in range
+            const totalDosCount = dosArray.length;
+            const serviceAmount = parseFloat(payroll.totalRate || payroll.serviceAmt || payroll.amount || 0);
+            const amountPerDos = totalDosCount > 0 ? serviceAmount / totalDosCount : 0;
+            const allocatedAmount = amountPerDos * dosInRange.length;
+
+            console.log(`  ✅ CALCULATION:`);
+            console.log(`     Total Rate: $${serviceAmount.toFixed(2)}`);
+            console.log(`     DOS in Range: ${dosInRange.length} / ${totalDosCount}`);
+            console.log(`     Amount per DOS: $${amountPerDos.toFixed(2)}`);
+            console.log(`     Allocated Amount: $${allocatedAmount.toFixed(2)}`);
+            onCallNursingTotal += allocatedAmount;
+          } else {
+            console.log(`  ❌ No DOS in selected date range`);
+          }
+        } else {
+          console.log(`  ⚠️ No dateOfServices array found`);
+        }
+      }
+    });
+
+    console.log(`✅ ON-CALL RECORDS FOUND: ${onCallMatchCount} out of ${payrollList.length}`);
+    console.log("💰 TOTAL ON-CALL NURSING:", onCallNursingTotal.toFixed(2));
     }
   }
 
@@ -757,17 +888,35 @@ const PatientSupplies = (props) => {
     if (name === "dateFrom") {
       setDateFrom(value);
       setIsDistributionCollection(true);
+      setIsPayrollCollection(true);
+      const fromDate = moment(new Date(value)).format("YYYY-MM-DD");
+      const toDate = moment(new Date(dateTo)).format("YYYY-MM-DD");
+      const payrollToDate = moment(new Date(dateTo)).add(90, 'days').format('YYYY-MM-DD');
       listDistributions({
-        from: moment(new Date(value)).format("YYYY-MM-DD"),
-        to: moment(new Date(dateTo)).format("YYYY-MM-DD"),
+        from: fromDate,
+        to: toDate,
+        companyId: context.userProfile?.companyId,
+      });
+      listPayrolls({
+        from: fromDate,
+        to: payrollToDate,
         companyId: context.userProfile?.companyId,
       });
     } else if (name === "dateTo") {
       setDateTo(value);
       setIsDistributionCollection(true);
+      setIsPayrollCollection(true);
+      const fromDate = moment(new Date(dateFrom)).format("YYYY-MM-DD");
+      const toDate = moment(new Date(value)).format("YYYY-MM-DD");
+      const payrollToDate = moment(new Date(value)).add(90, 'days').format('YYYY-MM-DD');
       listDistributions({
-        from: moment(new Date(dateFrom)).format("YYYY-MM-DD"),
-        to: moment(new Date(value)).format("YYYY-MM-DD"),
+        from: fromDate,
+        to: toDate,
+        companyId: context.userProfile?.companyId,
+      });
+      listPayrolls({
+        from: fromDate,
+        to: payrollToDate,
         companyId: context.userProfile?.companyId,
       });
     }
@@ -793,7 +942,8 @@ const PatientSupplies = (props) => {
     isProductListDone,
     isAssignmentListDone,
     isStockListDone,
-    showSpinner: !isDistributionListDone || !isPatientListDone || !isTransactionDone || !isProductListDone || !isAssignmentListDone || !isStockListDone
+    isPayrollListDone,
+    showSpinner: !isDistributionListDone || !isPatientListDone || !isTransactionDone || !isProductListDone || !isAssignmentListDone || !isStockListDone || !isPayrollListDone
   });
   return (
     <>
@@ -803,7 +953,8 @@ const PatientSupplies = (props) => {
         !isTransactionDone ||
         !isProductListDone ||
         !isAssignmentListDone ||
-        !isStockListDone ? (
+        !isStockListDone ||
+        !isPayrollListDone ? (
           <div align="center" style={{ paddingTop: "100px" }}>
             <br />
             <CircularProgress />
@@ -891,6 +1042,7 @@ const PatientSupplies = (props) => {
                       from={dateFrom}
                       to={dateTo}
                       revenueForecast={revenueForecast}
+                      onCallNursing={onCallNursingTotal}
                     />
                   )}
                   {/*
@@ -923,6 +1075,7 @@ const mapStateToProps = (store) => ({
   stocks: stockListStateSelector(store),
   profileState: profileListStateSelector(store),
   assignments: assignmentListStateSelector(store),
+  payrolls: payrollListStateSelector(store),
 });
 const mapDispatchToProps = (dispatch) => ({
   listPatients: (data) => dispatch(attemptToFetchPatient(data)),
@@ -937,5 +1090,7 @@ const mapDispatchToProps = (dispatch) => ({
   resetListStocks: () => dispatch(resetFetchStockState()),
   listAssignments: (data) => dispatch(attemptToFetchAssignment(data)),
   resetListAssignments: () => dispatch(resetFetchAssignmentState()),
+  listPayrolls: (data) => dispatch(attemptToFetchPayroll(data)),
+  resetListPayrolls: () => dispatch(resetFetchPayrollState()),
 });
 export default connect(mapStateToProps, mapDispatchToProps)(PatientSupplies);

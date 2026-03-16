@@ -675,6 +675,34 @@ const DistributionSummary = (props) => {
                     ${parseFloat(grandTotal || 0).toFixed(2)}
                   </TableCell>
                 </TableRow>
+                <TableRow className={classes.tableRow}>
+                  <TableCell
+                    className={classes.tableCell}
+                    style={{
+                      height: "auto !important",
+                      border: "solid 1px black",
+                      fontWeight: "bold",
+                    }}
+                    component="th"
+                    scope="row"
+                  >
+                    On-Call Nursing
+                  </TableCell>
+                  <TableCell
+                    className={classes.tableCell}
+                    style={{
+                      height: "auto !important",
+                      border: "solid 1px black",
+                      textAlign: "right",
+                      fontWeight: "bold",
+                      color: "orange",
+                    }}
+                    component="th"
+                    scope="row"
+                  >
+                    ${parseFloat(props.onCallNursing || 0).toFixed(2)}
+                  </TableCell>
+                </TableRow>
                 <TableRow className={classes.tableRowGray}>
                   <TableCell
                     className={classes.tableCell}
@@ -702,7 +730,7 @@ const DistributionSummary = (props) => {
                     scope="row"
                   >
                     {props.revenueForecast > 0
-                      ? `${((grandTotal / props.revenueForecast) * 100).toFixed(2)}%`
+                      ? `${(((parseFloat(grandTotal || 0) + parseFloat(props.onCallNursing || 0)) / props.revenueForecast) * 100).toFixed(2)}%`
                       : "0.00%"}
                   </TableCell>
                 </TableRow>
@@ -773,6 +801,7 @@ const DistributionSummary = (props) => {
                     { label: "LPN", value: totalRow.lpn },
                     { label: "MSW", value: totalRow.msw },
                     { label: "Chaplain", value: totalRow.chaplain },
+                    { label: "On-Call Nursing", value: props.onCallNursing },
                   ];
 
                   return clinicalServices.map((service, index) => {
@@ -920,12 +949,13 @@ const DistributionSummary = (props) => {
                                        parseFloat(totalRow.nurse || 0) +
                                        parseFloat(totalRow.lpn || 0) +
                                        parseFloat(totalRow.msw || 0) +
-                                       parseFloat(totalRow.chaplain || 0);
+                                       parseFloat(totalRow.chaplain || 0) +
+                                       parseFloat(props.onCallNursing || 0);
                   const pharmacy = parseFloat(totalRow.pharmacy || 0);
                   const dme = parseFloat(totalRow.dme || 0);
                   const supplies = parseFloat(totalRow.medical || 0);
                   const transportation = parseFloat(totalRow.transportation || 0);
-                  const totalPatientCare = parseFloat(totalRow.grand || 0);
+                  const totalPatientCare = parseFloat(totalRow.grand || 0) + parseFloat(props.onCallNursing || 0);
 
                   // Define performance categories with benchmarks
                   const performanceCategories = [
@@ -1061,7 +1091,9 @@ const DistributionSummary = (props) => {
                 {(() => {
                   const forecastRevenue = parseFloat(props.revenueForecast || 0);
                   const directPatientCareCost = parseFloat(grandTotal || 0);
-                  const remainingRevenue = forecastRevenue - directPatientCareCost;
+                  const onCallNursing = parseFloat(props.onCallNursing || 0);
+                  const totalDirectCareCost = directPatientCareCost + onCallNursing;
+                  const remainingRevenue = forecastRevenue - totalDirectCareCost;
                   const remainingRevenuePercent = forecastRevenue > 0
                     ? ((remainingRevenue / forecastRevenue) * 100)
                     : 0;
@@ -1080,6 +1112,19 @@ const DistributionSummary = (props) => {
                       color: "red",
                     },
                     {
+                      label: "On-Call Nursing",
+                      value: onCallNursing,
+                      isPercentage: false,
+                      color: "orange",
+                    },
+                    {
+                      label: "Total Direct Care Cost",
+                      value: totalDirectCareCost,
+                      isPercentage: false,
+                      color: "red",
+                      isBold: true,
+                    },
+                    {
                       label: "Remaining Revenue",
                       value: remainingRevenue,
                       isPercentage: false,
@@ -1096,19 +1141,19 @@ const DistributionSummary = (props) => {
                   ];
 
                   return revenueRows.map((row, index) => {
-                    const isLastTwo = index >= 2;
+                    const isLastThree = index >= 3;
                     return (
                       <TableRow
                         key={index}
-                        className={isLastTwo ? classes.tableRowGray : classes.tableRow}
+                        className={isLastThree ? classes.tableRowGray : classes.tableRow}
                       >
                         <TableCell
                           className={classes.tableCell}
                           style={{
                             height: "auto !important",
                             border: "solid 1px black",
-                            fontWeight: row.isBold || isLastTwo ? "bold" : "normal",
-                            color: isLastTwo ? "white" : "inherit",
+                            fontWeight: row.isBold || isLastThree ? "bold" : "normal",
+                            color: isLastThree ? "white" : "inherit",
                             width: "50%",
                           }}
                           component="th"
@@ -1122,8 +1167,8 @@ const DistributionSummary = (props) => {
                             height: "auto !important",
                             border: "solid 1px black",
                             textAlign: "right",
-                            fontWeight: row.isBold || isLastTwo ? "bold" : "normal",
-                            color: isLastTwo ? "white" : row.color,
+                            fontWeight: row.isBold || isLastThree ? "bold" : "normal",
+                            color: isLastThree ? "white" : row.color,
                             width: "50%",
                           }}
                           component="th"
