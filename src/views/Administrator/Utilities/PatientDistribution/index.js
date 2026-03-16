@@ -761,59 +761,19 @@ const PatientSupplies = (props) => {
     });
 
     // Calculate On-Call Nursing total from payroll data
-    // Filter payroll records for "On Call" or "Phone" service type
+    // Filter payroll records for "On Call/Day Phone" service type
     // where dateOfServices fall within the selected date range
     const dateFromMoment2 = moment(dateFrom);
     const dateToMoment2 = moment(dateTo);
 
-    console.log("🔍 ON-CALL CALCULATION - Date Range:", {
-      from: dateFromMoment2.format('YYYY-MM-DD'),
-      to: dateToMoment2.format('YYYY-MM-DD'),
-      payrollRecordsCount: payrollList.length
-    });
-
-    // First, log all unique service names to see what we're working with
-    const uniqueServices = [...new Set(payrollList.map(p => p.serviceType))];
-    console.log("📝 ALL UNIQUE SERVICE NAMES IN PAYROLL:", uniqueServices);
-
-    let onCallMatchCount = 0;
-
-    // Log all records with "call" or "phone" with exact string comparison
-    console.log("🔍 CHECKING ALL RECORDS WITH 'CALL' OR 'PHONE':");
-    payrollList.forEach((p, idx) => {
-      const st = (p.serviceType || "").toLowerCase();
-      if (st.includes("call") || st.includes("phone")) {
-        const trimmed = st.trim();
-        console.log(`  Record ${idx + 1}:`, {
-          original: `"${p.serviceType}"`,
-          lowercase: `"${st}"`,
-          trimmed: `"${trimmed}"`,
-          exactMatch: trimmed === "on call/day phone",
-          charCodes: trimmed.split('').map((c, i) => `${c}(${c.charCodeAt(0)})`).join(' ')
-        });
-      }
-    });
-
-    payrollList.forEach((payroll, index) => {
+    payrollList.forEach((payroll) => {
       // Check if this is an "On Call/Day Phone" service - EXACT match only
       const serviceName = (payroll.serviceType || "").toLowerCase().trim();
 
-      // Match ONLY "On Call/Day Phone" exactly - no IDT, no other services
-      const isOnCallService = serviceName === "on call/day phone";
-
-      if (isOnCallService) {
-        onCallMatchCount++;
-        console.log(`\n📋 ========== MATCHED PAYROLL #${index + 1} ==========`);
-        console.log(`   Record ID: ${payroll.id}`);
-        console.log(`   Service Type: "${payroll.serviceType}"`);
-        console.log(`   Service Amount: $${payroll.serviceAmt || 0}`);
-        console.log(`   Amount: $${payroll.amount || 0}`);
-        console.log(`   Total Rate: $${payroll.totalRate || 0}`);
-
+      // Match ONLY "On Call/Day Phone" exactly - excludes IDT meetings and other services
+      if (serviceName === "on call/day phone") {
         // Check both dateOfServices and dos fields
         const dosArray = payroll.dateOfServices || payroll.dos || [];
-        console.log(`   DOS Array Length: ${dosArray.length}`);
-        console.log(`   DOS Array Sample:`, dosArray.slice(0, 3));
 
         if (dosArray && Array.isArray(dosArray) && dosArray.length > 0) {
           // Count how many dateOfServices fall within the selected date range
@@ -826,15 +786,9 @@ const PatientSupplies = (props) => {
               dosDate = moment(dosEntry.dos || dosEntry.date);
             }
 
-            const isInRange = dosDate && dosDate.isValid() &&
+            return dosDate && dosDate.isValid() &&
                    dosDate.isSameOrAfter(dateFromMoment2, 'day') &&
                    dosDate.isSameOrBefore(dateToMoment2, 'day');
-
-            if (dosDate && dosDate.isValid()) {
-              console.log(`  📅 DOS: ${dosDate.format('YYYY-MM-DD')} - In Range: ${isInRange}`);
-            }
-
-            return isInRange;
           });
 
           if (dosInRange.length > 0) {
@@ -844,23 +798,11 @@ const PatientSupplies = (props) => {
             const amountPerDos = totalDosCount > 0 ? serviceAmount / totalDosCount : 0;
             const allocatedAmount = amountPerDos * dosInRange.length;
 
-            console.log(`  ✅ CALCULATION:`);
-            console.log(`     Total Rate: $${serviceAmount.toFixed(2)}`);
-            console.log(`     DOS in Range: ${dosInRange.length} / ${totalDosCount}`);
-            console.log(`     Amount per DOS: $${amountPerDos.toFixed(2)}`);
-            console.log(`     Allocated Amount: $${allocatedAmount.toFixed(2)}`);
             onCallNursingTotal += allocatedAmount;
-          } else {
-            console.log(`  ❌ No DOS in selected date range`);
           }
-        } else {
-          console.log(`  ⚠️ No dateOfServices array found`);
         }
       }
     });
-
-    console.log(`✅ ON-CALL RECORDS FOUND: ${onCallMatchCount} out of ${payrollList.length}`);
-    console.log("💰 TOTAL ON-CALL NURSING:", onCallNursingTotal.toFixed(2));
     }
   }
 
