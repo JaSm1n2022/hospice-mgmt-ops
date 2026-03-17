@@ -16,7 +16,7 @@ const useStyles = makeStyles(styles);
 
 export default function SnackbarContent(props) {
   const classes = useStyles();
-  const { message, color, close, icon } = props;
+  const { message, color, close, icon, closeNotification } = props;
   var action = [];
   const messageClasses = cx({
     [classes.iconMessage]: icon !== undefined,
@@ -28,6 +28,7 @@ export default function SnackbarContent(props) {
         key="close"
         aria-label="Close"
         color="inherit"
+        onClick={closeNotification}
       >
         <Close className={classes.close} />
       </IconButton>,
@@ -86,4 +87,5 @@ SnackbarContent.propTypes = {
   ]),
   close: PropTypes.bool,
   icon: PropTypes.object,
+  closeNotification: PropTypes.func,
 };

@@ -1,12 +1,6 @@
 import React, { useEffect, useState } from "react";
 import CustomTextField from "components/TextField/CustomTextField";
-import {
-  Button,
-  Card,
-  CardContent,
-  Grid,
-  Modal,
-} from "@material-ui/core";
+import { Button, Card, CardContent, Grid, Modal } from "@material-ui/core";
 import { makeStyles } from "@material-ui/core";
 import CustomDatePicker from "components/Date/CustomDatePicker";
 import CustomCheckbox from "components/Checkbox/CustomCheckbox";
@@ -57,6 +51,7 @@ function PotentialAdmissionForm(props) {
   const { isOpen } = props;
 
   // Generate patientCd from lastName, firstName, and current date/time
+  // Format: lastname-{first}.{date}
   // NOTE: Does NOT use received_hp_dt - always uses current timestamp
   const generatePatientCd = (fName, lName) => {
     // Both first name and last name are required
@@ -72,7 +67,7 @@ function PotentialAdmissionForm(props) {
     // ALWAYS use current date/time with YYYYMMDDHHmm format
     const datePart = moment().format("YYYYMMDDHHmm");
 
-    return `${lastNamePart}${firstNamePart}${datePart}`;
+    return `${lastNamePart}-${firstNamePart}.${datePart}`;
   };
 
   useEffect(() => {
@@ -82,9 +77,38 @@ function PotentialAdmissionForm(props) {
     initializeComponents();
   }, []);
 
+  // Helper function to parse date strings correctly (avoid timezone shift)
+  const parseDateString = (dateStr) => {
+    if (!dateStr) return null;
+    // If it's a YYYY-MM-DD string, parse it in local timezone
+    if (typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
+      const [year, month, day] = dateStr.split('-').map(num => parseInt(num, 10));
+      return new Date(year, month - 1, day);
+    }
+    return dateStr;
+  };
+
   useEffect(() => {
     if (props.item) {
       const generalFm = { ...props.item };
+
+      // Parse all date fields to avoid timezone shift
+      const dateFields = [
+        'eligibility_dt',
+        'received_hp_dt',
+        'emailed_hp_to_pre_admission_dt',
+        'received_pre_admission_dt',
+        'forwarded_pre_admission_dt',
+        'eval_dt',
+        'admission_dt'
+      ];
+
+      dateFields.forEach(field => {
+        if (generalFm[field]) {
+          generalFm[field] = parseDateString(generalFm[field]);
+        }
+      });
+
       setGeneralForm(generalFm);
 
       // Set firstName and lastName from patientCd when editing
@@ -102,7 +126,9 @@ function PotentialAdmissionForm(props) {
       if (generalFm.hospice_status === "no_prior_hospice") {
         setComponents((prevComponents) => {
           const tempList = [...prevComponents];
-          const benefitsField = tempList.find((s) => s.name === "current_hospice_benefits");
+          const benefitsField = tempList.find(
+            (s) => s.name === "current_hospice_benefits"
+          );
           if (benefitsField) {
             benefitsField.disabled = true;
           }
@@ -121,7 +147,10 @@ function PotentialAdmissionForm(props) {
     console.log("Has fetchEmployees function?", typeof props.fetchEmployees);
 
     if (props.context?.userProfile?.companyId) {
-      console.log("YES - Fetching employees for companyId:", props.context.userProfile.companyId);
+      console.log(
+        "YES - Fetching employees for companyId:",
+        props.context.userProfile.companyId
+      );
       props.fetchEmployees({ companyId: props.context.userProfile.companyId });
     } else {
       console.log("NO - Cannot fetch employees. Missing companyId or context");
@@ -134,17 +163,24 @@ function PotentialAdmissionForm(props) {
     console.log("=== Employee Filter Debug ===");
     console.log("props.employees:", props.employees);
 
-    if (props.employees && props.employees.status === ACTION_STATUSES.SUCCEED && props.employees.data) {
+    if (
+      props.employees &&
+      props.employees.status === ACTION_STATUSES.SUCCEED &&
+      props.employees.data
+    ) {
       const employeeList = props.employees.data;
       console.log("Total employees:", employeeList.length);
       console.log("=== FIRST EMPLOYEE - FULL OBJECT ===");
 
       if (employeeList && employeeList.length > 0) {
         const firstEmp = employeeList[0];
-        console.log("Keys in first employee:", Object.keys(firstEmp).join(", "));
+        console.log(
+          "Keys in first employee:",
+          Object.keys(firstEmp).join(", ")
+        );
 
         // Log each property individually
-        Object.keys(firstEmp).forEach(key => {
+        Object.keys(firstEmp).forEach((key) => {
           console.log(`  ${key}: ${firstEmp[key]}`);
         });
 
@@ -152,7 +188,7 @@ function PotentialAdmissionForm(props) {
         for (let i = 0; i < Math.min(3, employeeList.length); i++) {
           console.log(`--- Employee ${i + 1} ---`);
           const emp = employeeList[i];
-          Object.keys(emp).forEach(key => {
+          Object.keys(emp).forEach((key) => {
             console.log(`  ${key}: ${emp[key]}`);
           });
         }
@@ -166,16 +202,31 @@ function PotentialAdmissionForm(props) {
         .filter((emp) => {
           const position = emp.position || "";
           const title = emp.title || "";
-          const isMatch = (
+          const isMatch =
             (position === "Nurse Practitioner" ||
               position === "NP" ||
               title === "Nurse Practitioner" ||
               title === "NP") &&
-            emp.status === "Active"
-          );
+            emp.status === "Active";
 
-          if (position.includes("Nurse") || position.includes("NP") || title.includes("Nurse") || title.includes("NP")) {
-            console.log("NP Check - Employee:", emp.name, "Position:", position, "Title:", title, "Status:", emp.status, "Match:", isMatch);
+          if (
+            position.includes("Nurse") ||
+            position.includes("NP") ||
+            title.includes("Nurse") ||
+            title.includes("NP")
+          ) {
+            console.log(
+              "NP Check - Employee:",
+              emp.name,
+              "Position:",
+              position,
+              "Title:",
+              title,
+              "Status:",
+              emp.status,
+              "Match:",
+              isMatch
+            );
           }
 
           return isMatch;
@@ -191,19 +242,35 @@ function PotentialAdmissionForm(props) {
         .filter((emp) => {
           const position = emp.position || "";
           const title = emp.title || "";
-          const isMatch = (
+          const isMatch =
             (position === "Registered Nurse" ||
               position === "Case Manager" ||
               position === "DON" ||
               title === "Registered Nurse" ||
               title === "Case Manager" ||
               title === "DON") &&
-            emp.status === "Active"
-          );
+            emp.status === "Active";
 
-          if (position.includes("Nurse") || position.includes("DON") || position.includes("Case") ||
-              title.includes("Nurse") || title.includes("DON") || title.includes("Case")) {
-            console.log("Admission Nurse Check - Employee:", emp.name, "Position:", position, "Title:", title, "Status:", emp.status, "Match:", isMatch);
+          if (
+            position.includes("Nurse") ||
+            position.includes("DON") ||
+            position.includes("Case") ||
+            title.includes("Nurse") ||
+            title.includes("DON") ||
+            title.includes("Case")
+          ) {
+            console.log(
+              "Admission Nurse Check - Employee:",
+              emp.name,
+              "Position:",
+              position,
+              "Title:",
+              title,
+              "Status:",
+              emp.status,
+              "Match:",
+              isMatch
+            );
           }
 
           return isMatch;
@@ -314,6 +381,7 @@ function PotentialAdmissionForm(props) {
           { value: "Hospital", name: "Hospital" },
           { value: "Home", name: "Home" },
           { value: "Facility", name: "Facility" },
+          { value: "Rehab", name: "Rehab" },
           { value: "Group Home", name: "Group Home" },
         ],
       },
@@ -439,7 +507,10 @@ function PotentialAdmissionForm(props) {
         options: [
           { value: "Admit to Hospice", name: "Admit to Hospice" },
           { value: "Non-Admit", name: "Non-Admit" },
-          { value: "Pending / Further Evaluation", name: "Pending / Further Evaluation" },
+          {
+            value: "Pending / Further Evaluation",
+            name: "Pending / Further Evaluation",
+          },
         ],
       },
       {
@@ -510,12 +581,16 @@ function PotentialAdmissionForm(props) {
     }
 
     // If admission_decision is "Admit to Hospice", admission_dt is required
-    if (generalForm.admission_decision === "Admit to Hospice" && !generalForm.admission_dt) {
+    if (
+      generalForm.admission_decision === "Admit to Hospice" &&
+      !generalForm.admission_dt
+    ) {
       isValid = false;
       const admissionDtField = tempList.find((t) => t.name === "admission_dt");
       if (admissionDtField) {
         admissionDtField.isError = true;
-        admissionDtField.errorMsg = "Admission Date is required when admitting to hospice.";
+        admissionDtField.errorMsg =
+          "Admission Date is required when admitting to hospice.";
       }
     }
 
@@ -589,13 +664,17 @@ function PotentialAdmissionForm(props) {
       if (event.target.value === "no_prior_hospice") {
         src.current_hospice_benefits = 0;
         // Disable the current_hospice_benefits field
-        const benefitsField = tempList.find((s) => s.name === "current_hospice_benefits");
+        const benefitsField = tempList.find(
+          (s) => s.name === "current_hospice_benefits"
+        );
         if (benefitsField) {
           benefitsField.disabled = true;
         }
       } else {
         // Enable the current_hospice_benefits field for other statuses
-        const benefitsField = tempList.find((s) => s.name === "current_hospice_benefits");
+        const benefitsField = tempList.find(
+          (s) => s.name === "current_hospice_benefits"
+        );
         if (benefitsField) {
           benefitsField.disabled = false;
         }
@@ -603,7 +682,10 @@ function PotentialAdmissionForm(props) {
     }
 
     // Clear admission_dt error if admission_decision changes away from "Admit to Hospice"
-    if (event.target.name === "admission_decision" && event.target.value !== "Admit to Hospice") {
+    if (
+      event.target.name === "admission_decision" &&
+      event.target.value !== "Admit to Hospice"
+    ) {
       const admissionDtField = tempList.find((s) => s.name === "admission_dt");
       if (admissionDtField) {
         admissionDtField.isError = false;
@@ -661,7 +743,8 @@ function PotentialAdmissionForm(props) {
                     xs={item.cols ? item.cols : 3}
                     style={{ paddingBottom: 2 }}
                   >
-                    {item.component === "textfield" || item.component === "textarea" ? (
+                    {item.component === "textfield" ||
+                    item.component === "textarea" ? (
                       <React.Fragment>
                         <CustomTextField
                           {...item}
@@ -671,7 +754,11 @@ function PotentialAdmissionForm(props) {
                                 ? firstName
                                 : lastName
                               : item.name === "current_hospice_benefits"
-                              ? (generalForm[item.name] !== undefined && generalForm[item.name] !== null && generalForm[item.name] !== "" ? generalForm[item.name] : "")
+                              ? generalForm[item.name] !== undefined &&
+                                generalForm[item.name] !== null &&
+                                generalForm[item.name] !== ""
+                                ? generalForm[item.name]
+                                : ""
                               : generalForm[item.name] || ""
                           }
                           onChange={
@@ -738,4 +825,7 @@ const mapDispatchToProps = (dispatch) => ({
   fetchEmployees: (data) => dispatch(attemptToFetchEmployee(data)),
 });
 
-export default connect(mapStateToProps, mapDispatchToProps)(PotentialAdmissionForm);
+export default connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(PotentialAdmissionForm);

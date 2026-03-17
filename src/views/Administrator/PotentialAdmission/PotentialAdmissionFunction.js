@@ -17,9 +17,12 @@ import { Grid } from "@material-ui/core";
 import AddIcon from "@material-ui/icons/Add";
 
 import HospiceTable from "components/Table/HospiceTable";
-import { ImportExport } from "@material-ui/icons";
+import { ImportExport, Print } from "@material-ui/icons";
 import Helper from "utils/helper";
 import PotentialAdmissionForm from "./components/PotentialAdmissionForm";
+import { pdf } from "@react-pdf/renderer";
+import PotentialAdmissionPrintDocument from "./components/PotentialAdmissionPrintDocument";
+import PotentialAdmissionBatchPrintDocument from "./components/PotentialAdmissionBatchPrintDocument";
 import { potentialAdmissionListStateSelector } from "store/selectors/potentialAdmissionSelector";
 import { potentialAdmissionCreateStateSelector } from "store/selectors/potentialAdmissionSelector";
 import { potentialAdmissionUpdateStateSelector } from "store/selectors/potentialAdmissionSelector";
@@ -176,6 +179,8 @@ function PotentialAdmissionFunction(props) {
             <ActionsFunction
               deleteRecordItemHandler={deleteRecordItemHandler}
               createFormHandler={createFormHandler}
+              printHandler={printAdmissionHandler}
+              isPrintFunction={true}
               data={{ ...cellProps.data }}
             />
           ),
@@ -214,25 +219,40 @@ function PotentialAdmissionFunction(props) {
     console.log("Payload id is: " + (payload.id || "NO ID - NEW RECORD"));
     console.log("Checking mode conditions...");
 
+    // Helper function to format dates as YYYY-MM-DD (date-only, no timezone shift)
+    const formatDateOnly = (date) => {
+      if (!date) return null;
+      // If it's already a string in YYYY-MM-DD format, return as-is
+      if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return date;
+      }
+      // Convert to YYYY-MM-DD format using local timezone
+      const d = new Date(date);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
     const params = {
-      received_hp_dt: payload.received_hp_dt,
-      emailed_hp_to_pre_admission_dt: payload.emailed_hp_to_pre_admission_dt,
-      received_pre_admission_dt: payload.received_pre_admission_dt,
+      received_hp_dt: formatDateOnly(payload.received_hp_dt),
+      emailed_hp_to_pre_admission_dt: formatDateOnly(payload.emailed_hp_to_pre_admission_dt),
+      received_pre_admission_dt: formatDateOnly(payload.received_pre_admission_dt),
       pre_admission_prognosis: payload.pre_admission_prognosis,
-      forwarded_pre_admission_dt: payload.forwarded_pre_admission_dt,
+      forwarded_pre_admission_dt: formatDateOnly(payload.forwarded_pre_admission_dt),
       hp_prognosis: payload.hp_prognosis,
       md_prognosis: payload.md_prognosis,
-      admission_dt: payload.admission_dt,
+      admission_dt: formatDateOnly(payload.admission_dt),
       admission_cost: payload.admission_cost,
       referral: payload.referral,
       patientCd: payload.patientCd,
-      eligibility_dt: payload.eligibility_dt,
+      eligibility_dt: formatDateOnly(payload.eligibility_dt),
       age: payload.age,
       current_location: payload.current_location,
       hospice_status: payload.hospice_status,
       current_hospice_benefits: payload.current_hospice_benefits,
       admission_decision: payload.admission_decision,
-      eval_dt: payload.eval_dt,
+      eval_dt: formatDateOnly(payload.eval_dt),
       eval_staff: payload.eval_staff,
       admission_nurse: payload.admission_nurse,
       comments: payload.comments,
@@ -377,6 +397,39 @@ function PotentialAdmissionFunction(props) {
     }
   };
 
+  // Print individual admission
+  const printAdmissionHandler = async (admission) => {
+    try {
+      console.log("Printing admission data:", admission);
+      const doc = <PotentialAdmissionPrintDocument admissionData={admission} />;
+      const asPdf = pdf(doc);
+      const blob = await asPdf.toBlob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      console.error("Full error:", error.stack);
+      TOAST.error("Failed to generate PDF. Please try again.");
+    }
+  };
+
+  // Print batch report for selected admissions
+  const printBatchReportHandler = async () => {
+    try {
+      const selectedAdmissions = dataSource.filter((r) => r.isChecked);
+      if (!selectedAdmissions || selectedAdmissions.length === 0) {
+        return;
+      }
+      const doc = <PotentialAdmissionBatchPrintDocument admissionsData={selectedAdmissions} />;
+      const asPdf = pdf(doc);
+      const blob = await asPdf.toBlob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+    } catch (error) {
+      console.error("Error generating batch PDF:", error);
+    }
+  };
+
   return (
     <>
       <GridContainer>
@@ -400,13 +453,22 @@ function PotentialAdmissionFunction(props) {
                     </Button>
 
                     {isAddGroupButtons && (
-                      <Button
-                        color="success"
-                        className={classes.marginRight}
-                        onClick={() => exportToExcelHandler()}
-                      >
-                        <ImportExport className={classes.icons} /> Export Excel
-                      </Button>
+                      <>
+                        <Button
+                          color="success"
+                          className={classes.marginRight}
+                          onClick={() => exportToExcelHandler()}
+                        >
+                          <ImportExport className={classes.icons} /> Export Excel
+                        </Button>
+                        <Button
+                          color="info"
+                          className={classes.marginRight}
+                          onClick={() => printBatchReportHandler()}
+                        >
+                          <Print className={classes.icons} /> Print Report
+                        </Button>
+                      </>
                     )}
                   </div>
                 </Grid>

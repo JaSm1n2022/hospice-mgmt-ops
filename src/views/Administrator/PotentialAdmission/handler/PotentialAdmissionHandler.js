@@ -4,43 +4,67 @@ import React from "react";
 class PotentialAdmissionHandler {
   static columns(main) {
     return [
-      { width: 92, name: "actions", header: "Actions", visible: main },
+      { width: 160, name: "actions", header: "Actions", visible: main },
       {
         defaultFlex: 1,
-        minWidth: 200,
+        minWidth: 240,
         name: "patientCd",
         header: "Patient Code",
         render: ({ value, data }) => {
           let icon = null;
-          let iconPosition = 'right'; // default position
 
+          // Check if admission_decision is null or empty - show pending icon
+          if (!data.admission_decision || data.admission_decision === "") {
+            icon = (
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "18px",
+                  height: "18px",
+                  borderRadius: "50%",
+                  backgroundColor: "blue",
+                  color: "white",
+                  fontSize: "12px",
+                  fontWeight: "bold",
+                }}
+              >
+                P
+              </span>
+            );
+          }
           // Check admission_decision
-          if (data.admission_decision === "Non-Admit") {
+          else if (data.admission_decision === "Non-Admit") {
             icon = "❌"; // X icon for non-admit
-            iconPosition = 'left';
           }
           // Check if admitted to hospice
           else if (data.admission_decision === "Admit to Hospice") {
             icon = "✅"; // Check icon for admitted
           }
           // Check if pending/further evaluation and received_pre_admission_dt is passed 30 days
-          else if (data.admission_decision === "Pending / Further Evaluation" && data.received_pre_admission_dt) {
+          else if (
+            data.admission_decision === "Pending / Further Evaluation" &&
+            data.received_pre_admission_dt
+          ) {
             const receivedDate = moment(data.received_pre_admission_dt);
-            const daysDiff = moment().diff(receivedDate, 'days');
+            const daysDiff = moment().diff(receivedDate, "days");
             if (daysDiff > 30) {
               icon = (
-                <span style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '18px',
-                  height: '18px',
-                  borderRadius: '50%',
-                  backgroundColor: 'orange',
-                  color: 'white',
-                  fontSize: '12px',
-                  fontWeight: 'bold'
-                }}>
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "18px",
+                    height: "18px",
+                    borderRadius: "50%",
+                    backgroundColor: "orange",
+                    color: "white",
+                    fontSize: "12px",
+                    fontWeight: "bold",
+                  }}
+                >
                   E
                 </span>
               );
@@ -48,10 +72,15 @@ class PotentialAdmissionHandler {
           }
 
           return (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              {icon && iconPosition === 'left' && <span style={{ fontSize: '14px' }}>{icon}</span>}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
               <span>{value}</span>
-              {icon && iconPosition === 'right' && <span style={{ fontSize: '14px' }}>{icon}</span>}
+              {icon && <span style={{ fontSize: "14px" }}>{icon}</span>}
             </div>
           );
         },
@@ -83,8 +112,9 @@ class PotentialAdmissionHandler {
         header: "Hospice Status",
         render: ({ value }) => {
           if (!value) return "";
-          return value === "no_prior_hospice" ? "No Prior Hospice" :
-                 value.charAt(0).toUpperCase() + value.slice(1);
+          return value === "no_prior_hospice"
+            ? "No Prior Hospice"
+            : value.charAt(0).toUpperCase() + value.slice(1);
         },
       },
       {
