@@ -251,6 +251,31 @@ export type PatientState = {
   },
 };
 
+export type PotentialAdmissionState = {
+  potentialAdmissionList: {
+    data: ?Object,
+    error: ?string,
+    status: ?string,
+  },
+
+  potentialAdmissionUpdate: {
+    data: ?Object,
+    error: ?string,
+    status: ?string,
+  },
+
+  potentialAdmissionDelete: {
+    data: ?Object,
+    error: ?string,
+    status: ?string,
+  },
+  potentialAdmissionCreate: {
+    data: ?Object,
+    error: ?string,
+    status: ?string,
+  },
+};
+
 export type AssignmentState = {
   assignmentList: {
     data: ?Object,

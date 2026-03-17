@@ -82,6 +82,7 @@ import MedicareV2 from "views/Administrator/MedicareV2/MedicareV2Function";
 import Routesheet from "views/Administrator/Administrative/Routesheet/RoutesheetFunction";
 import HROnboardingChecklist from "views/Administrator/Administrative/HROnboardingChecklist/HROnboardingChecklistFunction";
 import PatientOnboardingChecklist from "views/Administrator/Settings/PatientOnboardingChecklist/PatientOnboardingChecklistFunction";
+import PotentialAdmission from "views/Administrator/PotentialAdmission/PotentialAdmissionFunction";
 import RevenueForecast from "views/Administrator/MedicareV2/RevenueForecast";
 import ExpensesClientForecast from "views/Administrator/MedicareV2/ExpensesClientForecast";
 import EmployeePayrollForecast from "views/Administrator/MedicareV2/EmployeePayrollForecast";
@@ -160,6 +161,15 @@ var dashRoutes = [
         mini: "POC",
         rtlMini: "ع",
         component: PatientOnboardingChecklist,
+        layout: "/admin",
+      },
+      {
+        path: "/potential-admission",
+        name: "Potential Admission",
+        rtlName: "عالتسعير",
+        mini: "PA",
+        rtlMini: "ع",
+        component: PotentialAdmission,
         layout: "/admin",
       },
       {

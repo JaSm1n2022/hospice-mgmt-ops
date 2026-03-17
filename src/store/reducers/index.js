@@ -32,6 +32,7 @@ import paydayReducer from "./payday";
 import trainingReducer from "./training";
 import certificationReducer from "./certification";
 import incomeReducer from "./income";
+import potentialAdmissionReducer from "./potentialAdmission";
 export default combineReducers({
   invoice: invoiceReducer,
   product: productReducer,
@@ -44,6 +45,7 @@ export default combineReducers({
   subCategory: subCategoryReducer,
   patient: patientReducer,
   patientChecklist: patientChecklistReducer,
+  potentialAdmission: potentialAdmissionReducer,
   assignment: assignmentReducer,
   vendor: vendorReducer,
   template: templateReducer,

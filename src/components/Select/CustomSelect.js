@@ -30,6 +30,7 @@ const useStyles = makeStyles((theme) => ({
     fontSize: "10pt",
     borderBottom: "0px solid white",
     background: "white",
+    color: "black",
   },
   rootRule: {
     height: "34px",
@@ -88,7 +89,7 @@ export default function CustomSelect({
       displayEmpty
     >
       <MenuItem disabled value="Select">
-        <span style={{ color: "#999" }}>Select</span>
+        <span style={{ color: "#999" }}>{placeholder || "Select"}</span>
       </MenuItem>
 
       {options &&

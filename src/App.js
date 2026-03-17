@@ -8,6 +8,7 @@ import {
 import {
   ToastProvider,
   DefaultToastContainer,
+  useToasts,
 } from "react-toast-notifications";
 import { connect } from "react-redux";
 
@@ -18,6 +19,7 @@ import AuthLayout from "layouts/Auth.js";
 
 import { supabaseClient } from "./config/SupabaseClient";
 import { ACTION_STATUSES } from "utils/constants";
+import TOAST from "./modules/toastManager";
 
 import "assets/css/material-dashboard-pro-react.css?v=1.10.0";
 import { profileListStateSelector } from "store/selectors/profileSelector";
@@ -32,6 +34,17 @@ export const CustomToastContainer = (props) => (
 );
 
 export const SupaContext = createContext();
+
+// Initialize toast manager
+function ToastInitializer({ children }) {
+  const { addToast } = useToasts();
+
+  useEffect(() => {
+    TOAST.setToastManager(addToast);
+  }, [addToast]);
+
+  return <>{children}</>;
+}
 
 function App({
   profileState,
@@ -211,9 +224,11 @@ function App({
 
   return (
     <ToastProvider components={{ ToastContainer: CustomToastContainer }}>
-      <SupaContext.Provider value={{ userProfile, employeeProfile, isMobile }}>
-        {renderRoutes()}
-      </SupaContext.Provider>
+      <ToastInitializer>
+        <SupaContext.Provider value={{ userProfile, employeeProfile, isMobile }}>
+          {renderRoutes()}
+        </SupaContext.Provider>
+      </ToastInitializer>
     </ToastProvider>
   );
 }
