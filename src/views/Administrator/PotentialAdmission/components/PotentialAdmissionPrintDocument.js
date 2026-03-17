@@ -190,6 +190,9 @@ const PotentialAdmissionPrintDocument = ({ admissionData }) => {
             <Text style={styles.fieldLabel}>Admission Nurse: {safeString(admissionData.admission_nurse)}</Text>
           </View>
           <View style={styles.fieldRow}>
+            <Text style={styles.fieldLabel}>Medical Director: {safeString(admissionData.medical_director)}</Text>
+          </View>
+          <View style={styles.fieldRow}>
             <Text style={styles.fieldLabel}>Admission Decision: {safeString(admissionData.admission_decision)}</Text>
           </View>
           <View style={styles.fieldRow}>

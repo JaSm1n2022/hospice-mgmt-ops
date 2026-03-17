@@ -255,6 +255,7 @@ function PotentialAdmissionFunction(props) {
       eval_dt: formatDateOnly(payload.eval_dt),
       eval_staff: payload.eval_staff,
       admission_nurse: payload.admission_nurse,
+      medical_director: payload.medical_director,
       comments: payload.comments,
       companyId: context.userProfile?.companyId,
       updatedUser: {

@@ -48,6 +48,7 @@ function PotentialAdmissionForm(props) {
   const [components, setComponents] = useState([]);
   const [nursePractitioners, setNursePractitioners] = useState([]);
   const [admissionNurses, setAdmissionNurses] = useState([]);
+  const [medicalDirectors, setMedicalDirectors] = useState([]);
   const { isOpen } = props;
 
   // Generate patientCd from lastName, firstName, and current date/time
@@ -281,9 +282,48 @@ function PotentialAdmissionForm(props) {
         }));
       console.log("Filtered Admission Nurses:", nurseList.length, nurseList);
 
+      // Filter Medical Directors (check both position and title for "Medical Director")
+      const mdList = employeeList
+        .filter((emp) => {
+          const position = emp.position || "";
+          const title = emp.title || "";
+          const isMatch =
+            (position === "Medical Director" ||
+              title === "Medical Director") &&
+            emp.status === "Active";
+
+          if (
+            position.includes("Medical") ||
+            position.includes("Director") ||
+            title.includes("Medical") ||
+            title.includes("Director")
+          ) {
+            console.log(
+              "Medical Director Check - Employee:",
+              emp.name,
+              "Position:",
+              position,
+              "Title:",
+              title,
+              "Status:",
+              emp.status,
+              "Match:",
+              isMatch
+            );
+          }
+
+          return isMatch;
+        })
+        .map((emp) => ({
+          value: emp.name,
+          name: emp.name,
+        }));
+      console.log("Filtered Medical Directors:", mdList.length, mdList);
+
       // Update state
       setNursePractitioners(npList);
       setAdmissionNurses(nurseList);
+      setMedicalDirectors(mdList);
 
       // Update components directly with the new options
       setComponents((prevComponents) => {
@@ -293,6 +333,9 @@ function PotentialAdmissionForm(props) {
           }
           if (comp.name === "admission_nurse") {
             return { ...comp, options: nurseList };
+          }
+          if (comp.name === "medical_director") {
+            return { ...comp, options: mdList };
           }
           return comp;
         });
@@ -529,6 +572,14 @@ function PotentialAdmissionForm(props) {
         name: "admission_nurse",
         cols: 4,
         options: admissionNurses,
+      },
+      {
+        id: "medical_director",
+        component: "select",
+        placeholder: "Select Medical Director",
+        name: "medical_director",
+        cols: 4,
+        options: medicalDirectors,
       },
       {
         id: "comments",

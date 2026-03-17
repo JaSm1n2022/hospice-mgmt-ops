@@ -211,6 +211,15 @@ class PotentialAdmissionHandler {
       },
       {
         defaultFlex: 1,
+        minWidth: 150,
+        name: "medical_director",
+        header: "Medical Director",
+        render: ({ value }) => {
+          return value || "";
+        },
+      },
+      {
+        defaultFlex: 1,
         minWidth: 200,
         name: "comments",
         header: "Comments",

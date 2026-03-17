@@ -216,6 +216,7 @@ const PotentialAdmissionBatchPrintDocument = ({ admissionsData }) => {
             <Text style={styles.sectionTitle}>Staff and Decision</Text>
             {renderField("Assigned NP", admissionData.eval_staff)}
             {renderField("Admission Nurse", admissionData.admission_nurse)}
+            {renderField("Medical Director", admissionData.medical_director)}
             {renderField("Admission Decision", admissionData.admission_decision)}
             {renderField("Admission Cost", formatCost(admissionData.admission_cost))}
           </View>
