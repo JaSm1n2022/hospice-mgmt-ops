@@ -75,9 +75,10 @@ class RecertificationTimelineHandler {
     const recerts = [];
     let currentDate = moment(socDate);
 
-    // Start from the admitted benefit period and calculate a few more periods
+    // Start from the admitted benefit period and calculate many periods ahead
     // This ensures if admitted benefit is 14, we calculate periods 14, 15, 16, etc.
-    const periodsToCalculate = 6; // Calculate 6 periods ahead
+    // Calculate enough periods to cover at least 3 years (approx 18 periods of 60 days each)
+    const periodsToCalculate = 20; // Calculate 20 periods ahead (~3 years)
 
     // Check if patient has prior hospice days to account for
     // prior_last_day_care represents days used in the last benefit period at prior hospice

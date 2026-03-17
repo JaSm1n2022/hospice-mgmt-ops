@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from "react";
 import { makeStyles } from "@material-ui/core/styles";
 import RecertificationTimelineHandler from "./components/RecertificationTimelineHandler";
 import RecertificationTimelineCard from "./components/RecertificationTimelineCard";
+import RecertificationCalendarModal from "./components/RecertificationCalendarModal";
 import { connect } from "react-redux";
 
 import GridContainer from "components/Grid/GridContainer";
@@ -10,6 +11,7 @@ import Card from "components/Card/Card";
 import CardHeader from "components/Card/CardHeader";
 import CardBody from "components/Card/CardBody";
 import { CircularProgress, TextField, Grid, Button } from "@material-ui/core";
+import { CalendarToday } from "@material-ui/icons";
 
 import { SupaContext } from "App";
 import { ACTION_STATUSES } from "utils/constants";
@@ -47,6 +49,7 @@ function RecertificationTimelineFunction(props) {
   const [isPatientsCollection, setIsPatientsCollection] = useState(true);
   const [patientIdFilter, setPatientIdFilter] = useState("");
   const [daysFilter, setDaysFilter] = useState("");
+  const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
 
   useEffect(() => {
     console.log("Recertification Timeline - loading patient data");
@@ -145,6 +148,7 @@ function RecertificationTimelineFunction(props) {
                   alignItems="center"
                   style={{ marginBottom: 20, paddingLeft: 12, paddingRight: 12 }}
                 >
+                  {/* First Row - Filter Criteria */}
                   <Grid item xs={12} sm={4} md={3}>
                     <TextField
                       fullWidth
@@ -176,7 +180,7 @@ function RecertificationTimelineFunction(props) {
                       }}
                     />
                   </Grid>
-                  <Grid item xs={12} sm={4} md={3}>
+                  <Grid item xs={12} sm={4} md={6}>
                     <Button
                       variant="contained"
                       color="primary"
@@ -191,6 +195,18 @@ function RecertificationTimelineFunction(props) {
                       onClick={clearFilters}
                     >
                       Clear
+                    </Button>
+                  </Grid>
+
+                  {/* Second Row - Calendar View Button */}
+                  <Grid item xs={12}>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      startIcon={<CalendarToday />}
+                      onClick={() => setIsCalendarModalOpen(true)}
+                    >
+                      Calendar View (All Patients - F2F from 3rd Benefit)
                     </Button>
                   </Grid>
                 </Grid>
@@ -215,6 +231,13 @@ function RecertificationTimelineFunction(props) {
           </GridItem>
         </GridContainer>
       )}
+
+      {/* Calendar Modal */}
+      <RecertificationCalendarModal
+        isOpen={isCalendarModalOpen}
+        onClose={() => setIsCalendarModalOpen(false)}
+        patients={originalDataSource}
+      />
     </>
   );
 }
