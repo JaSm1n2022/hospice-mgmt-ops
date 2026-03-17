@@ -1,11 +1,5 @@
 import React from "react";
-import {
-  Document,
-  Page,
-  Text,
-  View,
-  StyleSheet,
-} from "@react-pdf/renderer";
+import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import moment from "moment";
 
 // Create styles
@@ -143,6 +137,8 @@ const PotentialAdmissionBatchPrintDocument = ({ admissionsData }) => {
         noPriorHospice: 0,
         revoked: 0,
         discharged: 0,
+        locationCounts: {},
+        prognosisCounts: {},
       };
     }
 
@@ -153,6 +149,8 @@ const PotentialAdmissionBatchPrintDocument = ({ admissionsData }) => {
     let noPriorHospice = 0;
     let revoked = 0;
     let discharged = 0;
+    const locationCounts = {};
+    const prognosisCounts = {};
 
     admissionsData.forEach((admission) => {
       // Admission decision counts
@@ -174,6 +172,44 @@ const PotentialAdmissionBatchPrintDocument = ({ admissionsData }) => {
       } else if (status === "discharged" || status === "Discharged") {
         discharged++;
       }
+
+      // Current location counts
+      const location = admission.current_location || "Not Specified";
+      locationCounts[location] = (locationCounts[location] || 0) + 1;
+
+      // Pre-admission prognosis counts
+      const prognosis = admission.pre_admission_prognosis || "";
+      const prognosisLower = prognosis.toLowerCase();
+
+      // Check if prognosis indicates "Insufficient clinical information"
+      if (
+        prognosisLower.includes("insufficient to support") ||
+        prognosisLower.includes("insufficient clinical information")
+      ) {
+        prognosisCounts["Insufficient clinical information"] =
+          (prognosisCounts["Insufficient clinical information"] || 0) + 1;
+      }
+      // Check if prognosis indicates "No Terminal Diagnosis"
+      else if (
+        prognosisLower.includes("terminal trajectory not yet clear") ||
+        prognosisLower.includes("no terminal diagnosis") ||
+        prognosisLower.includes("no clearly identified terminal diagnosis") ||
+        prognosisLower.includes(
+          "no recent hospitalizations related to terminal disease progression"
+        ) ||
+        prognosisLower.includes(
+          "a qualifying terminal diagnosis has not been established"
+        )
+      ) {
+        prognosisCounts["No Terminal Diagnosis"] =
+          (prognosisCounts["No Terminal Diagnosis"] || 0) + 1;
+      } else if (prognosis && prognosis.trim() !== "") {
+        // Group by actual prognosis value
+        prognosisCounts[prognosis] = (prognosisCounts[prognosis] || 0) + 1;
+      } else {
+        prognosisCounts["Not Specified"] =
+          (prognosisCounts["Not Specified"] || 0) + 1;
+      }
     });
 
     return {
@@ -184,13 +220,17 @@ const PotentialAdmissionBatchPrintDocument = ({ admissionsData }) => {
       noPriorHospice,
       revoked,
       discharged,
+      locationCounts,
+      prognosisCounts,
     };
   };
 
   const renderField = (label, value) => {
     return (
       <View style={styles.fieldRow}>
-        <Text style={styles.fieldLabel}>{label}: {formatValue(value)}</Text>
+        <Text style={styles.fieldLabel}>
+          {label}: {formatValue(value)}
+        </Text>
       </View>
     );
   };
@@ -198,7 +238,9 @@ const PotentialAdmissionBatchPrintDocument = ({ admissionsData }) => {
   const renderDateField = (label, date) => {
     return (
       <View style={styles.fieldRow}>
-        <Text style={styles.fieldLabel}>{label}: {formatDate(date)}</Text>
+        <Text style={styles.fieldLabel}>
+          {label}: {formatDate(date)}
+        </Text>
       </View>
     );
   };
@@ -211,13 +253,19 @@ const PotentialAdmissionBatchPrintDocument = ({ admissionsData }) => {
             Patient {index + 1}: {admissionData?.patientCd || "N/A"}
           </Text>
           <View style={styles.fieldRow}>
-            <Text style={styles.fieldLabel}>Admission Decision: {getAdmissionDecisionLabel(admissionData.admission_decision)}</Text>
+            <Text style={styles.fieldLabel}>
+              Admission Decision:{" "}
+              {getAdmissionDecisionLabel(admissionData.admission_decision)}
+            </Text>
           </View>
-          {admissionData.admission_decision === "Admit to Hospice" && admissionData.admission_dt && (
-            <View style={styles.fieldRow}>
-              <Text style={styles.fieldLabel}>Admission Date: {formatDate(admissionData.admission_dt)}</Text>
-            </View>
-          )}
+          {admissionData.admission_decision === "Admit to Hospice" &&
+            admissionData.admission_dt && (
+              <View style={styles.fieldRow}>
+                <Text style={styles.fieldLabel}>
+                  Admission Date: {formatDate(admissionData.admission_dt)}
+                </Text>
+              </View>
+            )}
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Basic Information</Text>
@@ -226,16 +274,31 @@ const PotentialAdmissionBatchPrintDocument = ({ admissionsData }) => {
             {renderDateField("Eligibility Date", admissionData.eligibility_dt)}
             {renderField("Age", admissionData.age)}
             {renderField("Current Location", admissionData.current_location)}
-            {renderField("Hospice Status", formatHospiceStatus(admissionData.hospice_status))}
-            {renderField("Current Hospice Benefits", admissionData.current_hospice_benefits)}
+            {renderField(
+              "Hospice Status",
+              formatHospiceStatus(admissionData.hospice_status)
+            )}
+            {renderField(
+              "Current Hospice Benefits",
+              admissionData.current_hospice_benefits
+            )}
           </View>
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Important Dates</Text>
             {renderDateField("Received HP Date", admissionData.received_hp_dt)}
-            {renderDateField("Emailed HP to Pre-Admission", admissionData.emailed_hp_to_pre_admission_dt)}
-            {renderDateField("Received Pre-Admission", admissionData.received_pre_admission_dt)}
-            {renderDateField("Forwarded Pre-Admission", admissionData.forwarded_pre_admission_dt)}
+            {renderDateField(
+              "Emailed HP to Pre-Admission",
+              admissionData.emailed_hp_to_pre_admission_dt
+            )}
+            {renderDateField(
+              "Received Pre-Admission",
+              admissionData.received_pre_admission_dt
+            )}
+            {renderDateField(
+              "Forwarded Pre-Admission",
+              admissionData.forwarded_pre_admission_dt
+            )}
             {renderDateField("Evaluation Date", admissionData.eval_dt)}
             {renderDateField("Admission Date", admissionData.admission_dt)}
           </View>
@@ -247,15 +310,24 @@ const PotentialAdmissionBatchPrintDocument = ({ admissionsData }) => {
             {renderField("Assigned NP", admissionData.eval_staff)}
             {renderField("Admission Nurse", admissionData.admission_nurse)}
             {renderField("Medical Director", admissionData.medical_director)}
-            {renderField("Admission Decision", admissionData.admission_decision)}
-            {renderField("Admission Cost", formatCost(admissionData.admission_cost))}
+            {renderField(
+              "Admission Decision",
+              admissionData.admission_decision
+            )}
+            {renderField(
+              "Admission Cost",
+              formatCost(admissionData.admission_cost)
+            )}
           </View>
 
           <View style={styles.divider} />
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Clinical Information</Text>
-            {renderField("Pre-Admission Prognosis", admissionData.pre_admission_prognosis)}
+            {renderField(
+              "Pre-Admission Prognosis",
+              admissionData.pre_admission_prognosis
+            )}
             {renderField("HP Prognosis", admissionData.hp_prognosis)}
             {renderField("MD Prognosis", admissionData.md_prognosis)}
           </View>
@@ -287,7 +359,10 @@ const PotentialAdmissionBatchPrintDocument = ({ admissionsData }) => {
         return 2; // Pending/Further Evaluation or empty
       };
 
-      return getDecisionOrder(a.admission_decision) - getDecisionOrder(b.admission_decision);
+      return (
+        getDecisionOrder(a.admission_decision) -
+        getDecisionOrder(b.admission_decision)
+      );
     });
   };
 
@@ -298,55 +373,122 @@ const PotentialAdmissionBatchPrintDocument = ({ admissionsData }) => {
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
           <Text style={styles.title}>Potential Admissions Report</Text>
-          <Text style={styles.subtitle}>Total Patients: {admissionsData?.length || 0}</Text>
-          <Text style={styles.generated}>Generated: {moment().format("MM/DD/YYYY hh:mm A")}</Text>
+          <Text style={styles.subtitle}>
+            Total Patients: {admissionsData?.length || 0}
+          </Text>
+          <Text style={styles.generated}>
+            Generated: {moment().format("MM/DD/YYYY hh:mm A")}
+          </Text>
         </View>
 
         {admissionsData && admissionsData.length > 0 && (
           <View style={styles.summarySection}>
             <Text style={styles.summaryTitle}>Summary Statistics</Text>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Total Patients: {summary.total}</Text>
+              <Text style={styles.summaryLabel}>
+                Total Patients: {summary.total}
+              </Text>
             </View>
 
             <View style={{ marginTop: 8, marginBottom: 4 }}>
-              <Text style={{ fontSize: 11, fontWeight: "bold", color: "#555" }}>Admission Decision:</Text>
+              <Text style={{ fontSize: 11, fontWeight: "bold", color: "#555" }}>
+                Admission Decision:
+              </Text>
             </View>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>  • Admit to Hospice: {summary.admitted}</Text>
+              <Text style={styles.summaryLabel}>
+                {" "}
+                • Admit to Hospice: {summary.admitted}
+              </Text>
             </View>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>  • Pending/Further Evaluation: {summary.pending}</Text>
+              <Text style={styles.summaryLabel}>
+                {" "}
+                • Pending/Further Evaluation: {summary.pending}
+              </Text>
             </View>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>  • Non-Admit: {summary.nonAdmit}</Text>
+              <Text style={styles.summaryLabel}>
+                {" "}
+                • Non-Admit: {summary.nonAdmit}
+              </Text>
             </View>
 
             <View style={{ marginTop: 8, marginBottom: 4 }}>
-              <Text style={{ fontSize: 11, fontWeight: "bold", color: "#555" }}>Hospice Status:</Text>
+              <Text style={{ fontSize: 11, fontWeight: "bold", color: "#555" }}>
+                Hospice Status:
+              </Text>
             </View>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>  • No Prior Hospice: {summary.noPriorHospice}</Text>
+              <Text style={styles.summaryLabel}>
+                {" "}
+                • No Prior Hospice: {summary.noPriorHospice}
+              </Text>
             </View>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>  • Revoked: {summary.revoked}</Text>
+              <Text style={styles.summaryLabel}>
+                {" "}
+                • Revoked: {summary.revoked}
+              </Text>
             </View>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>  • Discharged: {summary.discharged}</Text>
+              <Text style={styles.summaryLabel}>
+                {" "}
+                • Discharged: {summary.discharged}
+              </Text>
             </View>
+
+            <View style={{ marginTop: 8, marginBottom: 4 }}>
+              <Text style={{ fontSize: 11, fontWeight: "bold", color: "#555" }}>
+                Current Location:
+              </Text>
+            </View>
+            {Object.entries(summary.locationCounts)
+              .sort(([, a], [, b]) => b - a)
+              .map(([location, count]) => (
+                <View key={location} style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>
+                    {" "}
+                    • {location}: {count}
+                  </Text>
+                </View>
+              ))}
+
+            <View style={{ marginTop: 8, marginBottom: 4 }}>
+              <Text style={{ fontSize: 11, fontWeight: "bold", color: "#555" }}>
+                Pre-Admission Prognosis:
+              </Text>
+            </View>
+            {Object.entries(summary.prognosisCounts)
+              .sort(([, a], [, b]) => b - a)
+              .map(([prognosis, count]) => (
+                <View key={prognosis} style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>
+                    {" "}
+                    • {prognosis}: {count}
+                  </Text>
+                </View>
+              ))}
           </View>
         )}
 
         {sortedAdmissions && sortedAdmissions.length > 0 ? (
           sortedAdmissions.map((admission, index) =>
-            renderPatient(admission, index, index === sortedAdmissions.length - 1)
+            renderPatient(
+              admission,
+              index,
+              index === sortedAdmissions.length - 1
+            )
           )
         ) : (
           <Text style={styles.fieldLabel}>No admissions data available.</Text>
         )}
 
         <View style={styles.footer}>
-          <Text>This document was generated automatically. Please verify all information before use.</Text>
+          <Text>
+            This document was generated automatically. Please verify all
+            information before use.
+          </Text>
         </View>
       </Page>
     </Document>
