@@ -135,15 +135,27 @@ const PotentialAdmissionBatchPrintDocument = ({ admissionsData }) => {
   // Calculate summary counts
   const calculateSummary = () => {
     if (!admissionsData || admissionsData.length === 0) {
-      return { total: 0, admitted: 0, nonAdmit: 0, pending: 0 };
+      return {
+        total: 0,
+        admitted: 0,
+        nonAdmit: 0,
+        pending: 0,
+        noPriorHospice: 0,
+        revoked: 0,
+        discharged: 0,
+      };
     }
 
     const total = admissionsData.length;
     let admitted = 0;
     let nonAdmit = 0;
     let pending = 0;
+    let noPriorHospice = 0;
+    let revoked = 0;
+    let discharged = 0;
 
     admissionsData.forEach((admission) => {
+      // Admission decision counts
       const decision = admission.admission_decision;
       if (decision === "Admit to Hospice") {
         admitted++;
@@ -152,9 +164,27 @@ const PotentialAdmissionBatchPrintDocument = ({ admissionsData }) => {
       } else {
         pending++; // N/A, empty, or "Pending / Further Evaluation"
       }
+
+      // Hospice status counts
+      const status = admission.hospice_status;
+      if (status === "no_prior_hospice" || status === "No Prior Hospice") {
+        noPriorHospice++;
+      } else if (status === "revoked" || status === "Revoked") {
+        revoked++;
+      } else if (status === "discharged" || status === "Discharged") {
+        discharged++;
+      }
     });
 
-    return { total, admitted, nonAdmit, pending };
+    return {
+      total,
+      admitted,
+      nonAdmit,
+      pending,
+      noPriorHospice,
+      revoked,
+      discharged,
+    };
   };
 
   const renderField = (label, value) => {
@@ -246,6 +276,23 @@ const PotentialAdmissionBatchPrintDocument = ({ admissionsData }) => {
 
   const summary = calculateSummary();
 
+  // Sort admissions by decision: Admit to Hospice, Pending, then Non-Admit
+  const sortAdmissionsByDecision = (data) => {
+    if (!data || data.length === 0) return [];
+
+    return [...data].sort((a, b) => {
+      const getDecisionOrder = (decision) => {
+        if (decision === "Admit to Hospice") return 1;
+        if (decision === "Non-Admit") return 3;
+        return 2; // Pending/Further Evaluation or empty
+      };
+
+      return getDecisionOrder(a.admission_decision) - getDecisionOrder(b.admission_decision);
+    });
+  };
+
+  const sortedAdmissions = sortAdmissionsByDecision(admissionsData);
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -257,25 +304,42 @@ const PotentialAdmissionBatchPrintDocument = ({ admissionsData }) => {
 
         {admissionsData && admissionsData.length > 0 && (
           <View style={styles.summarySection}>
-            <Text style={styles.summaryTitle}>Admission Decision Summary</Text>
+            <Text style={styles.summaryTitle}>Summary Statistics</Text>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Total Patients: {summary.total}</Text>
             </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Admit to Hospice: {summary.admitted}</Text>
+
+            <View style={{ marginTop: 8, marginBottom: 4 }}>
+              <Text style={{ fontSize: 11, fontWeight: "bold", color: "#555" }}>Admission Decision:</Text>
             </View>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Non-Admit: {summary.nonAdmit}</Text>
+              <Text style={styles.summaryLabel}>  • Admit to Hospice: {summary.admitted}</Text>
             </View>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Pending/Further Evaluation: {summary.pending}</Text>
+              <Text style={styles.summaryLabel}>  • Pending/Further Evaluation: {summary.pending}</Text>
+            </View>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>  • Non-Admit: {summary.nonAdmit}</Text>
+            </View>
+
+            <View style={{ marginTop: 8, marginBottom: 4 }}>
+              <Text style={{ fontSize: 11, fontWeight: "bold", color: "#555" }}>Hospice Status:</Text>
+            </View>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>  • No Prior Hospice: {summary.noPriorHospice}</Text>
+            </View>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>  • Revoked: {summary.revoked}</Text>
+            </View>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>  • Discharged: {summary.discharged}</Text>
             </View>
           </View>
         )}
 
-        {admissionsData && admissionsData.length > 0 ? (
-          admissionsData.map((admission, index) =>
-            renderPatient(admission, index, index === admissionsData.length - 1)
+        {sortedAdmissions && sortedAdmissions.length > 0 ? (
+          sortedAdmissions.map((admission, index) =>
+            renderPatient(admission, index, index === sortedAdmissions.length - 1)
           )
         ) : (
           <Text style={styles.fieldLabel}>No admissions data available.</Text>
