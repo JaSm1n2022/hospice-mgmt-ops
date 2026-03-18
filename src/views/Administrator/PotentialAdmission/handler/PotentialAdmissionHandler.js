@@ -7,7 +7,7 @@ class PotentialAdmissionHandler {
       { width: 160, name: "actions", header: "Actions", visible: main },
       {
         defaultFlex: 1,
-        minWidth: 240,
+        minWidth: 300,
         name: "patientCd",
         header: "Patient Code",
         render: ({ value, data }) => {
@@ -143,19 +143,19 @@ class PotentialAdmissionHandler {
       },
       {
         defaultFlex: 1,
-        minWidth: 150,
+        minWidth: 300,
         name: "pre_admission_prognosis",
         header: "Pre-Admission Prognosis",
       },
       {
         defaultFlex: 1,
-        minWidth: 150,
+        minWidth: 300,
         name: "hp_prognosis",
         header: "HP Prognosis",
       },
       {
         defaultFlex: 1,
-        minWidth: 150,
+        minWidth: 300,
         name: "md_prognosis",
         header: "MD Prognosis",
       },

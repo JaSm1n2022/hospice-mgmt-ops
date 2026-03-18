@@ -13,7 +13,8 @@ import { connect } from "react-redux";
 import Button from "components/CustomButtons/Button.js";
 import ActionsFunction from "components/Actions/ActionsFunction";
 import { ACTION_STATUSES } from "utils/constants";
-import { Grid } from "@material-ui/core";
+import { Grid, TextField, Accordion, AccordionSummary, AccordionDetails, Typography } from "@material-ui/core";
+import { ExpandMore } from "@material-ui/icons";
 import AddIcon from "@material-ui/icons/Add";
 
 import HospiceTable from "components/Table/HospiceTable";
@@ -38,6 +39,7 @@ import { attemptToUpdatePotentialAdmission } from "store/actions/potentialAdmiss
 import FilterTable from "components/Table/FilterTable";
 import { handleExport } from "utils/XlsxHelper";
 import { SupaContext } from "App";
+import moment from "moment";
 
 const styles = {
   cardCategoryWhite: {
@@ -86,6 +88,14 @@ function PotentialAdmissionFunction(props) {
   const [mode, setMode] = useState("create");
   const [isAddGroupButtons, setIsAddGroupButtons] = useState(false);
   const [keywordValue, setKeywordValue] = useState("");
+
+  // Date range filter states
+  const [eligibilityStartDate, setEligibilityStartDate] = useState("");
+  const [eligibilityEndDate, setEligibilityEndDate] = useState("");
+  const [hpStartDate, setHpStartDate] = useState("");
+  const [hpEndDate, setHpEndDate] = useState("");
+  const [emailedPreAdmissionStartDate, setEmailedPreAdmissionStartDate] = useState("");
+  const [emailedPreAdmissionEndDate, setEmailedPreAdmissionEndDate] = useState("");
 
   const createFormHandler = (data, mode) => {
     console.log("createFormHandler called - data:", data, "mode:", mode);
@@ -350,19 +360,78 @@ function PotentialAdmissionFunction(props) {
   }
 
   const filterRecordHandler = (keyword) => {
-    if (!keyword) {
-      setDataSource([...originalSource]);
-    } else {
-      const temp = [...originalSource];
-      let found = temp.filter(
+    setKeywordValue(keyword);
+    applyAllFilters(keyword);
+  };
+
+  const applyAllFilters = (keyword = keywordValue) => {
+    let filtered = [...originalSource];
+
+    // Apply keyword search
+    if (keyword) {
+      filtered = filtered.filter(
         (data) =>
           (data.patientCd &&
             data.patientCd.toLowerCase().indexOf(keyword.toLowerCase()) !== -1) ||
           (data.referral &&
             data.referral.toLowerCase().indexOf(keyword.toLowerCase()) !== -1)
       );
-      setDataSource(found);
     }
+
+    // Apply Eligibility Date range filter
+    if (eligibilityStartDate) {
+      filtered = filtered.filter((data) => {
+        if (!data.eligibility_dt) return false;
+        return moment(data.eligibility_dt).isSameOrAfter(eligibilityStartDate, 'day');
+      });
+    }
+    if (eligibilityEndDate) {
+      filtered = filtered.filter((data) => {
+        if (!data.eligibility_dt) return false;
+        return moment(data.eligibility_dt).isSameOrBefore(eligibilityEndDate, 'day');
+      });
+    }
+
+    // Apply HP Date range filter
+    if (hpStartDate) {
+      filtered = filtered.filter((data) => {
+        if (!data.received_hp_dt) return false;
+        return moment(data.received_hp_dt).isSameOrAfter(hpStartDate, 'day');
+      });
+    }
+    if (hpEndDate) {
+      filtered = filtered.filter((data) => {
+        if (!data.received_hp_dt) return false;
+        return moment(data.received_hp_dt).isSameOrBefore(hpEndDate, 'day');
+      });
+    }
+
+    // Apply Emailed Pre-Admission Date range filter
+    if (emailedPreAdmissionStartDate) {
+      filtered = filtered.filter((data) => {
+        if (!data.emailed_hp_to_pre_admission_dt) return false;
+        return moment(data.emailed_hp_to_pre_admission_dt).isSameOrAfter(emailedPreAdmissionStartDate, 'day');
+      });
+    }
+    if (emailedPreAdmissionEndDate) {
+      filtered = filtered.filter((data) => {
+        if (!data.emailed_hp_to_pre_admission_dt) return false;
+        return moment(data.emailed_hp_to_pre_admission_dt).isSameOrBefore(emailedPreAdmissionEndDate, 'day');
+      });
+    }
+
+    setDataSource(filtered);
+  };
+
+  const clearAllFilters = () => {
+    setKeywordValue("");
+    setEligibilityStartDate("");
+    setEligibilityEndDate("");
+    setHpStartDate("");
+    setHpEndDate("");
+    setEmailedPreAdmissionStartDate("");
+    setEmailedPreAdmissionEndDate("");
+    setDataSource([...originalSource]);
   };
 
   const onCheckboxSelectionHandler = (data, isAll, itemIsChecked) => {
@@ -474,24 +543,155 @@ function PotentialAdmissionFunction(props) {
                   </div>
                 </Grid>
 
-                <Grid
-                  item
-                  xs={12}
-                  md={6}
-                  style={{
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    paddingRight: 20,
-                  }}
-                >
-                  <FilterTable
-                    filterRecordHandler={filterRecordHandler}
-                    isNoDate={true}
-                    main={false}
-                    search={12}
-                  />
-                </Grid>
               </GridContainer>
+
+              {/* Comprehensive Filter Section */}
+              <Accordion style={{ marginBottom: 20 }}>
+                <AccordionSummary
+                  expandIcon={<ExpandMore />}
+                  aria-controls="filter-content"
+                  id="filter-header"
+                >
+                  <Typography variant="h6">Comprehensive Filters</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Grid container spacing={2}>
+                    {/* Search by Patient Code or Referral */}
+                    <Grid item xs={12} sm={6} md={4}>
+                      <TextField
+                        fullWidth
+                        label="Search Patient Code / Referral"
+                        variant="outlined"
+                        size="small"
+                        value={keywordValue}
+                        onChange={(e) => filterRecordHandler(e.target.value)}
+                      />
+                    </Grid>
+
+                    {/* Eligibility Date Range */}
+                    <Grid item xs={12}>
+                      <Typography variant="subtitle2" style={{ marginTop: 10, marginBottom: 5, fontWeight: 'bold' }}>
+                        Eligibility Date Range
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                      <TextField
+                        fullWidth
+                        label="Eligibility Start Date"
+                        type="date"
+                        variant="outlined"
+                        size="small"
+                        value={eligibilityStartDate}
+                        onChange={(e) => {
+                          setEligibilityStartDate(e.target.value);
+                        }}
+                        InputLabelProps={{ shrink: true }}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                      <TextField
+                        fullWidth
+                        label="Eligibility End Date"
+                        type="date"
+                        variant="outlined"
+                        size="small"
+                        value={eligibilityEndDate}
+                        onChange={(e) => {
+                          setEligibilityEndDate(e.target.value);
+                        }}
+                        InputLabelProps={{ shrink: true }}
+                      />
+                    </Grid>
+
+                    {/* HP Date Range */}
+                    <Grid item xs={12}>
+                      <Typography variant="subtitle2" style={{ marginTop: 10, marginBottom: 5, fontWeight: 'bold' }}>
+                        Received HP Date Range
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                      <TextField
+                        fullWidth
+                        label="HP Start Date"
+                        type="date"
+                        variant="outlined"
+                        size="small"
+                        value={hpStartDate}
+                        onChange={(e) => {
+                          setHpStartDate(e.target.value);
+                        }}
+                        InputLabelProps={{ shrink: true }}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                      <TextField
+                        fullWidth
+                        label="HP End Date"
+                        type="date"
+                        variant="outlined"
+                        size="small"
+                        value={hpEndDate}
+                        onChange={(e) => {
+                          setHpEndDate(e.target.value);
+                        }}
+                        InputLabelProps={{ shrink: true }}
+                      />
+                    </Grid>
+
+                    {/* Emailed Pre-Admission Date Range */}
+                    <Grid item xs={12}>
+                      <Typography variant="subtitle2" style={{ marginTop: 10, marginBottom: 5, fontWeight: 'bold' }}>
+                        Emailed Pre-Admission Date Range
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                      <TextField
+                        fullWidth
+                        label="Emailed Start Date"
+                        type="date"
+                        variant="outlined"
+                        size="small"
+                        value={emailedPreAdmissionStartDate}
+                        onChange={(e) => {
+                          setEmailedPreAdmissionStartDate(e.target.value);
+                        }}
+                        InputLabelProps={{ shrink: true }}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                      <TextField
+                        fullWidth
+                        label="Emailed End Date"
+                        type="date"
+                        variant="outlined"
+                        size="small"
+                        value={emailedPreAdmissionEndDate}
+                        onChange={(e) => {
+                          setEmailedPreAdmissionEndDate(e.target.value);
+                        }}
+                        InputLabelProps={{ shrink: true }}
+                      />
+                    </Grid>
+
+                    {/* Filter Buttons */}
+                    <Grid item xs={12} style={{ marginTop: 10 }}>
+                      <Button
+                        color="primary"
+                        onClick={() => applyAllFilters()}
+                        style={{ marginRight: 10 }}
+                      >
+                        Apply Filters
+                      </Button>
+                      <Button
+                        color="secondary"
+                        onClick={clearAllFilters}
+                      >
+                        Clear All Filters
+                      </Button>
+                    </Grid>
+                  </Grid>
+                </AccordionDetails>
+              </Accordion>
               <HospiceTable
                 columns={columns}
                 main={true}

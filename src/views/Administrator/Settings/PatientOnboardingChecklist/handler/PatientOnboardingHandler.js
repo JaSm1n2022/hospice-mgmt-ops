@@ -12,7 +12,7 @@ class PatientOnboardingHandler {
       { width: 180, name: "actions", header: "Actions", visible: main },
       {
         defaultFlex: 1,
-        minWidth: 200,
+        minWidth: 300,
         name: "patientCd",
         header: "Patient Code",
       },
@@ -183,13 +183,17 @@ class PatientOnboardingHandler {
 
   static calculateGroupStatus(checklistData, groupItems) {
     // Only count mandatory items
-    const mandatoryItems = groupItems.filter((item) => item.mandatory !== false);
+    const mandatoryItems = groupItems.filter(
+      (item) => item.mandatory !== false
+    );
 
     if (!checklistData) {
       return {
         completed: 0,
         total: mandatoryItems.length,
-        incompleteItems: mandatoryItems.map((item) => this.getItemLabel(item.key)),
+        incompleteItems: mandatoryItems.map((item) =>
+          this.getItemLabel(item.key)
+        ),
       };
     }
 
