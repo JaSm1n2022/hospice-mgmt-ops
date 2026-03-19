@@ -10,6 +10,13 @@ import {
   DialogActions,
   TextField,
   Grid,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
 } from "@material-ui/core";
 import Card from "components/Card/Card";
 import CardHeader from "components/Card/CardHeader";
@@ -18,7 +25,7 @@ import { Calendar as BigCalendar, momentLocalizer } from "react-big-calendar";
 import moment from "moment";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { Close, Print } from "@material-ui/icons";
-import { pdf } from "@react-pdf/renderer";
+import { pdf, Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import DistributionCalendarPrintDocument from "./DistributionCalendarPrintDocument";
 
 const localizer = momentLocalizer(moment);
