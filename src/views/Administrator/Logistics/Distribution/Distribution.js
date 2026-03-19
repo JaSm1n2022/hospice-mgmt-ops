@@ -85,6 +85,7 @@ import nanoid8 from "utils/nanoid8";
 import Snackbar from "components/Snackbar/Snackbar.js";
 import {
   AddAlert,
+  CalendarToday,
   CloudCircleOutlined,
   CloudUpload,
   FontDownload,
@@ -97,6 +98,7 @@ import { attemptToFetchProof } from "store/actions/proofAction";
 import { resetFetchProofState } from "store/actions/proofAction";
 import DialogProof from "components/Dialog/DialogProof";
 import DialogFunction from "components/Actions/DialogFunction";
+import DistributionCalendarModal from "./components/DistributionCalendarModal";
 import { SupaContext } from "App";
 import { handleExport } from "utils/XlsxHelper";
 let productList = [];
@@ -199,6 +201,7 @@ const Distribution = (props) => {
     true
   );
   const [isShowProof, setIsShowProof] = useState(false);
+  const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
   const showNotification = (place, color, msg) => {
     setMessage(msg);
     switch (place) {
@@ -1288,6 +1291,18 @@ const Distribution = (props) => {
                     />
                   </GridItem>
                 </GridContainer>
+                <GridContainer style={{ paddingLeft: 20, paddingTop: 10 }}>
+                  <GridItem md={12} sm={12} xs={12}>
+                    <Button
+                      variant="contained"
+                      color="rose"
+                      startIcon={<CalendarToday />}
+                      onClick={() => setIsCalendarModalOpen(true)}
+                    >
+                      Calendar View - Medical/Incontinence
+                    </Button>
+                  </GridItem>
+                </GridContainer>
                 <GridContainer style={{ paddingLeft: 14 }}>
                   <GridItem md={12} sm={12} xs={12}>
                     <Button
@@ -1460,6 +1475,13 @@ const Distribution = (props) => {
           detailForm={mainDetails}
         />
       )}
+
+      {/* Calendar Modal */}
+      <DistributionCalendarModal
+        isOpen={isCalendarModalOpen}
+        onClose={() => setIsCalendarModalOpen(false)}
+        distributions={dataSource}
+      />
     </React.Fragment>
   );
 };
