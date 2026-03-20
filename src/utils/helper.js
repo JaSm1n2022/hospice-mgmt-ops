@@ -247,6 +247,31 @@ class Helper {
     }
     return value;
   }
+
+  /**
+   * Converts an image URL (e.g., from Supabase) to base64 format
+   * @param {String} url - The URL of the image to convert
+   * @returns {Promise<String>} - Full data URI (data:image/...;base64,...)
+   */
+  static async getImageBase64(url) {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const blob = await response.blob();
+
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      console.error('Error converting image to base64:', error);
+      throw error;
+    }
+  }
 }
 
 export default Helper;

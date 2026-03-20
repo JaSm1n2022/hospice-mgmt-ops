@@ -5,6 +5,11 @@ import {
   MenuItem,
   Tooltip,
   Typography,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
 } from "@material-ui/core";
 import React, { useContext, useEffect } from "react";
 import DistributionHandler from "./handler/DistributionHandler";
@@ -16,6 +21,7 @@ import ArrowDownwardIcon from "@material-ui/icons/ArrowDownward";
 import { useState } from "react";
 import * as FileSaver from "file-saver";
 import { v4 as uuidv4 } from "uuid";
+import moment from "moment";
 import Form from "./components/Form";
 import TemplateForm from "./components/TemplateForm";
 import { connect } from "react-redux";
@@ -101,6 +107,8 @@ import DialogFunction from "components/Actions/DialogFunction";
 import DistributionCalendarModal from "./components/DistributionCalendarModal";
 import { SupaContext } from "App";
 import { handleExport } from "utils/XlsxHelper";
+import { pdf } from "@react-pdf/renderer";
+import PrintOrdersPdfDocument from "./components/PrintOrdersPdfDocument";
 let productList = [];
 let stockList = [];
 let patientList = [];
@@ -202,6 +210,12 @@ const Distribution = (props) => {
   );
   const [isShowProof, setIsShowProof] = useState(false);
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
+  const [isPrintOrdersDialogOpen, setIsPrintOrdersDialogOpen] = useState(false);
+  const [printOrdersPatientName, setPrintOrdersPatientName] = useState("");
+  const [printOrdersLocation, setPrintOrdersLocation] = useState("");
+  const [printOrdersDatePickup, setPrintOrdersDatePickup] = useState(
+    moment().format("YYYY-MM-DD")
+  );
   const showNotification = (place, color, msg) => {
     setMessage(msg);
     switch (place) {
@@ -1234,6 +1248,91 @@ const Distribution = (props) => {
   const onCloseProofHandler = () => {
     setIsShowProof(false);
   };
+
+  const handlePrintOrdersClick = () => {
+    // Get selected data to populate defaults
+    const selectedData = dataSource.filter((r) => r.isChecked);
+
+    if (selectedData && selectedData.length > 0) {
+      const firstItem = selectedData[0];
+
+      // Default patient name from patient_id
+      const patient = patientList.find((p) => p.id === firstItem.patient_id);
+      if (patient) {
+        setPrintOrdersPatientName(patient.cd || patient.name || "");
+        setPrintOrdersLocation(patient.place_of_service || "");
+      }
+
+      // Note: requestor_position is set in PrintOrdersPdfDocument from the selectedData
+      // The employee position is already available in the selectedData through the requestor field
+    }
+
+    setIsPrintOrdersDialogOpen(true);
+  };
+
+  const handlePrintOrdersCancel = () => {
+    setIsPrintOrdersDialogOpen(false);
+    setPrintOrdersPatientName("");
+    setPrintOrdersLocation("");
+    setPrintOrdersDatePickup(moment().format("YYYY-MM-DD"));
+  };
+
+  const handlePrintOrdersGenerate = async () => {
+    if (!printOrdersPatientName.trim()) {
+      showNotification("tc", "warning", "Please enter patient name");
+      return;
+    }
+
+    try {
+      const selectedData = dataSource.filter((r) => r.isChecked);
+
+      if (!selectedData || selectedData.length === 0) {
+        showNotification("tc", "warning", "Please select at least one item");
+        return;
+      }
+
+      setIsPrintOrdersDialogOpen(false);
+
+      // Fetch and convert logo to base64 using Helper
+      let logoBase64 = null;
+      try {
+        const logoUrl = "https://acwocotrngkeaxtzdzfz.supabase.co/storage/v1/object/public/images/headerdoc.png";
+        logoBase64 = await Helper.getImageBase64(logoUrl); // Returns full data URI
+        console.log("Logo loaded successfully:", logoBase64 ? logoBase64.substring(0, 50) + "..." : "Failed");
+      } catch (logoError) {
+        console.error("Failed to load logo:", logoError);
+      }
+
+      const doc = (
+        <PrintOrdersPdfDocument
+          patientName={printOrdersPatientName}
+          selectedData={selectedData}
+          productList={productList}
+          location={printOrdersLocation}
+          datePickup={printOrdersDatePickup}
+          logoBase64={logoBase64}
+        />
+      );
+
+      const asPdf = pdf(doc);
+      const pdfBlob = await asPdf.toBlob();
+      const url = URL.createObjectURL(pdfBlob);
+      window.open(url, "_blank");
+
+      setPrintOrdersPatientName("");
+      setPrintOrdersLocation("");
+      setPrintOrdersDatePickup(moment().format("YYYY-MM-DD"));
+      showNotification("tc", "success", "PDF generated successfully");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      showNotification(
+        "tc",
+        "danger",
+        "Failed to generate PDF. Please try again."
+      );
+    }
+  };
+
   console.log("[Create Template]", props.createTemplateState);
   return (
     <React.Fragment>
@@ -1362,6 +1461,15 @@ const Distribution = (props) => {
                             <PrintIcon className={classes.icons} /> Print All
                           </Button>
                         </Tooltip>
+                        <Tooltip title={"Generate PDF with patient name"}>
+                          <Button
+                            onClick={handlePrintOrdersClick}
+                            color="success"
+                            className={classes.marginRight}
+                          >
+                            <PrintIcon className={classes.icons} /> Print Orders
+                          </Button>
+                        </Tooltip>
                         <Tooltip title={"Create same data"}>
                           <Button
                             onClick={() => copyAllHandler()}
@@ -1482,6 +1590,72 @@ const Distribution = (props) => {
         onClose={() => setIsCalendarModalOpen(false)}
         distributions={dataSource}
       />
+
+      {/* Print Orders Dialog */}
+      <Dialog
+        open={isPrintOrdersDialogOpen}
+        onClose={handlePrintOrdersCancel}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Enter Details for Print Orders</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={3} style={{ marginTop: 8 }}>
+            <Grid item xs={12}>
+              <TextField
+                label="Patient Name"
+                type="text"
+                value={printOrdersPatientName}
+                onChange={(e) => setPrintOrdersPatientName(e.target.value)}
+                fullWidth
+                autoFocus
+                placeholder="Enter patient name"
+                InputLabelProps={{
+                  shrink: true,
+                }}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                label="Location"
+                type="text"
+                value={printOrdersLocation}
+                onChange={(e) => setPrintOrdersLocation(e.target.value)}
+                fullWidth
+                placeholder="Enter location/facility"
+                InputLabelProps={{
+                  shrink: true,
+                }}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                label="Date Pickup"
+                type="date"
+                value={printOrdersDatePickup}
+                onChange={(e) => setPrintOrdersDatePickup(e.target.value)}
+                fullWidth
+                InputLabelProps={{
+                  shrink: true,
+                }}
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handlePrintOrdersCancel} color="secondary">
+            Cancel
+          </Button>
+          <Button
+            onClick={handlePrintOrdersGenerate}
+            color="primary"
+            variant="contained"
+            startIcon={<PrintIcon />}
+          >
+            Generate PDF
+          </Button>
+        </DialogActions>
+      </Dialog>
     </React.Fragment>
   );
 };

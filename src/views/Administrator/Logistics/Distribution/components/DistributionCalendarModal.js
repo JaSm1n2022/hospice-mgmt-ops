@@ -94,6 +94,8 @@ const DistributionCalendarModal = ({ isOpen, onClose, distributions }) => {
   const classes = useStyles();
   const [modalStyle] = React.useState(getModalStyle);
   const [dateRangeDialogOpen, setDateRangeDialogOpen] = React.useState(false);
+  const [patientDetailOpen, setPatientDetailOpen] = React.useState(false);
+  const [selectedPatientData, setSelectedPatientData] = React.useState(null);
   const [startDate, setStartDate] = React.useState(
     moment().subtract(1, "month").startOf("month").format("YYYY-MM-DD")
   );
@@ -172,6 +174,7 @@ const DistributionCalendarModal = ({ isOpen, onClose, distributions }) => {
       groupedByPatientAndDate[key].items.push({
         description: dist.shortDescription || dist.description,
         qty: dist.order_qty,
+        uom: dist.unit_uom || "",
         amount: dist.estimated_total_amt,
         vendor: dist.vendor,
         comments: dist.comments,
@@ -260,21 +263,96 @@ const DistributionCalendarModal = ({ isOpen, onClose, distributions }) => {
 
   const handleSelectEvent = (event) => {
     const resource = event.resource;
+    setSelectedPatientData(resource);
+    setPatientDetailOpen(true);
+  };
 
-    let itemsList = resource.items.map((item, index) =>
-      `${index + 1}. ${item.description} - Qty: ${item.qty} - $${item.amount}`
-    ).join('\n');
+  const handlePrintPatientDetail = async () => {
+    if (!selectedPatientData) return;
 
-    const message = `Patient: ${resource.patientCd}
-Order Date: ${moment(resource.orderDate).format("MMM DD, YYYY")}
-Order Status: ${resource.orderStatus || "N/A"}
-Total Items: ${resource.itemCount}
-Total Amount: $${resource.totalAmount.toFixed(2)}
+    try {
+      // Create PDF styles
+      const pdfStyles = StyleSheet.create({
+        page: { padding: 30, fontSize: 10 },
+        header: {
+          marginBottom: 20,
+          paddingBottom: 10,
+          borderBottom: 2,
+          borderBottomColor: "#e91e63",
+          borderBottomStyle: "solid",
+        },
+        title: { fontSize: 18, fontWeight: "bold", marginBottom: 5, color: "#e91e63" },
+        subtitle: { fontSize: 11, color: "#666", marginBottom: 3 },
+        generated: { fontSize: 9, color: "#999", marginTop: 5 },
+        patientInfo: { marginBottom: 15, padding: 10, backgroundColor: "#f5f5f5" },
+        infoRow: { marginBottom: 4, fontSize: 10 },
+        table: { display: "table", width: "auto", marginTop: 10 },
+        tableRow: { flexDirection: "row", borderBottom: "1px solid #ddd" },
+        tableHeader: { backgroundColor: "#f0f0f0", fontWeight: "bold" },
+        tableColDescription: { width: "75%", padding: 5, fontSize: 9 },
+        tableColQty: { width: "25%", padding: 5, fontSize: 9, textAlign: "right" },
+        footer: {
+          marginTop: 20,
+          paddingTop: 10,
+          fontSize: 8,
+          color: "#666",
+          textAlign: "center",
+          borderTop: "1px solid #ccc",
+        },
+      });
 
-Items:
-${itemsList}`;
+      const doc = (
+        <Document>
+          <Page size="A4" style={pdfStyles.page}>
+            <View style={pdfStyles.header}>
+              <Text style={pdfStyles.title}>Patient Order Details</Text>
+              <Text style={pdfStyles.subtitle}>Medical/Incontinence Category</Text>
+              <Text style={pdfStyles.generated}>
+                Generated: {moment().format("MM/DD/YYYY hh:mm A")}
+              </Text>
+            </View>
 
-    alert(message);
+            <View style={pdfStyles.patientInfo}>
+              <Text style={pdfStyles.infoRow}>Patient: {selectedPatientData.patientCd}</Text>
+              <Text style={pdfStyles.infoRow}>
+                Order Date: {moment(selectedPatientData.orderDate).format("MMMM DD, YYYY")}
+              </Text>
+              <Text style={pdfStyles.infoRow}>Order Status: {selectedPatientData.orderStatus}</Text>
+              <Text style={pdfStyles.infoRow}>Total Items: {selectedPatientData.itemCount}</Text>
+            </View>
+
+            <View style={pdfStyles.table}>
+              <View style={[pdfStyles.tableRow, pdfStyles.tableHeader]}>
+                <Text style={pdfStyles.tableColDescription}>Description</Text>
+                <Text style={pdfStyles.tableColQty}>Qty</Text>
+              </View>
+              {selectedPatientData.items.map((item, index) => (
+                <View key={index} style={pdfStyles.tableRow}>
+                  <Text style={pdfStyles.tableColDescription}>{item.description}</Text>
+                  <Text style={pdfStyles.tableColQty}>
+                    {item.qty} {item.uom || ""}
+                  </Text>
+                </View>
+              ))}
+            </View>
+
+            <View style={pdfStyles.footer}>
+              <Text>
+                This document was generated automatically. Please verify all information before use.
+              </Text>
+            </View>
+          </Page>
+        </Document>
+      );
+
+      const asPdf = pdf(doc);
+      const blob = await asPdf.toBlob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      alert("Failed to generate PDF. Please try again.");
+    }
   };
 
   // Calculate summary statistics
@@ -458,6 +536,98 @@ ${itemsList}`;
             startIcon={<Print />}
           >
             Generate Report
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Patient Detail Dialog */}
+      <Dialog
+        open={patientDetailOpen}
+        onClose={() => setPatientDetailOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span>Patient Order Details</span>
+            <Button
+              variant="contained"
+              color="primary"
+              size="small"
+              startIcon={<Print />}
+              onClick={handlePrintPatientDetail}
+            >
+              Print
+            </Button>
+          </div>
+        </DialogTitle>
+        <DialogContent>
+          {selectedPatientData && (
+            <>
+              <Grid container spacing={2} style={{ marginBottom: 20 }}>
+                <Grid item xs={12} sm={6}>
+                  <div style={{ padding: 10, backgroundColor: "#f5f5f5", borderRadius: 4 }}>
+                    <strong>Patient:</strong> {selectedPatientData.patientCd}
+                  </div>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <div style={{ padding: 10, backgroundColor: "#f5f5f5", borderRadius: 4 }}>
+                    <strong>Order Date:</strong>{" "}
+                    {moment(selectedPatientData.orderDate).format("MMM DD, YYYY")}
+                  </div>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <div style={{ padding: 10, backgroundColor: "#f5f5f5", borderRadius: 4 }}>
+                    <strong>Order Status:</strong> {selectedPatientData.orderStatus}
+                  </div>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <div style={{ padding: 10, backgroundColor: "#f5f5f5", borderRadius: 4 }}>
+                    <strong>Total Items:</strong> {selectedPatientData.itemCount}
+                  </div>
+                </Grid>
+              </Grid>
+
+              <TableContainer component={Paper}>
+                <Table>
+                  <TableHead>
+                    <TableRow style={{ backgroundColor: "#e91e63" }}>
+                      <TableCell style={{ color: "#fff", fontWeight: "bold" }}>
+                        Description
+                      </TableCell>
+                      <TableCell align="right" style={{ color: "#fff", fontWeight: "bold" }}>
+                        Quantity
+                      </TableCell>
+                      <TableCell align="right" style={{ color: "#fff", fontWeight: "bold" }}>
+                        Amount
+                      </TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {selectedPatientData.items.map((item, index) => (
+                      <TableRow key={index} hover>
+                        <TableCell>{item.description}</TableCell>
+                        <TableCell align="right">{item.qty} {item.uom}</TableCell>
+                        <TableCell align="right">${item.amount.toFixed(2)}</TableCell>
+                      </TableRow>
+                    ))}
+                    <TableRow>
+                      <TableCell colSpan={2} style={{ fontWeight: "bold", textAlign: "right" }}>
+                        Total:
+                      </TableCell>
+                      <TableCell align="right" style={{ fontWeight: "bold" }}>
+                        ${selectedPatientData.totalAmount.toFixed(2)}
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPatientDetailOpen(false)} color="secondary">
+            Close
           </Button>
         </DialogActions>
       </Dialog>
