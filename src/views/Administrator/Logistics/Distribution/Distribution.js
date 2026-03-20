@@ -26,7 +26,7 @@ import Form from "./components/Form";
 import TemplateForm from "./components/TemplateForm";
 import { connect } from "react-redux";
 import Button from "components/CustomButtons/Button.js";
-import PrintForm from "./components/PrintForm";
+// import PrintForm from "./components/PrintForm"; // Removed - now using direct PDF generation
 import { productListStateSelector } from "store/selectors/productSelector";
 import { stockListStateSelector } from "store/selectors/stockSelector";
 import { patientListStateSelector } from "store/selectors/patientSelector";
@@ -168,6 +168,14 @@ const Distribution = (props) => {
   const [anchorEl, setAnchorEl] = React.useState(null);
   const [templateAnchorEl, setTemplateAnchorEl] = React.useState(null);
   const [isPrintForm, setIsPrintForm] = useState(false);
+  const [isPdfDialogOpen, setIsPdfDialogOpen] = useState(false);
+  const [pdfDialogData, setPdfDialogData] = useState({
+    patientName: "",
+    location: "",
+    datePickup: moment().format("YYYY-MM-DD"),
+    generalForm: null,
+    detailForm: null,
+  });
   const [dataSource, setDataSource] = useState([]);
   const [columns, setColumns] = useState(DistributionHandler.columns());
   const [isFormModal, setIsFormModal] = useState(false);
@@ -590,7 +598,7 @@ const Distribution = (props) => {
   ) {
     setIsCreateDistributionCollection(false);
 
-    setIsPrintForm(true);
+    // Removed auto-print - user can click "Print Supplies" button if needed
     console.log("Update Stock", forStockUpdates);
     showNotification("tc", "success", "Distribution successfully created.");
 
@@ -775,6 +783,17 @@ const Distribution = (props) => {
       }
     }
   };
+  const openPdfDialogHandler = (generalForm, detailForm) => {
+    setPdfDialogData({
+      patientName: generalForm.patientCd || generalForm.patientName || "",
+      location: generalForm.facility || "",
+      datePickup: moment().format("YYYY-MM-DD"),
+      generalForm: generalForm,
+      detailForm: detailForm,
+    });
+    setIsPdfDialogOpen(true);
+  };
+
   const createDistributionHandler = (general, details, mode) => {
     multiPatients = [];
     mainGeneral = general;
@@ -1057,10 +1076,59 @@ const Distribution = (props) => {
       details: detailsData,
     });
   };
-  const printPatientOrdersHandler = (general, details) => {
-    singlePrintProcessHandler(general, details);
-    setIsFormModal(false);
-    setIsPrintForm(true);
+  const printPatientOrdersHandler = async (general, details) => {
+    try {
+      setIsFormModal(false);
+
+      // Map details to the format expected by PrintOrdersPdfDocument
+      const selectedData = details.map((item) => ({
+        productId: item.productId || item.product?.id,
+        order_qty: item.orderQty || item.order_qty,
+        comments: item.comments || "",
+        unit_uom: item.unitUom || item.unit_uom,
+        requestor: general.requestorName || general.requestor?.name || "",
+        requestor_id: general.requestorId || general.requestor?.id,
+        delivery_location: general.facility || "",
+        patient_id: general.patientId || general.patient?.id,
+      }));
+
+      // Load logo
+      let logoBase64 = null;
+      try {
+        const logoUrl =
+          "https://acwocotrngkeaxtzdzfz.supabase.co/storage/v1/object/public/images/headerdoc.png";
+        logoBase64 = await Helper.getImageBase64(logoUrl);
+      } catch (logoError) {
+        console.error("Failed to load logo:", logoError);
+      }
+
+      // Generate PDF
+      const doc = (
+        <PrintOrdersPdfDocument
+          patientName={general.patientCd || general.patientName || ""}
+          selectedData={selectedData}
+          productList={productList}
+          location={general.facility || ""}
+          datePickup={moment().format("YYYY-MM-DD")}
+          logoBase64={logoBase64}
+          employeeList={employeeList}
+        />
+      );
+
+      const asPdf = pdf(doc);
+      const pdfBlob = await asPdf.toBlob();
+      const url = URL.createObjectURL(pdfBlob);
+      window.open(url, "_blank");
+
+      showNotification("tc", "success", "PDF generated successfully");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      showNotification(
+        "tc",
+        "danger",
+        "Failed to generate PDF. Please try again."
+      );
+    }
   };
   const printAllOrdersHandler = () => {
     const selectedData = dataSource.filter((r) => r.isChecked);
@@ -1120,7 +1188,7 @@ const Distribution = (props) => {
       });
     }
 
-    setIsPrintForm(true);
+    // Removed - printAllOrdersHandler is deprecated, use Print Orders button instead
   };
   const copyAllHandler = () => {
     const selectedData = dataSource.filter((r) => r.isChecked);
@@ -1255,11 +1323,9 @@ const Distribution = (props) => {
 
     if (selectedData && selectedData.length > 0) {
       const firstItem = selectedData[0];
-      console.log("[Print Dialog] First item:", firstItem);
 
       // Default patient name from patient_id
       const patient = patientList.find((p) => p.id === firstItem.patient_id);
-      console.log("[Print Dialog] Found patient:", patient);
 
       if (patient) {
         const patientName = patient.cd || patient.name || "";
@@ -1270,16 +1336,9 @@ const Distribution = (props) => {
           firstItem.delivery_location ||
           "";
 
-        console.log("[Print Dialog] Setting patient name:", patientName);
-        console.log("[Print Dialog] Setting location:", location);
-
         setPrintOrdersPatientName(patientName);
         setPrintOrdersLocation(location);
       }
-
-      // Debug requestor data
-      console.log("[Print Dialog] Requestor:", firstItem.requestor);
-      console.log("[Print Dialog] Requestor ID:", firstItem.requestor_id);
     }
 
     setIsPrintOrdersDialogOpen(true);
@@ -1471,7 +1530,7 @@ const Distribution = (props) => {
                             Orders
                           </Button>
                         </Tooltip>
-
+                        {/* not needed 
                         <Tooltip title={"Reprint"}>
                           <Button
                             onClick={() => createOrderHandler()}
@@ -1481,6 +1540,7 @@ const Distribution = (props) => {
                             <PrintIcon className={classes.icons} /> Print All
                           </Button>
                         </Tooltip>
+                      */}
                         <Tooltip title={"Generate PDF with patient name"}>
                           <Button
                             onClick={handlePrintOrdersClick}
@@ -1565,6 +1625,7 @@ const Distribution = (props) => {
           stockList={stockList}
           categoryList={categoryList}
           createDistributionHandler={createDistributionHandler}
+          openPdfDialogHandler={openPdfDialogHandler}
           mode={mode}
           isOpen={isFormModal}
           isEdit={false}
@@ -1594,15 +1655,7 @@ const Distribution = (props) => {
           onClose={closeTemplateFormModalHandler}
         />
       )}
-      {isPrintForm && (
-        <PrintForm
-          multiPatients={multiPatients}
-          isOpen={isPrintForm}
-          generalForm={mainGeneral}
-          closePrintForm={closePrintFormHandler}
-          detailForm={mainDetails}
-        />
-      )}
+      {/* PrintForm removed - now using direct PDF generation */}
 
       {/* Calendar Modal */}
       <DistributionCalendarModal
@@ -1668,6 +1721,135 @@ const Distribution = (props) => {
           </Button>
           <Button
             onClick={handlePrintOrdersGenerate}
+            color="primary"
+            variant="contained"
+            startIcon={<PrintIcon />}
+          >
+            Generate PDF
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* PDF Dialog for Form Save/Print Supplies */}
+      <Dialog
+        open={isPdfDialogOpen}
+        onClose={() => setIsPdfDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Generate PDF</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={3} style={{ marginTop: 8 }}>
+            <Grid item xs={12}>
+              <TextField
+                label="Patient Name"
+                type="text"
+                value={pdfDialogData.patientName}
+                onChange={(e) =>
+                  setPdfDialogData({ ...pdfDialogData, patientName: e.target.value })
+                }
+                fullWidth
+                autoFocus
+                placeholder="Enter patient name"
+                InputLabelProps={{
+                  shrink: true,
+                }}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                label="Location"
+                type="text"
+                value={pdfDialogData.location}
+                onChange={(e) =>
+                  setPdfDialogData({ ...pdfDialogData, location: e.target.value })
+                }
+                fullWidth
+                placeholder="Enter location/facility"
+                InputLabelProps={{
+                  shrink: true,
+                }}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                label="Date Pickup"
+                type="date"
+                value={pdfDialogData.datePickup}
+                onChange={(e) =>
+                  setPdfDialogData({ ...pdfDialogData, datePickup: e.target.value })
+                }
+                fullWidth
+                InputLabelProps={{
+                  shrink: true,
+                }}
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIsPdfDialogOpen(false)} color="secondary">
+            Cancel
+          </Button>
+          <Button
+            onClick={async () => {
+              if (!pdfDialogData.patientName.trim()) {
+                alert("Please enter patient name");
+                return;
+              }
+
+              try {
+                setIsPdfDialogOpen(false);
+
+                const general = pdfDialogData.generalForm || {};
+                const details = pdfDialogData.detailForm || [];
+
+                // Map details to the format expected by PrintOrdersPdfDocument
+                const selectedData = details.map((item) => ({
+                  productId: item.productId || item.product?.id,
+                  order_qty: item.orderQty || item.order_qty,
+                  comments: item.comments || "",
+                  unit_uom: item.unitUom || item.unit_uom,
+                  requestor: general.requestorName || general.requestor?.name || "",
+                  requestor_id: general.requestorId || general.requestor?.id,
+                  delivery_location: general.facility || "",
+                  patient_id: general.patientId || general.patient?.id,
+                }));
+
+                // Load logo
+                let logoBase64 = null;
+                try {
+                  const logoUrl =
+                    "https://acwocotrngkeaxtzdzfz.supabase.co/storage/v1/object/public/images/headerdoc.png";
+                  logoBase64 = await Helper.getImageBase64(logoUrl);
+                } catch (logoError) {
+                  console.error("Failed to load logo:", logoError);
+                }
+
+                // Generate PDF
+                const doc = (
+                  <PrintOrdersPdfDocument
+                    patientName={pdfDialogData.patientName}
+                    selectedData={selectedData}
+                    productList={productList}
+                    location={pdfDialogData.location}
+                    datePickup={pdfDialogData.datePickup}
+                    logoBase64={logoBase64}
+                    employeeList={employeeList}
+                  />
+                );
+
+                const asPdf = pdf(doc);
+                const pdfBlob = await asPdf.toBlob();
+                const url = URL.createObjectURL(pdfBlob);
+                window.open(url, "_blank");
+
+                alert("PDF generated successfully");
+              } catch (error) {
+                console.error("Error generating PDF:", error);
+                alert("Failed to generate PDF");
+              }
+            }}
             color="primary"
             variant="contained"
             startIcon={<PrintIcon />}

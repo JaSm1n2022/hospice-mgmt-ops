@@ -6,13 +6,16 @@ import {
   Tooltip,
   Typography,
   Divider,
-  Modal,
 } from "@material-ui/core";
 import moment from "moment";
 import styles from "./distribution.module.css";
 import { v4 as uuidv4 } from "uuid";
 import DeleteIcon from "@material-ui/icons/Delete";
 import { makeStyles } from "@material-ui/core";
+import { pdf } from "@react-pdf/renderer";
+import PrintOrdersPdfDocument from "./PrintOrdersPdfDocument";
+import Helper from "utils/helper";
+import PrintIcon from "@material-ui/icons/Print";
 import ReactModal from "react-modal";
 import { SUPPLY_STATUS } from "utils/constants";
 import { HOSPICE_FACILITIES } from "utils/constants";
@@ -370,11 +373,12 @@ function DistributionForm(props) {
     }
   }, [props.item, props.generalInfo]);
   const printHandler = () => {
-    props.printPatientOrdersHandler(generalForm, detailForm);
-
-    console.log("[Print Handler]", generalForm, detailForm);
+    // Open PDF dialog for Print Supplies button
+    if (props.openPdfDialogHandler) {
+      props.openPdfDialogHandler(generalForm, detailForm);
+    }
   };
-  const validateFormHandler = () => {
+  const validateFormHandler = async () => {
     if (!generalForm.selectedCategory) {
       TOAST.error("Category is required");
       return;
@@ -392,8 +396,22 @@ function DistributionForm(props) {
       return;
     }
 
-    console.log("[Print Handler]", generalForm, detailForm);
+    console.log("[Save Handler]", generalForm, detailForm);
+
+    // Create distribution (this will save to database)
     props.createDistributionHandler(generalForm, detailForm, props.mode);
+
+    // Close the main form modal
+    if (props.onClose) {
+      props.onClose();
+    }
+
+    // Open PDF dialog after saving
+    setTimeout(() => {
+      if (props.openPdfDialogHandler) {
+        props.openPdfDialogHandler(generalForm, detailForm);
+      }
+    }, 400);
   };
   const footerActions = [
     {
@@ -652,6 +670,7 @@ function DistributionForm(props) {
   const closePrintFormHandler = () => {
     setIsPrintFrom(false);
   };
+
   const clearModalHandler = () => {
     props.closeFormModalHandler();
   };
@@ -659,11 +678,36 @@ function DistributionForm(props) {
   console.log("[general form]", generalForm, detailForm);
 
   return (
-    <Modal
-      open={isOpen}
-      onClose={true}
-      aria-labelledby="distribution"
-      aria-describedby="distributionmodal"
+    <ReactModal
+      style={{
+        overlay: {
+          zIndex: 200000,
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "rgba(0, 0, 0, 0.65)",
+        },
+        content: {
+          position: "absolute",
+          top: "0",
+          bottom: "0",
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "center",
+          alignItems: "center",
+          right: "0",
+          left: "0",
+          overflow: "none",
+          WebkitOverflowScrolling: "touch",
+          border: "none",
+          padding: "0px",
+          background: "none",
+        },
+      }}
+      isOpen={isOpen}
+      ariaHideApp={false}
     >
       <div style={modalStyle} className={classes.paper}>
         <CardHeader color="rose">
@@ -933,16 +977,9 @@ function DistributionForm(props) {
             <ModalFooter actions={footerActions} />
           </div>
         )}
-        {isPrintForm && (
-          <PrintForm
-            isOpen={isPrintForm}
-            generalForm={generalForm}
-            closePrintForm={closePrintFormHandler}
-            detailForm={detailForm}
-          />
-        )}
+        {/* PrintForm removed - now using direct PDF generation */}
       </div>
-    </Modal>
+    </ReactModal>
   );
 }
 export default DistributionForm;
