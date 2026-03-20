@@ -1255,16 +1255,31 @@ const Distribution = (props) => {
 
     if (selectedData && selectedData.length > 0) {
       const firstItem = selectedData[0];
+      console.log("[Print Dialog] First item:", firstItem);
 
       // Default patient name from patient_id
       const patient = patientList.find((p) => p.id === firstItem.patient_id);
+      console.log("[Print Dialog] Found patient:", patient);
+
       if (patient) {
-        setPrintOrdersPatientName(patient.cd || patient.name || "");
-        setPrintOrdersLocation(patient.place_of_service || "");
+        const patientName = patient.cd || patient.name || "";
+        const location =
+          patient.careType ||
+          patient.place_of_service ||
+          patient.placeOfService ||
+          firstItem.delivery_location ||
+          "";
+
+        console.log("[Print Dialog] Setting patient name:", patientName);
+        console.log("[Print Dialog] Setting location:", location);
+
+        setPrintOrdersPatientName(patientName);
+        setPrintOrdersLocation(location);
       }
 
-      // Note: requestor_position is set in PrintOrdersPdfDocument from the selectedData
-      // The employee position is already available in the selectedData through the requestor field
+      // Debug requestor data
+      console.log("[Print Dialog] Requestor:", firstItem.requestor);
+      console.log("[Print Dialog] Requestor ID:", firstItem.requestor_id);
     }
 
     setIsPrintOrdersDialogOpen(true);
@@ -1296,9 +1311,13 @@ const Distribution = (props) => {
       // Fetch and convert logo to base64 using Helper
       let logoBase64 = null;
       try {
-        const logoUrl = "https://acwocotrngkeaxtzdzfz.supabase.co/storage/v1/object/public/images/headerdoc.png";
+        const logoUrl =
+          "https://acwocotrngkeaxtzdzfz.supabase.co/storage/v1/object/public/images/headerdoc.png";
         logoBase64 = await Helper.getImageBase64(logoUrl); // Returns full data URI
-        console.log("Logo loaded successfully:", logoBase64 ? logoBase64.substring(0, 50) + "..." : "Failed");
+        console.log(
+          "Logo loaded successfully:",
+          logoBase64 ? logoBase64.substring(0, 50) + "..." : "Failed"
+        );
       } catch (logoError) {
         console.error("Failed to load logo:", logoError);
       }
@@ -1311,6 +1330,7 @@ const Distribution = (props) => {
           location={printOrdersLocation}
           datePickup={printOrdersDatePickup}
           logoBase64={logoBase64}
+          employeeList={employeeList}
         />
       );
 

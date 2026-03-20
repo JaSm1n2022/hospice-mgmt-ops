@@ -159,6 +159,7 @@ const PrintOrdersPdfDocument = ({
   location,
   datePickup,
   logoBase64, // Base64 data URI for the logo
+  employeeList, // Add employeeList to look up requestor position
 }) => {
   // Process the selected data to extract details
   const processedDetails = selectedData.map((item) => {
@@ -184,18 +185,39 @@ const PrintOrdersPdfDocument = ({
   const firstItem = selectedData[0] || {};
   const facility = location || firstItem.delivery_location || "";
 
+  console.log("[PDF] First item:", firstItem);
+  console.log("[PDF] First item requestor:", firstItem.requestor);
+  console.log("[PDF] First item requestor_id:", firstItem.requestor_id);
+
   // Get requestor name and position
   let requestorName = "";
   let requestorPosition = "";
 
-  if (typeof firstItem.requestor === "object" && firstItem.requestor !== null) {
-    // requestor is an employee object
-    requestorName = firstItem.requestor.name || "";
-    requestorPosition = firstItem.requestor.position || "";
-  } else if (typeof firstItem.requestor === "string") {
-    // requestor is just a string name
-    requestorName = firstItem.requestor;
-    requestorPosition = firstItem.requestor_position || "";
+  // First, try to find employee by requestor_id
+  if (firstItem.requestor_id && employeeList) {
+    const employee = employeeList.find((e) => e.id === firstItem.requestor_id);
+    console.log("[PDF] Found employee by ID:", employee);
+
+    if (employee) {
+      requestorName = employee.name || firstItem.requestor || "";
+      requestorPosition = employee.position || "";
+      console.log("[PDF] Using employee data - Name:", requestorName, "Position:", requestorPosition);
+    }
+  }
+
+  // If no employee found by ID, fallback to requestor field
+  if (!requestorName) {
+    if (typeof firstItem.requestor === "object" && firstItem.requestor !== null) {
+      // requestor is an employee object
+      requestorName = firstItem.requestor.name || "";
+      requestorPosition = firstItem.requestor.position || "";
+      console.log("[PDF] Requestor is object - Name:", requestorName, "Position:", requestorPosition);
+    } else if (typeof firstItem.requestor === "string") {
+      // requestor is just a string name
+      requestorName = firstItem.requestor;
+      requestorPosition = firstItem.requestor_position || "";
+      console.log("[PDF] Requestor is string - Name:", requestorName, "Position:", requestorPosition);
+    }
   }
 
   const datePrepared = moment().format("YYYY-MM-DD");
