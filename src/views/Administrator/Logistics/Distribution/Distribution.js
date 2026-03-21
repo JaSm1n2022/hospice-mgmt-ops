@@ -82,6 +82,7 @@ import { SUPPLY_STATUS } from "utils/constants";
 import { LIMIT_ITEM_PRINT } from "utils/constants";
 import TOAST from "modules/toastManager";
 import FilterTable from "components/Table/FilterTable";
+import CustomSingleAutoComplete from "components/AutoComplete/CustomSingleAutoComplete";
 import CopyIcon from "@material-ui/icons/FileCopy";
 import PrintIcon from "@material-ui/icons/Print";
 import UploadIcon from "@material-ui/icons/CloudUpload";
@@ -189,6 +190,7 @@ const Distribution = (props) => {
   const [isAddGroupButtons, setIsAddGroupButtons] = useState(false);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState(null);
   const [isDistributionsCollection, setIsDistributionsCollection] = useState(
     true
   );
@@ -886,23 +888,37 @@ const Distribution = (props) => {
     props.createDistributionState
   );
 
-  const filterRecordHandler = (keyword) => {
-    console.log("[Keyword]", keyword);
-    if (!keyword) {
-      grandTotalHandler([...originalSource]);
-      setDataSource([...originalSource]);
-    } else {
-      const temp = [...originalSource];
-      const found = temp.filter(
+  const filterRecordHandler = (keyword, categoryFilter = selectedCategoryFilter) => {
+    console.log("[Keyword]", keyword, "[Category Filter]", categoryFilter);
+    let temp = [...originalSource];
+
+    // Filter by keyword
+    if (keyword) {
+      temp = temp.filter(
         (data) =>
           data.description.toLowerCase().indexOf(keyword.toLowerCase()) !==
             -1 ||
           data.patientCd.toLowerCase().indexOf(keyword.toLowerCase()) !== -1 ||
           data.requestor.toLowerCase().indexOf(keyword.toLowerCase()) !== -1
       );
-      grandTotalHandler(found);
-      setDataSource(found);
     }
+
+    // Filter by category
+    if (categoryFilter) {
+      temp = temp.filter(
+        (data) =>
+          data.category &&
+          data.category.toLowerCase() === categoryFilter.name.toLowerCase()
+      );
+    }
+
+    grandTotalHandler(temp);
+    setDataSource(temp);
+  };
+
+  const handleCategoryFilterChange = (category) => {
+    setSelectedCategoryFilter(category);
+    filterRecordHandler("", category);
   };
 
   const onCheckboxSelectionHandler = (data, isAll, itemIsChecked) => {
@@ -1462,10 +1478,27 @@ const Distribution = (props) => {
               </CardHeader>
               <CardBody>
                 <GridContainer style={{ paddingLeft: 20 }}>
-                  <GridItem md={12} sm={12} xs={12}>
+                  <GridItem md={9} sm={12} xs={12}>
                     <FilterTable
                       filterRecordHandler={filterRecordHandler}
                       filterByDateHandler={filterByDateHandler}
+                    />
+                  </GridItem>
+                  <GridItem md={3} sm={12} xs={12}>
+                    <CustomSingleAutoComplete
+                      id="category-filter"
+                      placeholder="Filter by Category"
+                      label="Filter by Category"
+                      name="categoryFilter"
+                      options={categoryList}
+                      value={selectedCategoryFilter}
+                      onSelectHandler={handleCategoryFilterChange}
+                      onChangeHandler={(e) => {
+                        if (!e.target.value) {
+                          setSelectedCategoryFilter(null);
+                          filterRecordHandler("", null);
+                        }
+                      }}
                     />
                   </GridItem>
                 </GridContainer>
@@ -1794,7 +1827,7 @@ const Distribution = (props) => {
           <Button
             onClick={async () => {
               if (!pdfDialogData.patientName.trim()) {
-                alert("Please enter patient name");
+                TOAST.error("Please enter patient name");
                 return;
               }
 
@@ -1844,10 +1877,10 @@ const Distribution = (props) => {
                 const url = URL.createObjectURL(pdfBlob);
                 window.open(url, "_blank");
 
-                alert("PDF generated successfully");
+                TOAST.success("PDF generated successfully");
               } catch (error) {
                 console.error("Error generating PDF:", error);
-                alert("Failed to generate PDF");
+                TOAST.error("Failed to generate PDF");
               }
             }}
             color="primary"
