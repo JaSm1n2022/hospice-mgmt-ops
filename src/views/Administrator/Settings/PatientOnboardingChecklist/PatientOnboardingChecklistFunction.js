@@ -84,8 +84,14 @@ const CHECKLIST_STRUCTURE = {
   admission: {
     items: [
       { key: "demographicSheet", type: "boolean", mandatory: true },
-      { key: "polst", type: "boolean", mandatory: true },
-      { key: "consents", type: "boolean", mandatory: true },
+      { key: "hospiceEvalOrder", type: "boolean", mandatory: true },
+      { key: "informedConsent", type: "boolean", mandatory: true },
+      { key: "electionOfHospice", type: "boolean", mandatory: true },
+      { key: "polstrDnr", type: "boolean", mandatory: true },
+      { key: "changeOfHospice", type: "boolean", mandatory: false },
+      { key: "poaAdvanceDirective", type: "boolean", mandatory: true },
+      { key: "billOfRights", type: "boolean", mandatory: true },
+      { key: "telehealthConsent", type: "boolean", mandatory: true },
       { key: "patientNotification", type: "boolean", mandatory: true },
     ],
   },
@@ -147,6 +153,7 @@ const CHECKLIST_STRUCTURE = {
       { key: "hopeHuv1", type: "date", mandatory: false },
       { key: "hopeHuv2", type: "date", mandatory: false },
       { key: "hopeDischarge", type: "date", mandatory: false },
+      { key: "lcdEligibility", type: "boolean", mandatory: true },
     ],
   },
   poc: {

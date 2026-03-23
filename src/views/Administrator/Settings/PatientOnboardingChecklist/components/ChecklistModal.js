@@ -114,8 +114,14 @@ function ChecklistModal({ open, onClose, onSubmit, item, mode, patientList }) {
   // Admission group
   const [admission, setAdmission] = useState({
     demographicSheet: { checked: false },
-    polst: { checked: false },
-    consents: { checked: false },
+    hospiceEvalOrder: { checked: false },
+    informedConsent: { checked: false },
+    electionOfHospice: { checked: false },
+    polstrDnr: { checked: false },
+    changeOfHospice: { checked: false },
+    poaAdvanceDirective: { checked: false },
+    billOfRights: { checked: false },
+    telehealthConsent: { checked: false },
     patientNotification: { checked: false },
   });
 
@@ -179,6 +185,7 @@ function ChecklistModal({ open, onClose, onSubmit, item, mode, patientList }) {
     hopeHuv1: "",
     hopeHuv2: "",
     hopeDischarge: "",
+    lcdEligibility: { checked: false },
   });
 
   // POC array
@@ -215,8 +222,14 @@ function ChecklistModal({ open, onClose, onSubmit, item, mode, patientList }) {
     setSelectedPatient(null);
     setAdmission({
       demographicSheet: { checked: false },
-      polst: { checked: false },
-      consents: { checked: false },
+      hospiceEvalOrder: { checked: false },
+      informedConsent: { checked: false },
+      electionOfHospice: { checked: false },
+      polstrDnr: { checked: false },
+      changeOfHospice: { checked: false },
+      poaAdvanceDirective: { checked: false },
+      billOfRights: { checked: false },
+      telehealthConsent: { checked: false },
       patientNotification: { checked: false },
     });
     setAssessment({
@@ -249,6 +262,7 @@ function ChecklistModal({ open, onClose, onSubmit, item, mode, patientList }) {
       hopeHuv1: "",
       hopeHuv2: "",
       hopeDischarge: "",
+      lcdEligibility: { checked: false },
     });
     setPoc([]);
   };
@@ -377,26 +391,94 @@ function ChecklistModal({ open, onClose, onSubmit, item, mode, patientList }) {
                   }
                   label="Demographic Sheet"
                 />
+
+                {/* Consents Subsection */}
+                <Typography variant="subtitle1" style={{ marginTop: "15px", marginBottom: "10px", fontWeight: "600", color: "#667eea" }}>
+                  Consents
+                </Typography>
+                <div style={{ paddingLeft: "20px", borderLeft: "3px solid #667eea", marginLeft: "10px" }}>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={admission.hospiceEvalOrder.checked}
+                        onChange={handleBooleanChange(admission, setAdmission, "hospiceEvalOrder")}
+                        color="primary"
+                      />
+                    }
+                    label="Hospice Eval Order"
+                  />
                 <FormControlLabel
                   control={
                     <Checkbox
-                      checked={admission.polst.checked}
-                      onChange={handleBooleanChange(admission, setAdmission, "polst")}
+                      checked={admission.informedConsent.checked}
+                      onChange={handleBooleanChange(admission, setAdmission, "informedConsent")}
                       color="primary"
                     />
                   }
-                  label="POLST"
+                  label="Informed Consent"
                 />
                 <FormControlLabel
                   control={
                     <Checkbox
-                      checked={admission.consents.checked}
-                      onChange={handleBooleanChange(admission, setAdmission, "consents")}
+                      checked={admission.electionOfHospice.checked}
+                      onChange={handleBooleanChange(admission, setAdmission, "electionOfHospice")}
                       color="primary"
                     />
                   }
-                  label="Consents"
+                  label="Election of Hospice"
                 />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={admission.polstrDnr.checked}
+                      onChange={handleBooleanChange(admission, setAdmission, "polstrDnr")}
+                      color="primary"
+                    />
+                  }
+                  label="Polstr/DNR"
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={admission.changeOfHospice.checked}
+                      onChange={handleBooleanChange(admission, setAdmission, "changeOfHospice")}
+                      color="primary"
+                    />
+                  }
+                  label="Change of Hospice (if applicable)"
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={admission.poaAdvanceDirective.checked}
+                      onChange={handleBooleanChange(admission, setAdmission, "poaAdvanceDirective")}
+                      color="primary"
+                    />
+                  }
+                  label="POA/Advance Directive"
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={admission.billOfRights.checked}
+                      onChange={handleBooleanChange(admission, setAdmission, "billOfRights")}
+                      color="primary"
+                    />
+                  }
+                  label="Bill of Rights"
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={admission.telehealthConsent.checked}
+                      onChange={handleBooleanChange(admission, setAdmission, "telehealthConsent")}
+                      color="primary"
+                    />
+                  }
+                  label="Telehealth Consent"
+                />
+                </div>
+
                 <FormControlLabel
                   control={
                     <Checkbox
@@ -798,6 +880,19 @@ function ChecklistModal({ open, onClose, onSubmit, item, mode, patientList }) {
                   onChange={handleDateChange(compliance, setCompliance, "hopeDischarge")}
                   InputLabelProps={{ shrink: true }}
                   fullWidth
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={compliance.lcdEligibility?.checked || false}
+                      onChange={(e) => setCompliance({
+                        ...compliance,
+                        lcdEligibility: { checked: e.target.checked }
+                      })}
+                      color="primary"
+                    />
+                  }
+                  label="LCD Eligibility"
                 />
               </div>
             </AccordionDetails>

@@ -254,8 +254,14 @@ class PatientOnboardingHandler {
     const labels = {
       // Admission
       demographicSheet: "Demographic Sheet",
-      polst: "POLST",
-      consents: "Consents",
+      hospiceEvalOrder: "Hospice Eval Order",
+      informedConsent: "Informed Consent",
+      electionOfHospice: "Election of Hospice",
+      polstrDnr: "Polstr/DNR",
+      changeOfHospice: "Change of Hospice",
+      poaAdvanceDirective: "POA/Advance Directive",
+      billOfRights: "Bill of Rights",
+      telehealthConsent: "Telehealth Consent",
       patientNotification: "Patient Notification",
 
       // Assessment
@@ -301,6 +307,7 @@ class PatientOnboardingHandler {
       hopeHuv1: "HOPE HUV 1",
       hopeHuv2: "HOPE HUV 2",
       hopeDischarge: "HOPE Discharge",
+      lcdEligibility: "LCD Eligibility",
 
       // Plan of Care
       poc: "Plan of Care",
