@@ -24,8 +24,18 @@ module.exports = function override(config) {
     fs: false,
   };
 
-  // Allow older ESM packages that omit extensions (helps with xlsx)
+  // Allow older ESM packages that omit extensions (helps with xlsx and @react-pdf)
   config.resolve.fullySpecified = false;
+
+  // Fix for @react-pdf/renderer JSX runtime resolution
+  config.module = config.module || {};
+  config.module.rules = config.module.rules || [];
+  config.module.rules.push({
+    test: /\.m?js$/,
+    resolve: {
+      fullySpecified: false,
+    },
+  });
 
   // Provide globals some libs expect
   config.plugins.push(

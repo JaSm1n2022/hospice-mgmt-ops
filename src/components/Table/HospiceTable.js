@@ -13,7 +13,7 @@ const HospiceTable = (props) => {
   useEffect(() => {
     setColumns(props.columns);
     setDataSource(props.dataSource);
-    isWithCheckItem = props.dataSource.find((d) => d.isChecked);
+    isWithCheckItem = (props.dataSource || []).find((d) => d.isChecked);
     if (!isWithCheckItem) {
       setSelected({});
     }

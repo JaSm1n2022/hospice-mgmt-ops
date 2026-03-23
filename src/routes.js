@@ -58,6 +58,7 @@ import Employee from "views/Administrator/Settings/Employee/EmployeeFunction";
 import Location from "views/Administrator/Settings/Location/LocationFunction";
 import OverheadConfiguration from "views/Administrator/Settings/OverheadConfiguration/OverheadConfigurationFunction";
 import Transaction from "views/Administrator/Transaction";
+import FinancialRecords from "views/Administrator/FinancialRecords/FinancialRecords";
 import Supply from "views/Administrator/Reports/Supply";
 import Order from "views/Administrator/Reports/Order";
 import Office from "views/Administrator/Reports/Office";
@@ -216,6 +217,14 @@ var dashRoutes = [
     rtlName: "لوحة القيادة",
     icon: PaymentIcon,
     component: Transaction,
+    layout: "/admin",
+  },
+  {
+    path: "/financial-records",
+    name: "Financial Records",
+    rtlName: "السجلات المالية",
+    icon: MonetizationOnIcon,
+    component: FinancialRecords,
     layout: "/admin",
   },
   {
