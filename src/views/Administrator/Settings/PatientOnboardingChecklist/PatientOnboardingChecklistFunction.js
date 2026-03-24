@@ -84,15 +84,15 @@ const CHECKLIST_STRUCTURE = {
   admission: {
     items: [
       { key: "demographicSheet", type: "boolean", mandatory: true },
-      { key: "hospiceEvalOrder", type: "boolean", mandatory: true },
-      { key: "informedConsent", type: "boolean", mandatory: true },
-      { key: "electionOfHospice", type: "boolean", mandatory: true },
-      { key: "polstrDnr", type: "boolean", mandatory: true },
-      { key: "changeOfHospice", type: "boolean", mandatory: false },
-      { key: "poaAdvanceDirective", type: "boolean", mandatory: true },
-      { key: "billOfRights", type: "boolean", mandatory: true },
-      { key: "telehealthConsent", type: "boolean", mandatory: true },
-      { key: "patientNotification", type: "boolean", mandatory: true },
+      { key: "hospiceEvalOrder", type: "select", mandatory: true },
+      { key: "informedConsent", type: "select", mandatory: true },
+      { key: "electionOfHospice", type: "select", mandatory: true },
+      { key: "polstrDnr", type: "select", mandatory: true },
+      { key: "changeOfHospice", type: "select", mandatory: false },
+      { key: "poaAdvanceDirective", type: "select", mandatory: true },
+      { key: "billOfRights", type: "select", mandatory: true },
+      { key: "telehealthConsent", type: "select", mandatory: true },
+      { key: "patientNotification", type: "select", mandatory: true },
     ],
   },
   assessment: {
@@ -107,27 +107,38 @@ const CHECKLIST_STRUCTURE = {
   },
   physician: {
     items: [
-      { key: "cti", type: "booleanWithDate", mandatory: true },
-      { key: "order", type: "booleanWithDate", mandatory: true },
-      { key: "f2fVisit", type: "booleanWithDate", mandatory: true },
+      { key: "cti", type: "selectWithDate", mandatory: true },
+      { key: "order", type: "selectWithDate", mandatory: true },
+      { key: "f2fVisit", type: "selectWithDate", mandatory: true },
+      { key: "referral", type: "select", mandatory: true },
     ],
   },
   idgNotes: {
     items: [
       { key: "idgDate", type: "date", mandatory: true },
       { key: "idgCreatedUser", type: "text", mandatory: false },
+      { key: "idgRemarks", type: "text", mandatory: false },
     ],
   },
   skilledNursingNotes: {
     items: [
       { key: "skilledNursingDate", type: "date", mandatory: true },
       { key: "skilledNursingCreatedUser", type: "text", mandatory: false },
+      { key: "skilledNursingRemarks", type: "text", mandatory: false },
     ],
   },
   haNotes: {
     items: [
       { key: "haDate", type: "date", mandatory: true },
       { key: "haCreatedUser", type: "text", mandatory: false },
+      { key: "haRemarks", type: "text", mandatory: false },
+    ],
+  },
+  volunteerNotes: {
+    items: [
+      { key: "volunteerDate", type: "date", mandatory: false },
+      { key: "volunteerCreatedUser", type: "text", mandatory: false },
+      { key: "volunteerRemarks", type: "text", mandatory: false },
     ],
   },
   miscellaneous: {
@@ -138,6 +149,8 @@ const CHECKLIST_STRUCTURE = {
       { key: "eligibility", type: "boolean", mandatory: true },
       { key: "insuranceCard", type: "boolean", mandatory: true },
       { key: "id", type: "boolean", mandatory: true },
+      { key: "dme", type: "select", mandatory: true },
+      { key: "transportation", type: "select", mandatory: true },
     ],
   },
   discharge: {
@@ -149,10 +162,10 @@ const CHECKLIST_STRUCTURE = {
   },
   compliance: {
     items: [
-      { key: "hopeAdmission", type: "date", mandatory: false },
-      { key: "hopeHuv1", type: "date", mandatory: false },
-      { key: "hopeHuv2", type: "date", mandatory: false },
-      { key: "hopeDischarge", type: "date", mandatory: false },
+      { key: "hopeAdmission", type: "selectWithDate", mandatory: false },
+      { key: "hopeHuv1", type: "selectWithDate", mandatory: false },
+      { key: "hopeHuv2", type: "selectWithDate", mandatory: false },
+      { key: "hopeDischarge", type: "selectWithDate", mandatory: false },
       { key: "lcdEligibility", type: "boolean", mandatory: true },
     ],
   },

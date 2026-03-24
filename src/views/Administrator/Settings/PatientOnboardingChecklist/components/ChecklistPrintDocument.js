@@ -72,6 +72,47 @@ const styles = StyleSheet.create({
     fontSize: 11,
     flex: 1,
   },
+  selectContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 6,
+    paddingLeft: 10,
+  },
+  selectBox: {
+    width: 60,
+    height: 18,
+    marginRight: 8,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 3,
+  },
+  selectBoxY: {
+    backgroundColor: "#4caf50",
+    border: "1px solid #4caf50",
+  },
+  selectBoxN: {
+    backgroundColor: "#f5f5f5",
+    border: "1px solid #999",
+  },
+  selectBoxNA: {
+    backgroundColor: "#fff9c4",
+    border: "1px solid #fbc02d",
+  },
+  selectText: {
+    fontSize: 9,
+    fontWeight: "bold",
+    color: "white",
+  },
+  selectTextDark: {
+    fontSize: 9,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  lcdUnchecked: {
+    borderLeft: "4px solid #f44336",
+    paddingLeft: 6,
+  },
   dateText: {
     fontSize: 10,
     color: "#666",
@@ -129,8 +170,14 @@ const GROUP_LABELS = {
 
 const ITEM_LABELS = {
   demographicSheet: "Demographic Sheet",
-  polst: "POLST",
-  consents: "Consents",
+  hospiceEvalOrder: "Hospice Eval Order",
+  informedConsent: "Informed Consent",
+  electionOfHospice: "Election of Hospice",
+  polstrDnr: "Polstr/DNR",
+  changeOfHospice: "Change of Hospice",
+  poaAdvanceDirective: "POA/Advance Directive",
+  billOfRights: "Bill of Rights",
+  telehealthConsent: "Telehealth Consent",
   patientNotification: "Patient Notification",
   nursing: "Nursing",
   spiritual: "Spiritual",
@@ -139,20 +186,24 @@ const ITEM_LABELS = {
   cti: "CTI",
   order: "Order",
   f2fVisit: "F2F Visit",
+  referral: "Referral",
   medicalRecords: "Medical Records",
   dpoa: "DPOA",
   hp: "HP (History & Physical)",
   eligibility: "Eligibility",
   insuranceCard: "Insurance Card",
   id: "ID",
+  dme: "DME",
+  transportation: "Transportation",
+  lcdEligibility: "LCD Eligibility",
 };
 
 const ChecklistPrintDocument = ({ patientData }) => {
-  const renderBooleanItem = (itemKey, itemData) => {
+  const renderBooleanItem = (itemKey, itemData, isLcdEligibility = false) => {
     const isChecked = itemData && itemData.checked;
 
     return (
-      <View style={styles.itemRow} key={itemKey}>
+      <View style={[styles.itemRow, !isChecked && isLcdEligibility ? styles.lcdUnchecked : {}]} key={itemKey}>
         <View
           style={[
             styles.checkboxContainer,
@@ -160,6 +211,72 @@ const ChecklistPrintDocument = ({ patientData }) => {
           ]}
         />
         <Text style={styles.itemText}>{ITEM_LABELS[itemKey] || itemKey}</Text>
+      </View>
+    );
+  };
+
+  const renderSelectItem = (itemKey, itemValue) => {
+    let boxStyle = styles.selectBoxN;
+    let textStyle = styles.selectTextDark;
+    let displayValue = "N/A";
+
+    if (itemValue === "Y") {
+      boxStyle = styles.selectBoxY;
+      textStyle = styles.selectText;
+      displayValue = "YES";
+    } else if (itemValue === "N") {
+      boxStyle = styles.selectBoxN;
+      textStyle = styles.selectTextDark;
+      displayValue = "NO";
+    } else if (itemValue === "NA") {
+      boxStyle = styles.selectBoxNA;
+      textStyle = styles.selectTextDark;
+      displayValue = "N/A";
+    }
+
+    return (
+      <View style={styles.selectContainer} key={itemKey}>
+        <View style={[styles.selectBox, boxStyle]}>
+          <Text style={textStyle}>{displayValue}</Text>
+        </View>
+        <Text style={styles.itemText}>{ITEM_LABELS[itemKey] || itemKey}</Text>
+      </View>
+    );
+  };
+
+  const renderSelectWithDateItem = (itemKey, itemData) => {
+    const value = itemData?.value || "";
+    const date = itemData?.date || "";
+
+    let boxStyle = styles.selectBoxN;
+    let textStyle = styles.selectTextDark;
+    let displayValue = "N/A";
+
+    if (value === "Y") {
+      boxStyle = styles.selectBoxY;
+      textStyle = styles.selectText;
+      displayValue = "YES";
+    } else if (value === "N") {
+      boxStyle = styles.selectBoxN;
+      textStyle = styles.selectTextDark;
+      displayValue = "NO";
+    } else if (value === "NA") {
+      boxStyle = styles.selectBoxNA;
+      textStyle = styles.selectTextDark;
+      displayValue = "N/A";
+    }
+
+    return (
+      <View style={styles.selectContainer} key={itemKey}>
+        <View style={[styles.selectBox, boxStyle]}>
+          <Text style={textStyle}>{displayValue}</Text>
+        </View>
+        <Text style={styles.itemText}>{ITEM_LABELS[itemKey] || itemKey}</Text>
+        {value === "Y" && date && (
+          <Text style={styles.dateText}>
+            Date: {moment(date).format("MM/DD/YYYY")}
+          </Text>
+        )}
       </View>
     );
   };
@@ -214,9 +331,15 @@ const ChecklistPrintDocument = ({ patientData }) => {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{GROUP_LABELS.admission}</Text>
         {renderBooleanItem("demographicSheet", data.demographicSheet)}
-        {renderBooleanItem("polst", data.polst)}
-        {renderBooleanItem("consents", data.consents)}
-        {renderBooleanItem("patientNotification", data.patientNotification)}
+        {renderSelectItem("hospiceEvalOrder", data.hospiceEvalOrder)}
+        {renderSelectItem("informedConsent", data.informedConsent)}
+        {renderSelectItem("electionOfHospice", data.electionOfHospice)}
+        {renderSelectItem("polstrDnr", data.polstrDnr)}
+        {renderSelectItem("changeOfHospice", data.changeOfHospice)}
+        {renderSelectItem("poaAdvanceDirective", data.poaAdvanceDirective)}
+        {renderSelectItem("billOfRights", data.billOfRights)}
+        {renderSelectItem("telehealthConsent", data.telehealthConsent)}
+        {renderSelectItem("patientNotification", data.patientNotification)}
       </View>
     );
   };
@@ -254,9 +377,10 @@ const ChecklistPrintDocument = ({ patientData }) => {
     return (
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{GROUP_LABELS.physician}</Text>
-        {renderBooleanWithDateItem("cti", data.cti)}
-        {renderBooleanWithDateItem("order", data.order)}
-        {renderBooleanWithDateItem("f2fVisit", data.f2fVisit)}
+        {renderSelectWithDateItem("cti", data.cti)}
+        {renderSelectWithDateItem("order", data.order)}
+        {renderSelectWithDateItem("f2fVisit", data.f2fVisit)}
+        {renderSelectItem("referral", data.referral)}
       </View>
     );
   };
@@ -313,6 +437,8 @@ const ChecklistPrintDocument = ({ patientData }) => {
         {renderBooleanItem("eligibility", data.eligibility)}
         {renderBooleanItem("insuranceCard", data.insuranceCard)}
         {renderBooleanItem("id", data.id)}
+        {renderSelectItem("dme", data.dme)}
+        {renderSelectItem("transportation", data.transportation)}
       </View>
     );
   };
@@ -338,10 +464,11 @@ const ChecklistPrintDocument = ({ patientData }) => {
     return (
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{GROUP_LABELS.compliance}</Text>
-        {renderDateField("HOPE Admission", data.hopeAdmission)}
-        {renderDateField("HOPE HUV 1", data.hopeHuv1)}
-        {renderDateField("HOPE HUV 2", data.hopeHuv2)}
-        {renderDateField("HOPE Discharge", data.hopeDischarge)}
+        {renderSelectWithDateItem("hopeAdmission", data.hopeAdmission)}
+        {renderSelectWithDateItem("hopeHuv1", data.hopeHuv1)}
+        {renderSelectWithDateItem("hopeHuv2", data.hopeHuv2)}
+        {renderSelectWithDateItem("hopeDischarge", data.hopeDischarge)}
+        {renderBooleanItem("lcdEligibility", data.lcdEligibility, true)}
       </View>
     );
   };
@@ -392,7 +519,7 @@ const ChecklistPrintDocument = ({ patientData }) => {
 
         <View style={styles.footer}>
           <Text>
-            Legend: Green box = Completed | Red border = Incomplete
+            Legend: Green box = Yes/Completed | Gray box = No | Yellow box = N/A | Red border = Incomplete | Red line = LCD Eligibility Unchecked
           </Text>
         </View>
       </Page>

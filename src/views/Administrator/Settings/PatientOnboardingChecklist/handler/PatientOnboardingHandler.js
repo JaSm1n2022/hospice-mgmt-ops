@@ -240,6 +240,28 @@ class PatientOnboardingHandler {
         } else {
           incompleteItems.push(itemLabel);
         }
+      } else if (item.type === "select") {
+        // For select fields (Y/N/NA), consider complete if a value is selected
+        if (itemData && (itemData === "Y" || itemData === "N" || itemData === "NA")) {
+          completed++;
+        } else {
+          incompleteItems.push(itemLabel);
+        }
+      } else if (item.type === "selectWithDate") {
+        // For selectWithDate fields, complete if:
+        // - value is "Y" and date exists
+        // - value is "N" or "NA" (no date needed)
+        if (itemData && itemData.value) {
+          if (itemData.value === "Y" && itemData.date) {
+            completed++;
+          } else if (itemData.value === "N" || itemData.value === "NA") {
+            completed++;
+          } else {
+            incompleteItems.push(itemLabel);
+          }
+        } else {
+          incompleteItems.push(itemLabel);
+        }
       }
     });
 
@@ -276,6 +298,7 @@ class PatientOnboardingHandler {
       cti: "CTI",
       order: "Order",
       f2fVisit: "F2F Visit",
+      referral: "Referral",
 
       // IDG Notes
       idgDate: "IDG Notes Date",
@@ -296,6 +319,8 @@ class PatientOnboardingHandler {
       eligibility: "Eligibility",
       insuranceCard: "Insurance Card",
       id: "ID",
+      dme: "DME",
+      transportation: "Transportation",
 
       // Discharge
       dischargeDate: "Discharge Date",

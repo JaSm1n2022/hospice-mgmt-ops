@@ -11,6 +11,10 @@ import {
   TextField,
   IconButton,
   Button as MuiButton,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from "@material-ui/core";
 import {
   ExpandMore,
@@ -114,15 +118,15 @@ function ChecklistModal({ open, onClose, onSubmit, item, mode, patientList }) {
   // Admission group
   const [admission, setAdmission] = useState({
     demographicSheet: { checked: false },
-    hospiceEvalOrder: { checked: false },
-    informedConsent: { checked: false },
-    electionOfHospice: { checked: false },
-    polstrDnr: { checked: false },
-    changeOfHospice: { checked: false },
-    poaAdvanceDirective: { checked: false },
-    billOfRights: { checked: false },
-    telehealthConsent: { checked: false },
-    patientNotification: { checked: false },
+    hospiceEvalOrder: "",
+    informedConsent: "",
+    electionOfHospice: "",
+    polstrDnr: "",
+    changeOfHospice: "",
+    poaAdvanceDirective: "",
+    billOfRights: "",
+    telehealthConsent: "",
+    patientNotification: "",
   });
 
   // Assessment group
@@ -139,9 +143,10 @@ function ChecklistModal({ open, onClose, onSubmit, item, mode, patientList }) {
 
   // Physician group
   const [physician, setPhysician] = useState({
-    cti: { checked: false, date: "" },
-    order: { checked: false, date: "" },
-    f2fVisit: { checked: false, date: "" },
+    cti: { value: "", date: "" },
+    order: { value: "", date: "" },
+    f2fVisit: { value: "", date: "" },
+    referral: "",
   });
 
   // IDG Notes
@@ -170,6 +175,8 @@ function ChecklistModal({ open, onClose, onSubmit, item, mode, patientList }) {
     eligibility: { checked: false },
     insuranceCard: { checked: false },
     id: { checked: false },
+    dme: "",
+    transportation: "",
   });
 
   // Discharge group
@@ -181,10 +188,10 @@ function ChecklistModal({ open, onClose, onSubmit, item, mode, patientList }) {
 
   // Compliance group
   const [compliance, setCompliance] = useState({
-    hopeAdmission: "",
-    hopeHuv1: "",
-    hopeHuv2: "",
-    hopeDischarge: "",
+    hopeAdmission: { value: "", date: "" },
+    hopeHuv1: { value: "", date: "" },
+    hopeHuv2: { value: "", date: "" },
+    hopeDischarge: { value: "", date: "" },
     lcdEligibility: { checked: false },
   });
 
@@ -222,15 +229,15 @@ function ChecklistModal({ open, onClose, onSubmit, item, mode, patientList }) {
     setSelectedPatient(null);
     setAdmission({
       demographicSheet: { checked: false },
-      hospiceEvalOrder: { checked: false },
-      informedConsent: { checked: false },
-      electionOfHospice: { checked: false },
-      polstrDnr: { checked: false },
-      changeOfHospice: { checked: false },
-      poaAdvanceDirective: { checked: false },
-      billOfRights: { checked: false },
-      telehealthConsent: { checked: false },
-      patientNotification: { checked: false },
+      hospiceEvalOrder: "",
+      informedConsent: "",
+      electionOfHospice: "",
+      polstrDnr: "",
+      changeOfHospice: "",
+      poaAdvanceDirective: "",
+      billOfRights: "",
+      telehealthConsent: "",
+      patientNotification: "",
     });
     setAssessment({
       nursing: { checked: false },
@@ -241,9 +248,10 @@ function ChecklistModal({ open, onClose, onSubmit, item, mode, patientList }) {
       treatmentOrder: { checked: false },
     });
     setPhysician({
-      cti: { checked: false, date: "" },
-      order: { checked: false, date: "" },
-      f2fVisit: { checked: false, date: "" },
+      cti: { value: "", date: "" },
+      order: { value: "", date: "" },
+      f2fVisit: { value: "", date: "" },
+      referral: "",
     });
     setIdgNotes({ date: "", createdUser: "" });
     setSkilledNursingNotes({ date: "", createdUser: "" });
@@ -255,13 +263,15 @@ function ChecklistModal({ open, onClose, onSubmit, item, mode, patientList }) {
       eligibility: { checked: false },
       insuranceCard: { checked: false },
       id: { checked: false },
+      dme: "",
+      transportation: "",
     });
     setDischarge({ date: "", reason: "", documentation: { checked: false } });
     setCompliance({
-      hopeAdmission: "",
-      hopeHuv1: "",
-      hopeHuv2: "",
-      hopeDischarge: "",
+      hopeAdmission: { value: "", date: "" },
+      hopeHuv1: { value: "", date: "" },
+      hopeHuv2: { value: "", date: "" },
+      hopeDischarge: { value: "", date: "" },
       lcdEligibility: { checked: false },
     });
     setPoc([]);
@@ -305,6 +315,69 @@ function ChecklistModal({ open, onClose, onSubmit, item, mode, patientList }) {
       [field]: event.target.value,
     });
   };
+
+  const handleSelectChange = (group, setGroup, field) => (event) => {
+    setGroup({
+      ...group,
+      [field]: event.target.value,
+    });
+  };
+
+  const handleSelectWithDateChange = (group, setGroup, field, type) => (event) => {
+    if (type === "select") {
+      setGroup({
+        ...group,
+        [field]: { ...group[field], value: event.target.value },
+      });
+    } else if (type === "date") {
+      setGroup({
+        ...group,
+        [field]: { ...group[field], date: event.target.value },
+      });
+    }
+  };
+
+  const renderYNNASelect = (label, value, group, setGroup, field) => (
+    <FormControl fullWidth style={{ marginBottom: "15px" }}>
+      <InputLabel>{label}</InputLabel>
+      <Select
+        value={value}
+        onChange={handleSelectChange(group, setGroup, field)}
+      >
+        <MenuItem value="">-- Select --</MenuItem>
+        <MenuItem value="Y">Yes</MenuItem>
+        <MenuItem value="N">No</MenuItem>
+        <MenuItem value="NA">Not Applicable</MenuItem>
+      </Select>
+    </FormControl>
+  );
+
+  const renderYNNASelectWithDate = (label, data, group, setGroup, field) => (
+    <div style={{ marginBottom: "15px" }}>
+      <FormControl fullWidth style={{ marginBottom: "10px" }}>
+        <InputLabel>{label}</InputLabel>
+        <Select
+          value={data.value}
+          onChange={handleSelectWithDateChange(group, setGroup, field, "select")}
+        >
+          <MenuItem value="">-- Select --</MenuItem>
+          <MenuItem value="Y">Yes</MenuItem>
+          <MenuItem value="N">No</MenuItem>
+          <MenuItem value="NA">Not Applicable</MenuItem>
+        </Select>
+      </FormControl>
+      {data.value === "Y" && (
+        <TextField
+          type="date"
+          label={`${label} Date`}
+          value={data.date}
+          onChange={handleSelectWithDateChange(group, setGroup, field, "date")}
+          InputLabelProps={{ shrink: true }}
+          fullWidth
+        />
+      )}
+    </div>
+  );
 
   const addPocEntry = () => {
     setPoc([...poc, { staff: "", frequency: "" }]);
@@ -397,98 +470,28 @@ function ChecklistModal({ open, onClose, onSubmit, item, mode, patientList }) {
                   Consents
                 </Typography>
                 <div style={{ paddingLeft: "20px", borderLeft: "3px solid #667eea", marginLeft: "10px" }}>
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={admission.hospiceEvalOrder.checked}
-                        onChange={handleBooleanChange(admission, setAdmission, "hospiceEvalOrder")}
-                        color="primary"
-                      />
-                    }
-                    label="Hospice Eval Order"
-                  />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={admission.informedConsent.checked}
-                      onChange={handleBooleanChange(admission, setAdmission, "informedConsent")}
-                      color="primary"
-                    />
-                  }
-                  label="Informed Consent"
-                />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={admission.electionOfHospice.checked}
-                      onChange={handleBooleanChange(admission, setAdmission, "electionOfHospice")}
-                      color="primary"
-                    />
-                  }
-                  label="Election of Hospice"
-                />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={admission.polstrDnr.checked}
-                      onChange={handleBooleanChange(admission, setAdmission, "polstrDnr")}
-                      color="primary"
-                    />
-                  }
-                  label="Polstr/DNR"
-                />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={admission.changeOfHospice.checked}
-                      onChange={handleBooleanChange(admission, setAdmission, "changeOfHospice")}
-                      color="primary"
-                    />
-                  }
-                  label="Change of Hospice (if applicable)"
-                />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={admission.poaAdvanceDirective.checked}
-                      onChange={handleBooleanChange(admission, setAdmission, "poaAdvanceDirective")}
-                      color="primary"
-                    />
-                  }
-                  label="POA/Advance Directive"
-                />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={admission.billOfRights.checked}
-                      onChange={handleBooleanChange(admission, setAdmission, "billOfRights")}
-                      color="primary"
-                    />
-                  }
-                  label="Bill of Rights"
-                />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={admission.telehealthConsent.checked}
-                      onChange={handleBooleanChange(admission, setAdmission, "telehealthConsent")}
-                      color="primary"
-                    />
-                  }
-                  label="Telehealth Consent"
-                />
+                  <FormControl fullWidth style={{ marginBottom: "15px" }}>
+                    <InputLabel>Hospice Eval Order</InputLabel>
+                    <Select
+                      value={admission.hospiceEvalOrder}
+                      onChange={handleSelectChange(admission, setAdmission, "hospiceEvalOrder")}
+                    >
+                      <MenuItem value="">-- Select --</MenuItem>
+                      <MenuItem value="Y">Yes</MenuItem>
+                      <MenuItem value="N">No</MenuItem>
+                      <MenuItem value="NA">Not Applicable</MenuItem>
+                    </Select>
+                  </FormControl>
+                  {renderYNNASelect("Informed Consent", admission.informedConsent, admission, setAdmission, "informedConsent")}
+                  {renderYNNASelect("Election of Hospice", admission.electionOfHospice, admission, setAdmission, "electionOfHospice")}
+                  {renderYNNASelect("Polstr/DNR", admission.polstrDnr, admission, setAdmission, "polstrDnr")}
+                  {renderYNNASelect("Change of Hospice (if applicable)", admission.changeOfHospice, admission, setAdmission, "changeOfHospice")}
+                  {renderYNNASelect("POA/Advance Directive", admission.poaAdvanceDirective, admission, setAdmission, "poaAdvanceDirective")}
+                  {renderYNNASelect("Bill of Rights", admission.billOfRights, admission, setAdmission, "billOfRights")}
+                  {renderYNNASelect("Telehealth Consent", admission.telehealthConsent, admission, setAdmission, "telehealthConsent")}
                 </div>
 
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={admission.patientNotification.checked}
-                      onChange={handleBooleanChange(admission, setAdmission, "patientNotification")}
-                      color="primary"
-                    />
-                  }
-                  label="Patient Notification"
-                />
+                {renderYNNASelect("Patient Notification", admission.patientNotification, admission, setAdmission, "patientNotification")}
               </div>
             </AccordionDetails>
           </Accordion>
@@ -571,69 +574,10 @@ function ChecklistModal({ open, onClose, onSubmit, item, mode, patientList }) {
             </AccordionSummary>
             <AccordionDetails>
               <div className={classes.sectionContent}>
-                <div className={classes.checkboxRow}>
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={physician.cti.checked}
-                        onChange={handleBooleanWithDateChange(physician, setPhysician, "cti", "checkbox")}
-                        color="primary"
-                      />
-                    }
-                    label="CTI"
-                  />
-                  <TextField
-                    type="date"
-                    label="CTI Date"
-                    value={physician.cti.date}
-                    onChange={handleBooleanWithDateChange(physician, setPhysician, "cti", "date")}
-                    disabled={!physician.cti.checked}
-                    InputLabelProps={{ shrink: true }}
-                    className={classes.dateField}
-                  />
-                </div>
-                <div className={classes.checkboxRow}>
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={physician.order.checked}
-                        onChange={handleBooleanWithDateChange(physician, setPhysician, "order", "checkbox")}
-                        color="primary"
-                      />
-                    }
-                    label="Order"
-                  />
-                  <TextField
-                    type="date"
-                    label="Order Date"
-                    value={physician.order.date}
-                    onChange={handleBooleanWithDateChange(physician, setPhysician, "order", "date")}
-                    disabled={!physician.order.checked}
-                    InputLabelProps={{ shrink: true }}
-                    className={classes.dateField}
-                  />
-                </div>
-                <div className={classes.checkboxRow}>
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={physician.f2fVisit.checked}
-                        onChange={handleBooleanWithDateChange(physician, setPhysician, "f2fVisit", "checkbox")}
-                        color="primary"
-                      />
-                    }
-                    label="F2F Visit"
-                  />
-                  <TextField
-                    type="date"
-                    label="F2F Visit Date"
-                    value={physician.f2fVisit.date}
-                    onChange={handleBooleanWithDateChange(physician, setPhysician, "f2fVisit", "date")}
-                    disabled={!physician.f2fVisit.checked}
-                    InputLabelProps={{ shrink: true }}
-                    className={classes.dateField}
-                  />
-                </div>
+                {renderYNNASelectWithDate("CTI", physician.cti, physician, setPhysician, "cti")}
+                {renderYNNASelectWithDate("Order", physician.order, physician, setPhysician, "order")}
+                {renderYNNASelectWithDate("F2F Visit", physician.f2fVisit, physician, setPhysician, "f2fVisit")}
+                {renderYNNASelect("Referral", physician.referral, physician, setPhysician, "referral")}
               </div>
             </AccordionDetails>
           </Accordion>
@@ -792,6 +736,8 @@ function ChecklistModal({ open, onClose, onSubmit, item, mode, patientList }) {
                   }
                   label="ID"
                 />
+                {renderYNNASelect("DME", miscellaneous.dme, miscellaneous, setMiscellaneous, "dme")}
+                {renderYNNASelect("Transportation", miscellaneous.transportation, miscellaneous, setMiscellaneous, "transportation")}
               </div>
             </AccordionDetails>
           </Accordion>
@@ -849,38 +795,10 @@ function ChecklistModal({ open, onClose, onSubmit, item, mode, patientList }) {
             </AccordionSummary>
             <AccordionDetails>
               <div className={classes.sectionContent}>
-                <TextField
-                  type="date"
-                  label="HOPE Admission"
-                  value={compliance.hopeAdmission}
-                  onChange={handleDateChange(compliance, setCompliance, "hopeAdmission")}
-                  InputLabelProps={{ shrink: true }}
-                  fullWidth
-                />
-                <TextField
-                  type="date"
-                  label="HOPE HUV 1"
-                  value={compliance.hopeHuv1}
-                  onChange={handleDateChange(compliance, setCompliance, "hopeHuv1")}
-                  InputLabelProps={{ shrink: true }}
-                  fullWidth
-                />
-                <TextField
-                  type="date"
-                  label="HOPE HUV 2"
-                  value={compliance.hopeHuv2}
-                  onChange={handleDateChange(compliance, setCompliance, "hopeHuv2")}
-                  InputLabelProps={{ shrink: true }}
-                  fullWidth
-                />
-                <TextField
-                  type="date"
-                  label="HOPE Discharge"
-                  value={compliance.hopeDischarge}
-                  onChange={handleDateChange(compliance, setCompliance, "hopeDischarge")}
-                  InputLabelProps={{ shrink: true }}
-                  fullWidth
-                />
+                {renderYNNASelectWithDate("HOPE Admission", compliance.hopeAdmission, compliance, setCompliance, "hopeAdmission")}
+                {renderYNNASelectWithDate("HOPE HUV 1", compliance.hopeHuv1, compliance, setCompliance, "hopeHuv1")}
+                {renderYNNASelectWithDate("HOPE HUV 2", compliance.hopeHuv2, compliance, setCompliance, "hopeHuv2")}
+                {renderYNNASelectWithDate("HOPE Discharge", compliance.hopeDischarge, compliance, setCompliance, "hopeDischarge")}
                 <FormControlLabel
                   control={
                     <Checkbox
