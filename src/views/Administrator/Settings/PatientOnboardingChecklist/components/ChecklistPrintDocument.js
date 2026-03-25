@@ -52,21 +52,41 @@ const styles = StyleSheet.create({
     paddingLeft: 10,
   },
   checkboxContainer: {
-    width: 14,
-    height: 14,
-    border: "2px solid #666",
+    width: 60,
+    height: 18,
+    border: "1px solid #666",
     marginRight: 8,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
+    borderRadius: 3,
   },
   checkboxContainerChecked: {
     backgroundColor: "#4caf50",
-    borderColor: "#4caf50",
+    border: "1px solid #4caf50",
   },
   checkboxContainerUnchecked: {
-    backgroundColor: "white",
-    borderColor: "#f44336",
+    backgroundColor: "#f5f5f5",
+    border: "1px solid #f44336",
+  },
+  checkboxText: {
+    fontSize: 9,
+    fontWeight: "bold",
+    color: "white",
+  },
+  checkboxTextUnchecked: {
+    fontSize: 9,
+    fontWeight: "bold",
+    color: "#f44336",
+  },
+  checkboxContainerGray: {
+    backgroundColor: "#f5f5f5",
+    border: "1px solid #666",
+  },
+  checkboxTextGray: {
+    fontSize: 9,
+    fontWeight: "bold",
+    color: "#666",
   },
   itemText: {
     fontSize: 11,
@@ -93,7 +113,7 @@ const styles = StyleSheet.create({
   },
   selectBoxN: {
     backgroundColor: "#f5f5f5",
-    border: "1px solid #999",
+    border: "1px solid #f44336",
   },
   selectBoxNA: {
     backgroundColor: "#fff9c4",
@@ -109,9 +129,16 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#333",
   },
-  lcdUnchecked: {
-    borderLeft: "4px solid #f44336",
-    paddingLeft: 6,
+  selectTextRed: {
+    fontSize: 9,
+    fontWeight: "bold",
+    color: "#f44336",
+  },
+  dischargeWithEoc: {
+    border: "2px solid #f44336",
+    padding: 10,
+    marginTop: 15,
+    marginBottom: 10,
   },
   dateText: {
     fontSize: 10,
@@ -131,6 +158,31 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: "#333",
     marginLeft: 10,
+  },
+  inlineRow: {
+    flexDirection: "row",
+    paddingLeft: 10,
+    marginBottom: 6,
+    flexWrap: "wrap",
+  },
+  inlineField: {
+    flexDirection: "row",
+    marginRight: 15,
+  },
+  inlineLabel: {
+    fontSize: 10,
+    fontWeight: "bold",
+  },
+  inlineValue: {
+    fontSize: 10,
+    color: "#333",
+    marginLeft: 5,
+  },
+  inlineValueUnresolved: {
+    fontSize: 10,
+    fontWeight: "bold",
+    color: "#f44336",
+    marginLeft: 5,
   },
   pocEntry: {
     flexDirection: "row",
@@ -199,17 +251,21 @@ const ITEM_LABELS = {
 };
 
 const ChecklistPrintDocument = ({ patientData }) => {
-  const renderBooleanItem = (itemKey, itemData, isLcdEligibility = false) => {
+  const renderBooleanItem = (itemKey, itemData) => {
     const isChecked = itemData && itemData.checked;
 
     return (
-      <View style={[styles.itemRow, !isChecked && isLcdEligibility ? styles.lcdUnchecked : {}]} key={itemKey}>
+      <View style={styles.itemRow} key={itemKey}>
         <View
           style={[
             styles.checkboxContainer,
             isChecked ? styles.checkboxContainerChecked : styles.checkboxContainerUnchecked,
           ]}
-        />
+        >
+          <Text style={isChecked ? styles.checkboxText : styles.checkboxTextUnchecked}>
+            {isChecked ? "YES" : "NO"}
+          </Text>
+        </View>
         <Text style={styles.itemText}>{ITEM_LABELS[itemKey] || itemKey}</Text>
       </View>
     );
@@ -226,7 +282,7 @@ const ChecklistPrintDocument = ({ patientData }) => {
       displayValue = "YES";
     } else if (itemValue === "N") {
       boxStyle = styles.selectBoxN;
-      textStyle = styles.selectTextDark;
+      textStyle = styles.selectTextRed;
       displayValue = "NO";
     } else if (itemValue === "NA") {
       boxStyle = styles.selectBoxNA;
@@ -258,7 +314,7 @@ const ChecklistPrintDocument = ({ patientData }) => {
       displayValue = "YES";
     } else if (value === "N") {
       boxStyle = styles.selectBoxN;
-      textStyle = styles.selectTextDark;
+      textStyle = styles.selectTextRed;
       displayValue = "NO";
     } else if (value === "NA") {
       boxStyle = styles.selectBoxNA;
@@ -292,7 +348,11 @@ const ChecklistPrintDocument = ({ patientData }) => {
             styles.checkboxContainer,
             isChecked ? styles.checkboxContainerChecked : styles.checkboxContainerUnchecked,
           ]}
-        />
+        >
+          <Text style={isChecked ? styles.checkboxText : styles.checkboxTextUnchecked}>
+            {isChecked ? "YES" : "NO"}
+          </Text>
+        </View>
         <Text style={styles.itemText}>{ITEM_LABELS[itemKey] || itemKey}</Text>
         {hasDate && (
           <Text style={styles.dateText}>
@@ -319,6 +379,84 @@ const ChecklistPrintDocument = ({ patientData }) => {
       <View style={styles.textRow}>
         <Text style={styles.textLabel}>{label}:</Text>
         <Text style={styles.textValue}>{value || "N/A"}</Text>
+      </View>
+    );
+  };
+
+  const renderNotesInline = (date, createdUser, remarks) => {
+    // Check if remarks contains "unresolve" or "unresolved" (case insensitive)
+    // Also trim whitespace and check for variations
+    const remarksLower = remarks ? remarks.toLowerCase().trim() : "";
+    const isUnresolved = remarksLower.includes("unresolve") ||
+                         remarksLower.includes("unresolved") ||
+                         remarksLower.includes("un-resolved") ||
+                         remarksLower.includes("not resolved");
+    const remarksStyle = isUnresolved ? styles.inlineValueUnresolved : styles.inlineValue;
+
+    return (
+      <View style={styles.inlineRow}>
+        <View style={styles.inlineField}>
+          <Text style={styles.inlineLabel}>Date:</Text>
+          <Text style={styles.inlineValue}>
+            {date ? moment(date).format("MM/DD/YYYY") : "N/A"}
+          </Text>
+        </View>
+        <View style={styles.inlineField}>
+          <Text style={styles.inlineLabel}>Created User:</Text>
+          <Text style={styles.inlineValue}>{createdUser || "N/A"}</Text>
+        </View>
+        <View style={styles.inlineField}>
+          <Text style={styles.inlineLabel}>Remarks:</Text>
+          <Text style={remarksStyle}>{remarks || "N/A"}</Text>
+        </View>
+      </View>
+    );
+  };
+
+  const renderDischargeInline = (date, reason, documentation, hasEoc) => {
+    const isChecked = documentation && documentation.checked;
+
+    // Determine checkbox style based on checked status and EOC
+    let checkboxStyle, textStyle;
+    if (isChecked) {
+      checkboxStyle = styles.checkboxContainerChecked;
+      textStyle = styles.checkboxText;
+    } else if (hasEoc) {
+      // Patient has EOC and documentation not checked - show RED
+      checkboxStyle = styles.checkboxContainerUnchecked;
+      textStyle = styles.checkboxTextUnchecked;
+    } else {
+      // Patient has NO EOC and documentation not checked - show GRAY
+      checkboxStyle = styles.checkboxContainerGray;
+      textStyle = styles.checkboxTextGray;
+    }
+
+    return (
+      <View style={styles.inlineRow}>
+        <View style={styles.inlineField}>
+          <Text style={styles.inlineLabel}>Date:</Text>
+          <Text style={styles.inlineValue}>
+            {date ? moment(date).format("MM/DD/YYYY") : "N/A"}
+          </Text>
+        </View>
+        <View style={styles.inlineField}>
+          <Text style={styles.inlineLabel}>Reason:</Text>
+          <Text style={styles.inlineValue}>{reason || "N/A"}</Text>
+        </View>
+        <View style={[styles.inlineField, { alignItems: "center" }]}>
+          <Text style={styles.inlineLabel}>Documentation:</Text>
+          <View
+            style={[
+              styles.checkboxContainer,
+              { marginLeft: 5, marginRight: 0 },
+              checkboxStyle,
+            ]}
+          >
+            <Text style={textStyle}>
+              {isChecked ? "YES" : "NO"}
+            </Text>
+          </View>
+        </View>
       </View>
     );
   };
@@ -392,8 +530,7 @@ const ChecklistPrintDocument = ({ patientData }) => {
     return (
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{GROUP_LABELS.idgNotes}</Text>
-        {renderDateField("Date", data.date)}
-        {renderTextField("Created User", data.createdUser)}
+        {renderNotesInline(data.date, data.createdUser, data.remarks)}
       </View>
     );
   };
@@ -405,8 +542,7 @@ const ChecklistPrintDocument = ({ patientData }) => {
     return (
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{GROUP_LABELS.skilledNursingNotes}</Text>
-        {renderDateField("Date", data.date)}
-        {renderTextField("Created User", data.createdUser)}
+        {renderNotesInline(data.date, data.createdUser, data.remarks)}
       </View>
     );
   };
@@ -418,8 +554,7 @@ const ChecklistPrintDocument = ({ patientData }) => {
     return (
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{GROUP_LABELS.haNotes}</Text>
-        {renderDateField("Date", data.date)}
-        {renderTextField("Created User", data.createdUser)}
+        {renderNotesInline(data.date, data.createdUser, data.remarks)}
       </View>
     );
   };
@@ -447,12 +582,14 @@ const ChecklistPrintDocument = ({ patientData }) => {
     const data = patientData.discharge;
     if (!data) return null;
 
+    // Check if patient has EOC (End of Care) - only show red border if EOC exists
+    const hasEoc = patientData.patientEoc != null && patientData.patientEoc !== "";
+    const sectionStyle = hasEoc ? styles.dischargeWithEoc : styles.section;
+
     return (
-      <View style={styles.section}>
+      <View style={sectionStyle}>
         <Text style={styles.sectionTitle}>{GROUP_LABELS.discharge}</Text>
-        {renderDateField("Date", data.date)}
-        {renderTextField("Reason", data.reason)}
-        {renderBooleanItem("documentation", data.documentation)}
+        {renderDischargeInline(data.date, data.reason, data.documentation, hasEoc)}
       </View>
     );
   };
@@ -468,7 +605,7 @@ const ChecklistPrintDocument = ({ patientData }) => {
         {renderSelectWithDateItem("hopeHuv1", data.hopeHuv1)}
         {renderSelectWithDateItem("hopeHuv2", data.hopeHuv2)}
         {renderSelectWithDateItem("hopeDischarge", data.hopeDischarge)}
-        {renderBooleanItem("lcdEligibility", data.lcdEligibility, true)}
+        {renderBooleanItem("lcdEligibility", data.lcdEligibility)}
       </View>
     );
   };

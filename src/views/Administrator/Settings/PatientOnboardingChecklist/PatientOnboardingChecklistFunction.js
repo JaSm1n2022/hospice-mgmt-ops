@@ -115,23 +115,23 @@ const CHECKLIST_STRUCTURE = {
   },
   idgNotes: {
     items: [
-      { key: "idgDate", type: "date", mandatory: true },
-      { key: "idgCreatedUser", type: "text", mandatory: false },
-      { key: "idgRemarks", type: "text", mandatory: false },
+      { key: "date", type: "date", mandatory: true },
+      { key: "createdUser", type: "text", mandatory: false },
+      { key: "remarks", type: "text", mandatory: false },
     ],
   },
   skilledNursingNotes: {
     items: [
-      { key: "skilledNursingDate", type: "date", mandatory: true },
-      { key: "skilledNursingCreatedUser", type: "text", mandatory: false },
-      { key: "skilledNursingRemarks", type: "text", mandatory: false },
+      { key: "date", type: "date", mandatory: true },
+      { key: "createdUser", type: "text", mandatory: false },
+      { key: "remarks", type: "text", mandatory: false },
     ],
   },
   haNotes: {
     items: [
-      { key: "haDate", type: "date", mandatory: true },
-      { key: "haCreatedUser", type: "text", mandatory: false },
-      { key: "haRemarks", type: "text", mandatory: false },
+      { key: "date", type: "date", mandatory: true },
+      { key: "createdUser", type: "text", mandatory: false },
+      { key: "remarks", type: "text", mandatory: false },
     ],
   },
   volunteerNotes: {
@@ -247,7 +247,13 @@ function PatientOnboardingChecklistFunction(props) {
 
   const printChecklistHandler = (data) => {
     console.log("Print checklist for:", data);
-    setSelectedPrintData(data);
+    // Find the patient to get EOC information
+    const patient = patientList.find((p) => p.id === data.patientId);
+    const enrichedData = {
+      ...data,
+      patientEoc: patient?.eoc || null,
+    };
+    setSelectedPrintData(enrichedData);
     setIsPrintModalOpen(true);
   };
 
@@ -392,6 +398,7 @@ function PatientOnboardingChecklistFunction(props) {
       name: pat.patientCd,
       value: pat.patientCd,
       label: pat.patientCd,
+      eoc: pat.eoc, // Store EOC for conditional discharge border
     }));
 
     setPatientList(patientOptions);

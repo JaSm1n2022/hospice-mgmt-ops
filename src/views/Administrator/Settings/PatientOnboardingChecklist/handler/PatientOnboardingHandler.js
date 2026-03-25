@@ -303,6 +303,9 @@ class PatientOnboardingHandler {
       // IDG Notes
       idgDate: "IDG Notes Date",
       idgCreatedUser: "IDG Created User",
+      date: "Date",
+      createdUser: "Created User",
+      remarks: "Remarks",
 
       // Skilled Nursing Notes
       skilledNursingDate: "Skilled Nursing Date",

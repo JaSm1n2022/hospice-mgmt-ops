@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   Modal,
   makeStyles,
@@ -15,18 +15,27 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  CircularProgress,
 } from "@material-ui/core";
 import {
   ExpandMore,
   Clear,
   Add as AddIcon,
   Delete as DeleteIcon,
+  CloudDownload as PopulateIcon,
 } from "@material-ui/icons";
 import Button from "components/CustomButtons/Button.js";
 import CustomSingleAutoComplete from "components/AutoComplete/CustomSingleAutoComplete";
 import GridContainer from "components/Grid/GridContainer";
 import GridItem from "components/Grid/GridItem";
 import moment from "moment";
+import { connect } from "react-redux";
+import { SupaContext } from "App";
+import { assignmentListStateSelector } from "store/selectors/assignmentSelector";
+import { employeeListStateSelector } from "store/selectors/employeeSelector";
+import { attemptToFetchAssignment } from "store/actions/assignmentAction";
+import { attemptToFetchEmployee } from "store/actions/employeeAction";
+import { ACTION_STATUSES } from "utils/constants";
 
 function getModalStyle() {
   const top = 50;
@@ -108,12 +117,29 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-function ChecklistModal({ open, onClose, onSubmit, item, mode, patientList }) {
+function ChecklistModal({
+  open,
+  onClose,
+  onSubmit,
+  item,
+  mode,
+  patientList,
+  assignments,
+  employees,
+  fetchAssignments,
+  fetchEmployees
+}) {
   const classes = useStyles();
   const [modalStyle] = useState(getModalStyle);
+  const context = useContext(SupaContext);
 
   // Patient selection
   const [selectedPatient, setSelectedPatient] = useState(null);
+
+  // Assignments and employees data
+  const [assignmentList, setAssignmentList] = useState([]);
+  const [employeeList, setEmployeeList] = useState([]);
+  const [isPopulatingIDT, setIsPopulatingIDT] = useState(false);
 
   // Admission group
   const [admission, setAdmission] = useState({
@@ -153,18 +179,21 @@ function ChecklistModal({ open, onClose, onSubmit, item, mode, patientList }) {
   const [idgNotes, setIdgNotes] = useState({
     date: "",
     createdUser: "",
+    remarks: "",
   });
 
   // Skilled Nursing Notes
   const [skilledNursingNotes, setSkilledNursingNotes] = useState({
     date: "",
     createdUser: "",
+    remarks: "",
   });
 
   // HA Notes
   const [haNotes, setHaNotes] = useState({
     date: "",
     createdUser: "",
+    remarks: "",
   });
 
   // Miscellaneous group
@@ -197,6 +226,43 @@ function ChecklistModal({ open, onClose, onSubmit, item, mode, patientList }) {
 
   // POC array
   const [poc, setPoc] = useState([]);
+
+  // Fetch employees when modal opens
+  useEffect(() => {
+    if (open && context.userProfile?.companyId) {
+      fetchEmployees({ companyId: context.userProfile.companyId });
+    }
+  }, [open]);
+
+  // Process employee data
+  useEffect(() => {
+    if (employees && employees.status === ACTION_STATUSES.SUCCEED) {
+      const fetchedEmployees = employees.data || [];
+      const employeeOptions = fetchedEmployees
+        .map((emp) => ({
+          id: emp.id,
+          value: emp.name || `${emp.fn || ''} ${emp.ln || ''}`.trim(),
+          label: emp.name || `${emp.fn || ''} ${emp.ln || ''}`.trim(),
+          status: emp.status,
+          firstName: emp.fn || '',
+        }))
+        .sort((a, b) => {
+          // Sort by first name alphabetically
+          const nameA = a.firstName.toLowerCase();
+          const nameB = b.firstName.toLowerCase();
+          return nameA.localeCompare(nameB);
+        });
+      setEmployeeList(employeeOptions);
+    }
+  }, [employees]);
+
+  // Process assignment data
+  useEffect(() => {
+    if (assignments && assignments.status === ACTION_STATUSES.SUCCEED) {
+      setAssignmentList(assignments.data || []);
+      setIsPopulatingIDT(false);
+    }
+  }, [assignments]);
 
   // Initialize form with existing data
   useEffect(() => {
@@ -253,9 +319,9 @@ function ChecklistModal({ open, onClose, onSubmit, item, mode, patientList }) {
       f2fVisit: { value: "", date: "" },
       referral: "",
     });
-    setIdgNotes({ date: "", createdUser: "" });
-    setSkilledNursingNotes({ date: "", createdUser: "" });
-    setHaNotes({ date: "", createdUser: "" });
+    setIdgNotes({ date: "", createdUser: "", remarks: "" });
+    setSkilledNursingNotes({ date: "", createdUser: "", remarks: "" });
+    setHaNotes({ date: "", createdUser: "", remarks: "" });
     setMiscellaneous({
       medicalRecords: { checked: false },
       dpoa: { checked: false },
@@ -394,6 +460,50 @@ function ChecklistModal({ open, onClose, onSubmit, item, mode, patientList }) {
     newPoc[index][field] = value;
     setPoc(newPoc);
   };
+
+  const handlePopulateIDTAssignment = () => {
+    if (!selectedPatient) {
+      alert("Please select a patient first");
+      return;
+    }
+
+    if (!context.userProfile?.companyId) {
+      alert("Company ID not found");
+      return;
+    }
+
+    setIsPopulatingIDT(true);
+    fetchAssignments({ companyId: context.userProfile.companyId });
+  };
+
+  // Populate POC when assignments are fetched
+  useEffect(() => {
+    if (isPopulatingIDT && assignmentList.length > 0 && selectedPatient) {
+      // Filter assignments by patient code
+      const patientAssignments = assignmentList.filter(
+        (assignment) => assignment.patientCd === selectedPatient.patientCd
+      );
+
+      if (patientAssignments.length === 0) {
+        alert("No IDT assignments found for this patient");
+        setIsPopulatingIDT(false);
+        return;
+      }
+
+      // Map assignments to POC entries
+      const pocEntries = patientAssignments.map((assignment) => ({
+        staff: `${assignment.disciplinePosition || ""} - ${
+          assignment.disciplineName || ""
+        }`.trim(),
+        frequency: assignment.frequencyVisit && assignment.visitType
+          ? `${assignment.frequencyVisit}/${assignment.visitType}`
+          : "",
+      }));
+
+      setPoc(pocEntries);
+      setIsPopulatingIDT(false);
+    }
+  }, [assignmentList, isPopulatingIDT, selectedPatient]);
 
   const handleSubmit = () => {
     if (!selectedPatient) {
@@ -600,11 +710,27 @@ function ChecklistModal({ open, onClose, onSubmit, item, mode, patientList }) {
                   InputLabelProps={{ shrink: true }}
                   fullWidth
                 />
+                <FormControl fullWidth style={{ marginBottom: "15px" }}>
+                  <InputLabel>Created User</InputLabel>
+                  <Select
+                    value={idgNotes.createdUser}
+                    onChange={handleSelectChange(idgNotes, setIdgNotes, "createdUser")}
+                  >
+                    <MenuItem value="">-- Select Employee --</MenuItem>
+                    {employeeList.map((emp) => (
+                      <MenuItem key={emp.id} value={emp.value}>
+                        {emp.label} {emp.status === "inactive" ? "(Inactive)" : ""}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
                 <TextField
-                  label="Created User"
-                  value={idgNotes.createdUser}
-                  onChange={handleTextChange(idgNotes, setIdgNotes, "createdUser")}
+                  label="Remarks"
+                  value={idgNotes.remarks}
+                  onChange={handleTextChange(idgNotes, setIdgNotes, "remarks")}
                   fullWidth
+                  multiline
+                  rows={2}
                 />
               </div>
             </AccordionDetails>
@@ -628,11 +754,27 @@ function ChecklistModal({ open, onClose, onSubmit, item, mode, patientList }) {
                   InputLabelProps={{ shrink: true }}
                   fullWidth
                 />
+                <FormControl fullWidth style={{ marginBottom: "15px" }}>
+                  <InputLabel>Created User</InputLabel>
+                  <Select
+                    value={skilledNursingNotes.createdUser}
+                    onChange={handleSelectChange(skilledNursingNotes, setSkilledNursingNotes, "createdUser")}
+                  >
+                    <MenuItem value="">-- Select Employee --</MenuItem>
+                    {employeeList.map((emp) => (
+                      <MenuItem key={emp.id} value={emp.value}>
+                        {emp.label} {emp.status === "inactive" ? "(Inactive)" : ""}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
                 <TextField
-                  label="Created User"
-                  value={skilledNursingNotes.createdUser}
-                  onChange={handleTextChange(skilledNursingNotes, setSkilledNursingNotes, "createdUser")}
+                  label="Remarks"
+                  value={skilledNursingNotes.remarks}
+                  onChange={handleTextChange(skilledNursingNotes, setSkilledNursingNotes, "remarks")}
                   fullWidth
+                  multiline
+                  rows={2}
                 />
               </div>
             </AccordionDetails>
@@ -656,11 +798,27 @@ function ChecklistModal({ open, onClose, onSubmit, item, mode, patientList }) {
                   InputLabelProps={{ shrink: true }}
                   fullWidth
                 />
+                <FormControl fullWidth style={{ marginBottom: "15px" }}>
+                  <InputLabel>Created User</InputLabel>
+                  <Select
+                    value={haNotes.createdUser}
+                    onChange={handleSelectChange(haNotes, setHaNotes, "createdUser")}
+                  >
+                    <MenuItem value="">-- Select Employee --</MenuItem>
+                    {employeeList.map((emp) => (
+                      <MenuItem key={emp.id} value={emp.value}>
+                        {emp.label} {emp.status === "inactive" ? "(Inactive)" : ""}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
                 <TextField
-                  label="Created User"
-                  value={haNotes.createdUser}
-                  onChange={handleTextChange(haNotes, setHaNotes, "createdUser")}
+                  label="Remarks"
+                  value={haNotes.remarks}
+                  onChange={handleTextChange(haNotes, setHaNotes, "remarks")}
                   fullWidth
+                  multiline
+                  rows={2}
                 />
               </div>
             </AccordionDetails>
@@ -826,14 +984,25 @@ function ChecklistModal({ open, onClose, onSubmit, item, mode, patientList }) {
             </AccordionSummary>
             <AccordionDetails>
               <div className={classes.sectionContent}>
-                <MuiButton
-                  variant="outlined"
-                  color="primary"
-                  startIcon={<AddIcon />}
-                  onClick={addPocEntry}
-                >
-                  Add POC Entry
-                </MuiButton>
+                <div style={{ display: "flex", gap: "10px", marginBottom: "15px" }}>
+                  <MuiButton
+                    variant="contained"
+                    color="primary"
+                    startIcon={isPopulatingIDT ? <CircularProgress size={20} color="inherit" /> : <PopulateIcon />}
+                    onClick={handlePopulateIDTAssignment}
+                    disabled={!selectedPatient || isPopulatingIDT}
+                  >
+                    {isPopulatingIDT ? "Loading..." : "Populate IDT Assignment"}
+                  </MuiButton>
+                  <MuiButton
+                    variant="outlined"
+                    color="primary"
+                    startIcon={<AddIcon />}
+                    onClick={addPocEntry}
+                  >
+                    Add POC Entry
+                  </MuiButton>
+                </div>
                 {poc.map((entry, index) => (
                   <div key={index} className={classes.pocEntry}>
                     <TextField
@@ -876,4 +1045,14 @@ function ChecklistModal({ open, onClose, onSubmit, item, mode, patientList }) {
   );
 }
 
-export default ChecklistModal;
+const mapStateToProps = (state) => ({
+  assignments: assignmentListStateSelector(state),
+  employees: employeeListStateSelector(state),
+});
+
+const mapDispatchToProps = (dispatch) => ({
+  fetchAssignments: (data) => dispatch(attemptToFetchAssignment(data)),
+  fetchEmployees: (data) => dispatch(attemptToFetchEmployee(data)),
+});
+
+export default connect(mapStateToProps, mapDispatchToProps)(ChecklistModal);

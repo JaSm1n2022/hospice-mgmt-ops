@@ -1,4 +1,4 @@
-import React, { lazy, Suspense } from "react";
+import React from "react";
 import TextField from "@material-ui/core/TextField";
 import Autocomplete, {
   createFilterOptions,
@@ -7,18 +7,9 @@ import Grid from "@material-ui/core/Grid";
 import { makeStyles } from "@material-ui/core/styles";
 import Typography from "@material-ui/core/Typography";
 import { Chip } from "@material-ui/core";
+import CheckBoxOutlineBlank from "@material-ui/icons/CheckBoxOutlineBlank";
+import CheckBox from "@material-ui/icons/CheckBox";
 import SortUtil from "utils/sortUtil";
-
-const CheckBoxOutlineBlank = lazy(() =>
-  import(
-    /* webpackChunkName: 'iconAddCircleOutlined' */ "@material-ui/icons/CheckBoxOutlineBlank"
-  )
-);
-const CheckboxOnly = lazy(() =>
-  import(
-    /* webpackChunkName: 'iconRemoveCircleOutline' */ "@material-ui/icons/CheckBox"
-  )
-);
 
 const useStyles = makeStyles((theme) => ({
   inputRoot: {
@@ -153,13 +144,9 @@ export default function CustomMultipleAutoComplete(props) {
                 </Grid>
                 <Grid item>
                   {!mainOption || !searchList.find((s) => s.selected) ? (
-                    <Suspense fallback="Loading...">
-                      <CheckBoxOutlineBlank style={{ fontSize: "16pt" }} />
-                    </Suspense>
+                    <CheckBoxOutlineBlank style={{ fontSize: "16pt" }} />
                   ) : (
-                    <Suspense fallback="Loading...">
-                      <CheckboxOnly style={{ fontSize: "16pt" }} />
-                    </Suspense>
+                    <CheckBox style={{ fontSize: "16pt" }} />
                   )}
                 </Grid>
               </Grid>
@@ -176,13 +163,9 @@ export default function CustomMultipleAutoComplete(props) {
                 </Grid>
                 <Grid item>
                   {!option.selected ? (
-                    <Suspense fallback="Loading...">
-                      <CheckBoxOutlineBlank style={{ fontSize: "16pt" }} />
-                    </Suspense>
+                    <CheckBoxOutlineBlank style={{ fontSize: "16pt" }} />
                   ) : (
-                    <Suspense fallback="Loading...">
-                      <CheckboxOnly style={{ fontSize: "16pt" }} />
-                    </Suspense>
+                    <CheckBox style={{ fontSize: "16pt" }} />
                   )}
                 </Grid>
               </Grid>
