@@ -196,6 +196,13 @@ function ChecklistModal({
     remarks: "",
   });
 
+  // Volunteer Notes
+  const [volunteerNotes, setVolunteerNotes] = useState({
+    date: "",
+    createdUser: "",
+    remarks: "",
+  });
+
   // Miscellaneous group
   const [miscellaneous, setMiscellaneous] = useState({
     medicalRecords: { checked: false },
@@ -281,6 +288,7 @@ function ChecklistModal({
       setIdgNotes(item.idgNotes || idgNotes);
       setSkilledNursingNotes(item.skilledNursingNotes || skilledNursingNotes);
       setHaNotes(item.haNotes || haNotes);
+      setVolunteerNotes(item.volunteerNotes || volunteerNotes);
       setMiscellaneous(item.miscellaneous || miscellaneous);
       setDischarge(item.discharge || discharge);
       setCompliance(item.compliance || compliance);
@@ -322,6 +330,7 @@ function ChecklistModal({
     setIdgNotes({ date: "", createdUser: "", remarks: "" });
     setSkilledNursingNotes({ date: "", createdUser: "", remarks: "" });
     setHaNotes({ date: "", createdUser: "", remarks: "" });
+    setVolunteerNotes({ date: "", createdUser: "", remarks: "" });
     setMiscellaneous({
       medicalRecords: { checked: false },
       dpoa: { checked: false },
@@ -521,6 +530,7 @@ function ChecklistModal({
       idgNotes,
       skilledNursingNotes,
       haNotes,
+      volunteerNotes,
       miscellaneous,
       discharge,
       compliance,
@@ -824,13 +834,57 @@ function ChecklistModal({
             </AccordionDetails>
           </Accordion>
 
-          {/* 8. Miscellaneous */}
+          {/* 8. Volunteer Notes */}
           <Accordion className={classes.accordion}>
             <AccordionSummary
               expandIcon={<ExpandMore />}
               className={classes.accordionSummary}
             >
-              <Typography variant="h6">8. Miscellaneous</Typography>
+              <Typography variant="h6">8. Volunteer Notes</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <div className={classes.sectionContent}>
+                <TextField
+                  type="date"
+                  label="Date"
+                  value={volunteerNotes.date}
+                  onChange={handleDateChange(volunteerNotes, setVolunteerNotes, "date")}
+                  InputLabelProps={{ shrink: true }}
+                  fullWidth
+                />
+                <FormControl fullWidth style={{ marginBottom: "15px" }}>
+                  <InputLabel>Created User</InputLabel>
+                  <Select
+                    value={volunteerNotes.createdUser}
+                    onChange={handleSelectChange(volunteerNotes, setVolunteerNotes, "createdUser")}
+                  >
+                    <MenuItem value="">-- Select Employee --</MenuItem>
+                    {employeeList.map((emp) => (
+                      <MenuItem key={emp.id} value={emp.value}>
+                        {emp.label} {emp.status === "inactive" ? "(Inactive)" : ""}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <TextField
+                  label="Remarks"
+                  value={volunteerNotes.remarks}
+                  onChange={handleTextChange(volunteerNotes, setVolunteerNotes, "remarks")}
+                  fullWidth
+                  multiline
+                  rows={2}
+                />
+              </div>
+            </AccordionDetails>
+          </Accordion>
+
+          {/* 9. Miscellaneous */}
+          <Accordion className={classes.accordion}>
+            <AccordionSummary
+              expandIcon={<ExpandMore />}
+              className={classes.accordionSummary}
+            >
+              <Typography variant="h6">9. Miscellaneous</Typography>
             </AccordionSummary>
             <AccordionDetails>
               <div className={classes.sectionContent}>
@@ -900,13 +954,13 @@ function ChecklistModal({
             </AccordionDetails>
           </Accordion>
 
-          {/* 9. Discharge */}
+          {/* 10. Discharge */}
           <Accordion className={classes.accordion}>
             <AccordionSummary
               expandIcon={<ExpandMore />}
               className={classes.accordionSummary}
             >
-              <Typography variant="h6">9. Discharge</Typography>
+              <Typography variant="h6">10. Discharge</Typography>
             </AccordionSummary>
             <AccordionDetails>
               <div className={classes.sectionContent}>
@@ -943,13 +997,13 @@ function ChecklistModal({
             </AccordionDetails>
           </Accordion>
 
-          {/* 10. Compliance */}
+          {/* 11. Compliance */}
           <Accordion className={classes.accordion}>
             <AccordionSummary
               expandIcon={<ExpandMore />}
               className={classes.accordionSummary}
             >
-              <Typography variant="h6">10. Compliance</Typography>
+              <Typography variant="h6">11. Compliance</Typography>
             </AccordionSummary>
             <AccordionDetails>
               <div className={classes.sectionContent}>
@@ -974,13 +1028,13 @@ function ChecklistModal({
             </AccordionDetails>
           </Accordion>
 
-          {/* 11. Plan of Care (POC) */}
+          {/* 12. Plan of Care (POC) */}
           <Accordion className={classes.accordion}>
             <AccordionSummary
               expandIcon={<ExpandMore />}
               className={classes.accordionSummary}
             >
-              <Typography variant="h6">11. Plan of Care (POC)</Typography>
+              <Typography variant="h6">12. Plan of Care (POC)</Typography>
             </AccordionSummary>
             <AccordionDetails>
               <div className={classes.sectionContent}>

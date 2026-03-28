@@ -136,9 +136,9 @@ const CHECKLIST_STRUCTURE = {
   },
   volunteerNotes: {
     items: [
-      { key: "volunteerDate", type: "date", mandatory: false },
-      { key: "volunteerCreatedUser", type: "text", mandatory: false },
-      { key: "volunteerRemarks", type: "text", mandatory: false },
+      { key: "date", type: "date", mandatory: true },
+      { key: "createdUser", type: "text", mandatory: false },
+      { key: "remarks", type: "text", mandatory: false },
     ],
   },
   miscellaneous: {
@@ -444,6 +444,10 @@ function PatientOnboardingChecklistFunction(props) {
         checklist.haNotes,
         CHECKLIST_STRUCTURE.haNotes.items
       );
+      const volunteerNotesStatus = PatientOnboardingHandler.calculateGroupStatus(
+        checklist.volunteerNotes,
+        CHECKLIST_STRUCTURE.volunteerNotes.items
+      );
       const miscellaneousStatus = PatientOnboardingHandler.calculateGroupStatus(
         checklist.miscellaneous,
         CHECKLIST_STRUCTURE.miscellaneous.items
@@ -474,6 +478,7 @@ function PatientOnboardingChecklistFunction(props) {
         idgNotesStatus.completed +
         skilledNursingNotesStatus.completed +
         haNotesStatus.completed +
+        volunteerNotesStatus.completed +
         miscellaneousStatus.completed +
         dischargeStatus.completed +
         complianceStatus.completed +
@@ -494,6 +499,7 @@ function PatientOnboardingChecklistFunction(props) {
         idgNotesStatus,
         skilledNursingNotesStatus,
         haNotesStatus,
+        volunteerNotesStatus,
         miscellaneousStatus,
         dischargeStatus,
         complianceStatus,
@@ -548,6 +554,7 @@ function PatientOnboardingChecklistFunction(props) {
       idgNotes: data.idgNotes || {},
       skilledNursingNotes: data.skilledNursingNotes || {},
       haNotes: data.haNotes || {},
+      volunteerNotes: data.volunteerNotes || {},
       miscellaneous: data.miscellaneous || {},
       discharge: data.discharge || {},
       compliance: data.compliance || {},

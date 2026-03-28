@@ -136,10 +136,11 @@ const GROUP_LABELS = {
   idgNotes: "5. IDG Notes",
   skilledNursingNotes: "6. Skilled Nursing Notes",
   haNotes: "7. HA Notes",
-  miscellaneous: "8. Miscellaneous",
-  discharge: "9. Discharge",
-  compliance: "10. Compliance",
-  poc: "11. Plan of Care (POC)",
+  volunteerNotes: "8. Volunteer Notes",
+  miscellaneous: "9. Miscellaneous",
+  discharge: "10. Discharge",
+  compliance: "11. Compliance",
+  poc: "12. Plan of Care (POC)",
 };
 
 const ITEM_LABELS = {
@@ -221,6 +222,26 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
     );
   };
 
+  const renderNotesInline = (date, createdUser, remarks) => {
+    const remarksLower = remarks ? remarks.toLowerCase().trim() : "";
+    const isUnresolved = remarksLower.includes("unresolve") ||
+                         remarksLower.includes("unresolved") ||
+                         remarksLower.includes("un-resolved") ||
+                         remarksLower.includes("not resolved");
+
+    return (
+      <View style={styles.textRow}>
+        <Text style={{ fontSize: 10 }}>
+          Date: {date ? moment(date).format("MM/DD/YYYY") : "N/A"} |
+          {" "}Created User: {createdUser || "N/A"} |
+          {" "}Remarks: <Text style={isUnresolved ? { fontWeight: "bold", color: "#f44336" } : { fontWeight: "bold" }}>
+            {remarks || "N/A"}
+          </Text>
+        </Text>
+      </View>
+    );
+  };
+
   const renderPatient = (patient, index) => {
     return (
       <View key={patient.id || index} style={styles.patientSection} break={index > 0}>
@@ -269,6 +290,38 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
           </View>
         )}
 
+        {/* IDG Notes */}
+        {patient.idgNotes && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{GROUP_LABELS.idgNotes}</Text>
+            {renderNotesInline(patient.idgNotes.date, patient.idgNotes.createdUser, patient.idgNotes.remarks)}
+          </View>
+        )}
+
+        {/* Skilled Nursing Notes */}
+        {patient.skilledNursingNotes && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{GROUP_LABELS.skilledNursingNotes}</Text>
+            {renderNotesInline(patient.skilledNursingNotes.date, patient.skilledNursingNotes.createdUser, patient.skilledNursingNotes.remarks)}
+          </View>
+        )}
+
+        {/* HA Notes */}
+        {patient.haNotes && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{GROUP_LABELS.haNotes}</Text>
+            {renderNotesInline(patient.haNotes.date, patient.haNotes.createdUser, patient.haNotes.remarks)}
+          </View>
+        )}
+
+        {/* Volunteer Notes */}
+        {patient.volunteerNotes && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{GROUP_LABELS.volunteerNotes}</Text>
+            {renderNotesInline(patient.volunteerNotes.date, patient.volunteerNotes.createdUser, patient.volunteerNotes.remarks)}
+          </View>
+        )}
+
         {/* Miscellaneous */}
         {patient.miscellaneous && (
           <View style={styles.section}>
@@ -279,6 +332,20 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
             {renderBooleanItem("eligibility", patient.miscellaneous.eligibility)}
             {renderBooleanItem("insuranceCard", patient.miscellaneous.insuranceCard)}
             {renderBooleanItem("id", patient.miscellaneous.id)}
+          </View>
+        )}
+
+        {/* Discharge */}
+        {patient.discharge && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{GROUP_LABELS.discharge}</Text>
+            <View style={styles.textRow}>
+              <Text style={{ fontSize: 10 }}>
+                Date: {patient.discharge.date ? moment(patient.discharge.date).format("MM/DD/YYYY") : "N/A"} |
+                {" "}Reason: {patient.discharge.reason || "N/A"} |
+                {" "}Documentation: {patient.discharge.documentation?.checked ? "YES" : "NO"}
+              </Text>
+            </View>
           </View>
         )}
 

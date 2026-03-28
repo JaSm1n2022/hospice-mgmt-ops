@@ -24,6 +24,7 @@ import HROnboardingHandler from "./handler/HROnboardingHandler";
 import ChecklistModal from "./components/ChecklistModal";
 import PrintModal from "./components/PrintModal";
 import PrintAllModal from "./components/PrintAllModal";
+import ComplianceStatusModal from "./components/ComplianceStatusModal";
 import { Print as PrintIcon } from "@material-ui/icons";
 
 // Redux imports for Employee
@@ -179,6 +180,9 @@ function HROnboardingChecklistFunction(props) {
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [selectedPrintData, setSelectedPrintData] = useState(null);
   const [isPrintAllModalOpen, setIsPrintAllModalOpen] = useState(false);
+  const [selectedRows, setSelectedRows] = useState([]);
+  const [isComplianceModalOpen, setIsComplianceModalOpen] = useState(false);
+  const [complianceData, setComplianceData] = useState([]);
 
   const showNotification = (place, color, msg) => {
     setMessage(msg);
@@ -236,6 +240,81 @@ function HROnboardingChecklistFunction(props) {
 
   const closePrintAllModal = () => {
     setIsPrintAllModalOpen(false);
+  };
+
+  const handleCheckboxSelection = (ids, isAll, isChecked) => {
+    console.log("Selection changed:", { ids, isAll, isChecked });
+    if (isAll) {
+      // All selected
+      setSelectedRows(dataSource);
+    } else if (!isChecked) {
+      // Deselected
+      setSelectedRows(prev => prev.filter(row => !ids.includes(row.id)));
+    } else {
+      // Selected individual rows
+      const rowsToAdd = dataSource.filter(row => ids.includes(row.id));
+      setSelectedRows(prev => {
+        const existing = prev.filter(row => !ids.includes(row.id));
+        return [...existing, ...rowsToAdd];
+      });
+    }
+  };
+
+  const generateComplianceReport = () => {
+    if (selectedRows.length === 0) {
+      alert("Please select at least one employee from the table");
+      return;
+    }
+
+    // Create compliance report data
+    const reportData = selectedRows.map(employee => {
+      const missingFiles = [];
+
+      // Check all sections for missing or expired items
+      Object.keys(CHECKLIST_STRUCTURE).forEach(sectionKey => {
+        const sectionData = employee[sectionKey];
+        const sectionItems = CHECKLIST_STRUCTURE[sectionKey].items;
+
+        sectionItems.forEach(item => {
+          const itemData = sectionData?.[item.key];
+          const itemLabel = HROnboardingHandler.getItemLabel(item.key);
+
+          // Check if item is missing (not checked)
+          if (!itemData || !itemData.checked) {
+            missingFiles.push(itemLabel);
+          } else if (item.hasExpiration && itemData.expirationDate) {
+            // Check if item is expired
+            const isExpired = moment(itemData.expirationDate).isBefore(moment(), "day");
+            if (isExpired) {
+              missingFiles.push(`${itemLabel} (Expired: ${moment(itemData.expirationDate).format("MM/DD/YYYY")})`);
+            }
+          }
+        });
+      });
+
+      return {
+        employeeName: employee.employeeName,
+        employeePosition: employee.employeePosition,
+        missingFiles
+      };
+    });
+
+    // Filter out employees with no missing files
+    const employeesWithIssues = reportData.filter(emp => emp.missingFiles.length > 0);
+
+    if (employeesWithIssues.length === 0) {
+      alert("All selected employees have complete and up-to-date files!");
+      return;
+    }
+
+    // Open modal with compliance data
+    setComplianceData(employeesWithIssues);
+    setIsComplianceModalOpen(true);
+  };
+
+  const closeComplianceModal = () => {
+    setIsComplianceModalOpen(false);
+    setComplianceData([]);
   };
 
   const handleSearchChange = (event) => {
@@ -613,6 +692,11 @@ function HROnboardingChecklistFunction(props) {
         onClose={closePrintAllModal}
         employeesData={dataSource}
       />
+      <ComplianceStatusModal
+        isOpen={isComplianceModalOpen}
+        onClose={closeComplianceModal}
+        complianceData={complianceData}
+      />
       <div style={{ marginTop: "10px" }}>
         <GridContainer>
           <GridItem xs={12} sm={12} md={12}>
@@ -649,6 +733,13 @@ function HROnboardingChecklistFunction(props) {
                       >
                         <PrintIcon className={classes.icons} /> Print All
                       </Button>
+                      <Button
+                        color="warning"
+                        onClick={generateComplianceReport}
+                        disabled={selectedRows.length === 0}
+                      >
+                        Compliance Status
+                      </Button>
                     </div>
                   </Grid>
                   <Grid item xs={12} md={6}>
@@ -667,10 +758,11 @@ function HROnboardingChecklistFunction(props) {
                 </GridContainer>
 
                 <HospiceTable
+                  main={true}
                   columns={columns}
                   dataSource={filteredDataSource}
                   loading={false}
-                  onCheckboxSelectionHandler={() => {}}
+                  onCheckboxSelectionHandler={handleCheckboxSelection}
                 />
               </CardBody>
             </Card>

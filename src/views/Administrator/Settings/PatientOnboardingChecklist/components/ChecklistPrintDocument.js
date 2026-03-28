@@ -171,10 +171,15 @@ const styles = StyleSheet.create({
   },
   inlineLabel: {
     fontSize: 10,
-    fontWeight: "bold",
   },
   inlineValue: {
     fontSize: 10,
+    color: "#333",
+    marginLeft: 5,
+  },
+  inlineValueBold: {
+    fontSize: 10,
+    fontWeight: "bold",
     color: "#333",
     marginLeft: 5,
   },
@@ -214,10 +219,11 @@ const GROUP_LABELS = {
   idgNotes: "5. IDG Notes",
   skilledNursingNotes: "6. Skilled Nursing Notes",
   haNotes: "7. HA Notes",
-  miscellaneous: "8. Miscellaneous",
-  discharge: "9. Discharge",
-  compliance: "10. Compliance",
-  poc: "11. Plan of Care (POC)",
+  volunteerNotes: "8. Volunteer Notes",
+  miscellaneous: "9. Miscellaneous",
+  discharge: "10. Discharge",
+  compliance: "11. Compliance",
+  poc: "12. Plan of Care (POC)",
 };
 
 const ITEM_LABELS = {
@@ -391,7 +397,8 @@ const ChecklistPrintDocument = ({ patientData }) => {
                          remarksLower.includes("unresolved") ||
                          remarksLower.includes("un-resolved") ||
                          remarksLower.includes("not resolved");
-    const remarksStyle = isUnresolved ? styles.inlineValueUnresolved : styles.inlineValue;
+    // Always bold, red only for unresolved
+    const remarksStyle = isUnresolved ? styles.inlineValueUnresolved : styles.inlineValueBold;
 
     return (
       <View style={styles.inlineRow}>
@@ -559,6 +566,18 @@ const ChecklistPrintDocument = ({ patientData }) => {
     );
   };
 
+  const renderVolunteerNotes = () => {
+    const data = patientData.volunteerNotes;
+    if (!data) return null;
+
+    return (
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>{GROUP_LABELS.volunteerNotes}</Text>
+        {renderNotesInline(data.date, data.createdUser, data.remarks)}
+      </View>
+    );
+  };
+
   const renderMiscellaneous = () => {
     const data = patientData.miscellaneous;
     if (!data) return null;
@@ -649,6 +668,7 @@ const ChecklistPrintDocument = ({ patientData }) => {
         {renderIdgNotes()}
         {renderSkilledNursingNotes()}
         {renderHaNotes()}
+        {renderVolunteerNotes()}
         {renderMiscellaneous()}
         {renderDischarge()}
         {renderCompliance()}

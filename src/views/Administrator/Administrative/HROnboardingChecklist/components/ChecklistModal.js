@@ -15,6 +15,10 @@ import {
   Typography,
   Chip,
   Box,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from "@material-ui/core";
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
 import WarningIcon from "@material-ui/icons/Warning";
@@ -215,6 +219,8 @@ const ChecklistModal = ({
   const classes = useStyles();
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [checklistData, setChecklistData] = useState({});
+  const [status, setStatus] = useState("incomplete");
+  const [completionDate, setCompletionDate] = useState("");
 
   // Initialize empty checklist
   const initializeChecklist = () => {
@@ -236,10 +242,14 @@ const ChecklistModal = ({
       // Load existing data
       setSelectedEmployee(item.employee || null);
       setChecklistData(item.checklistData || initializeChecklist());
+      setStatus(item.status || "incomplete");
+      setCompletionDate(item.completionDate || "");
     } else {
       // New checklist
       setSelectedEmployee(null);
       setChecklistData(initializeChecklist());
+      setStatus("incomplete");
+      setCompletionDate("");
     }
   }, [item, mode, open]);
 
