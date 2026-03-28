@@ -135,7 +135,6 @@ function Routesheet(props) {
   );
   const [color, setColor] = useState("success");
   const [patientInfo, setPatientInfo] = useState(undefined);
-  const [withVisitNote, setWithVisitNote] = useState(false);
   const classes = useStyles();
   const classes2 = useStyles2();
 
@@ -321,7 +320,6 @@ function Routesheet(props) {
     setMileage(0);
     setClientService("");
     setNotes("");
-    setWithVisitNote(false);
     sigCanvas.current?.clear();
     setDos(dayjs(new Date()));
     setTimeOut(dayjs(new Date()));
@@ -487,7 +485,6 @@ function Routesheet(props) {
       dosStart: dayjs(new Date(dosStart)).format("YYYY-MM-DD HH:mm"),
       dosEnd: dayjs(new Date(dosEnd)).format("YYYY-MM-DD HH:mm"),
       day: dayOfWeek,
-      with_visit_note: withVisitNote,
     };
 
     params.totalMileageReimbursement =
@@ -1143,7 +1140,7 @@ function Routesheet(props) {
                       <CardIcon color="warning">
                         <NotesOutlined />
                       </CardIcon>
-                      <h4 className={classes.cardIconTitle}>Notes</h4>
+                      <h4 className={classes.cardIconTitle}>Comments</h4>
                     </CardHeader>
                     <CardBody>
                       <TextareaAutosize
@@ -1151,7 +1148,7 @@ function Routesheet(props) {
                         minRows={4}
                         rows={4}
                         value={notes}
-                        placeholder="notes here"
+                        placeholder="comments here"
                         name={"notes"}
                         style={{ width: "100%", border: 0 }}
                         className="form-control"
@@ -1162,17 +1159,6 @@ function Routesheet(props) {
                           }
                         }}
                         onChange={inputHandler}
-                      />
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            checked={withVisitNote}
-                            onChange={(e) => setWithVisitNote(e.target.checked)}
-                            color="primary"
-                          />
-                        }
-                        label="With Visit Note?"
-                        style={{ marginTop: 10 }}
                       />
                     </CardBody>
                   </Card>
