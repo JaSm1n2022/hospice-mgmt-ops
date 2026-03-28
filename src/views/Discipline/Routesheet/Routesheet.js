@@ -538,6 +538,8 @@ function Routesheet(props) {
       return false;
     } else if (clientService?.toLowerCase() === "other") {
       return true;
+    } else if (clientService === "SVF" || clientService === "HUV") {
+      return true;
     } else if (serviceList.find((s) => s.name === clientService)) {
       return serviceList.find((s) => s.name === clientService)
         ?.isClientRequired;
@@ -634,6 +636,24 @@ function Routesheet(props) {
                       }}
                     >
                       Choose Service
+                    </MenuItem>
+                    <MenuItem
+                      classes={{
+                        root: classes.selectMenuItem,
+                        selected: classes.selectMenuItemSelected,
+                      }}
+                      value="SVF"
+                    >
+                      SVF
+                    </MenuItem>
+                    <MenuItem
+                      classes={{
+                        root: classes.selectMenuItem,
+                        selected: classes.selectMenuItemSelected,
+                      }}
+                      value="HUV"
+                    >
+                      HUV
                     </MenuItem>
                     {serviceList.map((item, index) => (
                       <MenuItem
@@ -760,6 +780,9 @@ function Routesheet(props) {
                         TransitionComponent={Transition}
                         keepMounted
                         onClose={() => setNoticeModal(false)}
+                        scroll="paper"
+                        maxWidth="md"
+                        fullWidth
                         aria-labelledby="notice-modal-slide-title"
                         aria-describedby="notice-modal-slide-description"
                       >
@@ -791,61 +814,125 @@ function Routesheet(props) {
                                   {
                                     tabButton: "Client Info",
                                     tabContent: (
-                                      <span>
-                                        <p>
-                                          <strong>Address :</strong>
-                                          {patientInfo?.address ||
-                                            "Call Agency"}
-                                        </p>
+                                      <div style={{ padding: "10px" }}>
+                                        <div style={{
+                                          marginBottom: "12px",
+                                          padding: "12px",
+                                          backgroundColor: "#f5f5f5",
+                                          borderRadius: "4px",
+                                          borderLeft: "4px solid #00acc1"
+                                        }}>
+                                          <p style={{ margin: "0 0 5px 0", fontSize: "12px", color: "#666" }}>
+                                            Address
+                                          </p>
+                                          <p style={{ margin: 0, fontSize: "14px", color: "#333" }}>
+                                            {patientInfo?.address || "Call Agency"}
+                                          </p>
+                                        </div>
 
-                                        <p>
-                                          <strong>Contact Person :</strong>
-                                          {patientInfo?.contactPerson ||
-                                            "Call Agency"}
-                                        </p>
+                                        <div style={{
+                                          marginBottom: "12px",
+                                          padding: "12px",
+                                          backgroundColor: "#f5f5f5",
+                                          borderRadius: "4px",
+                                          borderLeft: "4px solid #00acc1"
+                                        }}>
+                                          <p style={{ margin: "0 0 5px 0", fontSize: "12px", color: "#666" }}>
+                                            Contact Person
+                                          </p>
+                                          <p style={{ margin: 0, fontSize: "14px", color: "#333" }}>
+                                            {patientInfo?.contactPerson || "Call Agency"}
+                                          </p>
+                                        </div>
 
-                                        <p>
-                                          <strong>Contact Number :</strong>
-                                          {patientInfo?.contactNumber ||
-                                            "Call Agency"}
-                                        </p>
-                                      </span>
+                                        <div style={{
+                                          padding: "12px",
+                                          backgroundColor: "#f5f5f5",
+                                          borderRadius: "4px",
+                                          borderLeft: "4px solid #00acc1"
+                                        }}>
+                                          <p style={{ margin: "0 0 5px 0", fontSize: "12px", color: "#666" }}>
+                                            Contact Number
+                                          </p>
+                                          <p style={{ margin: 0, fontSize: "14px", color: "#333" }}>
+                                            {patientInfo?.contactNumber || "Call Agency"}
+                                          </p>
+                                        </div>
+                                      </div>
                                     ),
                                   },
                                   {
                                     tabButton: "Service Info",
                                     tabContent: (
-                                      <span>
-                                        <p>
-                                          <strong>Visit Frequency: </strong>
-                                          {clientInformationFrequencyHandler()}
-                                        </p>
+                                      <div style={{ padding: "10px" }}>
+                                        <div style={{
+                                          marginBottom: "12px",
+                                          padding: "12px",
+                                          backgroundColor: "#f5f5f5",
+                                          borderRadius: "4px",
+                                          borderLeft: "4px solid #4caf50"
+                                        }}>
+                                          <p style={{ margin: "0 0 5px 0", fontSize: "12px", color: "#666" }}>
+                                            Visit Frequency
+                                          </p>
+                                          <p style={{ margin: 0, fontSize: "14px", color: "#333" }}>
+                                            {clientInformationFrequencyHandler()}
+                                          </p>
+                                        </div>
 
-                                        <p>
-                                          <strong>Day/Time :</strong>
-                                          {clientInformationDayHandler()}
-                                        </p>
-                                      </span>
+                                        <div style={{
+                                          padding: "12px",
+                                          backgroundColor: "#f5f5f5",
+                                          borderRadius: "4px",
+                                          borderLeft: "4px solid #4caf50"
+                                        }}>
+                                          <p style={{ margin: "0 0 5px 0", fontSize: "12px", color: "#666" }}>
+                                            Day/Time
+                                          </p>
+                                          <p style={{ margin: 0, fontSize: "14px", color: "#333" }}>
+                                            {clientInformationDayHandler()}
+                                          </p>
+                                        </div>
+                                      </div>
                                     ),
                                   },
                                   {
                                     tabButton: "Contracted Rate",
                                     tabContent: (
-                                      <span>
-                                        <p>
-                                          <strong>Service Rate: </strong>
-                                          {contractRate?.serviceRate
-                                            ? `$${contractRate?.serviceRate}/${
-                                                contractRate?.serviceRateType ||
-                                                ""
-                                              }`
-                                            : "Call Agency"}
-                                        </p>
-                                        <p>
-                                          <strong>Mileage Rate: </strong>
-                                          {`$${contractRate?.mileageRate}/mile`}
-                                        </p>
-                                      </span>
+                                      <div style={{ padding: "10px" }}>
+                                        <div style={{
+                                          marginBottom: "15px",
+                                          padding: "12px",
+                                          backgroundColor: "#f5f5f5",
+                                          borderRadius: "4px",
+                                          borderLeft: "4px solid #ff9800"
+                                        }}>
+                                          <p style={{ margin: "0 0 5px 0", fontSize: "12px", color: "#666" }}>
+                                            Service Rate
+                                          </p>
+                                          <p style={{ margin: 0, fontSize: "18px", fontWeight: "bold", color: "#333" }}>
+                                            {contractRate?.serviceRate
+                                              ? `$${contractRate?.serviceRate}/${contractRate?.serviceRateType || "hr"}`
+                                              : "Call Agency"}
+                                          </p>
+                                        </div>
+
+                                        <div style={{
+                                          padding: "12px",
+                                          backgroundColor: "#f5f5f5",
+                                          borderRadius: "4px",
+                                          borderLeft: "4px solid #ff9800"
+                                        }}>
+                                          <p style={{ margin: "0 0 5px 0", fontSize: "12px", color: "#666" }}>
+                                            Mileage Rate
+                                          </p>
+                                          <p style={{ margin: 0, fontSize: "18px", fontWeight: "bold", color: "#333" }}>
+                                            {contractRate?.mileageRate
+                                              ? `$${contractRate?.mileageRate}/mile`
+                                              : "Not Applicable"}
+                                          </p>
+                                        </div>
+                                      </div>
                                     ),
                                   },
                                 ]}
@@ -889,7 +976,7 @@ function Routesheet(props) {
                   </GridItem>
                 )}
             </GridContainer>
-            {clientService && (
+            {clientService && (!isClientRequiredHandler() || client) && (
               <GridItem xs={12} sm={12} md={12}>
                 <GridContainer>
                   <GridItem xs={12} sm={12} md={12}>
@@ -1017,7 +1104,7 @@ function Routesheet(props) {
               </GridItem>
                           )*/}
             <GridContainer>
-              {isMileageRate && (
+              {isMileageRate && clientService && (!isClientRequiredHandler() || client) && (
                 <GridItem xs={12} sm={12} md={4}>
                   <Card>
                     <CardHeader color="danger" icon>
@@ -1049,7 +1136,7 @@ function Routesheet(props) {
                   </Card>
                 </GridItem>
               )}
-              {clientService && (
+              {clientService && (!isClientRequiredHandler() || client) && (
                 <GridItem xs={12} sm={12} md={isMileageRate ? 4 : 6}>
                   <Card>
                     <CardHeader color="warning" icon>
@@ -1091,7 +1178,7 @@ function Routesheet(props) {
                   </Card>
                 </GridItem>
               )}
-              {clientService && (
+              {clientService && (!isClientRequiredHandler() || client) && (
                 <GridItem xs={12} sm={12} md={isMileageRate ? 4 : 6}>
                   <Card>
                     <CardHeader color="info" icon>
@@ -1145,7 +1232,7 @@ function Routesheet(props) {
                   </Card>
                 </GridItem>
               )}
-              {clientService && (
+              {clientService && (!isClientRequiredHandler() || client) && (
                 <GridItem xs={12} sm={12} md={5}>
                   <Button
                     color="primary"
