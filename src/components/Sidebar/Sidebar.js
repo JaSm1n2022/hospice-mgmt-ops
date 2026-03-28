@@ -264,7 +264,42 @@ function Sidebar(props) {
               { [navLinkClasses]: prop.icon !== undefined },
               { [innerNavLinkClasses]: prop.icon === undefined }
             )}
-            onClick={props.handleDrawerToggle}
+            onClick={() => {
+              // Only handle drawer toggle and backdrop cleanup on mobile (< 960px)
+              const isMobile = window.innerWidth < 960;
+
+              if (isMobile && props.handleDrawerToggle) {
+                props.handleDrawerToggle();
+
+                // Remove any modal backdrops and restore page interaction (mobile only)
+                setTimeout(() => {
+                  // Remove Material-UI backdrops
+                  const backdrops = document.querySelectorAll('.MuiBackdrop-root');
+                  backdrops.forEach(backdrop => {
+                    if (backdrop) {
+                      backdrop.style.display = 'none';
+                      backdrop.remove();
+                    }
+                  });
+
+                  // Restore body overflow for Windows (PerfectScrollbar requirement)
+                  if (navigator.platform.indexOf("Win") > -1) {
+                    document.body.style.overflow = 'hidden';
+                  } else {
+                    document.body.style.overflow = '';
+                  }
+
+                  // Ensure pointer events are enabled
+                  document.body.style.pointerEvents = 'auto';
+
+                  // Focus the main panel
+                  const mainPanelElement = document.querySelector('[class*="mainPanel"]');
+                  if (mainPanelElement) {
+                    mainPanelElement.focus();
+                  }
+                }, 50);
+              }
+            }}
           >
             {prop.icon !== undefined ? (
               typeof prop.icon === "string" ? (
