@@ -50,7 +50,7 @@ import {
 } from "@material-ui/icons";
 import CustomInput from "components/CustomInput/CustomInput.js";
 import ReactSignatureCanvas from "react-signature-canvas";
-import { TextareaAutosize, Tooltip, Typography } from "@material-ui/core";
+import { TextareaAutosize, Tooltip, Typography, Checkbox, FormControlLabel } from "@material-ui/core";
 import { routesheetCreateStateSelector } from "store/selectors/routesheetSelector.js";
 import { assignmentListStateSelector } from "store/selectors/assignmentSelector.js";
 import { contractListStateSelector } from "store/selectors/contractSelector.js";
@@ -135,6 +135,7 @@ function Routesheet(props) {
   );
   const [color, setColor] = useState("success");
   const [patientInfo, setPatientInfo] = useState(undefined);
+  const [withVisitNote, setWithVisitNote] = useState(false);
   const classes = useStyles();
   const classes2 = useStyles2();
 
@@ -320,6 +321,7 @@ function Routesheet(props) {
     setMileage(0);
     setClientService("");
     setNotes("");
+    setWithVisitNote(false);
     sigCanvas.current?.clear();
     setDos(dayjs(new Date()));
     setTimeOut(dayjs(new Date()));
@@ -449,6 +451,11 @@ function Routesheet(props) {
     if (!isValid) {
       return;
     }
+
+    // Get the day of the week from dosStart
+    const dosStartDate = dayjs(new Date(dosStart));
+    const dayOfWeek = dosStartDate.format("ddd"); // Returns Mon, Tue, Wed, etc.
+
     const params = {
       created_at: new Date(),
       companyId: context.userProfile.companyId,
@@ -479,6 +486,8 @@ function Routesheet(props) {
       //  dos: dayjs(new Date(dos)).format("YYYY-MM-DD"),
       dosStart: dayjs(new Date(dosStart)).format("YYYY-MM-DD HH:mm"),
       dosEnd: dayjs(new Date(dosEnd)).format("YYYY-MM-DD HH:mm"),
+      day: dayOfWeek,
+      with_visit_note: withVisitNote,
     };
 
     params.totalMileageReimbursement =
@@ -1066,6 +1075,17 @@ function Routesheet(props) {
                           }
                         }}
                         onChange={inputHandler}
+                      />
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={withVisitNote}
+                            onChange={(e) => setWithVisitNote(e.target.checked)}
+                            color="primary"
+                          />
+                        }
+                        label="With Visit Note?"
+                        style={{ marginTop: 10 }}
                       />
                     </CardBody>
                   </Card>

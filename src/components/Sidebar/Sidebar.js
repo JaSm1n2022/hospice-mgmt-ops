@@ -264,6 +264,7 @@ function Sidebar(props) {
               { [navLinkClasses]: prop.icon !== undefined },
               { [innerNavLinkClasses]: prop.icon === undefined }
             )}
+            onClick={props.handleDrawerToggle}
           >
             {prop.icon !== undefined ? (
               typeof prop.icon === "string" ? (

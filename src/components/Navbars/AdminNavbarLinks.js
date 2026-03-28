@@ -27,6 +27,8 @@ import Button from "components/CustomButtons/Button.js";
 import styles from "assets/jss/material-dashboard-pro-react/components/adminNavbarLinksStyle.js";
 import { supabaseClient } from "config/SupabaseClient";
 
+const storageUtil = require("utils/storageUtil");
+
 const useStyles = makeStyles(styles);
 
 export default function HeaderLinks(props) {
@@ -50,22 +52,46 @@ export default function HeaderLinks(props) {
     }
   };
   const logout = async () => {
-    // Try to get a session first
-    setOpenProfile(null);
-    const { data } = await supabaseClient.auth.getSession();
+    try {
+      // Close the profile dropdown
+      setOpenProfile(null);
 
-    if (data.session) {
-      // Prefer global to revoke tokens across devices
-      const { error } = await supabaseClient.auth.signOut({ scope: "global" });
-      if (error) {
-        // Fallback to local if the server rejects (e.g., token already invalid)
+      // Clear localStorage
+      storageUtil.removeToken();
+      storageUtil.removeUser();
+      storageUtil.removeExpirationDt();
+      storageUtil.removeUserId();
+      storageUtil.removeDExist();
+
+      // Try to get a session first
+      const { data } = await supabaseClient.auth.getSession();
+
+      if (data.session) {
+        // Prefer global to revoke tokens across devices
+        const { error } = await supabaseClient.auth.signOut({ scope: "global" });
+        if (error) {
+          // Fallback to local if the server rejects (e.g., token already invalid)
+          await supabaseClient.auth.signOut({ scope: "local" });
+        }
+      } else {
+        // No session in memory: just clear local state
         await supabaseClient.auth.signOut({ scope: "local" });
       }
-      window.location.href = "/auth/login-page";
-    } else {
-      // No session in memory: just clear local state
-      await supabaseClient.auth.signOut({ scope: "local" });
-      window.location.href = "/auth/login-page";
+
+      // Clear all supabase local storage items
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('sb-')) {
+          localStorage.removeItem(key);
+        }
+      });
+
+      // Force redirect to login
+      window.location.replace("/auth/login-page");
+    } catch (error) {
+      console.error("Logout error:", error);
+      // Even if there's an error, clear storage and redirect
+      localStorage.clear();
+      window.location.replace("/auth/login-page");
     }
   };
   const handleCloseProfile = () => {
