@@ -220,6 +220,7 @@ function EmployeeFunction(props) {
               deleteRecordItemHandler={deleteRecordItemHandler}
               createFormHandler={createFormHandler}
               data={{ ...cellProps.data }}
+              showInviteButton={true}
             />
           ),
         };

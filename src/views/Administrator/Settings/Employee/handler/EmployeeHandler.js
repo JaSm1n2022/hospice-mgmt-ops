@@ -3,7 +3,7 @@ import moment from "moment";
 class EmployeeHandler {
   static columns(main) {
     return [
-      { width: 92, name: "actions", header: "Actions", visible: main },
+      { width: 140, name: "actions", header: "Actions", visible: main },
       {
         defaultFlex: 1,
         minWidth: 200,
