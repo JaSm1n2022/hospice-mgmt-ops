@@ -56,13 +56,13 @@ export const CLIENT_SERVICES = [
     ],
   },
   {
-    code: "IDT-PH",
+    code: "IDT-PR",
     name: "IDT Meeting In Person",
     isClientRequired: false,
     permission: ["*"],
   },
   {
-    code: "IDT-Note",
+    code: "IDT-NT",
     name: "IDT Meeting Thru Notes",
     isClientRequired: false,
     permission: ["*"],

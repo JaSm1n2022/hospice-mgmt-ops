@@ -20,9 +20,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   logo: {
-    width: 400,
-    height: 40,
-    marginBottom: 10,
+    width: "100%",
+    height: 80,
+    marginBottom: 15,
+    objectFit: "contain",
   },
   title: {
     fontSize: 18,
@@ -43,6 +44,9 @@ const styles = StyleSheet.create({
     borderStyle: "solid",
     borderWidth: 1,
     borderColor: "#000",
+  },
+  tableWrapper: {
+    border: "1px solid #000",
   },
   tableRow: {
     flexDirection: "row",
@@ -70,28 +74,28 @@ const styles = StyleSheet.create({
     borderRightStyle: "solid",
   },
   tableColPatient: {
-    width: "8%",
+    width: "12%",
   },
   tableColService: {
-    width: "15%",
+    width: "8%",
   },
   tableColDate: {
-    width: "9%",
+    width: "10%",
   },
   tableColTimeBegin: {
-    width: "7%",
+    width: "8%",
   },
   tableColTimeEnd: {
-    width: "7%",
+    width: "8%",
   },
   tableColSignature: {
     width: "15%",
   },
   tableColRate: {
-    width: "9%",
+    width: "10%",
   },
   tableColComments: {
-    width: "30%",
+    width: "29%",
   },
   signatureImage: {
     width: 60,
@@ -118,34 +122,74 @@ const styles = StyleSheet.create({
     borderColor: "#000",
     borderStyle: "solid",
   },
+  serviceCodesHeaderRow: {
+    flexDirection: "row",
+    borderBottomWidth: 2,
+    borderBottomColor: "#000",
+    borderBottomStyle: "solid",
+    backgroundColor: "#e0e0e0",
+    minHeight: 25,
+    alignItems: "center",
+    fontWeight: "bold",
+  },
   serviceCodesRow: {
     flexDirection: "row",
     borderBottomWidth: 1,
     borderBottomColor: "#000",
     borderBottomStyle: "solid",
     minHeight: 20,
+    alignItems: "center",
   },
-  serviceCodePair: {
-    width: "25%",
+  serviceCodesHeaderCol: {
+    width: "12.5%",
+    padding: 5,
+    fontSize: 8,
+    fontWeight: "bold",
+    textAlign: "center",
+    borderRightWidth: 1,
+    borderRightColor: "#000",
+    borderRightStyle: "solid",
+    justifyContent: "center",
+  },
+  serviceCodesDataCol: {
+    width: "12.5%",
+    padding: 3,
+    fontSize: 7,
+    borderRightWidth: 1,
+    borderRightColor: "#000",
+    borderRightStyle: "solid",
+    justifyContent: "center",
+  },
+  staffInfoTable: {
+    display: "table",
+    width: "auto",
+    marginBottom: 15,
+    borderStyle: "solid",
+    borderWidth: 1,
+    borderColor: "#000",
+  },
+  staffInfoRow: {
     flexDirection: "row",
-    borderRightWidth: 1,
-    borderRightColor: "#000",
-    borderRightStyle: "solid",
+    borderBottomWidth: 1,
+    borderBottomColor: "#000",
+    borderBottomStyle: "solid",
+    minHeight: 25,
+    alignItems: "center",
   },
-  serviceCodeCol: {
+  staffInfoLabel: {
     width: "30%",
-    padding: 3,
-    fontSize: 7,
+    padding: 5,
+    fontSize: 9,
+    fontWeight: "bold",
+    backgroundColor: "#f5f5f5",
     borderRightWidth: 1,
     borderRightColor: "#000",
     borderRightStyle: "solid",
-    justifyContent: "center",
   },
-  serviceNameCol: {
+  staffInfoValue: {
     width: "70%",
-    padding: 3,
-    fontSize: 7,
-    justifyContent: "center",
+    padding: 5,
+    fontSize: 9,
   },
   totalRow: {
     flexDirection: "row",
@@ -206,18 +250,26 @@ const RoutesheetPrintDocument = ({ groupedData, logoBase64 }) => {
                 />
               )}
               <Text style={styles.title}>Route Sheet</Text>
-              <Text style={styles.staffInfo}>
-                Staff Member: {employeeName}
-              </Text>
-              {position && (
-                <Text style={styles.staffInfo}>Position: {position}</Text>
-              )}
+
+              {/* Staff Info Table */}
+              <View style={styles.staffInfoTable}>
+                <View style={styles.staffInfoRow}>
+                  <Text style={styles.staffInfoLabel}>Staff Member</Text>
+                  <Text style={styles.staffInfoValue}>{employeeName}</Text>
+                </View>
+                {position && (
+                  <View style={[styles.staffInfoRow, { borderBottomWidth: 0 }]}>
+                    <Text style={styles.staffInfoLabel}>Position</Text>
+                    <Text style={styles.staffInfoValue}>{position}</Text>
+                  </View>
+                )}
+              </View>
             </View>
 
             {/* Table */}
             <View style={styles.table}>
               {/* Table Header */}
-              <View style={styles.tableHeaderRow}>
+              <View style={styles.tableHeaderRow} fixed>
                 <View style={[styles.tableCol, styles.tableColPatient, { justifyContent: "center", alignItems: "center" }]}>
                   <Text style={styles.headerText}>Patient</Text>
                 </View>
@@ -267,14 +319,14 @@ const RoutesheetPrintDocument = ({ groupedData, logoBase64 }) => {
                   ? `$${parseFloat(row.approvedPayment).toFixed(2)}`
                   : "$0.00";
 
-                // Trim patient code - keep only digits before dot, max 15 chars
+                // Trim patient code - keep only digits before dot, max 20 chars
                 const patientCode = row.patientCd || "";
                 let trimmedPatient = patientCode.includes(".")
                   ? patientCode.split(".")[0]
                   : patientCode;
-                // Truncate to 15 characters
-                if (trimmedPatient.length > 15) {
-                  trimmedPatient = trimmedPatient.substring(0, 15);
+                // Truncate to 20 characters
+                if (trimmedPatient.length > 20) {
+                  trimmedPatient = trimmedPatient.substring(0, 20);
                 }
 
                 // Get service code - use serviceCd if available, otherwise find from CLIENT_SERVICES
@@ -287,7 +339,7 @@ const RoutesheetPrintDocument = ({ groupedData, logoBase64 }) => {
                 }
 
                 return (
-                  <View key={`row-${rowIndex}`} style={styles.tableRow}>
+                  <View key={`row-${rowIndex}`} style={styles.tableRow} wrap={false}>
                     <Text style={[styles.tableCol, styles.tableColPatient]}>
                       {trimmedPatient}
                     </Text>
@@ -338,6 +390,18 @@ const RoutesheetPrintDocument = ({ groupedData, logoBase64 }) => {
             <View style={styles.serviceCodesSection}>
               <Text style={styles.serviceCodesTitle}>Service Codes</Text>
               <View style={styles.serviceCodesTable}>
+                {/* Header Row */}
+                <View style={styles.serviceCodesHeaderRow}>
+                  <Text style={[styles.serviceCodesHeaderCol, { width: "12.5%" }]}>Code</Text>
+                  <Text style={[styles.serviceCodesHeaderCol, { width: "12.5%" }]}>Description</Text>
+                  <Text style={[styles.serviceCodesHeaderCol, { width: "12.5%" }]}>Code</Text>
+                  <Text style={[styles.serviceCodesHeaderCol, { width: "12.5%" }]}>Description</Text>
+                  <Text style={[styles.serviceCodesHeaderCol, { width: "12.5%" }]}>Code</Text>
+                  <Text style={[styles.serviceCodesHeaderCol, { width: "12.5%" }]}>Description</Text>
+                  <Text style={[styles.serviceCodesHeaderCol, { width: "12.5%" }]}>Code</Text>
+                  <Text style={[styles.serviceCodesHeaderCol, { width: "12.5%", borderRightWidth: 0 }]}>Description</Text>
+                </View>
+
                 {/* Split CLIENT_SERVICES into rows of 4 columns (2 code-name pairs per row) */}
                 {Array.from({ length: Math.ceil(CLIENT_SERVICES.length / 4) }).map((_, rowIdx) => {
                   const startIdx = rowIdx * 4;
@@ -345,57 +409,41 @@ const RoutesheetPrintDocument = ({ groupedData, logoBase64 }) => {
 
                   return (
                     <View key={`service-row-${rowIdx}`} style={styles.serviceCodesRow}>
-                      {/* Column 1: Code + Name */}
-                      {rowServices[0] && (
-                        <View style={styles.serviceCodePair}>
-                          <View style={styles.serviceCodeCol}>
-                            <Text>{rowServices[0].code}</Text>
-                          </View>
-                          <View style={styles.serviceNameCol}>
-                            <Text>{rowServices[0].name}</Text>
-                          </View>
-                        </View>
-                      )}
-                      {!rowServices[0] && <View style={styles.serviceCodePair} />}
+                      {/* Service 1: Code */}
+                      <Text style={styles.serviceCodesDataCol}>
+                        {rowServices[0]?.code || ""}
+                      </Text>
+                      {/* Service 1: Description */}
+                      <Text style={styles.serviceCodesDataCol}>
+                        {rowServices[0]?.name || ""}
+                      </Text>
 
-                      {/* Column 2: Code + Name */}
-                      {rowServices[1] && (
-                        <View style={styles.serviceCodePair}>
-                          <View style={styles.serviceCodeCol}>
-                            <Text>{rowServices[1].code}</Text>
-                          </View>
-                          <View style={styles.serviceNameCol}>
-                            <Text>{rowServices[1].name}</Text>
-                          </View>
-                        </View>
-                      )}
-                      {!rowServices[1] && <View style={styles.serviceCodePair} />}
+                      {/* Service 2: Code */}
+                      <Text style={styles.serviceCodesDataCol}>
+                        {rowServices[1]?.code || ""}
+                      </Text>
+                      {/* Service 2: Description */}
+                      <Text style={styles.serviceCodesDataCol}>
+                        {rowServices[1]?.name || ""}
+                      </Text>
 
-                      {/* Column 3: Code + Name */}
-                      {rowServices[2] && (
-                        <View style={styles.serviceCodePair}>
-                          <View style={styles.serviceCodeCol}>
-                            <Text>{rowServices[2].code}</Text>
-                          </View>
-                          <View style={styles.serviceNameCol}>
-                            <Text>{rowServices[2].name}</Text>
-                          </View>
-                        </View>
-                      )}
-                      {!rowServices[2] && <View style={styles.serviceCodePair} />}
+                      {/* Service 3: Code */}
+                      <Text style={styles.serviceCodesDataCol}>
+                        {rowServices[2]?.code || ""}
+                      </Text>
+                      {/* Service 3: Description */}
+                      <Text style={styles.serviceCodesDataCol}>
+                        {rowServices[2]?.name || ""}
+                      </Text>
 
-                      {/* Column 4: Code + Name (no right border) */}
-                      {rowServices[3] && (
-                        <View style={[styles.serviceCodePair, { borderRightWidth: 0 }]}>
-                          <View style={styles.serviceCodeCol}>
-                            <Text>{rowServices[3].code}</Text>
-                          </View>
-                          <View style={styles.serviceNameCol}>
-                            <Text>{rowServices[3].name}</Text>
-                          </View>
-                        </View>
-                      )}
-                      {!rowServices[3] && <View style={[styles.serviceCodePair, { borderRightWidth: 0 }]} />}
+                      {/* Service 4: Code */}
+                      <Text style={styles.serviceCodesDataCol}>
+                        {rowServices[3]?.code || ""}
+                      </Text>
+                      {/* Service 4: Description (no right border) */}
+                      <Text style={[styles.serviceCodesDataCol, { borderRightWidth: 0 }]}>
+                        {rowServices[3]?.name || ""}
+                      </Text>
                     </View>
                   );
                 })}
