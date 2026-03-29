@@ -37,12 +37,7 @@ export const CLIENT_SERVICES = [
     isClientRequired: true,
     permission: ["Case Manager", "Registered Nurse", "Director of Nurse"],
   },
-  {
-    code: "IDT-PH",
-    name: "IDT Meeting Via Phone",
-    isClientRequired: false,
-    permission: ["*"],
-  },
+
   {
     code: "HUV",
     name: "HUV",
@@ -67,8 +62,14 @@ export const CLIENT_SERVICES = [
     permission: ["*"],
   },
   {
-    code: "IDT-PH",
+    code: "IDT-Note",
     name: "IDT Meeting Thru Notes",
+    isClientRequired: false,
+    permission: ["*"],
+  },
+  {
+    code: "IDT-PH",
+    name: "IDT Meeting Via Phone",
     isClientRequired: false,
     permission: ["*"],
   },

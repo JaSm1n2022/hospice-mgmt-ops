@@ -53,6 +53,9 @@ import { patientListStateSelector } from "store/selectors/patientSelector";
 import { supabaseClient } from "config/SupabaseClient";
 import Snackbar from "components/Snackbar/Snackbar";
 import AddAlert from "@material-ui/icons/AddAlert";
+import { pdf } from "@react-pdf/renderer";
+import RoutesheetPrintDocument from "./components/RoutesheetPrintDocument";
+import PrintIcon from "@material-ui/icons/Print";
 
 const styles = {
   cardCategoryWhite: {
@@ -127,6 +130,7 @@ function RoutesheetFunction(props) {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [bulkStatusLoading, setBulkStatusLoading] = useState(false);
+  const [printLoading, setPrintLoading] = useState(false);
   const [notification, setNotification] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState("");
   const [notificationColor, setNotificationColor] = useState("success");
@@ -435,6 +439,99 @@ function RoutesheetFunction(props) {
     }
   };
 
+  const printReportHandler = async () => {
+    try {
+      setPrintLoading(true);
+
+      // Get selected rows
+      const selectedRows = dataSource.filter((r) => r.isChecked);
+
+      if (selectedRows.length === 0) {
+        showNotification(
+          "Please select at least one row to print",
+          "warning"
+        );
+        return;
+      }
+
+      // Group by employee (requestor)
+      const groupedByEmployee = {};
+
+      selectedRows.forEach((row) => {
+        const employeeName = row.requestor || "Unknown Employee";
+        const position = row.requestorTitle || "";
+
+        if (!groupedByEmployee[employeeName]) {
+          groupedByEmployee[employeeName] = {
+            employeeName,
+            position,
+            rows: [],
+          };
+        }
+
+        groupedByEmployee[employeeName].rows.push(row);
+      });
+
+      // Sort rows within each employee group
+      Object.keys(groupedByEmployee).forEach((employeeName) => {
+        const employeeData = groupedByEmployee[employeeName];
+        employeeData.rows.sort((a, b) => {
+          // Sort by Patient (patientCd)
+          const patientCompare = (a.patientCd || "").localeCompare(
+            b.patientCd || ""
+          );
+          if (patientCompare !== 0) return patientCompare;
+
+          // Then by Service
+          const serviceCompare = (a.service || "").localeCompare(
+            b.service || ""
+          );
+          if (serviceCompare !== 0) return serviceCompare;
+
+          // Then by Date (from timeIn)
+          const dateA = a.timeIn ? moment(a.timeIn) : moment(0);
+          const dateB = b.timeIn ? moment(b.timeIn) : moment(0);
+          return dateA.diff(dateB);
+        });
+      });
+
+      // Load logo
+      const logoUrl =
+        "https://acwocotrngkeaxtzdzfz.supabase.co/storage/v1/object/public/images/headerdoc.png";
+      const logoBase64 = await Helper.getImageBase64(logoUrl);
+
+      // Generate PDF
+      const pdfDocument = (
+        <RoutesheetPrintDocument
+          groupedData={groupedByEmployee}
+          logoBase64={logoBase64}
+        />
+      );
+
+      const blob = await pdf(pdfDocument).toBlob();
+
+      // Create filename with date
+      const dateStr = moment().format("YYYY-MM-DD");
+      const filename = `route_sheet_summary_report_${dateStr}.pdf`;
+
+      // Download the PDF
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      link.click();
+
+      showNotification("PDF report generated successfully", "success");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      showNotification(
+        error.message || "Failed to generate PDF. Please try again.",
+        "danger"
+      );
+    } finally {
+      setPrintLoading(false);
+    }
+  };
+
   const exportToExcelHandler = () => {
     const excelData = dataSource.filter((r) => r.isChecked);
     const headers = columns;
@@ -661,6 +758,23 @@ function RoutesheetFunction(props) {
                                 }}
                               >
                                 Review
+                              </Button>
+
+                              <Button
+                                onClick={printReportHandler}
+                                disabled={printLoading || bulkStatusLoading}
+                                variant="contained"
+                                style={{
+                                  backgroundColor: printLoading || bulkStatusLoading ? "#ccc" : "#673ab7",
+                                  color: "white",
+                                  fontSize: "12px",
+                                  fontWeight: 500,
+                                  height: "36px",
+                                  textTransform: "none",
+                                }}
+                              >
+                                <PrintIcon style={{ marginRight: "5px", fontSize: "18px" }} />
+                                {printLoading ? "Generating..." : "Print Report"}
                               </Button>
                             </div>
 
