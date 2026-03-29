@@ -49,6 +49,10 @@ import { attemptToFetchContract } from "store/actions/contractAction";
 import { resetFetchContractState } from "store/actions/contractAction";
 import { contractListStateSelector } from "store/selectors/contractSelector";
 import { patientListStateSelector } from "store/selectors/patientSelector";
+import { supabaseClient } from "config/SupabaseClient";
+import Snackbar from "components/Snackbar/Snackbar";
+import AddAlert from "@material-ui/icons/AddAlert";
+
 const styles = {
   cardCategoryWhite: {
     "&,& a,& a:hover,& a:focus": {
@@ -121,6 +125,10 @@ function RoutesheetFunction(props) {
   const [keywordValue, setKeywordValue] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [bulkStatusLoading, setBulkStatusLoading] = useState(false);
+  const [notification, setNotification] = useState(false);
+  const [notificationMessage, setNotificationMessage] = useState("");
+  const [notificationColor, setNotificationColor] = useState("success");
   const createFormHandler = (data, mode) => {
     setItem(data);
     setMode(mode || "create");
@@ -345,6 +353,87 @@ function RoutesheetFunction(props) {
     //  dtSource = sortByWorth(dtSource);
     setDataSource(dtSource);
   };
+  const showNotification = (message, color = "success") => {
+    setNotificationMessage(message);
+    setNotificationColor(color);
+    setNotification(true);
+
+    // Auto-hide after 4 seconds
+    setTimeout(() => {
+      setNotification(false);
+    }, 4000);
+  };
+
+  const bulkStatusUpdateHandler = async (newStatus) => {
+    const selectedRows = dataSource.filter((r) => r.isChecked);
+    const selectedRowIds = selectedRows.map((r) => r.id);
+
+    if (selectedRowIds.length === 0) {
+      showNotification("No rows selected", "warning");
+      return;
+    }
+
+    setBulkStatusLoading(true);
+
+    try {
+      // Update each row individually with proper payload
+      const updatePromises = selectedRowIds.map((rowId) => {
+        return supabaseClient
+          .from("routesheets")
+          .update({
+            status: newStatus,
+            companyId: context.userProfile?.companyId,
+            updatedUser: {
+              name: context.userProfile?.name,
+              userId: context.userProfile?.id,
+              date: new Date(),
+            },
+          })
+          .eq("id", rowId);
+      });
+
+      const results = await Promise.all(updatePromises);
+
+      // Check for errors in any of the updates
+      const errors = results.filter((r) => r.error);
+      if (errors.length > 0) {
+        throw new Error(
+          `Failed to update ${errors.length} row(s): ${errors[0].error.message}`
+        );
+      }
+
+      showNotification(
+        `Successfully updated ${selectedRowIds.length} row(s) to "${newStatus}"`,
+        "success"
+      );
+
+      // Clear selections and refresh data
+      const updatedSource = dataSource.map((item) => ({
+        ...item,
+        isChecked: false,
+        status: selectedRowIds.includes(item.id) ? newStatus : item.status,
+      }));
+      setDataSource(updatedSource);
+      originalSource = [...updatedSource];
+      setIsAddGroupButtons(false);
+
+      // Refresh from server
+      props.listRoutesheet({
+        companyId: context.userProfile.companyId,
+        from: dateFrom,
+        to: dateTo,
+      });
+    } catch (error) {
+      console.error("Error updating status:", error);
+      showNotification(
+        error.message || "Failed to update status. Please try again.",
+        "danger"
+      );
+    } finally {
+      setBulkStatusLoading(false);
+    }
+  };
+
   const exportToExcelHandler = () => {
     const excelData = dataSource.filter((r) => r.isChecked);
     const headers = columns;
@@ -468,27 +557,129 @@ function RoutesheetFunction(props) {
 
                       <Grid item md={12} xs={12}>
                         {isAddGroupButtons && (
-                          <Button
-                            onClick={() => exportToExcelHandler()}
-                            variant="outlined"
+                          <div
                             style={{
-                              fontFamily: "Roboto",
-                              fontSize: "12px",
-                              fontWeight: 500,
-                              fontStretch: "normal",
-                              fontStyle: "normal",
-                              height: "40px",
-                              lineHeight: 1.71,
-                              letterSpacing: "0.4px",
-                              textAlign: "left",
-                              cursor: "pointer",
+                              backgroundColor: "#f5f5f5",
+                              padding: "16px",
+                              borderRadius: "8px",
+                              marginTop: "10px",
+                              marginBottom: "10px",
+                              display: "flex",
+                              flexWrap: "wrap",
+                              gap: "10px",
+                              alignItems: "center",
                             }}
-                            component="span"
-                            startIcon={<ImportExport />}
                           >
-                            {" "}
-                            Export Excel{" "}
-                          </Button>
+                            <span
+                              style={{
+                                fontWeight: "bold",
+                                fontSize: "14px",
+                                color: "#333",
+                                marginRight: "10px",
+                              }}
+                            >
+                              {dataSource.filter((r) => r.isChecked).length} row(s) selected
+                            </span>
+
+                            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                              <Button
+                                onClick={() => bulkStatusUpdateHandler("With Visit Notes")}
+                                disabled={bulkStatusLoading}
+                                variant="contained"
+                                style={{
+                                  backgroundColor: bulkStatusLoading ? "#ccc" : "#2196f3",
+                                  color: "white",
+                                  fontSize: "12px",
+                                  fontWeight: 500,
+                                  height: "36px",
+                                  textTransform: "none",
+                                }}
+                              >
+                                With Visit Notes
+                              </Button>
+
+                              <Button
+                                onClick={() => bulkStatusUpdateHandler("Payroll Submission")}
+                                disabled={bulkStatusLoading}
+                                variant="contained"
+                                style={{
+                                  backgroundColor: bulkStatusLoading ? "#ccc" : "#4caf50",
+                                  color: "white",
+                                  fontSize: "12px",
+                                  fontWeight: 500,
+                                  height: "36px",
+                                  textTransform: "none",
+                                }}
+                              >
+                                Payroll Submission
+                              </Button>
+
+                              <Button
+                                onClick={() => bulkStatusUpdateHandler("Payroll Pending")}
+                                disabled={bulkStatusLoading}
+                                variant="contained"
+                                style={{
+                                  backgroundColor: bulkStatusLoading ? "#ccc" : "#ff9800",
+                                  color: "white",
+                                  fontSize: "12px",
+                                  fontWeight: 500,
+                                  height: "36px",
+                                  textTransform: "none",
+                                }}
+                              >
+                                Payroll Pending
+                              </Button>
+
+                              <Button
+                                onClick={() => bulkStatusUpdateHandler("Payroll Paid")}
+                                disabled={bulkStatusLoading}
+                                variant="contained"
+                                style={{
+                                  backgroundColor: bulkStatusLoading ? "#ccc" : "#9c27b0",
+                                  color: "white",
+                                  fontSize: "12px",
+                                  fontWeight: 500,
+                                  height: "36px",
+                                  textTransform: "none",
+                                }}
+                              >
+                                Payroll Paid
+                              </Button>
+
+                              <Button
+                                onClick={() => bulkStatusUpdateHandler("Review")}
+                                disabled={bulkStatusLoading}
+                                variant="contained"
+                                style={{
+                                  backgroundColor: bulkStatusLoading ? "#ccc" : "#f44336",
+                                  color: "white",
+                                  fontSize: "12px",
+                                  fontWeight: 500,
+                                  height: "36px",
+                                  textTransform: "none",
+                                }}
+                              >
+                                Review
+                              </Button>
+                            </div>
+
+                            <Button
+                              onClick={() => exportToExcelHandler()}
+                              variant="outlined"
+                              disabled={bulkStatusLoading}
+                              style={{
+                                fontFamily: "Roboto",
+                                fontSize: "12px",
+                                fontWeight: 500,
+                                height: "36px",
+                                textTransform: "none",
+                                marginLeft: "auto",
+                              }}
+                              startIcon={<ImportExport />}
+                            >
+                              Export Excel
+                            </Button>
+                          </div>
                         )}
                       </Grid>
                     </GridItem>
@@ -538,6 +729,15 @@ function RoutesheetFunction(props) {
           closeFormModalHandler={closeFormModalHandler}
         />
       )}
+      <Snackbar
+        place="tc"
+        color={notificationColor}
+        icon={AddAlert}
+        message={notificationMessage}
+        open={notification}
+        closeNotification={() => setNotification(false)}
+        close
+      />
     </>
   );
 }
