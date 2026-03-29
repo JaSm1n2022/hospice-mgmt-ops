@@ -37,6 +37,7 @@ import { resetFetchRoutesheetState } from "store/actions/routesheetAction";
 import { attemptToCreateRoutesheet } from "store/actions/routesheetAction";
 import { resetCreateRoutesheetState } from "store/actions/routesheetAction";
 import { attemptToUpdateRoutesheet } from "store/actions/routesheetAction";
+import { resetUpdateRoutesheetState } from "store/actions/routesheetAction";
 import { attemptToDeleteRoutesheet } from "store/actions/routesheetAction";
 import { resetDeleteRoutesheetState } from "store/actions/routesheetAction";
 import SignatureBased from "./components/SignatureBased";
@@ -259,8 +260,8 @@ function RoutesheetFunction(props) {
     if (mode === "create") {
       props.createRoutesheet(payload);
     } else if (mode === "edit") {
-      params.id = payload.id;
-      props.updateRoutesheet(params);
+      payload.id = payload.id;
+      props.updateRoutesheet(payload);
     }
     closeFormModalHandler();
   };

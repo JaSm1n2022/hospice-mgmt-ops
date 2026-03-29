@@ -236,11 +236,23 @@ function RoutesheetForm(props) {
       setApprovedPayment(props.item.approvedPayment);
       setTotalMileageReimbursement(props.item.totalMileageReimbursement);
       setComments(props.item.comments);
-      if (props.item.signature_based) {
-        sigCanvas.current.fromDataURL(props.item.signature_based);
-      }
     }
   }, [props.employeeList, props.item, props.patientList]);
+
+  // Separate effect to load signature after canvas is ready
+  useEffect(() => {
+    if (props.item && props.mode === "edit" && props.item.signature_based) {
+      // Use setTimeout to ensure canvas is mounted
+      const timer = setTimeout(() => {
+        if (sigCanvas.current) {
+          sigCanvas.current.fromDataURL(props.item.signature_based);
+          isSigned = true; // Mark as signed
+          setIsRefresh(!isRefresh); // Trigger refresh to update UI
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [props.item, props.mode]);
 
   const titleHandler = () => {
     if (props.mode === "view") {
@@ -347,13 +359,13 @@ function RoutesheetForm(props) {
     }
     console.log("[CONTRACT WITH PATIENT]", m);
     currentContract = m;
-    setContractRate(m?.serviceRate, 0);
+    setContractRate(m?.serviceRate || 0);
     if (m?.isMileageRate) {
       setIsMileageRate(m?.isMileageRate);
     } else {
       setIsMileageRate(false);
     }
-    approvedPaymentHandler(mileage, m.serviceRate || 0);
+    approvedPaymentHandler(mileage, m?.serviceRate || 0);
   };
 
   const onBeginHandler = () => {

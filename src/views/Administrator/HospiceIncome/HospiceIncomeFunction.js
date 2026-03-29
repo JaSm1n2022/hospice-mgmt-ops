@@ -21,6 +21,7 @@ import {
   InputLabel,
   Select,
 } from "@material-ui/core";
+import { CloudUpload, Save } from "@material-ui/icons";
 import GridItem from "components/Grid/GridItem.js";
 import GridContainer from "components/Grid/GridContainer.js";
 import Card from "components/Card/Card.js";
@@ -28,6 +29,10 @@ import CardHeader from "components/Card/CardHeader.js";
 import CardBody from "components/Card/CardBody.js";
 import { connect } from "react-redux";
 import moment from "moment";
+import * as XLSX from "xlsx";
+import Snackbar from "components/Snackbar/Snackbar";
+import AddAlert from "@material-ui/icons/AddAlert";
+import { supabaseClient } from "config/SupabaseClient";
 
 import { SupaContext } from "App";
 import { ACTION_STATUSES } from "utils/constants";
@@ -100,6 +105,14 @@ function HospiceIncomeFunction(props) {
   const [payorFilter, setPayorFilter] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Excel Import state
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [extractedData, setExtractedData] = useState([]);
+  const [notification, setNotification] = useState(false);
+  const [notificationMessage, setNotificationMessage] = useState("");
+  const [notificationColor, setNotificationColor] = useState("success");
+
   useEffect(() => {
     console.log("Hospice Income - loading data");
     if (context.userProfile?.companyId) {
@@ -165,6 +178,175 @@ function HospiceIncomeFunction(props) {
       remitRef: "",
       amount: "",
     });
+  };
+
+  const showNotification = (message, color = "success") => {
+    setNotificationMessage(message);
+    setNotificationColor(color);
+    setNotification(true);
+
+    setTimeout(() => {
+      setNotification(false);
+    }, 4000);
+  };
+
+  // Helper function to convert Excel date serial to YYYY-MM-DD format
+  const excelDateToJSDate = (serial) => {
+    if (!serial) return "";
+
+    // If it's already a string date, return it
+    if (typeof serial === "string") return serial;
+
+    // Excel date serial starts from 1900-01-01
+    // Serial 1 = 1900-01-01, but Excel incorrectly considers 1900 a leap year
+    const utc_days = Math.floor(serial - 25569);
+    const utc_value = utc_days * 86400;
+    const date_info = new Date(utc_value * 1000);
+
+    const year = date_info.getUTCFullYear();
+    const month = String(date_info.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(date_info.getUTCDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+  };
+
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = [
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ];
+    if (!validTypes.includes(file.type) && !file.name.endsWith(".xlsx") && !file.name.endsWith(".xls")) {
+      showNotification("Please upload an Excel file (.xlsx or .xls)", "danger");
+      return;
+    }
+
+    try {
+      setUploading(true);
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: "array" });
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+
+          // Map Excel columns to our format
+          const mappedData = jsonData.map((row, index) => ({
+            id: index,
+            patient_cd: null, // Will be selected by user
+            patient_name: row.Patient || row.patient || "",
+            payer: row.Payer || row.payer || "",
+            period: row.Period || row.period || "",
+            date_billed: excelDateToJSDate(row["Date Billed"] || row.date_billed),
+            amt_billed: parseFloat(row["Amt Billed"] || row.amt_billed || 0),
+            status: row.Status || row.status || "",
+            pay_date: excelDateToJSDate(row["Pay Date"] || row.pay_date),
+            amt_paid: parseFloat(row["Amt Paid"] || row.amt_paid || 0),
+            seq_adj: row["Seq/Adj"] || row.seq_adj || "",
+            soc: row.SOC || row.soc || "",
+            authorized: row.Authorized || row.authorized || "",
+          }));
+
+          setExtractedData(mappedData);
+          showNotification(`Successfully extracted ${mappedData.length} rows`, "success");
+        } catch (parseError) {
+          console.error("[Parse Error]", parseError);
+          showNotification("Failed to parse Excel file", "danger");
+        } finally {
+          setUploading(false);
+        }
+      };
+
+      reader.onerror = () => {
+        showNotification("Failed to read file", "danger");
+        setUploading(false);
+      };
+
+      reader.readAsArrayBuffer(file);
+    } catch (error) {
+      console.error("[File Upload Error]", error);
+      showNotification("Failed to process file", "danger");
+      setUploading(false);
+    }
+  };
+
+  const handlePatientSelection = (rowId, patientCd) => {
+    setExtractedData((prev) =>
+      prev.map((row) =>
+        row.id === rowId ? { ...row, patient_cd: patientCd } : row
+      )
+    );
+  };
+
+  const handleSaveRecords = async () => {
+    // Filter rows with patient_cd selected
+    const recordsToSave = extractedData.filter((row) => row.patient_cd);
+
+    if (recordsToSave.length === 0) {
+      showNotification("Please select at least one patient before saving", "warning");
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      // Prepare records for Supabase incomes table
+      const formattedRecords = recordsToSave.map((row) => {
+        const patient = patientList.find((p) => p.patientCd === row.patient_cd);
+
+        return {
+          patientCd: row.patient_cd,
+          patientId: patient?.id,
+          payer: row.payer,
+          pay_period: row.period,
+          date_paid: row.pay_date,
+          remit_ref: row.seq_adj, // Using seq_adj as remit reference
+          amt_paid_usd: row.amt_paid, // Using amt_paid as the amount
+          companyId: context.userProfile?.companyId,
+          created_at: new Date(),
+          updatedUser: {
+            name: context.userProfile?.name,
+            userId: context.userProfile?.id,
+            date: new Date(),
+          },
+          createdUser: {
+            name: context.userProfile?.name,
+            userId: context.userProfile?.id,
+            date: new Date(),
+          },
+        };
+      });
+
+      const { data, error } = await supabaseClient
+        .from("income")
+        .insert(formattedRecords);
+
+      if (error) throw error;
+
+      showNotification(
+        `Successfully saved ${recordsToSave.length} income record(s)`,
+        "success"
+      );
+
+      // Refresh the income list
+      props.fetchIncome({ companyId: context.userProfile.companyId });
+
+      // Clear the table
+      setExtractedData([]);
+    } catch (error) {
+      console.error("[Save Records Error]", error);
+      showNotification(
+        error.message || "Failed to save records. Please try again.",
+        "danger"
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
   const formatCurrency = (value) => {
@@ -255,6 +437,7 @@ function HospiceIncomeFunction(props) {
                 textColor="primary"
               >
                 <Tab label="Manual Entry" />
+                <Tab label="Import EFT" />
                 <Tab label="Income Table" />
                 <Tab label="Report" />
               </Tabs>
@@ -381,8 +564,141 @@ function HospiceIncomeFunction(props) {
                 </Card>
               </TabPanel>
 
-              {/* Income Table Tab */}
+              {/* Import EFT Tab */}
               <TabPanel value={tabValue} index={1}>
+                <Card>
+                  <CardBody>
+                    <Typography variant="h6" gutterBottom>
+                      Import Financial Records from Excel
+                    </Typography>
+                    <div style={{
+                      border: "2px dashed #ccc",
+                      borderRadius: "8px",
+                      padding: "40px",
+                      textAlign: "center",
+                      cursor: "pointer",
+                      transition: "all 0.3s",
+                      marginBottom: "20px"
+                    }}>
+                      <input
+                        accept=".xlsx,.xls"
+                        style={{ display: "none" }}
+                        id="excel-upload-button"
+                        type="file"
+                        onChange={handleFileUpload}
+                        disabled={uploading}
+                      />
+                      <label htmlFor="excel-upload-button">
+                        <Button
+                          component="span"
+                          variant="contained"
+                          color="primary"
+                          disabled={uploading}
+                          startIcon={uploading ? <CircularProgress size={20} /> : <CloudUpload />}
+                        >
+                          {uploading ? "Processing..." : "Upload Excel File"}
+                        </Button>
+                      </label>
+                      <p style={{ marginTop: "10px", color: "#666", fontSize: "14px" }}>
+                        Upload an Excel file (.xlsx or .xls) with financial records
+                      </p>
+                    </div>
+
+                    {extractedData.length > 0 && (
+                      <>
+                        <div style={{ marginTop: "30px", marginBottom: "20px" }}>
+                          <Grid container alignItems="center" justifyContent="space-between">
+                            <Grid item>
+                              <Typography variant="subtitle1" style={{ margin: 0 }}>
+                                {extractedData.length} record(s) extracted
+                              </Typography>
+                            </Grid>
+                            <Grid item>
+                              <Button
+                                variant="contained"
+                                color="primary"
+                                onClick={handleSaveRecords}
+                                disabled={saving || extractedData.filter(r => r.patient_cd).length === 0}
+                                startIcon={saving ? <CircularProgress size={20} /> : <Save />}
+                              >
+                                {saving
+                                  ? "Saving..."
+                                  : `Save ${extractedData.filter(r => r.patient_cd).length} Record(s)`}
+                              </Button>
+                            </Grid>
+                          </Grid>
+                        </div>
+
+                        <div style={{ overflowX: "auto" }}>
+                          <TableContainer component={Paper}>
+                            <Table>
+                              <TableHead>
+                                <TableRow>
+                                  <TableCell>Select Patient</TableCell>
+                                  <TableCell>Patient (from Excel)</TableCell>
+                                  <TableCell>Payer</TableCell>
+                                  <TableCell>Period</TableCell>
+                                  <TableCell>Date Billed</TableCell>
+                                  <TableCell>Amt Billed</TableCell>
+                                  <TableCell>Status</TableCell>
+                                  <TableCell>Pay Date</TableCell>
+                                  <TableCell>Amt Paid</TableCell>
+                                  <TableCell>Seq/Adj</TableCell>
+                                  <TableCell>SOC</TableCell>
+                                  <TableCell>Authorized</TableCell>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                {extractedData.map((row) => (
+                                  <TableRow key={row.id}>
+                                    <TableCell>
+                                      <FormControl style={{ minWidth: "150px" }}>
+                                        <Select
+                                          value={row.patient_cd || ""}
+                                          onChange={(e) =>
+                                            handlePatientSelection(row.id, e.target.value)
+                                          }
+                                          displayEmpty
+                                        >
+                                          <MenuItem value="" disabled>
+                                            Select...
+                                          </MenuItem>
+                                          {patientList.map((patient) => (
+                                            <MenuItem
+                                              key={patient.id}
+                                              value={patient.patientCd}
+                                            >
+                                              {patient.patientCd} - {patient.name}
+                                            </MenuItem>
+                                          ))}
+                                        </Select>
+                                      </FormControl>
+                                    </TableCell>
+                                    <TableCell>{row.patient_name}</TableCell>
+                                    <TableCell>{row.payer}</TableCell>
+                                    <TableCell>{row.period}</TableCell>
+                                    <TableCell>{row.date_billed}</TableCell>
+                                    <TableCell>${row.amt_billed.toFixed(2)}</TableCell>
+                                    <TableCell>{row.status}</TableCell>
+                                    <TableCell>{row.pay_date}</TableCell>
+                                    <TableCell>${row.amt_paid.toFixed(2)}</TableCell>
+                                    <TableCell>{row.seq_adj}</TableCell>
+                                    <TableCell>{row.soc}</TableCell>
+                                    <TableCell>{row.authorized}</TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </TableContainer>
+                        </div>
+                      </>
+                    )}
+                  </CardBody>
+                </Card>
+              </TabPanel>
+
+              {/* Income Table Tab */}
+              <TabPanel value={tabValue} index={2}>
                 <Card>
                   <CardBody>
                     <Typography variant="h6" gutterBottom>
@@ -496,7 +812,7 @@ function HospiceIncomeFunction(props) {
               </TabPanel>
 
               {/* Report Tab */}
-              <TabPanel value={tabValue} index={2}>
+              <TabPanel value={tabValue} index={3}>
                 <Card>
                   <CardBody>
                     <Typography variant="h6" gutterBottom>
@@ -568,6 +884,16 @@ function HospiceIncomeFunction(props) {
           </Card>
         </GridItem>
       </GridContainer>
+
+      <Snackbar
+        place="tc"
+        color={notificationColor}
+        icon={AddAlert}
+        message={notificationMessage}
+        open={notification}
+        closeNotification={() => setNotification(false)}
+        close
+      />
     </div>
   );
 }
