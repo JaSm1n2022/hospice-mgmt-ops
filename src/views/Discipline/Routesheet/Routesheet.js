@@ -1550,9 +1550,6 @@ function Routesheet(props) {
                       borderRadius: "8px",
                       padding: "15px",
                       backgroundColor: "#f9f9f9",
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center",
                     }}
                   >
                     <ReactSignatureCanvas
@@ -1563,14 +1560,13 @@ function Routesheet(props) {
                       }}
                       canvasProps={{
                         height: 200,
-                        width: 600,
+                        className: "sigCanvas",
                         style: {
+                          width: "100%",
                           border: "1px dashed #ccc",
                           backgroundColor: "white",
                           borderRadius: "4px",
-                          maxWidth: "100%",
                         },
-                        className: "sigCanvas",
                       }}
                     />
                   </div>
