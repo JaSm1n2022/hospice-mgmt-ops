@@ -253,7 +253,9 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
     const isUnresolved = remarksLower.includes("unresolve") ||
                          remarksLower.includes("unresolved") ||
                          remarksLower.includes("un-resolved") ||
-                         remarksLower.includes("not resolved");
+                         remarksLower.includes("not resolved") ||
+                         remarksLower.includes("poc issue") ||
+                         remarksLower.includes("declined");
 
     return (
       <View style={styles.textRow}>

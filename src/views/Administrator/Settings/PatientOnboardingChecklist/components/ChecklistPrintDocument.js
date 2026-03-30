@@ -390,14 +390,16 @@ const ChecklistPrintDocument = ({ patientData }) => {
   };
 
   const renderNotesInline = (date, createdUser, remarks) => {
-    // Check if remarks contains "unresolve" or "unresolved" (case insensitive)
+    // Check if remarks contains "unresolve", "unresolved", "POC ISSUE", or "DECLINED" (case insensitive)
     // Also trim whitespace and check for variations
     const remarksLower = remarks ? remarks.toLowerCase().trim() : "";
     const isUnresolved = remarksLower.includes("unresolve") ||
                          remarksLower.includes("unresolved") ||
                          remarksLower.includes("un-resolved") ||
-                         remarksLower.includes("not resolved");
-    // Always bold, red only for unresolved
+                         remarksLower.includes("not resolved") ||
+                         remarksLower.includes("poc issue") ||
+                         remarksLower.includes("declined");
+    // Always bold, red only for unresolved/issues
     const remarksStyle = isUnresolved ? styles.inlineValueUnresolved : styles.inlineValueBold;
 
     return (
