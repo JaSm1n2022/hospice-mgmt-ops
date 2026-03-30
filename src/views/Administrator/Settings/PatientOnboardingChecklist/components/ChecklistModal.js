@@ -157,9 +157,9 @@ function ChecklistModal({
 
   // Assessment group
   const [assessment, setAssessment] = useState({
-    nursing: { checked: false },
-    spiritual: { checked: false },
-    psychosocial: { checked: false },
+    nursing: "",
+    spiritual: "",
+    psychosocial: "",
   });
 
   // Treatment Order group
@@ -205,12 +205,12 @@ function ChecklistModal({
 
   // Miscellaneous group
   const [miscellaneous, setMiscellaneous] = useState({
-    medicalRecords: { checked: false },
-    dpoa: { checked: false },
-    hp: { checked: false },
-    eligibility: { checked: false },
-    insuranceCard: { checked: false },
-    id: { checked: false },
+    medicalRecords: "",
+    dpoa: "",
+    hp: "",
+    eligibility: "",
+    insuranceCard: "",
+    id: "",
     dme: "",
     transportation: "",
   });
@@ -314,9 +314,9 @@ function ChecklistModal({
       patientNotification: "",
     });
     setAssessment({
-      nursing: { checked: false },
-      spiritual: { checked: false },
-      psychosocial: { checked: false },
+      nursing: "",
+      spiritual: "",
+      psychosocial: "",
     });
     setTreatmentOrder({
       treatmentOrder: { checked: false },
@@ -332,12 +332,12 @@ function ChecklistModal({
     setHaNotes({ date: "", createdUser: "", remarks: "" });
     setVolunteerNotes({ date: "", createdUser: "", remarks: "" });
     setMiscellaneous({
-      medicalRecords: { checked: false },
-      dpoa: { checked: false },
-      hp: { checked: false },
-      eligibility: { checked: false },
-      insuranceCard: { checked: false },
-      id: { checked: false },
+      medicalRecords: "",
+      dpoa: "",
+      hp: "",
+      eligibility: "",
+      insuranceCard: "",
+      id: "",
       dme: "",
       transportation: "",
     });
@@ -626,36 +626,9 @@ function ChecklistModal({
             </AccordionSummary>
             <AccordionDetails>
               <div className={classes.sectionContent}>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={assessment.nursing.checked}
-                      onChange={handleBooleanChange(assessment, setAssessment, "nursing")}
-                      color="primary"
-                    />
-                  }
-                  label="Nursing"
-                />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={assessment.spiritual.checked}
-                      onChange={handleBooleanChange(assessment, setAssessment, "spiritual")}
-                      color="primary"
-                    />
-                  }
-                  label="Spiritual"
-                />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={assessment.psychosocial.checked}
-                      onChange={handleBooleanChange(assessment, setAssessment, "psychosocial")}
-                      color="primary"
-                    />
-                  }
-                  label="Psychosocial"
-                />
+                {renderYNNASelect("Nursing", assessment.nursing, assessment, setAssessment, "nursing")}
+                {renderYNNASelect("Spiritual", assessment.spiritual, assessment, setAssessment, "spiritual")}
+                {renderYNNASelect("Psychosocial", assessment.psychosocial, assessment, setAssessment, "psychosocial")}
               </div>
             </AccordionDetails>
           </Accordion>
@@ -888,66 +861,12 @@ function ChecklistModal({
             </AccordionSummary>
             <AccordionDetails>
               <div className={classes.sectionContent}>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={miscellaneous.medicalRecords.checked}
-                      onChange={handleBooleanChange(miscellaneous, setMiscellaneous, "medicalRecords")}
-                      color="primary"
-                    />
-                  }
-                  label="Medical Records"
-                />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={miscellaneous.dpoa.checked}
-                      onChange={handleBooleanChange(miscellaneous, setMiscellaneous, "dpoa")}
-                      color="primary"
-                    />
-                  }
-                  label="DPOA"
-                />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={miscellaneous.hp.checked}
-                      onChange={handleBooleanChange(miscellaneous, setMiscellaneous, "hp")}
-                      color="primary"
-                    />
-                  }
-                  label="HP (History & Physical)"
-                />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={miscellaneous.eligibility.checked}
-                      onChange={handleBooleanChange(miscellaneous, setMiscellaneous, "eligibility")}
-                      color="primary"
-                    />
-                  }
-                  label="Eligibility"
-                />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={miscellaneous.insuranceCard.checked}
-                      onChange={handleBooleanChange(miscellaneous, setMiscellaneous, "insuranceCard")}
-                      color="primary"
-                    />
-                  }
-                  label="Insurance Card"
-                />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={miscellaneous.id.checked}
-                      onChange={handleBooleanChange(miscellaneous, setMiscellaneous, "id")}
-                      color="primary"
-                    />
-                  }
-                  label="ID"
-                />
+                {renderYNNASelect("Medical Records", miscellaneous.medicalRecords, miscellaneous, setMiscellaneous, "medicalRecords")}
+                {renderYNNASelect("DPOA", miscellaneous.dpoa, miscellaneous, setMiscellaneous, "dpoa")}
+                {renderYNNASelect("HP (History & Physical)", miscellaneous.hp, miscellaneous, setMiscellaneous, "hp")}
+                {renderYNNASelect("Eligibility", miscellaneous.eligibility, miscellaneous, setMiscellaneous, "eligibility")}
+                {renderYNNASelect("Insurance Card", miscellaneous.insuranceCard, miscellaneous, setMiscellaneous, "insuranceCard")}
+                {renderYNNASelect("ID", miscellaneous.id, miscellaneous, setMiscellaneous, "id")}
                 {renderYNNASelect("DME", miscellaneous.dme, miscellaneous, setMiscellaneous, "dme")}
                 {renderYNNASelect("Transportation", miscellaneous.transportation, miscellaneous, setMiscellaneous, "transportation")}
               </div>

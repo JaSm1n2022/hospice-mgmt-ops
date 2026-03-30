@@ -496,9 +496,9 @@ const ChecklistPrintDocument = ({ patientData }) => {
     return (
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{GROUP_LABELS.assessment}</Text>
-        {renderBooleanItem("nursing", data.nursing)}
-        {renderBooleanItem("spiritual", data.spiritual)}
-        {renderBooleanItem("psychosocial", data.psychosocial)}
+        {renderSelectItem("nursing", data.nursing)}
+        {renderSelectItem("spiritual", data.spiritual)}
+        {renderSelectItem("psychosocial", data.psychosocial)}
       </View>
     );
   };
@@ -585,12 +585,12 @@ const ChecklistPrintDocument = ({ patientData }) => {
     return (
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{GROUP_LABELS.miscellaneous}</Text>
-        {renderBooleanItem("medicalRecords", data.medicalRecords)}
-        {renderBooleanItem("dpoa", data.dpoa)}
-        {renderBooleanItem("hp", data.hp)}
-        {renderBooleanItem("eligibility", data.eligibility)}
-        {renderBooleanItem("insuranceCard", data.insuranceCard)}
-        {renderBooleanItem("id", data.id)}
+        {renderSelectItem("medicalRecords", data.medicalRecords)}
+        {renderSelectItem("dpoa", data.dpoa)}
+        {renderSelectItem("hp", data.hp)}
+        {renderSelectItem("eligibility", data.eligibility)}
+        {renderSelectItem("insuranceCard", data.insuranceCard)}
+        {renderSelectItem("id", data.id)}
         {renderSelectItem("dme", data.dme)}
         {renderSelectItem("transportation", data.transportation)}
       </View>

@@ -180,6 +180,32 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
     );
   };
 
+  const renderSelectItem = (itemKey, itemValue) => {
+    let checkboxStyle;
+    let displayText = "";
+
+    if (itemValue === "Y") {
+      checkboxStyle = styles.checkboxContainerChecked;
+      displayText = "Y";
+    } else if (itemValue === "N") {
+      checkboxStyle = styles.checkboxContainerUnchecked;
+      displayText = "N";
+    } else if (itemValue === "NA") {
+      checkboxStyle = [styles.checkboxContainer, { backgroundColor: "#fff9c4", borderColor: "#fbc02d" }];
+      displayText = "N/A";
+    } else {
+      checkboxStyle = [styles.checkboxContainer, { backgroundColor: "#f5f5f5", borderColor: "#666" }];
+      displayText = "";
+    }
+
+    return (
+      <View style={styles.itemRow} key={itemKey}>
+        <View style={[styles.checkboxContainer, checkboxStyle]} />
+        <Text style={styles.itemText}>{ITEM_LABELS[itemKey] || itemKey}</Text>
+      </View>
+    );
+  };
+
   const renderBooleanWithDateItem = (itemKey, itemData) => {
     const isChecked = itemData && itemData.checked;
     const hasDate = itemData && itemData.date;
@@ -266,9 +292,9 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
         {patient.assessment && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{GROUP_LABELS.assessment}</Text>
-            {renderBooleanItem("nursing", patient.assessment.nursing)}
-            {renderBooleanItem("spiritual", patient.assessment.spiritual)}
-            {renderBooleanItem("psychosocial", patient.assessment.psychosocial)}
+            {renderSelectItem("nursing", patient.assessment.nursing)}
+            {renderSelectItem("spiritual", patient.assessment.spiritual)}
+            {renderSelectItem("psychosocial", patient.assessment.psychosocial)}
           </View>
         )}
 
@@ -326,12 +352,12 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
         {patient.miscellaneous && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{GROUP_LABELS.miscellaneous}</Text>
-            {renderBooleanItem("medicalRecords", patient.miscellaneous.medicalRecords)}
-            {renderBooleanItem("dpoa", patient.miscellaneous.dpoa)}
-            {renderBooleanItem("hp", patient.miscellaneous.hp)}
-            {renderBooleanItem("eligibility", patient.miscellaneous.eligibility)}
-            {renderBooleanItem("insuranceCard", patient.miscellaneous.insuranceCard)}
-            {renderBooleanItem("id", patient.miscellaneous.id)}
+            {renderSelectItem("medicalRecords", patient.miscellaneous.medicalRecords)}
+            {renderSelectItem("dpoa", patient.miscellaneous.dpoa)}
+            {renderSelectItem("hp", patient.miscellaneous.hp)}
+            {renderSelectItem("eligibility", patient.miscellaneous.eligibility)}
+            {renderSelectItem("insuranceCard", patient.miscellaneous.insuranceCard)}
+            {renderSelectItem("id", patient.miscellaneous.id)}
           </View>
         )}
 
