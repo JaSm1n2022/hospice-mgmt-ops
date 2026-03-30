@@ -97,9 +97,9 @@ const CHECKLIST_STRUCTURE = {
   },
   assessment: {
     items: [
-      { key: "nursing", type: "boolean", mandatory: true },
-      { key: "spiritual", type: "boolean", mandatory: true },
-      { key: "psychosocial", type: "boolean", mandatory: true },
+      { key: "nursing", type: "select", mandatory: true },
+      { key: "spiritual", type: "select", mandatory: true },
+      { key: "psychosocial", type: "select", mandatory: true },
     ],
   },
   treatmentOrder: {
@@ -143,12 +143,12 @@ const CHECKLIST_STRUCTURE = {
   },
   miscellaneous: {
     items: [
-      { key: "medicalRecords", type: "boolean", mandatory: true },
-      { key: "dpoa", type: "boolean", mandatory: true },
-      { key: "hp", type: "boolean", mandatory: true },
-      { key: "eligibility", type: "boolean", mandatory: true },
-      { key: "insuranceCard", type: "boolean", mandatory: true },
-      { key: "id", type: "boolean", mandatory: true },
+      { key: "medicalRecords", type: "select", mandatory: true },
+      { key: "dpoa", type: "select", mandatory: true },
+      { key: "hp", type: "select", mandatory: true },
+      { key: "eligibility", type: "select", mandatory: true },
+      { key: "insuranceCard", type: "select", mandatory: true },
+      { key: "id", type: "select", mandatory: true },
       { key: "dme", type: "select", mandatory: true },
       { key: "transportation", type: "select", mandatory: true },
     ],
