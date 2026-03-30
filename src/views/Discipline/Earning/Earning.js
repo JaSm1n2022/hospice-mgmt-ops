@@ -75,6 +75,9 @@ import { attemptToFetchContract } from "store/actions/contractAction";
 import { resetFetchContractState } from "store/actions/contractAction";
 import dayjs from "dayjs";
 import AttachMoneyOutlined from "@material-ui/icons/AttachMoneyOutlined";
+import PrintIcon from "@material-ui/icons/Print";
+import { pdf } from "@react-pdf/renderer";
+import EarningPrintDocument from "./components/EarningPrintDocument";
 
 let isAssignmentDone = false;
 let isRoutesheetDone = false;
@@ -116,6 +119,7 @@ function Earning(props) {
   const [dosEnd, setDosEnd] = useState(
     dayjs(new Date()).add(1, "hour").format("MM/DD/YYYY")
   );
+  const [printLoading, setPrintLoading] = useState(false);
   const classes = useStyles();
   useEffect(() => {
     const dates = Helper.formatDateRangeByCriteriaV2("thisWeek");
@@ -269,7 +273,7 @@ function Earning(props) {
 
       if ((i + 1) % 2 === 0) {
         c = [
-          dayjs(d.dosStart).format("YYYY-MM-DD HH:mm"),
+          dayjs(d.dosStart).format("YYYY-MM-DD HH:mm") + ` (${dayjs(d.dosStart).format("ddd")})`,
           d.patientCd,
           d.service,
           d.estimatedPayment
@@ -279,7 +283,7 @@ function Earning(props) {
       } else {
         c.color = colors[colorInt];
         c.data = [
-          dayjs(d.dosStart).format("YYYY-MM-DD HH:mm"),
+          dayjs(d.dosStart).format("YYYY-MM-DD HH:mm") + ` (${dayjs(d.dosStart).format("ddd")})`,
           d.patientCd,
           d.service,
           d.estimatedPayment
@@ -326,6 +330,50 @@ function Earning(props) {
       from: start,
       to: end,
     });
+  };
+
+  const printReportHandler = async () => {
+    try {
+      setPrintLoading(true);
+
+      if (!routesheetList || routesheetList.length === 0) {
+        alert("No data available to print");
+        return;
+      }
+
+      // Load logo
+      const logoUrl = "https://acwocotrngkeaxtzdzfz.supabase.co/storage/v1/object/public/images/headerdoc.png";
+      const logoBase64 = await Helper.getImageBase64(logoUrl);
+
+      // Generate PDF
+      const pdfDocument = (
+        <EarningPrintDocument
+          data={routesheetList}
+          logoBase64={logoBase64}
+          employeeName={context.employeeProfile?.name || ""}
+          dateStart={dayjs(new Date(dosStart)).format("YYYY-MM-DD")}
+          dateEnd={dayjs(new Date(dosEnd)).format("YYYY-MM-DD")}
+          total={totalServicePayment}
+        />
+      );
+
+      const blob = await pdf(pdfDocument).toBlob();
+
+      // Create filename with date
+      const dateStr = dayjs().format("YYYY-MM-DD");
+      const filename = `services_earnings_report_${dateStr}.pdf`;
+
+      // Download the PDF
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      link.click();
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      alert(error.message || "Failed to generate PDF. Please try again.");
+    } finally {
+      setPrintLoading(false);
+    }
   };
 
   const tableData = earnings?.map((item, index) => [
@@ -421,6 +469,17 @@ function Earning(props) {
                         onClick={() => applyHandler()}
                       >
                         Apply
+                      </Button>
+                      <Button
+                        color="success"
+                        size={"small"}
+                        round
+                        onClick={() => printReportHandler()}
+                        disabled={printLoading || !routesheetList || routesheetList.length === 0}
+                        style={{ marginLeft: "10px" }}
+                      >
+                        <PrintIcon style={{ marginRight: "5px", fontSize: "18px" }} />
+                        {printLoading ? "Generating..." : "Print"}
                       </Button>
                     </div>
 
@@ -535,6 +594,18 @@ function Earning(props) {
                           onClick={() => applyHandler()}
                         >
                           Apply
+                        </Button>
+                      </div>
+                      <div style={{ flex: "0 0 10%" }} align="right">
+                        <Button
+                          color="success"
+                          round
+                          size={"small"}
+                          onClick={() => printReportHandler()}
+                          disabled={printLoading || !routesheetList || routesheetList.length === 0}
+                        >
+                          <PrintIcon style={{ marginRight: "5px", fontSize: "18px" }} />
+                          {printLoading ? "Generating..." : "Print"}
                         </Button>
                       </div>
                     </div>
