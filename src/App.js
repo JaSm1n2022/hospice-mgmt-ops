@@ -56,6 +56,7 @@ function App({
 }) {
   const [session, setSession] = useState(null);
   const [signedIn, setSignedIn] = useState(true);
+  const [isInitializing, setIsInitializing] = useState(true);
   const [isMobile, setIsMobile] = useState(
     typeof window !== "undefined" && window.innerWidth < 1024
   );
@@ -66,18 +67,42 @@ function App({
 
   // Initialize session and auth listener
   useEffect(() => {
-    const getSession = async () => {
-      const { data } = await supabaseClient.auth.getSession();
-      setSession(data.session);
-      setSignedIn(!!data.session);
+    const initializeAuth = async () => {
+      try {
+        // Check if there's a hash in the URL (magic link, invitation link, etc.)
+        const hasAuthHash = window.location.hash &&
+          (window.location.hash.includes('access_token') ||
+           window.location.hash.includes('type='));
+
+        // If there's an auth hash, wait a bit for Supabase to process it
+        if (hasAuthHash) {
+          console.log('[Auth] Detected auth callback, waiting for Supabase to process...');
+          // Wait 2 seconds for Supabase to process the auth callback
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+
+        // Now get the session
+        const { data } = await supabaseClient.auth.getSession();
+        console.log('[Auth] Session retrieved:', !!data.session);
+        setSession(data.session);
+        setSignedIn(!!data.session);
+
+        // Mark initialization as complete
+        setIsInitializing(false);
+      } catch (error) {
+        console.error('[Auth] Error initializing auth:', error);
+        setIsInitializing(false);
+      }
     };
 
-    getSession();
+    initializeAuth();
 
     const { data: authListener } = supabaseClient.auth.onAuthStateChange(
       (_event, newSession) => {
+        console.log('[Auth] Auth state changed:', _event, !!newSession);
         setSession(newSession);
         setSignedIn(!!newSession);
+        setIsInitializing(false);
         if (newSession?.user?.email) {
           fetchProfile({ email: newSession.user.email });
         }
@@ -170,6 +195,22 @@ function App({
     employeeProfile
   );
   const renderRoutes = () => {
+    // Show loading screen while initializing auth
+    if (isInitializing) {
+      return (
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+          gap: '20px'
+        }}>
+          <div style={{ fontSize: '18px', color: '#666' }}>Loading...</div>
+        </div>
+      );
+    }
+
     if (!signedIn || !session) {
       return (
         <Switch>
