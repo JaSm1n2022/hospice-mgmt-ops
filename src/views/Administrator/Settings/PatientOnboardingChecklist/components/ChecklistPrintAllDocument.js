@@ -231,7 +231,8 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
                      remarksLower.includes("un-resolved") ||
                      remarksLower.includes("not resolved") ||
                      remarksLower.includes("poc issue") ||
-                     remarksLower.includes("declined");
+                     remarksLower.includes("declined") ||
+                     remarksLower.includes("no notes");
     const remarksColor = hasIssue ? "#f44336" : "#666";
 
     return (
@@ -300,7 +301,8 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
                          remarksLower.includes("un-resolved") ||
                          remarksLower.includes("not resolved") ||
                          remarksLower.includes("poc issue") ||
-                         remarksLower.includes("declined");
+                         remarksLower.includes("declined") ||
+                         remarksLower.includes("no notes");
 
     return (
       <View style={styles.textRow}>

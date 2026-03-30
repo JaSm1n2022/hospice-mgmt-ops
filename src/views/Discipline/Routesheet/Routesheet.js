@@ -489,7 +489,8 @@ function Routesheet(props) {
   };
 
   const saveHandler = () => {
-    const signImg = signaturePreview || sigCanvas.current?.getCanvas().toDataURL("image/png");
+    const signImg =
+      signaturePreview || sigCanvas.current?.getCanvas().toDataURL("image/png");
     console.log("[SIGNATURE]", signImg, sigCanvas.current?.getCanvas());
     setClientError({ isError: false, message: "" });
     setSignatureError({ isError: false, message: "" });
@@ -711,24 +712,7 @@ function Routesheet(props) {
                     >
                       Choose Service
                     </MenuItem>
-                    <MenuItem
-                      classes={{
-                        root: classes.selectMenuItem,
-                        selected: classes.selectMenuItemSelected,
-                      }}
-                      value="SVF"
-                    >
-                      SVF
-                    </MenuItem>
-                    <MenuItem
-                      classes={{
-                        root: classes.selectMenuItem,
-                        selected: classes.selectMenuItemSelected,
-                      }}
-                      value="HUV"
-                    >
-                      HUV
-                    </MenuItem>
+
                     {serviceList.map((item, index) => (
                       <MenuItem
                         classes={{
@@ -1182,7 +1166,11 @@ function Routesheet(props) {
                                   placeholder: "YYYY-MM-DD",
                                   name: "serviceDate",
                                 }}
-                                value={serviceDate ? serviceDate.toDate() : new Date()}
+                                value={
+                                  serviceDate
+                                    ? serviceDate.toDate()
+                                    : new Date()
+                                }
                                 onChange={(e) =>
                                   dateInputHandler("serviceDate", e)
                                 }
@@ -1232,11 +1220,11 @@ function Routesheet(props) {
                                   readOnly: true,
                                   disabled: true,
                                   style: {
-                                    cursor: 'default',
-                                    backgroundColor: '#f5f5f5',
-                                    color: '#333',
-                                    fontWeight: 'bold'
-                                  }
+                                    cursor: "default",
+                                    backgroundColor: "#f5f5f5",
+                                    color: "#333",
+                                    fontWeight: "bold",
+                                  },
                                 }}
                               />
                             </FormControl>
@@ -1604,7 +1592,10 @@ function Routesheet(props) {
                   />
 
                   <div style={{ marginBottom: "10px" }}>
-                    <Typography variant="subtitle2" style={{ marginBottom: "10px" }}>
+                    <Typography
+                      variant="subtitle2"
+                      style={{ marginBottom: "10px" }}
+                    >
                       Select signature style:
                     </Typography>
                     <RadioGroup
@@ -1615,7 +1606,12 @@ function Routesheet(props) {
                         value="Dancing Script"
                         control={<Radio color="primary" />}
                         label={
-                          <span style={{ fontFamily: "'Dancing Script', cursive", fontSize: "24px" }}>
+                          <span
+                            style={{
+                              fontFamily: "'Dancing Script', cursive",
+                              fontSize: "24px",
+                            }}
+                          >
                             {typedName || "Dancing Script"}
                           </span>
                         }
@@ -1624,7 +1620,12 @@ function Routesheet(props) {
                         value="Great Vibes"
                         control={<Radio color="primary" />}
                         label={
-                          <span style={{ fontFamily: "'Great Vibes', cursive", fontSize: "24px" }}>
+                          <span
+                            style={{
+                              fontFamily: "'Great Vibes', cursive",
+                              fontSize: "24px",
+                            }}
+                          >
                             {typedName || "Great Vibes"}
                           </span>
                         }
@@ -1633,7 +1634,12 @@ function Routesheet(props) {
                         value="Pacifico"
                         control={<Radio color="primary" />}
                         label={
-                          <span style={{ fontFamily: "'Pacifico', cursive", fontSize: "24px" }}>
+                          <span
+                            style={{
+                              fontFamily: "'Pacifico', cursive",
+                              fontSize: "24px",
+                            }}
+                          >
                             {typedName || "Pacifico"}
                           </span>
                         }
@@ -1642,7 +1648,12 @@ function Routesheet(props) {
                         value="Satisfy"
                         control={<Radio color="primary" />}
                         label={
-                          <span style={{ fontFamily: "'Satisfy', cursive", fontSize: "24px" }}>
+                          <span
+                            style={{
+                              fontFamily: "'Satisfy', cursive",
+                              fontSize: "24px",
+                            }}
+                          >
                             {typedName || "Satisfy"}
                           </span>
                         }
@@ -1651,7 +1662,12 @@ function Routesheet(props) {
                         value="Allura"
                         control={<Radio color="primary" />}
                         label={
-                          <span style={{ fontFamily: "'Allura', cursive", fontSize: "24px" }}>
+                          <span
+                            style={{
+                              fontFamily: "'Allura', cursive",
+                              fontSize: "24px",
+                            }}
+                          >
                             {typedName || "Allura"}
                           </span>
                         }
@@ -1664,9 +1680,7 @@ function Routesheet(props) {
           </Card>
         </DialogContent>
         <DialogActions
-          className={
-            classes2.modalFooter + " " + classes2.modalFooterCenter
-          }
+          className={classes2.modalFooter + " " + classes2.modalFooterCenter}
         >
           <Button onClick={() => setSignatureModal(false)} color="rose" simple>
             Cancel
@@ -1675,9 +1689,7 @@ function Routesheet(props) {
             onClick={handleSignatureConfirm}
             color="success"
             round
-            disabled={
-              signatureMode === "type" && !typedName.trim()
-            }
+            disabled={signatureMode === "type" && !typedName.trim()}
           >
             Confirm Signature
           </Button>
