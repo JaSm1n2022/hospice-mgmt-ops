@@ -41,13 +41,13 @@ export const CLIENT_SERVICES = [
   {
     code: "HUV",
     name: "HUV",
-    isClientRequired: false,
+    isClientRequired: true,
     permission: ["Case Manager", "Registered Nurse", "Director of Nurse"],
   },
   {
     code: "SFV",
     name: "SFV",
-    isClientRequired: false,
+    isClientRequired: true,
     permission: [
       "Case Manager",
       "Registered Nurse",
@@ -131,12 +131,7 @@ export const CLIENT_SERVICES = [
     isClientRequired: true,
     permission: ["Chaplain", "Bereavement"],
   },
-  {
-    code: "HV",
-    name: "Home Health Aid Visit",
-    isClientRequired: true,
-    permission: ["Certified Nurse Assistant"],
-  },
+
   {
     code: "F/UV",
     name: "Follow Up Visit",
@@ -170,8 +165,20 @@ export const CLIENT_SERVICES = [
     permission: ["Case Manager", "Registered Nurse", "Director of Nurse"],
   },
   {
+    code: "SOC",
+    name: "SOC/Assessment",
+    isClientRequired: true,
+    permission: ["Case Manager", "Registered Nurse", "Director of Nurse"],
+  },
+  {
     code: "APV",
     name: "Admission Visit",
+    isClientRequired: true,
+    permission: ["Case Manager", "Registered Nurse", "Director of Nurse"],
+  },
+  {
+    code: "REA",
+    name: "Reassessment Visit",
     isClientRequired: true,
     permission: ["Case Manager", "Registered Nurse", "Director of Nurse"],
   },

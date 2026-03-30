@@ -50,7 +50,16 @@ import {
 } from "@material-ui/icons";
 import CustomInput from "components/CustomInput/CustomInput.js";
 import ReactSignatureCanvas from "react-signature-canvas";
-import { TextareaAutosize, Tooltip, Typography, Checkbox, FormControlLabel } from "@material-ui/core";
+import {
+  TextareaAutosize,
+  Tooltip,
+  Typography,
+  Checkbox,
+  FormControlLabel,
+  Radio,
+  RadioGroup,
+  TextField,
+} from "@material-ui/core";
 import { routesheetCreateStateSelector } from "store/selectors/routesheetSelector.js";
 import { assignmentListStateSelector } from "store/selectors/assignmentSelector.js";
 import { contractListStateSelector } from "store/selectors/contractSelector.js";
@@ -114,16 +123,15 @@ function Routesheet(props) {
     message: "",
   });
   const [dos, setDos] = useState(dayjs(new Date()));
+  const [serviceDate, setServiceDate] = useState(dayjs(new Date()));
   const [dosStart, setDosStart] = useState(
     dayjs(new Date()).format("YYYY-MM-DD HH:mm")
   );
   const [dosEnd, setDosEnd] = useState(
     dayjs(new Date()).add(1, "hour").format("YYYY-MM-DD HH:mm")
   );
-  const [timeIn, setTimeIn] = useState(dayjs(new Date()).format("YYYY-MM-DD"));
-  const [timeOut, setTimeOut] = useState(
-    dayjs(new Date()).add(1, "hour").format("YYYY-MM-DD")
-  );
+  const [timeIn, setTimeIn] = useState(dayjs(new Date()));
+  const [timeOut, setTimeOut] = useState(dayjs(new Date()).add(45, "minute"));
   const [anchorEl, setAnchorEl] = useState(null);
   const [otherService, setOtherService] = useState("");
   const [otherServiceError, setOtherServiceError] = useState({
@@ -135,6 +143,11 @@ function Routesheet(props) {
   );
   const [color, setColor] = useState("success");
   const [patientInfo, setPatientInfo] = useState(undefined);
+  const [signatureModal, setSignatureModal] = useState(false);
+  const [signatureMode, setSignatureMode] = useState("draw"); // "draw" or "type"
+  const [typedName, setTypedName] = useState("");
+  const [selectedFont, setSelectedFont] = useState("Dancing Script");
+  const [signaturePreview, setSignaturePreview] = useState(null);
   const classes = useStyles();
   const classes2 = useStyles2();
 
@@ -268,6 +281,9 @@ function Routesheet(props) {
   const clearSignatureHandler = () => {
     isSigned = false;
     sigCanvas.current?.clear();
+    setSignaturePreview(null);
+    setTypedName("");
+    setSignatureMode("draw");
     setIsRefresh(!isRefresh);
   };
   const showNotification = (place, color) => {
@@ -312,6 +328,21 @@ function Routesheet(props) {
     }
     */
   };
+  const calculateDuration = () => {
+    if (!timeIn || !timeOut) return "0h 0m";
+
+    const start = dayjs(timeIn);
+    const end = dayjs(timeOut);
+
+    const diffMinutes = end.diff(start, "minute");
+    if (diffMinutes < 0) return "0h 0m";
+
+    const hours = Math.floor(diffMinutes / 60);
+    const minutes = diffMinutes % 60;
+
+    return `${hours}h ${minutes}m`;
+  };
+
   const clearHandler = () => {
     //clear
     setClient("");
@@ -321,10 +352,14 @@ function Routesheet(props) {
     setClientService("");
     setNotes("");
     sigCanvas.current?.clear();
+    setSignaturePreview(null);
+    setTypedName("");
+    setSignatureMode("draw");
+    isSigned = false;
     setDos(dayjs(new Date()));
-    setTimeOut(dayjs(new Date()));
-    setTimeIn(dayjs(new Date()).format("HH:mm"));
-    setTimeOut(dayjs(new Date()).add(1, "hour").format("HH:mm"));
+    setServiceDate(dayjs(new Date()));
+    setTimeIn(dayjs(new Date()));
+    setTimeOut(dayjs(new Date()).add(45, "minute"));
   };
 
   const inputHandler = ({ target }) => {
@@ -418,8 +453,43 @@ function Routesheet(props) {
     }
   };
 
+  const handleSignatureConfirm = () => {
+    if (signatureMode === "draw") {
+      const signImg = sigCanvas.current?.getCanvas().toDataURL("image/png");
+      setSignaturePreview(signImg);
+      isSigned = true;
+    } else if (signatureMode === "type" && typedName.trim()) {
+      // Create canvas with typed signature
+      const canvas = document.createElement("canvas");
+      canvas.width = 500;
+      canvas.height = 100;
+      const ctx = canvas.getContext("2d");
+
+      // Set background
+      ctx.fillStyle = "white";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Set text style
+      ctx.fillStyle = "green";
+      ctx.font = `48px '${selectedFont}', cursive`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(typedName, canvas.width / 2, canvas.height / 2);
+
+      const signImg = canvas.toDataURL("image/png");
+      setSignaturePreview(signImg);
+      isSigned = true;
+    }
+    setSignatureModal(false);
+    setSignatureError({ isError: false, message: "" });
+  };
+
+  const handleSignatureModalOpen = () => {
+    setSignatureModal(true);
+  };
+
   const saveHandler = () => {
-    const signImg = sigCanvas.current?.getCanvas().toDataURL("image/png");
+    const signImg = signaturePreview || sigCanvas.current?.getCanvas().toDataURL("image/png");
     console.log("[SIGNATURE]", signImg, sigCanvas.current?.getCanvas());
     setClientError({ isError: false, message: "" });
     setSignatureError({ isError: false, message: "" });
@@ -450,9 +520,16 @@ function Routesheet(props) {
       return;
     }
 
-    // Get the day of the week from dosStart
-    const dosStartDate = dayjs(new Date(dosStart));
-    const dayOfWeek = dosStartDate.format("ddd"); // Returns Mon, Tue, Wed, etc.
+    // Combine serviceDate with timeIn and timeOut
+    const dateStr = dayjs(serviceDate).format("YYYY-MM-DD");
+    const timeInStr = dayjs(timeIn).format("HH:mm");
+    const timeOutStr = dayjs(timeOut).format("HH:mm");
+
+    const combinedDosStart = `${dateStr} ${timeInStr}`;
+    const combinedDosEnd = `${dateStr} ${timeOutStr}`;
+
+    // Get the day of the week from serviceDate
+    const dayOfWeek = dayjs(serviceDate).format("ddd"); // Returns Mon, Tue, Wed, etc.
 
     const params = {
       created_at: new Date(),
@@ -482,8 +559,8 @@ function Routesheet(props) {
         : 0,
 
       //  dos: dayjs(new Date(dos)).format("YYYY-MM-DD"),
-      dosStart: dayjs(new Date(dosStart)).format("YYYY-MM-DD HH:mm"),
-      dosEnd: dayjs(new Date(dosEnd)).format("YYYY-MM-DD HH:mm"),
+      dosStart: combinedDosStart,
+      dosEnd: combinedDosEnd,
       day: dayOfWeek,
     };
 
@@ -516,6 +593,8 @@ function Routesheet(props) {
   const dateInputHandler = (name, value) => {
     if (name === "dos") {
       setDos(new Date(value));
+    } else if (name === "serviceDate") {
+      setServiceDate(dayjs(value));
     } else if (name === "dosStart") {
       setDosStart(new Date(value));
     } else if (name === "dosEnd") {
@@ -525,17 +604,15 @@ function Routesheet(props) {
 
   const timeInputHandler = (name, value) => {
     if (name === "timeIn") {
-      setTimeIn(value);
+      setTimeIn(dayjs(value));
     } else if (name === "timeOut") {
-      setTimeOut(value);
+      setTimeOut(dayjs(value));
     }
   };
   const isClientRequiredHandler = () => {
     if (!clientService) {
       return false;
     } else if (clientService?.toLowerCase() === "other") {
-      return true;
-    } else if (clientService === "SVF" || clientService === "HUV") {
       return true;
     } else if (serviceList.find((s) => s.name === clientService)) {
       return serviceList.find((s) => s.name === clientService)
@@ -812,47 +889,92 @@ function Routesheet(props) {
                                     tabButton: "Client Info",
                                     tabContent: (
                                       <div style={{ padding: "10px" }}>
-                                        <div style={{
-                                          marginBottom: "12px",
-                                          padding: "12px",
-                                          backgroundColor: "#f5f5f5",
-                                          borderRadius: "4px",
-                                          borderLeft: "4px solid #00acc1"
-                                        }}>
-                                          <p style={{ margin: "0 0 5px 0", fontSize: "12px", color: "#666" }}>
+                                        <div
+                                          style={{
+                                            marginBottom: "12px",
+                                            padding: "12px",
+                                            backgroundColor: "#f5f5f5",
+                                            borderRadius: "4px",
+                                            borderLeft: "4px solid #00acc1",
+                                          }}
+                                        >
+                                          <p
+                                            style={{
+                                              margin: "0 0 5px 0",
+                                              fontSize: "12px",
+                                              color: "#666",
+                                            }}
+                                          >
                                             Address
                                           </p>
-                                          <p style={{ margin: 0, fontSize: "14px", color: "#333" }}>
-                                            {patientInfo?.address || "Call Agency"}
+                                          <p
+                                            style={{
+                                              margin: 0,
+                                              fontSize: "14px",
+                                              color: "#333",
+                                            }}
+                                          >
+                                            {patientInfo?.address ||
+                                              "Call Agency"}
                                           </p>
                                         </div>
 
-                                        <div style={{
-                                          marginBottom: "12px",
-                                          padding: "12px",
-                                          backgroundColor: "#f5f5f5",
-                                          borderRadius: "4px",
-                                          borderLeft: "4px solid #00acc1"
-                                        }}>
-                                          <p style={{ margin: "0 0 5px 0", fontSize: "12px", color: "#666" }}>
+                                        <div
+                                          style={{
+                                            marginBottom: "12px",
+                                            padding: "12px",
+                                            backgroundColor: "#f5f5f5",
+                                            borderRadius: "4px",
+                                            borderLeft: "4px solid #00acc1",
+                                          }}
+                                        >
+                                          <p
+                                            style={{
+                                              margin: "0 0 5px 0",
+                                              fontSize: "12px",
+                                              color: "#666",
+                                            }}
+                                          >
                                             Contact Person
                                           </p>
-                                          <p style={{ margin: 0, fontSize: "14px", color: "#333" }}>
-                                            {patientInfo?.contactPerson || "Call Agency"}
+                                          <p
+                                            style={{
+                                              margin: 0,
+                                              fontSize: "14px",
+                                              color: "#333",
+                                            }}
+                                          >
+                                            {patientInfo?.contactPerson ||
+                                              "Call Agency"}
                                           </p>
                                         </div>
 
-                                        <div style={{
-                                          padding: "12px",
-                                          backgroundColor: "#f5f5f5",
-                                          borderRadius: "4px",
-                                          borderLeft: "4px solid #00acc1"
-                                        }}>
-                                          <p style={{ margin: "0 0 5px 0", fontSize: "12px", color: "#666" }}>
+                                        <div
+                                          style={{
+                                            padding: "12px",
+                                            backgroundColor: "#f5f5f5",
+                                            borderRadius: "4px",
+                                            borderLeft: "4px solid #00acc1",
+                                          }}
+                                        >
+                                          <p
+                                            style={{
+                                              margin: "0 0 5px 0",
+                                              fontSize: "12px",
+                                              color: "#666",
+                                            }}
+                                          >
                                             Contact Number
                                           </p>
-                                          <p style={{ margin: 0, fontSize: "14px", color: "#333" }}>
-                                            {patientInfo?.contactNumber || "Call Agency"}
+                                          <p
+                                            style={{
+                                              margin: 0,
+                                              fontSize: "14px",
+                                              color: "#333",
+                                            }}
+                                          >
+                                            {patientInfo?.contactNumber ||
+                                              "Call Agency"}
                                           </p>
                                         </div>
                                       </div>
@@ -862,31 +984,59 @@ function Routesheet(props) {
                                     tabButton: "Service Info",
                                     tabContent: (
                                       <div style={{ padding: "10px" }}>
-                                        <div style={{
-                                          marginBottom: "12px",
-                                          padding: "12px",
-                                          backgroundColor: "#f5f5f5",
-                                          borderRadius: "4px",
-                                          borderLeft: "4px solid #4caf50"
-                                        }}>
-                                          <p style={{ margin: "0 0 5px 0", fontSize: "12px", color: "#666" }}>
+                                        <div
+                                          style={{
+                                            marginBottom: "12px",
+                                            padding: "12px",
+                                            backgroundColor: "#f5f5f5",
+                                            borderRadius: "4px",
+                                            borderLeft: "4px solid #4caf50",
+                                          }}
+                                        >
+                                          <p
+                                            style={{
+                                              margin: "0 0 5px 0",
+                                              fontSize: "12px",
+                                              color: "#666",
+                                            }}
+                                          >
                                             Visit Frequency
                                           </p>
-                                          <p style={{ margin: 0, fontSize: "14px", color: "#333" }}>
+                                          <p
+                                            style={{
+                                              margin: 0,
+                                              fontSize: "14px",
+                                              color: "#333",
+                                            }}
+                                          >
                                             {clientInformationFrequencyHandler()}
                                           </p>
                                         </div>
 
-                                        <div style={{
-                                          padding: "12px",
-                                          backgroundColor: "#f5f5f5",
-                                          borderRadius: "4px",
-                                          borderLeft: "4px solid #4caf50"
-                                        }}>
-                                          <p style={{ margin: "0 0 5px 0", fontSize: "12px", color: "#666" }}>
+                                        <div
+                                          style={{
+                                            padding: "12px",
+                                            backgroundColor: "#f5f5f5",
+                                            borderRadius: "4px",
+                                            borderLeft: "4px solid #4caf50",
+                                          }}
+                                        >
+                                          <p
+                                            style={{
+                                              margin: "0 0 5px 0",
+                                              fontSize: "12px",
+                                              color: "#666",
+                                            }}
+                                          >
                                             Day/Time
                                           </p>
-                                          <p style={{ margin: 0, fontSize: "14px", color: "#333" }}>
+                                          <p
+                                            style={{
+                                              margin: 0,
+                                              fontSize: "14px",
+                                              color: "#333",
+                                            }}
+                                          >
                                             {clientInformationDayHandler()}
                                           </p>
                                         </div>
@@ -897,33 +1047,68 @@ function Routesheet(props) {
                                     tabButton: "Contracted Rate",
                                     tabContent: (
                                       <div style={{ padding: "10px" }}>
-                                        <div style={{
-                                          marginBottom: "15px",
-                                          padding: "12px",
-                                          backgroundColor: "#f5f5f5",
-                                          borderRadius: "4px",
-                                          borderLeft: "4px solid #ff9800"
-                                        }}>
-                                          <p style={{ margin: "0 0 5px 0", fontSize: "12px", color: "#666" }}>
+                                        <div
+                                          style={{
+                                            marginBottom: "15px",
+                                            padding: "12px",
+                                            backgroundColor: "#f5f5f5",
+                                            borderRadius: "4px",
+                                            borderLeft: "4px solid #ff9800",
+                                          }}
+                                        >
+                                          <p
+                                            style={{
+                                              margin: "0 0 5px 0",
+                                              fontSize: "12px",
+                                              color: "#666",
+                                            }}
+                                          >
                                             Service Rate
                                           </p>
-                                          <p style={{ margin: 0, fontSize: "18px", fontWeight: "bold", color: "#333" }}>
+                                          <p
+                                            style={{
+                                              margin: 0,
+                                              fontSize: "18px",
+                                              fontWeight: "bold",
+                                              color: "#333",
+                                            }}
+                                          >
                                             {contractRate?.serviceRate
-                                              ? `$${contractRate?.serviceRate}/${contractRate?.serviceRateType || "hr"}`
+                                              ? `$${
+                                                  contractRate?.serviceRate
+                                                }/${
+                                                  contractRate?.serviceRateType ||
+                                                  "hr"
+                                                }`
                                               : "Call Agency"}
                                           </p>
                                         </div>
 
-                                        <div style={{
-                                          padding: "12px",
-                                          backgroundColor: "#f5f5f5",
-                                          borderRadius: "4px",
-                                          borderLeft: "4px solid #ff9800"
-                                        }}>
-                                          <p style={{ margin: "0 0 5px 0", fontSize: "12px", color: "#666" }}>
+                                        <div
+                                          style={{
+                                            padding: "12px",
+                                            backgroundColor: "#f5f5f5",
+                                            borderRadius: "4px",
+                                            borderLeft: "4px solid #ff9800",
+                                          }}
+                                        >
+                                          <p
+                                            style={{
+                                              margin: "0 0 5px 0",
+                                              fontSize: "12px",
+                                              color: "#666",
+                                            }}
+                                          >
                                             Mileage Rate
                                           </p>
-                                          <p style={{ margin: 0, fontSize: "18px", fontWeight: "bold", color: "#333" }}>
+                                          <p
+                                            style={{
+                                              margin: 0,
+                                              fontSize: "18px",
+                                              fontWeight: "bold",
+                                              color: "#333",
+                                            }}
+                                          >
                                             {contractRate?.mileageRate
                                               ? `$${contractRate?.mileageRate}/mile`
                                               : "Not Applicable"}
@@ -988,31 +1173,71 @@ function Routesheet(props) {
                       </CardHeader>
                       <CardBody>
                         <GridContainer>
-                          <GridItem xs={12} sm={12} md={6}>
-                            <h4>Time In</h4>
+                          <GridItem xs={12} sm={6} md={3}>
+                            <h4>Date</h4>
                             <FormControl fullWidth>
                               <Datetime
+                                timeFormat={false}
                                 inputProps={{
-                                  placeholder: "Date Here",
-                                  name: "dosStart",
+                                  placeholder: "YYYY-MM-DD",
+                                  name: "serviceDate",
                                 }}
-                                value={dosStart || dayjs(new Date())}
+                                value={serviceDate ? serviceDate.toDate() : new Date()}
                                 onChange={(e) =>
-                                  dateInputHandler("dosStart", e)
+                                  dateInputHandler("serviceDate", e)
                                 }
                               />
                             </FormControl>
                           </GridItem>
-                          <GridItem xs={12} sm={12} md={6}>
+                          <GridItem xs={12} sm={6} md={3}>
+                            <h4>Time In</h4>
+                            <FormControl fullWidth>
+                              <Datetime
+                                dateFormat={false}
+                                timeFormat="hh:mm A"
+                                inputProps={{
+                                  placeholder: "HH:mm A",
+                                  name: "timeIn",
+                                }}
+                                value={timeIn ? timeIn.toDate() : new Date()}
+                                onChange={(e) => timeInputHandler("timeIn", e)}
+                              />
+                            </FormControl>
+                          </GridItem>
+                          <GridItem xs={12} sm={6} md={3}>
                             <h4>Time Out</h4>
                             <FormControl fullWidth>
                               <Datetime
+                                dateFormat={false}
+                                timeFormat="hh:mm A"
                                 inputProps={{
-                                  placeholder: "Date Here",
-                                  name: "dosEnd",
+                                  placeholder: "HH:mm A",
+                                  name: "timeOut",
                                 }}
-                                value={dosEnd || dayjs(new Date())}
-                                onChange={(e) => dateInputHandler("dosEnd", e)}
+                                value={timeOut ? timeOut.toDate() : new Date()}
+                                onChange={(e) => timeInputHandler("timeOut", e)}
+                              />
+                            </FormControl>
+                          </GridItem>
+                          <GridItem xs={12} sm={6} md={3}>
+                            <h4>Duration</h4>
+                            <FormControl fullWidth>
+                              <CustomInput
+                                id="duration"
+                                formControlProps={{
+                                  fullWidth: true,
+                                }}
+                                inputProps={{
+                                  value: calculateDuration(),
+                                  readOnly: true,
+                                  disabled: true,
+                                  style: {
+                                    cursor: 'default',
+                                    backgroundColor: '#f5f5f5',
+                                    color: '#333',
+                                    fontWeight: 'bold'
+                                  }
+                                }}
                               />
                             </FormControl>
                           </GridItem>
@@ -1101,38 +1326,40 @@ function Routesheet(props) {
               </GridItem>
                           )*/}
             <GridContainer>
-              {isMileageRate && clientService && (!isClientRequiredHandler() || client) && (
-                <GridItem xs={12} sm={12} md={4}>
-                  <Card>
-                    <CardHeader color="danger" icon>
-                      <CardIcon color="danger">
-                        <DriveEta />
-                      </CardIcon>
-                      <h4 className={classes.cardIconTitle}>Log Mileage</h4>
-                    </CardHeader>
-                    <CardBody>
-                      <FormControl fullWidth>
-                        <CustomInput
-                          id="mileage"
-                          formControlProps={{
-                            fullWidth: true,
-                          }}
-                          onChange={inputHandler}
-                          inputProps={{
-                            placeholder: "mileage here",
-                            name: "mileage",
-                            onChange: (event) => {
-                              inputHandler(event);
-                            },
-                            type: "number",
-                            value: mileage,
-                          }}
-                        />
-                      </FormControl>
-                    </CardBody>
-                  </Card>
-                </GridItem>
-              )}
+              {isMileageRate &&
+                clientService &&
+                (!isClientRequiredHandler() || client) && (
+                  <GridItem xs={12} sm={12} md={4}>
+                    <Card>
+                      <CardHeader color="danger" icon>
+                        <CardIcon color="danger">
+                          <DriveEta />
+                        </CardIcon>
+                        <h4 className={classes.cardIconTitle}>Log Mileage</h4>
+                      </CardHeader>
+                      <CardBody>
+                        <FormControl fullWidth>
+                          <CustomInput
+                            id="mileage"
+                            formControlProps={{
+                              fullWidth: true,
+                            }}
+                            onChange={inputHandler}
+                            inputProps={{
+                              placeholder: "mileage here",
+                              name: "mileage",
+                              onChange: (event) => {
+                                inputHandler(event);
+                              },
+                              type: "number",
+                              value: mileage,
+                            }}
+                          />
+                        </FormControl>
+                      </CardBody>
+                    </Card>
+                  </GridItem>
+                )}
               {clientService && (!isClientRequiredHandler() || client) && (
                 <GridItem xs={12} sm={12} md={isMileageRate ? 4 : 6}>
                   <Card>
@@ -1184,28 +1411,41 @@ function Routesheet(props) {
                             <h4 className={classes.cardIconTitle}>Signature</h4>
                           </div>
                         </div>
-                        <Tooltip title="Clear Signature">
-                          <ClearOutlined
-                            style={{ color: "red" }}
-                            onClick={clearSignatureHandler}
-                          />
-                        </Tooltip>
+                        {signaturePreview && (
+                          <Tooltip title="Clear Signature">
+                            <ClearOutlined
+                              style={{ color: "red", cursor: "pointer" }}
+                              onClick={clearSignatureHandler}
+                            />
+                          </Tooltip>
+                        )}
                       </div>
                     </CardHeader>
                     <CardBody>
-                      <ReactSignatureCanvas
-                        penColor="green"
-                        onBegin={(e) => onBeginHandler(e)}
-                        ref={(ref) => {
-                          sigCanvas.current = ref;
-                        }}
-                        canvasProps={{
-                          height: 60,
-                          width: 500,
-                          background: "white",
-                          className: "sigCanvas",
-                        }}
-                      />
+                      {!signaturePreview ? (
+                        <div style={{ textAlign: "center", padding: "20px" }}>
+                          <Button
+                            color="info"
+                            round
+                            onClick={handleSignatureModalOpen}
+                          >
+                            <Gesture className={classes.icons} /> Sign Here
+                          </Button>
+                        </div>
+                      ) : (
+                        <div style={{ textAlign: "center", padding: "10px" }}>
+                          <img
+                            src={signaturePreview}
+                            alt="Signature"
+                            style={{
+                              maxWidth: "100%",
+                              height: "auto",
+                              border: "1px solid #ddd",
+                              borderRadius: "4px",
+                            }}
+                          />
+                        </div>
+                      )}
                       {signatureError.isError && (
                         <SnackbarContent
                           message={signatureError.message}
@@ -1234,6 +1474,217 @@ function Routesheet(props) {
           </CardBody>
         </Card>
       </GridItem>
+
+      {/* Signature Modal */}
+      <Dialog
+        classes={{
+          paper: classes2.modal,
+        }}
+        open={signatureModal}
+        TransitionComponent={Transition}
+        keepMounted
+        onClose={() => setSignatureModal(false)}
+        scroll="paper"
+        maxWidth="md"
+        fullWidth
+        aria-labelledby="signature-modal-title"
+      >
+        <DialogTitle
+          id="signature-modal-title"
+          disableTypography
+          className={classes2.modalHeader}
+        >
+          <Button
+            justIcon
+            className={classes2.modalCloseButton}
+            key="close"
+            aria-label="Close"
+            color="transparent"
+            onClick={() => setSignatureModal(false)}
+          >
+            <Close className={classes2.modalClose} />
+          </Button>
+          <div align="center">
+            <h4 className={classes2.modalTitle}>Add Your Signature</h4>
+          </div>
+        </DialogTitle>
+        <DialogContent id="signature-modal-content">
+          <Card>
+            <CardBody>
+              {/* Radio buttons for Draw/Type selection */}
+              <div style={{ marginBottom: "20px", textAlign: "center" }}>
+                <RadioGroup
+                  row
+                  value={signatureMode}
+                  onChange={(e) => setSignatureMode(e.target.value)}
+                  style={{ justifyContent: "center" }}
+                >
+                  <FormControlLabel
+                    value="draw"
+                    control={<Radio color="primary" />}
+                    label="Draw Signature"
+                  />
+                  <FormControlLabel
+                    value="type"
+                    control={<Radio color="primary" />}
+                    label="Type Signature"
+                  />
+                </RadioGroup>
+              </div>
+
+              {/* Draw Mode */}
+              {signatureMode === "draw" && (
+                <div>
+                  <div
+                    style={{
+                      marginBottom: "10px",
+                      textAlign: "center",
+                      color: "#666",
+                    }}
+                  >
+                    <p>Draw your signature below using your mouse or finger</p>
+                  </div>
+                  <div
+                    style={{
+                      border: "2px solid #00acc1",
+                      borderRadius: "8px",
+                      padding: "10px",
+                      backgroundColor: "#f9f9f9",
+                      display: "flex",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <ReactSignatureCanvas
+                      penColor="green"
+                      onBegin={(e) => onBeginHandler(e)}
+                      ref={(ref) => {
+                        sigCanvas.current = ref;
+                      }}
+                      canvasProps={{
+                        height: 200,
+                        width: 500,
+                        style: {
+                          border: "1px dashed #ccc",
+                          backgroundColor: "white",
+                          borderRadius: "4px",
+                        },
+                        className: "sigCanvas",
+                      }}
+                    />
+                  </div>
+                  <div style={{ marginTop: "10px", textAlign: "center" }}>
+                    <Button
+                      color="rose"
+                      simple
+                      onClick={() => sigCanvas.current?.clear()}
+                    >
+                      Clear Canvas
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Type Mode */}
+              {signatureMode === "type" && (
+                <div>
+                  <div
+                    style={{
+                      marginBottom: "20px",
+                      textAlign: "center",
+                      color: "#666",
+                    }}
+                  >
+                    <p>Type your name and select a signature style</p>
+                  </div>
+                  <TextField
+                    fullWidth
+                    label="Type your name"
+                    variant="outlined"
+                    value={typedName}
+                    onChange={(e) => setTypedName(e.target.value)}
+                    style={{ marginBottom: "20px" }}
+                  />
+
+                  <div style={{ marginBottom: "10px" }}>
+                    <Typography variant="subtitle2" style={{ marginBottom: "10px" }}>
+                      Select signature style:
+                    </Typography>
+                    <RadioGroup
+                      value={selectedFont}
+                      onChange={(e) => setSelectedFont(e.target.value)}
+                    >
+                      <FormControlLabel
+                        value="Dancing Script"
+                        control={<Radio color="primary" />}
+                        label={
+                          <span style={{ fontFamily: "'Dancing Script', cursive", fontSize: "24px" }}>
+                            {typedName || "Dancing Script"}
+                          </span>
+                        }
+                      />
+                      <FormControlLabel
+                        value="Great Vibes"
+                        control={<Radio color="primary" />}
+                        label={
+                          <span style={{ fontFamily: "'Great Vibes', cursive", fontSize: "24px" }}>
+                            {typedName || "Great Vibes"}
+                          </span>
+                        }
+                      />
+                      <FormControlLabel
+                        value="Pacifico"
+                        control={<Radio color="primary" />}
+                        label={
+                          <span style={{ fontFamily: "'Pacifico', cursive", fontSize: "24px" }}>
+                            {typedName || "Pacifico"}
+                          </span>
+                        }
+                      />
+                      <FormControlLabel
+                        value="Satisfy"
+                        control={<Radio color="primary" />}
+                        label={
+                          <span style={{ fontFamily: "'Satisfy', cursive", fontSize: "24px" }}>
+                            {typedName || "Satisfy"}
+                          </span>
+                        }
+                      />
+                      <FormControlLabel
+                        value="Allura"
+                        control={<Radio color="primary" />}
+                        label={
+                          <span style={{ fontFamily: "'Allura', cursive", fontSize: "24px" }}>
+                            {typedName || "Allura"}
+                          </span>
+                        }
+                      />
+                    </RadioGroup>
+                  </div>
+                </div>
+              )}
+            </CardBody>
+          </Card>
+        </DialogContent>
+        <DialogActions
+          className={
+            classes2.modalFooter + " " + classes2.modalFooterCenter
+          }
+        >
+          <Button onClick={() => setSignatureModal(false)} color="rose" simple>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSignatureConfirm}
+            color="success"
+            round
+            disabled={
+              signatureMode === "type" && !typedName.trim()
+            }
+          >
+            Confirm Signature
+          </Button>
+        </DialogActions>
+      </Dialog>
     </GridContainer>
   );
 }
