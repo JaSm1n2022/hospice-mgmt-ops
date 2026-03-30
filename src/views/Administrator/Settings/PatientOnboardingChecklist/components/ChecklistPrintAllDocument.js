@@ -206,6 +206,41 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
     );
   };
 
+  const renderSelectItemWithRemarks = (itemKey, itemValue, remarks) => {
+    let checkboxStyle;
+    let displayText = "";
+
+    if (itemValue === "Y") {
+      checkboxStyle = styles.checkboxContainerChecked;
+      displayText = "Y";
+    } else if (itemValue === "N") {
+      checkboxStyle = styles.checkboxContainerUnchecked;
+      displayText = "N";
+    } else if (itemValue === "NA") {
+      checkboxStyle = [styles.checkboxContainer, { backgroundColor: "#fff9c4", borderColor: "#fbc02d" }];
+      displayText = "N/A";
+    } else {
+      checkboxStyle = [styles.checkboxContainer, { backgroundColor: "#f5f5f5", borderColor: "#666" }];
+      displayText = "";
+    }
+
+    return (
+      <View key={itemKey}>
+        <View style={styles.itemRow}>
+          <View style={[styles.checkboxContainer, checkboxStyle]} />
+          <Text style={styles.itemText}>{ITEM_LABELS[itemKey] || itemKey}</Text>
+        </View>
+        {(itemValue === "N" || itemValue === "NA") && remarks && (
+          <View style={[styles.textRow, { marginLeft: 22, marginTop: -3 }]}>
+            <Text style={{ fontSize: 9, color: "#666", fontStyle: "italic" }}>
+              Remarks: {remarks}
+            </Text>
+          </View>
+        )}
+      </View>
+    );
+  };
+
   const renderBooleanWithDateItem = (itemKey, itemData) => {
     const isChecked = itemData && itemData.checked;
     const hasDate = itemData && itemData.date;
@@ -294,9 +329,9 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
         {patient.assessment && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{GROUP_LABELS.assessment}</Text>
-            {renderSelectItem("nursing", patient.assessment.nursing)}
-            {renderSelectItem("spiritual", patient.assessment.spiritual)}
-            {renderSelectItem("psychosocial", patient.assessment.psychosocial)}
+            {renderSelectItemWithRemarks("nursing", patient.assessment.nursing, patient.assessment.nursingRemarks)}
+            {renderSelectItemWithRemarks("spiritual", patient.assessment.spiritual, patient.assessment.spiritualRemarks)}
+            {renderSelectItemWithRemarks("psychosocial", patient.assessment.psychosocial, patient.assessment.psychosocialRemarks)}
           </View>
         )}
 

@@ -158,8 +158,11 @@ function ChecklistModal({
   // Assessment group
   const [assessment, setAssessment] = useState({
     nursing: "",
+    nursingRemarks: "",
     spiritual: "",
+    spiritualRemarks: "",
     psychosocial: "",
+    psychosocialRemarks: "",
   });
 
   // Treatment Order group
@@ -315,8 +318,11 @@ function ChecklistModal({
     });
     setAssessment({
       nursing: "",
+      nursingRemarks: "",
       spiritual: "",
+      spiritualRemarks: "",
       psychosocial: "",
+      psychosocialRemarks: "",
     });
     setTreatmentOrder({
       treatmentOrder: { checked: false },
@@ -425,6 +431,34 @@ function ChecklistModal({
         <MenuItem value="NA">Not Applicable</MenuItem>
       </Select>
     </FormControl>
+  );
+
+  const renderYNNASelectWithRemarks = (label, value, remarks, group, setGroup, field, remarksField) => (
+    <div style={{ marginBottom: "15px" }}>
+      <FormControl fullWidth style={{ marginBottom: "10px" }}>
+        <InputLabel>{label}</InputLabel>
+        <Select
+          value={value}
+          onChange={handleSelectChange(group, setGroup, field)}
+        >
+          <MenuItem value="">-- Select --</MenuItem>
+          <MenuItem value="Y">Yes</MenuItem>
+          <MenuItem value="N">No</MenuItem>
+          <MenuItem value="NA">Not Applicable</MenuItem>
+        </Select>
+      </FormControl>
+      {(value === "N" || value === "NA") && (
+        <TextField
+          label={`${label} - Remarks`}
+          value={remarks}
+          onChange={handleTextChange(group, setGroup, remarksField)}
+          fullWidth
+          multiline
+          rows={2}
+          placeholder="Please explain why..."
+        />
+      )}
+    </div>
   );
 
   const renderYNNASelectWithDate = (label, data, group, setGroup, field) => (
@@ -626,9 +660,33 @@ function ChecklistModal({
             </AccordionSummary>
             <AccordionDetails>
               <div className={classes.sectionContent}>
-                {renderYNNASelect("Nursing", assessment.nursing, assessment, setAssessment, "nursing")}
-                {renderYNNASelect("Spiritual", assessment.spiritual, assessment, setAssessment, "spiritual")}
-                {renderYNNASelect("Psychosocial", assessment.psychosocial, assessment, setAssessment, "psychosocial")}
+                {renderYNNASelectWithRemarks(
+                  "Nursing",
+                  assessment.nursing,
+                  assessment.nursingRemarks,
+                  assessment,
+                  setAssessment,
+                  "nursing",
+                  "nursingRemarks"
+                )}
+                {renderYNNASelectWithRemarks(
+                  "Spiritual",
+                  assessment.spiritual,
+                  assessment.spiritualRemarks,
+                  assessment,
+                  setAssessment,
+                  "spiritual",
+                  "spiritualRemarks"
+                )}
+                {renderYNNASelectWithRemarks(
+                  "Psychosocial",
+                  assessment.psychosocial,
+                  assessment.psychosocialRemarks,
+                  assessment,
+                  setAssessment,
+                  "psychosocial",
+                  "psychosocialRemarks"
+                )}
               </div>
             </AccordionDetails>
           </Accordion>

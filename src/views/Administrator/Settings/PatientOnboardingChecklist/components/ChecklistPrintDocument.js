@@ -306,6 +306,44 @@ const ChecklistPrintDocument = ({ patientData }) => {
     );
   };
 
+  const renderSelectItemWithRemarks = (itemKey, itemValue, remarks) => {
+    let boxStyle = styles.selectBoxN;
+    let textStyle = styles.selectTextDark;
+    let displayValue = "N/A";
+
+    if (itemValue === "Y") {
+      boxStyle = styles.selectBoxY;
+      textStyle = styles.selectText;
+      displayValue = "YES";
+    } else if (itemValue === "N") {
+      boxStyle = styles.selectBoxN;
+      textStyle = styles.selectTextRed;
+      displayValue = "NO";
+    } else if (itemValue === "NA") {
+      boxStyle = styles.selectBoxNA;
+      textStyle = styles.selectTextDark;
+      displayValue = "N/A";
+    }
+
+    return (
+      <View key={itemKey}>
+        <View style={styles.selectContainer}>
+          <View style={[styles.selectBox, boxStyle]}>
+            <Text style={textStyle}>{displayValue}</Text>
+          </View>
+          <Text style={styles.itemText}>{ITEM_LABELS[itemKey] || itemKey}</Text>
+        </View>
+        {(itemValue === "N" || itemValue === "NA") && remarks && (
+          <View style={[styles.textRow, { marginLeft: 68, marginTop: -3 }]}>
+            <Text style={{ fontSize: 10, color: "#666", fontStyle: "italic" }}>
+              Remarks: {remarks}
+            </Text>
+          </View>
+        )}
+      </View>
+    );
+  };
+
   const renderSelectWithDateItem = (itemKey, itemData) => {
     const value = itemData?.value || "";
     const date = itemData?.date || "";
@@ -498,9 +536,9 @@ const ChecklistPrintDocument = ({ patientData }) => {
     return (
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{GROUP_LABELS.assessment}</Text>
-        {renderSelectItem("nursing", data.nursing)}
-        {renderSelectItem("spiritual", data.spiritual)}
-        {renderSelectItem("psychosocial", data.psychosocial)}
+        {renderSelectItemWithRemarks("nursing", data.nursing, data.nursingRemarks)}
+        {renderSelectItemWithRemarks("spiritual", data.spiritual, data.spiritualRemarks)}
+        {renderSelectItemWithRemarks("psychosocial", data.psychosocial, data.psychosocialRemarks)}
       </View>
     );
   };
