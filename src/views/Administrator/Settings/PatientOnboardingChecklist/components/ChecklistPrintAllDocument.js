@@ -224,6 +224,16 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
       displayText = "";
     }
 
+    // Check if remarks contains keywords for red highlighting
+    const remarksLower = remarks ? remarks.toLowerCase().trim() : "";
+    const hasIssue = remarksLower.includes("unresolve") ||
+                     remarksLower.includes("unresolved") ||
+                     remarksLower.includes("un-resolved") ||
+                     remarksLower.includes("not resolved") ||
+                     remarksLower.includes("poc issue") ||
+                     remarksLower.includes("declined");
+    const remarksColor = hasIssue ? "#f44336" : "#666";
+
     return (
       <View key={itemKey}>
         <View style={styles.itemRow}>
@@ -232,7 +242,7 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
         </View>
         {(itemValue === "N" || itemValue === "NA") && remarks && (
           <View style={[styles.textRow, { marginLeft: 22, marginTop: -3 }]}>
-            <Text style={{ fontSize: 9, color: "#666", fontStyle: "italic" }}>
+            <Text style={{ fontSize: 9, color: remarksColor, fontStyle: "italic", fontWeight: hasIssue ? "bold" : "normal" }}>
               Remarks: {remarks}
             </Text>
           </View>
