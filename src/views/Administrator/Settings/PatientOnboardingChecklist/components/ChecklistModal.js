@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useRef } from "react";
 import {
   Modal,
   makeStyles,
@@ -140,6 +140,7 @@ function ChecklistModal({
   const [assignmentList, setAssignmentList] = useState([]);
   const [employeeList, setEmployeeList] = useState([]);
   const [isPopulatingIDT, setIsPopulatingIDT] = useState(false);
+  const populateTimeoutRef = useRef(null);
 
   // Admission group
   const [admission, setAdmission] = useState({
@@ -244,6 +245,15 @@ function ChecklistModal({
     }
   }, [open]);
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (populateTimeoutRef.current) {
+        clearTimeout(populateTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // Process employee data
   useEffect(() => {
     if (employees && employees.status === ACTION_STATUSES.SUCCEED) {
@@ -270,7 +280,14 @@ function ChecklistModal({
   useEffect(() => {
     if (assignments && assignments.status === ACTION_STATUSES.SUCCEED) {
       setAssignmentList(assignments.data || []);
+    } else if (assignments && assignments.status === ACTION_STATUSES.FAILED) {
+      // Clear timeout and reset loading state if fetch fails
+      if (populateTimeoutRef.current) {
+        clearTimeout(populateTimeoutRef.current);
+        populateTimeoutRef.current = null;
+      }
       setIsPopulatingIDT(false);
+      alert("Failed to fetch IDT assignments. Please try again.");
     }
   }, [assignments]);
 
@@ -515,13 +532,37 @@ function ChecklistModal({
       return;
     }
 
+    // Clear any existing timeout
+    if (populateTimeoutRef.current) {
+      clearTimeout(populateTimeoutRef.current);
+    }
+
     setIsPopulatingIDT(true);
     fetchAssignments({ companyId: context.userProfile.companyId });
+
+    // Safety timeout to prevent infinite loading state
+    populateTimeoutRef.current = setTimeout(() => {
+      setIsPopulatingIDT(false);
+      console.warn("IDT Assignment population timed out");
+    }, 15000); // 15 seconds timeout
   };
 
   // Populate POC when assignments are fetched
   useEffect(() => {
-    if (isPopulatingIDT && assignmentList.length > 0 && selectedPatient) {
+    if (isPopulatingIDT && selectedPatient && assignments?.status === ACTION_STATUSES.SUCCEED) {
+      // Clear the timeout since we're processing
+      if (populateTimeoutRef.current) {
+        clearTimeout(populateTimeoutRef.current);
+        populateTimeoutRef.current = null;
+      }
+
+      // Check if we have assignment data (even if empty array)
+      if (assignmentList.length === 0) {
+        alert("No IDT assignments found for this patient");
+        setIsPopulatingIDT(false);
+        return;
+      }
+
       // Filter assignments by patient code
       const patientAssignments = assignmentList.filter(
         (assignment) => assignment.patientCd === selectedPatient.patientCd
@@ -546,7 +587,7 @@ function ChecklistModal({
       setPoc(pocEntries);
       setIsPopulatingIDT(false);
     }
-  }, [assignmentList, isPopulatingIDT, selectedPatient]);
+  }, [assignmentList, isPopulatingIDT, selectedPatient, assignments]);
 
   const handleSubmit = () => {
     if (!selectedPatient) {
