@@ -3,7 +3,7 @@ import CustomTextField from "components/TextField/CustomTextField";
 import { QUANTITY_UOM } from "utils/constants";
 import { SUPPLY_CATEGORY } from "utils/constants";
 import CustomSingleAutoComplete from "components/AutoComplete/CustomSingleAutoComplete";
-import { Card, Grid, Modal, Typography } from "@material-ui/core";
+import { Card, Grid, Modal, Typography, Checkbox, FormControlLabel, TextField } from "@material-ui/core";
 import { DEFAULT_ITEM } from "utils/constants";
 import CardBody from "components/Card/CardBody";
 import { makeStyles } from "@material-ui/core";
@@ -144,6 +144,7 @@ function IDGForm(props) {
   const [numberOfVisit, setNumberOfVisit] = useState(undefined);
   const [selectedPosition, setSelectedPosition] = useState(DEFAULT_ITEM);
   const [timeOfVisit, setTimeOfVisit] = useState("");
+  const [timeOpen, setTimeOpen] = useState(false);
   const [employeeList, setEmployeeList] = useState([]);
   const [modalStyle] = React.useState(getModalStyle);
   const [comps, setComps] = useState();
@@ -318,6 +319,7 @@ function IDGForm(props) {
     setSelectedPosition(DEFAULT_ITEM);
     setNumberOfVisit(undefined);
     setTimeOfVisit("");
+    setTimeOpen(false);
   };
   const addItemHandler = (source) => {
     // for items it is not needed for this handler
@@ -336,7 +338,7 @@ function IDGForm(props) {
       visitType: selectedVisitType.code,
       dayOfTheWeek:
         dayOfWeekOptions.filter((s) => s.selected)?.map((m) => m.value) || [],
-      timeOfVisit: timeOfVisit,
+      timeOfVisit: timeOpen ? "Open" : timeOfVisit,
     };
     props.createAssignmentHandler(payload, "create");
     clearFormHandler();
@@ -608,16 +610,42 @@ function IDGForm(props) {
                           </Typography>
                         </div>
 
-                        {/* Right side: Input */}
+                        {/* Right side: Time Input with Open checkbox */}
                         <div style={{ flex: 1 }}>
-                          <CustomTextField
-                            placeholder="Time of Visit"
+                          <TextField
+                            type="time"
+                            placeholder="HH:mm"
                             label="Time"
-                            type="text"
-                            name="timeOfVisit"
-                            disabled={!selectedDiscipline?.name}
-                            value={timeOfVisit}
-                            onChange={onChangeGeneralInputHandler}
+                            value={timeOpen ? "" : timeOfVisit}
+                            disabled={timeOpen || !selectedDiscipline?.name}
+                            onChange={(e) => setTimeOfVisit(e.target.value)}
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                              }
+                            }}
+                            inputProps={{
+                              step: 300,
+                            }}
+                            style={{ marginRight: "10px", width: "150px" }}
+                          />
+                          <FormControlLabel
+                            control={
+                              <Checkbox
+                                checked={timeOpen}
+                                onChange={(e) => {
+                                  setTimeOpen(e.target.checked);
+                                  if (e.target.checked) {
+                                    setTimeOfVisit("Open");
+                                  } else {
+                                    setTimeOfVisit("");
+                                  }
+                                }}
+                                disabled={!selectedDiscipline?.name}
+                                color="primary"
+                              />
+                            }
+                            label="Open"
                           />
                         </div>
                       </div>

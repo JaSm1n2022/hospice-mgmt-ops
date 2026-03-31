@@ -5,7 +5,7 @@ import Person from "@material-ui/icons/Person";
 import Edit from "@material-ui/icons/Edit";
 import Close from "@material-ui/icons/Close";
 import styles from "../../../../assets/jss/material-dashboard-pro-react/views/extendedTablesStyle.js";
-import { Grid, makeStyles, Typography } from "@material-ui/core";
+import { Grid, makeStyles, Typography, Checkbox, FormControlLabel, TextField } from "@material-ui/core";
 import styles2 from "../../../../assets/jss/material-dashboard-pro-react/views/notificationsStyle.js";
 import Dialog from "@material-ui/core/Dialog";
 import DialogTitle from "@material-ui/core/DialogTitle";
@@ -38,6 +38,7 @@ export default function ActionsFunction(props) {
   const [selectedVisitType, setSelectedVisitType] = useState(DEFAULT_ITEM);
   const [numberOfVisit, setNumberOfVisit] = useState(0);
   const [timeOfVisit, setTimeOfVisit] = useState("");
+  const [timeOpen, setTimeOpen] = useState(false);
   const [editModal, setEditModal] = useState(false);
   const [currentItem, setCurrentItem] = useState(undefined);
   const [isRefresh, setIsRefresh] = useState(false);
@@ -67,7 +68,16 @@ export default function ActionsFunction(props) {
           DEFAULT_ITEM
       );
       setNumberOfVisit(currentItem?.frequencyVisit);
-      setTimeOfVisit(currentItem?.timeOfVisit);
+
+      // Check if time is "Open" and set states accordingly
+      if (currentItem?.timeOfVisit === "Open") {
+        setTimeOpen(true);
+        setTimeOfVisit("Open");
+      } else {
+        setTimeOpen(false);
+        setTimeOfVisit(currentItem?.timeOfVisit || "");
+      }
+
       const weeks = [];
       [...DAY_OF_WEEK].forEach((d) => {
         d.category = "dayOfWeek";
@@ -90,7 +100,7 @@ export default function ActionsFunction(props) {
     currentItem.dayOfTheWeek =
       dayOfWeekOptions.filter((f) => f.selected)?.map((m) => m.value) || [];
     currentItem.visitType = selectedVisitType.value;
-    currentItem.timeOfVisit = timeOfVisit;
+    currentItem.timeOfVisit = timeOpen ? "Open" : timeOfVisit;
     props.onEdit(currentItem);
   };
   const selectAllHandler = (isAll, options) => {
@@ -390,15 +400,41 @@ export default function ActionsFunction(props) {
                               </Typography>
                             </div>
 
-                            {/* Right side: Input */}
+                            {/* Right side: Time Input with Open checkbox */}
                             <div style={{ flex: 1 }}>
-                              <CustomTextField
-                                placeholder="Time of Visit"
+                              <TextField
+                                type="time"
+                                placeholder="HH:mm"
                                 label="Time"
-                                type="text"
-                                name="timeOfVisit"
-                                value={timeOfVisit}
-                                onChange={onChangeGeneralInputHandler}
+                                value={timeOpen ? "" : timeOfVisit}
+                                disabled={timeOpen}
+                                onChange={(e) => setTimeOfVisit(e.target.value)}
+                                onKeyPress={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                  }
+                                }}
+                                inputProps={{
+                                  step: 300,
+                                }}
+                                style={{ marginRight: "10px", width: "150px" }}
+                              />
+                              <FormControlLabel
+                                control={
+                                  <Checkbox
+                                    checked={timeOpen}
+                                    onChange={(e) => {
+                                      setTimeOpen(e.target.checked);
+                                      if (e.target.checked) {
+                                        setTimeOfVisit("Open");
+                                      } else {
+                                        setTimeOfVisit("");
+                                      }
+                                    }}
+                                    color="primary"
+                                  />
+                                }
+                                label="Open"
                               />
                             </div>
                           </div>

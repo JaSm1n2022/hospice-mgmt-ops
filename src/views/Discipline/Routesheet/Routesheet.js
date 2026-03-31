@@ -404,13 +404,49 @@ function Routesheet(props) {
           setIsMileageRate(false);
         }
       }
+      console.log("[CLIENT SELECTION - START]");
+      console.log("[Assignment List]", assignmentList);
+      console.log("[Selected Patient Code]", target.value);
+      console.log("[Current User Position]", context.employeeProfile?.position);
+
       const assignPatient = assignmentList.find(
-        (a) => a.patientCd === target.value
+        (a) => a.patientCd === target.value && a.disciplinePosition === context.employeeProfile?.position
       );
 
-      setPatientInfo(assignPatient?.patient);
-      //if specific
+      console.log("[Found Assignment for Patient]", assignPatient);
 
+      setPatientInfo(assignPatient?.patient);
+
+      // Set Time In and Time Out based on IDT assignment
+      if (assignPatient) {
+        console.log("[Assignment Found - Processing Time]");
+        console.log("[Assignment Object]", assignPatient);
+
+        // Use timeOfVisit field from assignment
+        const assignedTime = assignPatient.timeOfVisit;
+
+        console.log("[Assigned Time Value (timeOfVisit)]", assignedTime);
+        console.log("[Is Time 'Open'?]", assignedTime === "Open");
+        console.log("[Is Time Empty?]", !assignedTime);
+
+        // Only set time if assignment has a specific time (not "Open" and not empty)
+        if (assignedTime && assignedTime !== "Open") {
+          console.log("[Setting Time from IDT Assignment]", assignedTime);
+          const [hours, minutes] = assignedTime.split(":");
+          console.log("[Parsed Hours]", hours, "[Parsed Minutes]", minutes);
+          const timeInValue = dayjs(new Date()).set("hour", parseInt(hours)).set("minute", parseInt(minutes));
+          console.log("[New Time In]", timeInValue.format("HH:mm"));
+          console.log("[New Time Out]", timeInValue.add(45, "minute").format("HH:mm"));
+          setTimeIn(timeInValue);
+          setTimeOut(timeInValue.add(45, "minute"));
+        } else {
+          console.log("[NOT Setting Time - Time is 'Open' or empty]");
+        }
+      } else {
+        console.log("[NO Assignment Found for this Patient + Position]");
+      }
+
+      console.log("[CLIENT SELECTION - END]");
       setClient(target.value);
     } else if (target.name === "clientService") {
       console.log(

@@ -3,7 +3,7 @@ import CustomTextField from "components/TextField/CustomTextField";
 import { QUANTITY_UOM } from "utils/constants";
 import { SUPPLY_CATEGORY } from "utils/constants";
 import CustomSingleAutoComplete from "components/AutoComplete/CustomSingleAutoComplete";
-import { Button, Card, Grid, Modal, Typography } from "@material-ui/core";
+import { Button, Card, Grid, Modal, Typography, Checkbox, FormControlLabel, TextField } from "@material-ui/core";
 import { DEFAULT_ITEM } from "utils/constants";
 import CardBody from "components/Card/CardBody";
 import { makeStyles } from "@material-ui/core";
@@ -225,12 +225,12 @@ const general = [
   },
   {
     id: "cnaTime",
-    component: "textfield",
+    component: "timeopen",
     placeholder: "CNA Time",
-    label: "CNA Time *",
+    label: "CNA Time",
     name: "cnaTime",
+    openName: "cnaTimeOpen",
     isMandatory: false,
-    // errorMsg: CNA_VISIT_ERROR_MSG,
     cols: 3,
   },
   {
@@ -280,12 +280,12 @@ const general = [
   },
   {
     id: "rnTime",
-    component: "textfield",
+    component: "timeopen",
     placeholder: "RN Time",
-    label: "RN Time *",
+    label: "RN Time",
     name: "rnTime",
+    openName: "rnTimeOpen",
     isMandatory: false,
-    //  errorMsg: CNA_VISIT_ERROR_MSG,
     cols: 3,
   },
   {
@@ -335,12 +335,12 @@ const general = [
   },
   {
     id: "lpnTime",
-    component: "textfield",
+    component: "timeopen",
     placeholder: "LPN Time",
-    label: "LPN Time *",
+    label: "LPN Time",
     name: "lpnTime",
+    openName: "lpnTimeOpen",
     isMandatory: false,
-    //  errorMsg: CNA_VISIT_ERROR_MSG,
     cols: 3,
   },
 ];
@@ -712,7 +712,66 @@ function AssignmentForm(props) {
                       xs={item.cols ? item.cols : 3}
                       style={{ paddingBottom: 2 }}
                     >
-                      {item.component === "textfield" ? (
+                      {item.component === "timeopen" ? (
+                        <React.Fragment>
+                          <div style={{ marginBottom: "10px" }}>
+                            <Typography variant="body2" style={{ marginBottom: "5px", fontWeight: "500" }}>
+                              {item.label}
+                            </Typography>
+                            <TextField
+                              type="time"
+                              placeholder={item.placeholder}
+                              value={
+                                generalForm[item.name] === "Open" || generalForm[item.openName]
+                                  ? ""
+                                  : generalForm[item.name] || ""
+                              }
+                              disabled={
+                                generalForm[item.name] === "Open" ||
+                                generalForm[item.openName] ||
+                                disabledComponentHandler(item)
+                              }
+                              onChange={(e) => {
+                                inputGeneralHandler({
+                                  target: { name: item.name, value: e.target.value }
+                                });
+                              }}
+                              inputProps={{
+                                step: 300,
+                              }}
+                              style={{ marginRight: "10px" }}
+                            />
+                            <FormControlLabel
+                              control={
+                                <Checkbox
+                                  checked={
+                                    generalForm[item.name] === "Open" ||
+                                    generalForm[item.openName] ||
+                                    false
+                                  }
+                                  onChange={(e) => {
+                                    inputGeneralHandler({
+                                      target: { name: item.openName, value: e.target.checked }
+                                    });
+                                    if (e.target.checked) {
+                                      inputGeneralHandler({
+                                        target: { name: item.name, value: "Open" }
+                                      });
+                                    } else {
+                                      inputGeneralHandler({
+                                        target: { name: item.name, value: "" }
+                                      });
+                                    }
+                                  }}
+                                  disabled={disabledComponentHandler(item)}
+                                  color="primary"
+                                />
+                              }
+                              label="Open"
+                            />
+                          </div>
+                        </React.Fragment>
+                      ) : item.component === "textfield" ? (
                         <React.Fragment>
                           <CustomTextField
                             {...item}
