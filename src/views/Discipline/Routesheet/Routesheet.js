@@ -1547,7 +1547,7 @@ function Routesheet(props) {
                         sigCanvas.current = ref;
                       }}
                       canvasProps={{
-                        height: 200,
+                        height: window.innerWidth <= 768 ? 300 : 200,
                         className: "sigCanvas",
                         style: {
                           width: "100%",
