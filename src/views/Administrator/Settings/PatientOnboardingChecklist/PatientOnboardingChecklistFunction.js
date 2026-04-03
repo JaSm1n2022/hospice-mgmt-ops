@@ -456,12 +456,6 @@ function PatientOnboardingChecklistFunction(props) {
         checklist.discharge,
         CHECKLIST_STRUCTURE.discharge.items
       );
-      // For table display, only show LCD status in compliance column
-      const complianceStatusForTable = PatientOnboardingHandler.calculateGroupStatus(
-        checklist.compliance,
-        [{ key: "lcdEligibility", type: "boolean", mandatory: true }]
-      );
-      // For overall progress calculation, use all compliance items including HOPE
       const complianceStatus = PatientOnboardingHandler.calculateGroupStatus(
         checklist.compliance,
         CHECKLIST_STRUCTURE.compliance.items
@@ -508,7 +502,7 @@ function PatientOnboardingChecklistFunction(props) {
         volunteerNotesStatus,
         miscellaneousStatus,
         dischargeStatus,
-        complianceStatus: complianceStatusForTable, // Show only LCD in table
+        complianceStatus, // Includes all 5 items: 4 HOPE + LCD
         pocStatus,
         overallProgress,
         lastUpdated: checklist.updated_at || checklist.created_at,
