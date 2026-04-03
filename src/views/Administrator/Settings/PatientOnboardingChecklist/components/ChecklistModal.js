@@ -238,6 +238,9 @@ function ChecklistModal({
   // POC array
   const [poc, setPoc] = useState([]);
 
+  // Remarks array
+  const [remarks, setRemarks] = useState([]);
+
   // Fetch employees when modal opens
   useEffect(() => {
     if (open && context.userProfile?.companyId) {
@@ -313,6 +316,7 @@ function ChecklistModal({
       setDischarge(item.discharge || discharge);
       setCompliance(item.compliance || compliance);
       setPoc(item.poc || []);
+      setRemarks(item.remarks || []);
     } else {
       // Reset for create mode
       resetForm();
@@ -373,6 +377,7 @@ function ChecklistModal({
       lcdEligibility: { checked: false },
     });
     setPoc([]);
+    setRemarks([]);
   };
 
   const handlePatientSelect = (patient) => {
@@ -521,6 +526,22 @@ function ChecklistModal({
     setPoc(newPoc);
   };
 
+  const addRemarkEntry = () => {
+    setRemarks([...remarks, ""]);
+  };
+
+  const removeRemarkEntry = (index) => {
+    const newRemarks = [...remarks];
+    newRemarks.splice(index, 1);
+    setRemarks(newRemarks);
+  };
+
+  const handleRemarkChange = (index, value) => {
+    const newRemarks = [...remarks];
+    newRemarks[index] = value;
+    setRemarks(newRemarks);
+  };
+
   const handlePopulateIDTAssignment = () => {
     if (!selectedPatient) {
       alert("Please select a patient first");
@@ -610,6 +631,7 @@ function ChecklistModal({
       discharge,
       compliance,
       poc,
+      remarks,
     };
 
     onSubmit(data);
@@ -1092,6 +1114,50 @@ function ChecklistModal({
                     />
                     <IconButton
                       onClick={() => removePocEntry(index)}
+                      color="secondary"
+                      size="small"
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </div>
+                ))}
+              </div>
+            </AccordionDetails>
+          </Accordion>
+
+          {/* 13. General Remarks */}
+          <Accordion className={classes.accordion}>
+            <AccordionSummary
+              expandIcon={<ExpandMore />}
+              className={classes.accordionSummary}
+            >
+              <Typography variant="h6">13. General Remarks</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <div className={classes.sectionContent}>
+                <MuiButton
+                  variant="outlined"
+                  color="primary"
+                  startIcon={<AddIcon />}
+                  onClick={addRemarkEntry}
+                  style={{ marginBottom: "15px" }}
+                >
+                  Add Remark
+                </MuiButton>
+                {remarks.map((remark, index) => (
+                  <div key={index} className={classes.pocEntry}>
+                    <TextField
+                      label={`Remark ${index + 1}`}
+                      value={remark}
+                      onChange={(e) => handleRemarkChange(index, e.target.value)}
+                      fullWidth
+                      multiline
+                      rows={2}
+                      placeholder="Enter remark..."
+                      style={{ flex: 1 }}
+                    />
+                    <IconButton
+                      onClick={() => removeRemarkEntry(index)}
                       color="secondary"
                       size="small"
                     >

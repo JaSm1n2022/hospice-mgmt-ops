@@ -52,7 +52,7 @@ class AssignmentHandler {
     items.forEach((item) => {
       console.log("[ITEM]", item);
       item.days = item.dayOfTheWeek?.join(",");
-      item.numberOfVisit = item.frequencyVisit
+      item.numberOfVisit = item.frequencyVisit != null
         ? `${item.frequencyVisit}/${item.visitType}`
         : "N/A";
     });

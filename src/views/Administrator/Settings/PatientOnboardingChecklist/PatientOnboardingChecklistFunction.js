@@ -162,10 +162,10 @@ const CHECKLIST_STRUCTURE = {
   },
   compliance: {
     items: [
-      { key: "hopeAdmission", type: "selectWithDate", mandatory: false },
-      { key: "hopeHuv1", type: "selectWithDate", mandatory: false },
-      { key: "hopeHuv2", type: "selectWithDate", mandatory: false },
-      { key: "hopeDischarge", type: "selectWithDate", mandatory: false },
+      { key: "hopeAdmission", type: "selectWithDate", mandatory: true },
+      { key: "hopeHuv1", type: "selectWithDate", mandatory: true },
+      { key: "hopeHuv2", type: "selectWithDate", mandatory: true },
+      { key: "hopeDischarge", type: "selectWithDate", mandatory: true },
       { key: "lcdEligibility", type: "boolean", mandatory: true },
     ],
   },
@@ -456,6 +456,12 @@ function PatientOnboardingChecklistFunction(props) {
         checklist.discharge,
         CHECKLIST_STRUCTURE.discharge.items
       );
+      // For table display, only show LCD status in compliance column
+      const complianceStatusForTable = PatientOnboardingHandler.calculateGroupStatus(
+        checklist.compliance,
+        [{ key: "lcdEligibility", type: "boolean", mandatory: true }]
+      );
+      // For overall progress calculation, use all compliance items including HOPE
       const complianceStatus = PatientOnboardingHandler.calculateGroupStatus(
         checklist.compliance,
         CHECKLIST_STRUCTURE.compliance.items
@@ -502,7 +508,7 @@ function PatientOnboardingChecklistFunction(props) {
         volunteerNotesStatus,
         miscellaneousStatus,
         dischargeStatus,
-        complianceStatus,
+        complianceStatus: complianceStatusForTable, // Show only LCD in table
         pocStatus,
         overallProgress,
         lastUpdated: checklist.updated_at || checklist.created_at,
@@ -559,6 +565,7 @@ function PatientOnboardingChecklistFunction(props) {
       discharge: data.discharge || {},
       compliance: data.compliance || {},
       poc: data.poc || [],
+      remarks: data.remarks || [],
 
       updatedUser: {
         name: context.userProfile?.name,
