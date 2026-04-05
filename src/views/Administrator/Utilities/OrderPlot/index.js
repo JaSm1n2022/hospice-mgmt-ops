@@ -642,7 +642,8 @@ const OrderPlot = (props) => {
           plot.order = plot.threshold || plot.qty;
         }
 
-        plot.newThreshold = plot.threshold;
+        // Set default New Threshold to Math.max(last order, threshold)
+        plot.newThreshold = Math.max(plot.qty || 0, plot.threshold || 0);
         plot.uuid = uuidv4();
         newPlot.push(plot);
       }
