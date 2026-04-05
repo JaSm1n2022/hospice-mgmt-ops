@@ -64,21 +64,74 @@ const styles = StyleSheet.create({
     paddingLeft: 10,
   },
   checkboxContainer: {
-    width: 14,
-    height: 14,
-    border: "2px solid #666",
+    width: 50,
+    height: 16,
+    border: "1px solid #666",
     marginRight: 8,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
+    borderRadius: 3,
   },
   checkboxContainerChecked: {
     backgroundColor: "#4caf50",
-    borderColor: "#4caf50",
+    border: "1px solid #4caf50",
   },
   checkboxContainerUnchecked: {
-    backgroundColor: "white",
-    borderColor: "#f44336",
+    backgroundColor: "#f5f5f5",
+    border: "1px solid #f44336",
+  },
+  checkboxText: {
+    fontSize: 8,
+    fontWeight: "bold",
+    color: "white",
+  },
+  checkboxTextUnchecked: {
+    fontSize: 8,
+    fontWeight: "bold",
+    color: "#f44336",
+  },
+  selectBox: {
+    width: 50,
+    height: 16,
+    marginRight: 8,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 3,
+  },
+  selectBoxY: {
+    backgroundColor: "#4caf50",
+    border: "1px solid #4caf50",
+  },
+  selectBoxN: {
+    backgroundColor: "#f5f5f5",
+    border: "1px solid #f44336",
+  },
+  selectBoxNA: {
+    backgroundColor: "#fff9c4",
+    border: "1px solid #fbc02d",
+  },
+  selectText: {
+    fontSize: 8,
+    fontWeight: "bold",
+    color: "white",
+  },
+  selectTextDark: {
+    fontSize: 8,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  selectTextRed: {
+    fontSize: 8,
+    fontWeight: "bold",
+    color: "#f44336",
+  },
+  selectContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 5,
+    paddingLeft: 10,
   },
   itemText: {
     fontSize: 10,
@@ -116,6 +169,20 @@ const styles = StyleSheet.create({
     fontSize: 9,
     flex: 1,
   },
+  remarkEntry: {
+    flexDirection: "row",
+    paddingLeft: 20,
+    marginBottom: 3,
+  },
+  remarkBullet: {
+    fontSize: 9,
+    marginRight: 5,
+  },
+  remarkText: {
+    fontSize: 9,
+    flex: 1,
+    color: "#333",
+  },
   footer: {
     marginTop: 20,
     paddingTop: 10,
@@ -141,12 +208,19 @@ const GROUP_LABELS = {
   discharge: "10. Discharge",
   compliance: "11. Compliance",
   poc: "12. Plan of Care (POC)",
+  generalRemarks: "13. General Remarks",
 };
 
 const ITEM_LABELS = {
   demographicSheet: "Demographic Sheet",
-  polst: "POLST",
-  consents: "Consents",
+  hospiceEvalOrder: "Hospice Eval Order",
+  informedConsent: "Informed Consent",
+  electionOfHospice: "Election of Hospice",
+  polstrDnr: "Polstr/DNR",
+  changeOfHospice: "Change of Hospice",
+  poaAdvanceDirective: "POA/Advance Directive",
+  billOfRights: "Bill of Rights",
+  telehealthConsent: "Telehealth Consent",
   patientNotification: "Patient Notification",
   nursing: "Nursing",
   spiritual: "Spiritual",
@@ -155,12 +229,20 @@ const ITEM_LABELS = {
   cti: "CTI",
   order: "Order",
   f2fVisit: "F2F Visit",
+  referral: "Referral",
   medicalRecords: "Medical Records",
   dpoa: "DPOA",
   hp: "HP (History & Physical)",
   eligibility: "Eligibility",
   insuranceCard: "Insurance Card",
   id: "ID",
+  dme: "DME",
+  transportation: "Transportation",
+  hopeAdmission: "HOPE Admission",
+  hopeHuv1: "HOPE HUV 1",
+  hopeHuv2: "HOPE HUV 2",
+  hopeDischarge: "HOPE Discharge",
+  lcdEligibility: "LCD Eligibility",
 };
 
 const ChecklistPrintAllDocument = ({ patientsData }) => {
@@ -174,54 +256,62 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
             styles.checkboxContainer,
             isChecked ? styles.checkboxContainerChecked : styles.checkboxContainerUnchecked,
           ]}
-        />
+        >
+          <Text style={isChecked ? styles.checkboxText : styles.checkboxTextUnchecked}>
+            {isChecked ? "YES" : "NO"}
+          </Text>
+        </View>
         <Text style={styles.itemText}>{ITEM_LABELS[itemKey] || itemKey}</Text>
       </View>
     );
   };
 
   const renderSelectItem = (itemKey, itemValue) => {
-    let checkboxStyle;
-    let displayText = "";
+    let boxStyle = styles.selectBoxN;
+    let textStyle = styles.selectTextDark;
+    let displayValue = "N/A";
 
     if (itemValue === "Y") {
-      checkboxStyle = styles.checkboxContainerChecked;
-      displayText = "Y";
+      boxStyle = styles.selectBoxY;
+      textStyle = styles.selectText;
+      displayValue = "YES";
     } else if (itemValue === "N") {
-      checkboxStyle = styles.checkboxContainerUnchecked;
-      displayText = "N";
+      boxStyle = styles.selectBoxN;
+      textStyle = styles.selectTextRed;
+      displayValue = "NO";
     } else if (itemValue === "NA") {
-      checkboxStyle = [styles.checkboxContainer, { backgroundColor: "#fff9c4", borderColor: "#fbc02d" }];
-      displayText = "N/A";
-    } else {
-      checkboxStyle = [styles.checkboxContainer, { backgroundColor: "#f5f5f5", borderColor: "#666" }];
-      displayText = "";
+      boxStyle = styles.selectBoxNA;
+      textStyle = styles.selectTextDark;
+      displayValue = "N/A";
     }
 
     return (
-      <View style={styles.itemRow} key={itemKey}>
-        <View style={[styles.checkboxContainer, checkboxStyle]} />
+      <View style={styles.selectContainer} key={itemKey}>
+        <View style={[styles.selectBox, boxStyle]}>
+          <Text style={textStyle}>{displayValue}</Text>
+        </View>
         <Text style={styles.itemText}>{ITEM_LABELS[itemKey] || itemKey}</Text>
       </View>
     );
   };
 
   const renderSelectItemWithRemarks = (itemKey, itemValue, remarks) => {
-    let checkboxStyle;
-    let displayText = "";
+    let boxStyle = styles.selectBoxN;
+    let textStyle = styles.selectTextDark;
+    let displayValue = "N/A";
 
     if (itemValue === "Y") {
-      checkboxStyle = styles.checkboxContainerChecked;
-      displayText = "Y";
+      boxStyle = styles.selectBoxY;
+      textStyle = styles.selectText;
+      displayValue = "YES";
     } else if (itemValue === "N") {
-      checkboxStyle = styles.checkboxContainerUnchecked;
-      displayText = "N";
+      boxStyle = styles.selectBoxN;
+      textStyle = styles.selectTextRed;
+      displayValue = "NO";
     } else if (itemValue === "NA") {
-      checkboxStyle = [styles.checkboxContainer, { backgroundColor: "#fff9c4", borderColor: "#fbc02d" }];
-      displayText = "N/A";
-    } else {
-      checkboxStyle = [styles.checkboxContainer, { backgroundColor: "#f5f5f5", borderColor: "#666" }];
-      displayText = "";
+      boxStyle = styles.selectBoxNA;
+      textStyle = styles.selectTextDark;
+      displayValue = "N/A";
     }
 
     // Check if remarks contains keywords for red highlighting
@@ -237,12 +327,14 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
 
     return (
       <View key={itemKey}>
-        <View style={styles.itemRow}>
-          <View style={[styles.checkboxContainer, checkboxStyle]} />
+        <View style={styles.selectContainer}>
+          <View style={[styles.selectBox, boxStyle]}>
+            <Text style={textStyle}>{displayValue}</Text>
+          </View>
           <Text style={styles.itemText}>{ITEM_LABELS[itemKey] || itemKey}</Text>
         </View>
         {(itemValue === "N" || itemValue === "NA") && remarks && (
-          <View style={[styles.textRow, { marginLeft: 22, marginTop: -3 }]}>
+          <View style={[styles.textRow, { marginLeft: 58, marginTop: -3 }]}>
             <Text style={{ fontSize: 9, color: remarksColor, fontStyle: "italic", fontWeight: hasIssue ? "bold" : "normal" }}>
               Remarks: {remarks}
             </Text>
@@ -252,22 +344,37 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
     );
   };
 
-  const renderBooleanWithDateItem = (itemKey, itemData) => {
-    const isChecked = itemData && itemData.checked;
-    const hasDate = itemData && itemData.date;
+  const renderSelectWithDateItem = (itemKey, itemData) => {
+    const value = itemData?.value || "";
+    const date = itemData?.date || "";
+
+    let boxStyle = styles.selectBoxN;
+    let textStyle = styles.selectTextDark;
+    let displayValue = "N/A";
+
+    if (value === "Y") {
+      boxStyle = styles.selectBoxY;
+      textStyle = styles.selectText;
+      displayValue = "YES";
+    } else if (value === "N") {
+      boxStyle = styles.selectBoxN;
+      textStyle = styles.selectTextRed;
+      displayValue = "NO";
+    } else if (value === "NA") {
+      boxStyle = styles.selectBoxNA;
+      textStyle = styles.selectTextDark;
+      displayValue = "N/A";
+    }
 
     return (
-      <View style={styles.itemRow} key={itemKey}>
-        <View
-          style={[
-            styles.checkboxContainer,
-            isChecked ? styles.checkboxContainerChecked : styles.checkboxContainerUnchecked,
-          ]}
-        />
+      <View style={styles.selectContainer} key={itemKey}>
+        <View style={[styles.selectBox, boxStyle]}>
+          <Text style={textStyle}>{displayValue}</Text>
+        </View>
         <Text style={styles.itemText}>{ITEM_LABELS[itemKey] || itemKey}</Text>
-        {hasDate && (
+        {value === "Y" && date && (
           <Text style={styles.dateText}>
-            {moment(itemData.date).format("MM/DD/YY")}
+            Date: {moment(date).format("MM/DD/YYYY")}
           </Text>
         )}
       </View>
@@ -331,9 +438,15 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{GROUP_LABELS.admission}</Text>
             {renderBooleanItem("demographicSheet", patient.admission.demographicSheet)}
-            {renderBooleanItem("polst", patient.admission.polst)}
-            {renderBooleanItem("consents", patient.admission.consents)}
-            {renderBooleanItem("patientNotification", patient.admission.patientNotification)}
+            {renderSelectItem("hospiceEvalOrder", patient.admission.hospiceEvalOrder)}
+            {renderSelectItem("informedConsent", patient.admission.informedConsent)}
+            {renderSelectItem("electionOfHospice", patient.admission.electionOfHospice)}
+            {renderSelectItem("polstrDnr", patient.admission.polstrDnr)}
+            {renderSelectItem("changeOfHospice", patient.admission.changeOfHospice)}
+            {renderSelectItem("poaAdvanceDirective", patient.admission.poaAdvanceDirective)}
+            {renderSelectItem("billOfRights", patient.admission.billOfRights)}
+            {renderSelectItem("telehealthConsent", patient.admission.telehealthConsent)}
+            {renderSelectItem("patientNotification", patient.admission.patientNotification)}
           </View>
         )}
 
@@ -359,9 +472,10 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
         {patient.physician && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{GROUP_LABELS.physician}</Text>
-            {renderBooleanWithDateItem("cti", patient.physician.cti)}
-            {renderBooleanWithDateItem("order", patient.physician.order)}
-            {renderBooleanWithDateItem("f2fVisit", patient.physician.f2fVisit)}
+            {renderSelectWithDateItem("cti", patient.physician.cti)}
+            {renderSelectWithDateItem("order", patient.physician.order)}
+            {renderSelectWithDateItem("f2fVisit", patient.physician.f2fVisit)}
+            {renderSelectItem("referral", patient.physician.referral)}
           </View>
         )}
 
@@ -407,6 +521,8 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
             {renderSelectItem("eligibility", patient.miscellaneous.eligibility)}
             {renderSelectItem("insuranceCard", patient.miscellaneous.insuranceCard)}
             {renderSelectItem("id", patient.miscellaneous.id)}
+            {renderSelectItem("dme", patient.miscellaneous.dme)}
+            {renderSelectItem("transportation", patient.miscellaneous.transportation)}
           </View>
         )}
 
@@ -428,10 +544,11 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
         {patient.compliance && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{GROUP_LABELS.compliance}</Text>
-            {renderDateField("HOPE Admission", patient.compliance.hopeAdmission)}
-            {renderDateField("HOPE HUV 1", patient.compliance.hopeHuv1)}
-            {renderDateField("HOPE HUV 2", patient.compliance.hopeHuv2)}
-            {renderDateField("HOPE Discharge", patient.compliance.hopeDischarge)}
+            {renderSelectWithDateItem("hopeAdmission", patient.compliance.hopeAdmission)}
+            {renderSelectWithDateItem("hopeHuv1", patient.compliance.hopeHuv1)}
+            {renderSelectWithDateItem("hopeHuv2", patient.compliance.hopeHuv2)}
+            {renderSelectWithDateItem("hopeDischarge", patient.compliance.hopeDischarge)}
+            {renderBooleanItem("lcdEligibility", patient.compliance.lcdEligibility)}
           </View>
         )}
 
@@ -444,6 +561,21 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
                 <Text style={styles.pocBullet}>•</Text>
                 <Text style={styles.pocText}>
                   {entry.staff} - {entry.frequency}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* General Remarks */}
+        {patient.remarks && Array.isArray(patient.remarks) && patient.remarks.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{GROUP_LABELS.generalRemarks}</Text>
+            {patient.remarks.map((remark, idx) => (
+              <View style={styles.remarkEntry} key={idx}>
+                <Text style={styles.remarkBullet}>•</Text>
+                <Text style={styles.remarkText}>
+                  {remark || "N/A"}
                 </Text>
               </View>
             ))}
@@ -476,7 +608,7 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
 
         <View style={styles.footer}>
           <Text>
-            Legend: Green box = Completed | Red border = Incomplete
+            Legend: Green box = Yes/Completed | Gray box = No | Yellow box = N/A | Red border = Incomplete
           </Text>
         </View>
       </Page>

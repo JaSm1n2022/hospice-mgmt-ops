@@ -180,6 +180,7 @@ function PatientOnboardingChecklistFunction(props) {
 
   const [dataSource, setDataSource] = useState([]);
   const [filteredDataSource, setFilteredDataSource] = useState([]);
+  const [rawChecklists, setRawChecklists] = useState([]); // Store raw checklist data for printing
   const [searchKeyword, setSearchKeyword] = useState("");
   const [columns, setColumns] = useState(PatientOnboardingHandler.columns(true));
   const [patientList, setPatientList] = useState([]);
@@ -510,6 +511,9 @@ function PatientOnboardingChecklistFunction(props) {
     });
 
     const mappedData = PatientOnboardingHandler.mapData(tableData);
+
+    // Store raw checklists for Print All
+    setRawChecklists(fetchedChecklists);
 
     // Add actions to columns
     const cols = PatientOnboardingHandler.columns(true).map((col) => {

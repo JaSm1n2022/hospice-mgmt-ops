@@ -68,6 +68,13 @@ class PatientOnboardingHandler {
       {
         defaultFlex: 1,
         minWidth: 180,
+        name: "volunteerNotesStatus",
+        header: "Volunteer Notes",
+        render: ({ value }) => this.renderGroupStatus(value),
+      },
+      {
+        defaultFlex: 1,
+        minWidth: 180,
         name: "miscellaneousStatus",
         header: "Miscellaneous",
         render: ({ value }) => this.renderGroupStatus(value),

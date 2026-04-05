@@ -202,6 +202,20 @@ const styles = StyleSheet.create({
     fontSize: 10,
     flex: 1,
   },
+  remarkEntry: {
+    flexDirection: "row",
+    paddingLeft: 20,
+    marginBottom: 6,
+  },
+  remarkBullet: {
+    fontSize: 10,
+    marginRight: 5,
+  },
+  remarkText: {
+    fontSize: 10,
+    flex: 1,
+    color: "#333",
+  },
   footer: {
     marginTop: 20,
     paddingTop: 10,
@@ -224,6 +238,7 @@ const GROUP_LABELS = {
   discharge: "10. Discharge",
   compliance: "11. Compliance",
   poc: "12. Plan of Care (POC)",
+  generalRemarks: "13. General Remarks",
 };
 
 const ITEM_LABELS = {
@@ -700,6 +715,25 @@ const ChecklistPrintDocument = ({ patientData }) => {
     );
   };
 
+  const renderGeneralRemarks = () => {
+    const data = patientData.remarks;
+    if (!data || !Array.isArray(data) || data.length === 0) return null;
+
+    return (
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>{GROUP_LABELS.generalRemarks}</Text>
+        {data.map((remark, index) => (
+          <View style={styles.remarkEntry} key={index}>
+            <Text style={styles.remarkBullet}>•</Text>
+            <Text style={styles.remarkText}>
+              {remark || "N/A"}
+            </Text>
+          </View>
+        ))}
+      </View>
+    );
+  };
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -725,6 +759,7 @@ const ChecklistPrintDocument = ({ patientData }) => {
         {renderDischarge()}
         {renderCompliance()}
         {renderPoc()}
+        {renderGeneralRemarks()}
 
         <View style={styles.footer}>
           <Text>
