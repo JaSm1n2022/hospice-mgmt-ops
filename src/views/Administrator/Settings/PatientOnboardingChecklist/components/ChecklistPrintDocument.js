@@ -140,6 +140,21 @@ const styles = StyleSheet.create({
     marginTop: 15,
     marginBottom: 10,
   },
+  physicianAlert: {
+    border: "3px solid #f44336",
+    padding: 10,
+    marginTop: 15,
+    marginBottom: 10,
+  },
+  alertBadge: {
+    backgroundColor: "#f44336",
+    color: "white",
+    fontSize: 10,
+    fontWeight: "bold",
+    padding: "4px 8px",
+    marginBottom: 8,
+    borderRadius: 3,
+  },
   dateText: {
     fontSize: 10,
     color: "#666",
@@ -348,7 +363,11 @@ const ChecklistPrintDocument = ({ patientData }) => {
                      remarksLower.includes("not resolved") ||
                      remarksLower.includes("poc issue") ||
                      remarksLower.includes("declined") ||
-                     remarksLower.includes("no notes");
+                     remarksLower.includes("no notes") ||
+                     remarksLower.includes("no chaplain signature") ||
+                     remarksLower.includes("no msw signature") ||
+                     remarksLower.includes("no rn signature") ||
+                     remarksLower.includes("no signature");
     const remarksColor = hasIssue ? "#f44336" : "#666";
 
     return (
@@ -463,7 +482,11 @@ const ChecklistPrintDocument = ({ patientData }) => {
                          remarksLower.includes("not resolved") ||
                          remarksLower.includes("poc issue") ||
                          remarksLower.includes("declined") ||
-                         remarksLower.includes("no notes");
+                         remarksLower.includes("no notes") ||
+                         remarksLower.includes("no chaplain signature") ||
+                         remarksLower.includes("no msw signature") ||
+                         remarksLower.includes("no rn signature") ||
+                         remarksLower.includes("no signature");
     // Always bold, red only for unresolved/issues
     const remarksStyle = isUnresolved ? styles.inlineValueUnresolved : styles.inlineValueBold;
 

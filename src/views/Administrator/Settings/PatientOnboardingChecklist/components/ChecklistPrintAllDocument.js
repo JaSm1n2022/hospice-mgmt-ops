@@ -183,6 +183,21 @@ const styles = StyleSheet.create({
     flex: 1,
     color: "#333",
   },
+  physicianAlert: {
+    border: "3px solid #f44336",
+    padding: 10,
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  alertBadge: {
+    backgroundColor: "#f44336",
+    color: "white",
+    fontSize: 9,
+    fontWeight: "bold",
+    padding: "3px 6px",
+    marginBottom: 6,
+    borderRadius: 3,
+  },
   footer: {
     marginTop: 20,
     paddingTop: 10,
@@ -322,7 +337,11 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
                      remarksLower.includes("not resolved") ||
                      remarksLower.includes("poc issue") ||
                      remarksLower.includes("declined") ||
-                     remarksLower.includes("no notes");
+                     remarksLower.includes("no notes") ||
+                     remarksLower.includes("no chaplain signature") ||
+                     remarksLower.includes("no msw signature") ||
+                     remarksLower.includes("no rn signature") ||
+                     remarksLower.includes("no signature");
     const remarksColor = hasIssue ? "#f44336" : "#666";
 
     return (
@@ -409,7 +428,11 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
                          remarksLower.includes("not resolved") ||
                          remarksLower.includes("poc issue") ||
                          remarksLower.includes("declined") ||
-                         remarksLower.includes("no notes");
+                         remarksLower.includes("no notes") ||
+                         remarksLower.includes("no chaplain signature") ||
+                         remarksLower.includes("no msw signature") ||
+                         remarksLower.includes("no rn signature") ||
+                         remarksLower.includes("no signature");
 
     return (
       <View style={styles.textRow}>
