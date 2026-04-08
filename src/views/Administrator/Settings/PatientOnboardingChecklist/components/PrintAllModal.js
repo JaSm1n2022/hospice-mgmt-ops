@@ -2,7 +2,7 @@ import React from "react";
 import { Modal, makeStyles, CircularProgress } from "@material-ui/core";
 import { PDFDownloadLink, Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import { Clear, GetApp } from "@material-ui/icons";
-// import ChecklistPrintAllDocument from "./ChecklistPrintAllDocument";
+import ChecklistPrintAllDocument from "./ChecklistPrintAllDocument";
 import moment from "moment";
 
 // Simple Print All Document
@@ -321,7 +321,7 @@ function PrintAllModal({ isOpen, onClose, patientsData }) {
                 </span>}
               </p>
               <PDFDownloadLink
-                document={<SimpleTestDocument patientsData={limitedData} />}
+                document={<ChecklistPrintAllDocument patientsData={limitedData} />}
                 fileName={fileName}
                 className={classes.downloadButton}
               >

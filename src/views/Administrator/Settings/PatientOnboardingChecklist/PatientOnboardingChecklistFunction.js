@@ -18,12 +18,13 @@ import { ACTION_STATUSES } from "utils/constants";
 import moment from "moment";
 import TextField from "@material-ui/core/TextField";
 import SearchIcon from "@material-ui/icons/Search";
-import { Print as PrintIcon } from "@material-ui/icons";
+import { Print as PrintIcon, Warning as WarningIcon } from "@material-ui/icons";
 
 import PatientOnboardingHandler from "./handler/PatientOnboardingHandler";
 import ChecklistModal from "./components/ChecklistModal";
 import PrintModal from "./components/PrintModal";
 import PrintAllModal from "./components/PrintAllModal";
+import PrintAlertModal from "./components/PrintAlertModal";
 
 // Redux imports for Patient
 import { patientListStateSelector } from "store/selectors/patientSelector";
@@ -207,6 +208,7 @@ function PatientOnboardingChecklistFunction(props) {
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [selectedPrintData, setSelectedPrintData] = useState(null);
   const [isPrintAllModalOpen, setIsPrintAllModalOpen] = useState(false);
+  const [isPrintAlertModalOpen, setIsPrintAlertModalOpen] = useState(false);
 
   const showNotification = (place, color, msg) => {
     setMessage(msg);
