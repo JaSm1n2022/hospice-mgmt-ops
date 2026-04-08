@@ -1,11 +1,5 @@
 import React from "react";
-import {
-  Document,
-  Page,
-  Text,
-  View,
-  StyleSheet,
-} from "@react-pdf/renderer";
+import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import moment from "moment";
 
 // Create styles
@@ -269,10 +263,16 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
         <View
           style={[
             styles.checkboxContainer,
-            isChecked ? styles.checkboxContainerChecked : styles.checkboxContainerUnchecked,
+            isChecked
+              ? styles.checkboxContainerChecked
+              : styles.checkboxContainerUnchecked,
           ]}
         >
-          <Text style={isChecked ? styles.checkboxText : styles.checkboxTextUnchecked}>
+          <Text
+            style={
+              isChecked ? styles.checkboxText : styles.checkboxTextUnchecked
+            }
+          >
             {isChecked ? "YES" : "NO"}
           </Text>
         </View>
@@ -331,17 +331,19 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
 
     // Check if remarks contains keywords for red highlighting
     const remarksLower = remarks ? remarks.toLowerCase().trim() : "";
-    const hasIssue = remarksLower.includes("unresolve") ||
-                     remarksLower.includes("unresolved") ||
-                     remarksLower.includes("un-resolved") ||
-                     remarksLower.includes("not resolved") ||
-                     remarksLower.includes("poc issue") ||
-                     remarksLower.includes("declined") ||
-                     remarksLower.includes("no notes") ||
-                     remarksLower.includes("no chaplain signature") ||
-                     remarksLower.includes("no msw signature") ||
-                     remarksLower.includes("no rn signature") ||
-                     remarksLower.includes("no signature");
+    const hasIssue =
+      remarksLower.includes("unresolve") ||
+      remarksLower.includes("unresolved") ||
+      remarksLower.includes("un-resolved") ||
+      remarksLower.includes("not resolved") ||
+      remarksLower.includes("poc issue") ||
+      remarksLower.includes("declined") ||
+      remarksLower.includes("no notes") ||
+      remarksLower.includes("no chaplain signature") ||
+      remarksLower.includes("no msw signature") ||
+      remarksLower.includes("no rn signature") ||
+      remarksLower.includes("no signature") ||
+      remarksLower.includes("no assessment");
     const remarksColor = hasIssue ? "#f44336" : "#666";
 
     return (
@@ -354,7 +356,14 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
         </View>
         {(itemValue === "N" || itemValue === "NA") && remarks && (
           <View style={[styles.textRow, { marginLeft: 58, marginTop: -3 }]}>
-            <Text style={{ fontSize: 9, color: remarksColor, fontStyle: "italic", fontWeight: hasIssue ? "bold" : "normal" }}>
+            <Text
+              style={{
+                fontSize: 9,
+                color: remarksColor,
+                fontStyle: "italic",
+                fontWeight: hasIssue ? "bold" : "normal",
+              }}
+            >
               Remarks: {remarks}
             </Text>
           </View>
@@ -422,24 +431,32 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
 
   const renderNotesInline = (date, createdUser, remarks) => {
     const remarksLower = remarks ? remarks.toLowerCase().trim() : "";
-    const isUnresolved = remarksLower.includes("unresolve") ||
-                         remarksLower.includes("unresolved") ||
-                         remarksLower.includes("un-resolved") ||
-                         remarksLower.includes("not resolved") ||
-                         remarksLower.includes("poc issue") ||
-                         remarksLower.includes("declined") ||
-                         remarksLower.includes("no notes") ||
-                         remarksLower.includes("no chaplain signature") ||
-                         remarksLower.includes("no msw signature") ||
-                         remarksLower.includes("no rn signature") ||
-                         remarksLower.includes("no signature");
+    const isUnresolved =
+      remarksLower.includes("unresolve") ||
+      remarksLower.includes("unresolved") ||
+      remarksLower.includes("un-resolved") ||
+      remarksLower.includes("not resolved") ||
+      remarksLower.includes("poc issue") ||
+      remarksLower.includes("declined") ||
+      remarksLower.includes("no notes") ||
+      remarksLower.includes("no chaplain signature") ||
+      remarksLower.includes("no msw signature") ||
+      remarksLower.includes("no rn signature") ||
+      remarksLower.includes("no signature") ||
+      remarksLower.includes("no assessment");
 
     return (
       <View style={styles.textRow}>
         <Text style={{ fontSize: 10 }}>
-          Date: {date ? moment(date).format("MM/DD/YYYY") : "N/A"} |
-          {" "}Created User: {createdUser || "N/A"} |
-          {" "}Remarks: <Text style={isUnresolved ? { fontWeight: "bold", color: "#f44336" } : { fontWeight: "bold" }}>
+          Date: {date ? moment(date).format("MM/DD/YYYY") : "N/A"} | Created
+          User: {createdUser || "N/A"} | Remarks:{" "}
+          <Text
+            style={
+              isUnresolved
+                ? { fontWeight: "bold", color: "#f44336" }
+                : { fontWeight: "bold" }
+            }
+          >
             {remarks || "N/A"}
           </Text>
         </Text>
@@ -449,27 +466,53 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
 
   const renderPatient = (patient, index) => {
     return (
-      <View key={patient.id || index} style={styles.patientSection} break={index > 0}>
+      <View
+        key={patient.id || index}
+        style={styles.patientSection}
+        break={index > 0}
+      >
         <View style={styles.patientHeader}>
-          <Text style={styles.patientCd}>
-            {patient.patientCd || "N/A"}
-          </Text>
+          <Text style={styles.patientCd}>{patient.patientCd || "N/A"}</Text>
         </View>
 
         {/* Admission */}
         {patient.admission && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{GROUP_LABELS.admission}</Text>
-            {renderBooleanItem("demographicSheet", patient.admission.demographicSheet)}
-            {renderSelectItem("hospiceEvalOrder", patient.admission.hospiceEvalOrder)}
-            {renderSelectItem("informedConsent", patient.admission.informedConsent)}
-            {renderSelectItem("electionOfHospice", patient.admission.electionOfHospice)}
+            {renderBooleanItem(
+              "demographicSheet",
+              patient.admission.demographicSheet
+            )}
+            {renderSelectItem(
+              "hospiceEvalOrder",
+              patient.admission.hospiceEvalOrder
+            )}
+            {renderSelectItem(
+              "informedConsent",
+              patient.admission.informedConsent
+            )}
+            {renderSelectItem(
+              "electionOfHospice",
+              patient.admission.electionOfHospice
+            )}
             {renderSelectItem("polstrDnr", patient.admission.polstrDnr)}
-            {renderSelectItem("changeOfHospice", patient.admission.changeOfHospice)}
-            {renderSelectItem("poaAdvanceDirective", patient.admission.poaAdvanceDirective)}
+            {renderSelectItem(
+              "changeOfHospice",
+              patient.admission.changeOfHospice
+            )}
+            {renderSelectItem(
+              "poaAdvanceDirective",
+              patient.admission.poaAdvanceDirective
+            )}
             {renderSelectItem("billOfRights", patient.admission.billOfRights)}
-            {renderSelectItem("telehealthConsent", patient.admission.telehealthConsent)}
-            {renderSelectItem("patientNotification", patient.admission.patientNotification)}
+            {renderSelectItem(
+              "telehealthConsent",
+              patient.admission.telehealthConsent
+            )}
+            {renderSelectItem(
+              "patientNotification",
+              patient.admission.patientNotification
+            )}
           </View>
         )}
 
@@ -477,17 +520,34 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
         {patient.assessment && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{GROUP_LABELS.assessment}</Text>
-            {renderSelectItemWithRemarks("nursing", patient.assessment.nursing, patient.assessment.nursingRemarks)}
-            {renderSelectItemWithRemarks("spiritual", patient.assessment.spiritual, patient.assessment.spiritualRemarks)}
-            {renderSelectItemWithRemarks("psychosocial", patient.assessment.psychosocial, patient.assessment.psychosocialRemarks)}
+            {renderSelectItemWithRemarks(
+              "nursing",
+              patient.assessment.nursing,
+              patient.assessment.nursingRemarks
+            )}
+            {renderSelectItemWithRemarks(
+              "spiritual",
+              patient.assessment.spiritual,
+              patient.assessment.spiritualRemarks
+            )}
+            {renderSelectItemWithRemarks(
+              "psychosocial",
+              patient.assessment.psychosocial,
+              patient.assessment.psychosocialRemarks
+            )}
           </View>
         )}
 
         {/* Treatment Order */}
         {patient.treatmentOrder && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{GROUP_LABELS.treatmentOrder}</Text>
-            {renderBooleanItem("treatmentOrder", patient.treatmentOrder.treatmentOrder)}
+            <Text style={styles.sectionTitle}>
+              {GROUP_LABELS.treatmentOrder}
+            </Text>
+            {renderBooleanItem(
+              "treatmentOrder",
+              patient.treatmentOrder.treatmentOrder
+            )}
           </View>
         )}
 
@@ -506,15 +566,25 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
         {patient.idgNotes && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{GROUP_LABELS.idgNotes}</Text>
-            {renderNotesInline(patient.idgNotes.date, patient.idgNotes.createdUser, patient.idgNotes.remarks)}
+            {renderNotesInline(
+              patient.idgNotes.date,
+              patient.idgNotes.createdUser,
+              patient.idgNotes.remarks
+            )}
           </View>
         )}
 
         {/* Skilled Nursing Notes */}
         {patient.skilledNursingNotes && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{GROUP_LABELS.skilledNursingNotes}</Text>
-            {renderNotesInline(patient.skilledNursingNotes.date, patient.skilledNursingNotes.createdUser, patient.skilledNursingNotes.remarks)}
+            <Text style={styles.sectionTitle}>
+              {GROUP_LABELS.skilledNursingNotes}
+            </Text>
+            {renderNotesInline(
+              patient.skilledNursingNotes.date,
+              patient.skilledNursingNotes.createdUser,
+              patient.skilledNursingNotes.remarks
+            )}
           </View>
         )}
 
@@ -522,30 +592,51 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
         {patient.haNotes && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{GROUP_LABELS.haNotes}</Text>
-            {renderNotesInline(patient.haNotes.date, patient.haNotes.createdUser, patient.haNotes.remarks)}
+            {renderNotesInline(
+              patient.haNotes.date,
+              patient.haNotes.createdUser,
+              patient.haNotes.remarks
+            )}
           </View>
         )}
 
         {/* Volunteer Notes */}
         {patient.volunteerNotes && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{GROUP_LABELS.volunteerNotes}</Text>
-            {renderNotesInline(patient.volunteerNotes.date, patient.volunteerNotes.createdUser, patient.volunteerNotes.remarks)}
+            <Text style={styles.sectionTitle}>
+              {GROUP_LABELS.volunteerNotes}
+            </Text>
+            {renderNotesInline(
+              patient.volunteerNotes.date,
+              patient.volunteerNotes.createdUser,
+              patient.volunteerNotes.remarks
+            )}
           </View>
         )}
 
         {/* Miscellaneous */}
         {patient.miscellaneous && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{GROUP_LABELS.miscellaneous}</Text>
-            {renderSelectItem("medicalRecords", patient.miscellaneous.medicalRecords)}
+            <Text style={styles.sectionTitle}>
+              {GROUP_LABELS.miscellaneous}
+            </Text>
+            {renderSelectItem(
+              "medicalRecords",
+              patient.miscellaneous.medicalRecords
+            )}
             {renderSelectItem("dpoa", patient.miscellaneous.dpoa)}
             {renderSelectItem("hp", patient.miscellaneous.hp)}
             {renderSelectItem("eligibility", patient.miscellaneous.eligibility)}
-            {renderSelectItem("insuranceCard", patient.miscellaneous.insuranceCard)}
+            {renderSelectItem(
+              "insuranceCard",
+              patient.miscellaneous.insuranceCard
+            )}
             {renderSelectItem("id", patient.miscellaneous.id)}
             {renderSelectItem("dme", patient.miscellaneous.dme)}
-            {renderSelectItem("transportation", patient.miscellaneous.transportation)}
+            {renderSelectItem(
+              "transportation",
+              patient.miscellaneous.transportation
+            )}
           </View>
         )}
 
@@ -555,9 +646,12 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
             <Text style={styles.sectionTitle}>{GROUP_LABELS.discharge}</Text>
             <View style={styles.textRow}>
               <Text style={{ fontSize: 10 }}>
-                Date: {patient.discharge.date ? moment(patient.discharge.date).format("MM/DD/YYYY") : "N/A"} |
-                {" "}Reason: {patient.discharge.reason || "N/A"} |
-                {" "}Documentation: {patient.discharge.documentation?.checked ? "YES" : "NO"}
+                Date:{" "}
+                {patient.discharge.date
+                  ? moment(patient.discharge.date).format("MM/DD/YYYY")
+                  : "N/A"}{" "}
+                | Reason: {patient.discharge.reason || "N/A"} | Documentation:{" "}
+                {patient.discharge.documentation?.checked ? "YES" : "NO"}
               </Text>
             </View>
           </View>
@@ -567,11 +661,20 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
         {patient.compliance && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{GROUP_LABELS.compliance}</Text>
-            {renderSelectWithDateItem("hopeAdmission", patient.compliance.hopeAdmission)}
+            {renderSelectWithDateItem(
+              "hopeAdmission",
+              patient.compliance.hopeAdmission
+            )}
             {renderSelectWithDateItem("hopeHuv1", patient.compliance.hopeHuv1)}
             {renderSelectWithDateItem("hopeHuv2", patient.compliance.hopeHuv2)}
-            {renderSelectWithDateItem("hopeDischarge", patient.compliance.hopeDischarge)}
-            {renderBooleanItem("lcdEligibility", patient.compliance.lcdEligibility)}
+            {renderSelectWithDateItem(
+              "hopeDischarge",
+              patient.compliance.hopeDischarge
+            )}
+            {renderBooleanItem(
+              "lcdEligibility",
+              patient.compliance.lcdEligibility
+            )}
           </View>
         )}
 
@@ -591,19 +694,21 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
         )}
 
         {/* General Remarks */}
-        {patient.remarks && Array.isArray(patient.remarks) && patient.remarks.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{GROUP_LABELS.generalRemarks}</Text>
-            {patient.remarks.map((remark, idx) => (
-              <View style={styles.remarkEntry} key={idx}>
-                <Text style={styles.remarkBullet}>•</Text>
-                <Text style={styles.remarkText}>
-                  {remark || "N/A"}
-                </Text>
-              </View>
-            ))}
-          </View>
-        )}
+        {patient.remarks &&
+          Array.isArray(patient.remarks) &&
+          patient.remarks.length > 0 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>
+                {GROUP_LABELS.generalRemarks}
+              </Text>
+              {patient.remarks.map((remark, idx) => (
+                <View style={styles.remarkEntry} key={idx}>
+                  <Text style={styles.remarkBullet}>•</Text>
+                  <Text style={styles.remarkText}>{remark || "N/A"}</Text>
+                </View>
+              ))}
+            </View>
+          )}
       </View>
     );
   };
@@ -631,7 +736,8 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
 
         <View style={styles.footer}>
           <Text>
-            Legend: Green box = Yes/Completed | Gray box = No | Yellow box = N/A | Red border = Incomplete
+            Legend: Green box = Yes/Completed | Gray box = No | Yellow box = N/A
+            | Red border = Incomplete
           </Text>
         </View>
       </Page>

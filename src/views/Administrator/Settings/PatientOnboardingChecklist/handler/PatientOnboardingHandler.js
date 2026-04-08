@@ -248,8 +248,9 @@ class PatientOnboardingHandler {
           incompleteItems.push(itemLabel);
         }
       } else if (item.type === "select") {
-        // For select fields (Y/N/NA), consider complete if a value is selected
-        if (itemData && (itemData === "Y" || itemData === "N" || itemData === "NA")) {
+        // For select fields (Y/N/NA), only "Y" and "NA" are considered complete
+        // "N" (No) is NOT counted as complete - it's a missing item
+        if (itemData && (itemData === "Y" || itemData === "NA")) {
           completed++;
         } else {
           incompleteItems.push(itemLabel);
@@ -257,11 +258,12 @@ class PatientOnboardingHandler {
       } else if (item.type === "selectWithDate") {
         // For selectWithDate fields, complete if:
         // - value is "Y" and date exists
-        // - value is "N" or "NA" (no date needed)
+        // - value is "NA" (no date needed)
+        // "N" (No) is NOT counted as complete - it's a missing item
         if (itemData && itemData.value) {
           if (itemData.value === "Y" && itemData.date) {
             completed++;
-          } else if (itemData.value === "N" || itemData.value === "NA") {
+          } else if (itemData.value === "NA") {
             completed++;
           } else {
             incompleteItems.push(itemLabel);

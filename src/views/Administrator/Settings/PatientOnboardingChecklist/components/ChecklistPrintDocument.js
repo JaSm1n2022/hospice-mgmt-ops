@@ -1,11 +1,5 @@
 import React from "react";
-import {
-  Document,
-  Page,
-  Text,
-  View,
-  StyleSheet,
-} from "@react-pdf/renderer";
+import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import moment from "moment";
 
 // Create styles
@@ -295,10 +289,16 @@ const ChecklistPrintDocument = ({ patientData }) => {
         <View
           style={[
             styles.checkboxContainer,
-            isChecked ? styles.checkboxContainerChecked : styles.checkboxContainerUnchecked,
+            isChecked
+              ? styles.checkboxContainerChecked
+              : styles.checkboxContainerUnchecked,
           ]}
         >
-          <Text style={isChecked ? styles.checkboxText : styles.checkboxTextUnchecked}>
+          <Text
+            style={
+              isChecked ? styles.checkboxText : styles.checkboxTextUnchecked
+            }
+          >
             {isChecked ? "YES" : "NO"}
           </Text>
         </View>
@@ -357,17 +357,19 @@ const ChecklistPrintDocument = ({ patientData }) => {
 
     // Check if remarks contains keywords for red highlighting
     const remarksLower = remarks ? remarks.toLowerCase().trim() : "";
-    const hasIssue = remarksLower.includes("unresolve") ||
-                     remarksLower.includes("unresolved") ||
-                     remarksLower.includes("un-resolved") ||
-                     remarksLower.includes("not resolved") ||
-                     remarksLower.includes("poc issue") ||
-                     remarksLower.includes("declined") ||
-                     remarksLower.includes("no notes") ||
-                     remarksLower.includes("no chaplain signature") ||
-                     remarksLower.includes("no msw signature") ||
-                     remarksLower.includes("no rn signature") ||
-                     remarksLower.includes("no signature");
+    const hasIssue =
+      remarksLower.includes("unresolve") ||
+      remarksLower.includes("unresolved") ||
+      remarksLower.includes("un-resolved") ||
+      remarksLower.includes("not resolved") ||
+      remarksLower.includes("poc issue") ||
+      remarksLower.includes("declined") ||
+      remarksLower.includes("no notes") ||
+      remarksLower.includes("no chaplain signature") ||
+      remarksLower.includes("no msw signature") ||
+      remarksLower.includes("no rn signature") ||
+      remarksLower.includes("no signature") ||
+      remarksLower.includes("no assessment");
     const remarksColor = hasIssue ? "#f44336" : "#666";
 
     return (
@@ -380,7 +382,14 @@ const ChecklistPrintDocument = ({ patientData }) => {
         </View>
         {(itemValue === "N" || itemValue === "NA") && remarks && (
           <View style={[styles.textRow, { marginLeft: 68, marginTop: -3 }]}>
-            <Text style={{ fontSize: 10, color: remarksColor, fontStyle: "italic", fontWeight: hasIssue ? "bold" : "normal" }}>
+            <Text
+              style={{
+                fontSize: 10,
+                color: remarksColor,
+                fontStyle: "italic",
+                fontWeight: hasIssue ? "bold" : "normal",
+              }}
+            >
               Remarks: {remarks}
             </Text>
           </View>
@@ -435,10 +444,16 @@ const ChecklistPrintDocument = ({ patientData }) => {
         <View
           style={[
             styles.checkboxContainer,
-            isChecked ? styles.checkboxContainerChecked : styles.checkboxContainerUnchecked,
+            isChecked
+              ? styles.checkboxContainerChecked
+              : styles.checkboxContainerUnchecked,
           ]}
         >
-          <Text style={isChecked ? styles.checkboxText : styles.checkboxTextUnchecked}>
+          <Text
+            style={
+              isChecked ? styles.checkboxText : styles.checkboxTextUnchecked
+            }
+          >
             {isChecked ? "YES" : "NO"}
           </Text>
         </View>
@@ -476,19 +491,23 @@ const ChecklistPrintDocument = ({ patientData }) => {
     // Check if remarks contains "unresolve", "unresolved", "POC ISSUE", "DECLINED", or "NO NOTES" (case insensitive)
     // Also trim whitespace and check for variations
     const remarksLower = remarks ? remarks.toLowerCase().trim() : "";
-    const isUnresolved = remarksLower.includes("unresolve") ||
-                         remarksLower.includes("unresolved") ||
-                         remarksLower.includes("un-resolved") ||
-                         remarksLower.includes("not resolved") ||
-                         remarksLower.includes("poc issue") ||
-                         remarksLower.includes("declined") ||
-                         remarksLower.includes("no notes") ||
-                         remarksLower.includes("no chaplain signature") ||
-                         remarksLower.includes("no msw signature") ||
-                         remarksLower.includes("no rn signature") ||
-                         remarksLower.includes("no signature");
+    const isUnresolved =
+      remarksLower.includes("unresolve") ||
+      remarksLower.includes("unresolved") ||
+      remarksLower.includes("un-resolved") ||
+      remarksLower.includes("not resolved") ||
+      remarksLower.includes("poc issue") ||
+      remarksLower.includes("declined") ||
+      remarksLower.includes("no notes") ||
+      remarksLower.includes("no chaplain signature") ||
+      remarksLower.includes("no msw signature") ||
+      remarksLower.includes("no rn signature") ||
+      remarksLower.includes("no signature") ||
+      remarksLower.includes("no assessment");
     // Always bold, red only for unresolved/issues
-    const remarksStyle = isUnresolved ? styles.inlineValueUnresolved : styles.inlineValueBold;
+    const remarksStyle = isUnresolved
+      ? styles.inlineValueUnresolved
+      : styles.inlineValueBold;
 
     return (
       <View style={styles.inlineRow}>
@@ -549,9 +568,7 @@ const ChecklistPrintDocument = ({ patientData }) => {
               checkboxStyle,
             ]}
           >
-            <Text style={textStyle}>
-              {isChecked ? "YES" : "NO"}
-            </Text>
+            <Text style={textStyle}>{isChecked ? "YES" : "NO"}</Text>
           </View>
         </View>
       </View>
@@ -586,9 +603,21 @@ const ChecklistPrintDocument = ({ patientData }) => {
     return (
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{GROUP_LABELS.assessment}</Text>
-        {renderSelectItemWithRemarks("nursing", data.nursing, data.nursingRemarks)}
-        {renderSelectItemWithRemarks("spiritual", data.spiritual, data.spiritualRemarks)}
-        {renderSelectItemWithRemarks("psychosocial", data.psychosocial, data.psychosocialRemarks)}
+        {renderSelectItemWithRemarks(
+          "nursing",
+          data.nursing,
+          data.nursingRemarks
+        )}
+        {renderSelectItemWithRemarks(
+          "spiritual",
+          data.spiritual,
+          data.spiritualRemarks
+        )}
+        {renderSelectItemWithRemarks(
+          "psychosocial",
+          data.psychosocial,
+          data.psychosocialRemarks
+        )}
       </View>
     );
   };
@@ -638,7 +667,9 @@ const ChecklistPrintDocument = ({ patientData }) => {
 
     return (
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{GROUP_LABELS.skilledNursingNotes}</Text>
+        <Text style={styles.sectionTitle}>
+          {GROUP_LABELS.skilledNursingNotes}
+        </Text>
         {renderNotesInline(data.date, data.createdUser, data.remarks)}
       </View>
     );
@@ -692,13 +723,19 @@ const ChecklistPrintDocument = ({ patientData }) => {
     if (!data) return null;
 
     // Check if patient has EOC (End of Care) - only show red border if EOC exists
-    const hasEoc = patientData.patientEoc != null && patientData.patientEoc !== "";
+    const hasEoc =
+      patientData.patientEoc != null && patientData.patientEoc !== "";
     const sectionStyle = hasEoc ? styles.dischargeWithEoc : styles.section;
 
     return (
       <View style={sectionStyle}>
         <Text style={styles.sectionTitle}>{GROUP_LABELS.discharge}</Text>
-        {renderDischargeInline(data.date, data.reason, data.documentation, hasEoc)}
+        {renderDischargeInline(
+          data.date,
+          data.reason,
+          data.documentation,
+          hasEoc
+        )}
       </View>
     );
   };
@@ -748,9 +785,7 @@ const ChecklistPrintDocument = ({ patientData }) => {
         {data.map((remark, index) => (
           <View style={styles.remarkEntry} key={index}>
             <Text style={styles.remarkBullet}>•</Text>
-            <Text style={styles.remarkText}>
-              {remark || "N/A"}
-            </Text>
+            <Text style={styles.remarkText}>{remark || "N/A"}</Text>
           </View>
         ))}
       </View>
@@ -786,7 +821,8 @@ const ChecklistPrintDocument = ({ patientData }) => {
 
         <View style={styles.footer}>
           <Text>
-            Legend: Green box = Yes/Completed | Gray box = No | Yellow box = N/A | Red border = Incomplete | Red line = LCD Eligibility Unchecked
+            Legend: Green box = Yes/Completed | Gray box = No | Yellow box = N/A
+            | Red border = Incomplete | Red line = LCD Eligibility Unchecked
           </Text>
         </View>
       </Page>
