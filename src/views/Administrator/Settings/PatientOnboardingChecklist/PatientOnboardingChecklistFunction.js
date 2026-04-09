@@ -193,6 +193,7 @@ function PatientOnboardingChecklistFunction(props) {
   const [searchKeyword, setSearchKeyword] = useState("");
   const [columns, setColumns] = useState(PatientOnboardingHandler.columns(true));
   const [patientList, setPatientList] = useState([]);
+  const [selectedRows, setSelectedRows] = useState({}); // Track selected rows for Print All
   const [isPatientCollection, setIsPatientCollection] = useState(true);
   const [isChecklistCollection, setIsChecklistCollection] = useState(true);
   const [
@@ -274,12 +275,26 @@ function PatientOnboardingChecklistFunction(props) {
   };
 
   const printAllChecklistsHandler = () => {
-    console.log("Print all checklists");
+    const selectedIds = Object.keys(selectedRows).filter(id => selectedRows[id]);
+
+    if (selectedIds.length === 0) {
+      alert("Please select at least one patient to print");
+      return;
+    }
+
+    console.log("Print selected checklists:", selectedIds);
     setIsPrintAllModalOpen(true);
   };
 
   const closePrintAllModal = () => {
     setIsPrintAllModalOpen(false);
+  };
+
+  const handleCheckboxSelection = (data, isMarkAll, isChecked, selectedMap) => {
+    console.log("Checkbox selection:", { data, isMarkAll, isChecked, selectedMap });
+
+    // Directly use the selectedMap from the table for accurate state
+    setSelectedRows(selectedMap || {});
   };
 
   const handleSearchChange = (event) => {
@@ -636,7 +651,7 @@ function PatientOnboardingChecklistFunction(props) {
       <PrintAllModal
         isOpen={isPrintAllModalOpen}
         onClose={closePrintAllModal}
-        patientsData={dataSource}
+        patientsData={dataSource.filter(patient => selectedRows[patient.id])}
       />
       <div style={{ marginTop: "10px" }}>
         <GridContainer>
@@ -672,7 +687,10 @@ function PatientOnboardingChecklistFunction(props) {
                         onClick={printAllChecklistsHandler}
                         disabled={dataSource.length === 0}
                       >
-                        <PrintIcon className={classes.icons} /> Print All
+                        <PrintIcon className={classes.icons} /> Print Selected
+                        {Object.keys(selectedRows).filter(id => selectedRows[id]).length > 0 &&
+                          ` (${Object.keys(selectedRows).filter(id => selectedRows[id]).length})`
+                        }
                       </Button>
                     </div>
                   </Grid>
@@ -692,10 +710,12 @@ function PatientOnboardingChecklistFunction(props) {
                 </GridContainer>
 
                 <HospiceTable
+                  main={true}
                   columns={columns}
                   dataSource={filteredDataSource}
                   loading={false}
-                  onCheckboxSelectionHandler={() => {}}
+                  onCheckboxSelectionHandler={handleCheckboxSelection}
+                  selected={selectedRows}
                 />
               </CardBody>
             </Card>

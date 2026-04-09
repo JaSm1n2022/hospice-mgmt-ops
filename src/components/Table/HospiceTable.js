@@ -14,7 +14,11 @@ const HospiceTable = (props) => {
     setColumns(props.columns);
     setDataSource(props.dataSource);
     isWithCheckItem = (props.dataSource || []).find((d) => d.isChecked);
-    if (!isWithCheckItem) {
+
+    // Sync with external selected prop if provided, otherwise reset if no check items
+    if (props.selected !== undefined) {
+      setSelected(props.selected);
+    } else if (!isWithCheckItem) {
       setSelected({});
     }
   }, [props]);
@@ -33,17 +37,16 @@ const HospiceTable = (props) => {
   });
   const onSelectionChange = useCallback(({ selected: selectedMap, data }) => {
     console.log("[onSelectChange]", data, selectedMap);
+    setSelected(selectedMap);
+
     if (JSON.stringify(selectedMap) === "{}") {
       // no selected
-      props.onCheckboxSelectionHandler([], false, false);
+      props.onCheckboxSelectionHandler([], false, false, selectedMap);
     } else if (data && Array.isArray(data) && data.length >= 1) {
       // is Mark as All
-
-      setSelected(selectedMap);
-      props.onCheckboxSelectionHandler(data, true, true);
+      props.onCheckboxSelectionHandler(data, true, true, selectedMap);
     } else {
       // there is selection
-      setSelected(selectedMap);
       // find to distinguish if true or false
       console.log("[Object.keys(selectedMap)]", Object.keys(selectedMap));
       if (
@@ -51,12 +54,12 @@ const HospiceTable = (props) => {
         Array.isArray(Object.keys(selectedMap)) &&
         Object.keys(selectedMap).length === 0
       ) {
-        props.onCheckboxSelectionHandler([data.id], false, false);
+        props.onCheckboxSelectionHandler([data.id], false, false, selectedMap);
       } else {
         const isChecked = Object.keys(selectedMap).find(
           (m) => m.toString() === data.id.toString()
         );
-        props.onCheckboxSelectionHandler([data.id], false, isChecked || false);
+        props.onCheckboxSelectionHandler([data.id], false, isChecked || false, selectedMap);
       }
     }
   });
