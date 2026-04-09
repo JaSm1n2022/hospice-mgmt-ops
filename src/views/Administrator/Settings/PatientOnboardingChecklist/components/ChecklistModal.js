@@ -226,6 +226,14 @@ function ChecklistModal({
     documentation: { checked: false },
   });
 
+  // Bereavement group
+  const [bereavement, setBereavement] = useState({
+    recordOfDeath: "",
+    drugDisposalRefusalForm: "",
+    sympathyCard: "",
+    lettersOfBereavement: "",
+  });
+
   // Compliance group
   const [compliance, setCompliance] = useState({
     hopeAdmission: { value: "", date: "" },
@@ -303,18 +311,64 @@ function ChecklistModal({
         setSelectedPatient(patient);
       }
 
-      // Set all groups
-      setAdmission(item.admission || admission);
-      setAssessment(item.assessment || assessment);
-      setTreatmentOrder(item.treatmentOrder || treatmentOrder);
-      setPhysician(item.physician || physician);
-      setIdgNotes(item.idgNotes || idgNotes);
-      setSkilledNursingNotes(item.skilledNursingNotes || skilledNursingNotes);
-      setHaNotes(item.haNotes || haNotes);
-      setVolunteerNotes(item.volunteerNotes || volunteerNotes);
-      setMiscellaneous(item.miscellaneous || miscellaneous);
-      setDischarge(item.discharge || discharge);
-      setCompliance(item.compliance || compliance);
+      // Set all groups - use fresh empty objects as fallback to avoid cached values
+      setAdmission(item.admission || {
+        demographicSheet: { checked: false },
+        hospiceEvalOrder: "",
+        informedConsent: "",
+        electionOfHospice: "",
+        polstrDnr: "",
+        changeOfHospice: "",
+        poaAdvanceDirective: "",
+        billOfRights: "",
+        telehealthConsent: "",
+        patientNotification: "",
+      });
+      setAssessment(item.assessment || {
+        nursing: "",
+        nursingRemarks: "",
+        spiritual: "",
+        spiritualRemarks: "",
+        psychosocial: "",
+        psychosocialRemarks: "",
+      });
+      setTreatmentOrder(item.treatmentOrder || {
+        treatmentOrder: { checked: false },
+      });
+      setPhysician(item.physician || {
+        cti: { value: "", date: "" },
+        order: { value: "", date: "" },
+        f2fVisit: { value: "", date: "" },
+        referral: "",
+      });
+      setIdgNotes(item.idgNotes || { date: "", createdUser: "", remarks: "" });
+      setSkilledNursingNotes(item.skilledNursingNotes || { date: "", createdUser: "", remarks: "" });
+      setHaNotes(item.haNotes || { date: "", createdUser: "", remarks: "" });
+      setVolunteerNotes(item.volunteerNotes || { date: "", createdUser: "", remarks: "" });
+      setMiscellaneous(item.miscellaneous || {
+        medicalRecords: "",
+        dpoa: "",
+        hp: "",
+        eligibility: "",
+        insuranceCard: "",
+        id: "",
+        dme: "",
+        transportation: "",
+      });
+      setDischarge(item.discharge || { date: "", reason: "", documentation: { checked: false } });
+      setBereavement(item.bereavement || {
+        recordOfDeath: "",
+        drugDisposalRefusalForm: "",
+        sympathyCard: "",
+        lettersOfBereavement: "",
+      });
+      setCompliance(item.compliance || {
+        hopeAdmission: { value: "", date: "" },
+        hopeHuv1: { value: "", date: "" },
+        hopeHuv2: { value: "", date: "" },
+        hopeDischarge: { value: "", date: "" },
+        lcdEligibility: { checked: false },
+      });
       setPoc(item.poc || []);
       setRemarks(item.remarks || []);
     } else {
@@ -369,6 +423,12 @@ function ChecklistModal({
       transportation: "",
     });
     setDischarge({ date: "", reason: "", documentation: { checked: false } });
+    setBereavement({
+      recordOfDeath: "",
+      drugDisposalRefusalForm: "",
+      sympathyCard: "",
+      lettersOfBereavement: "",
+    });
     setCompliance({
       hopeAdmission: { value: "", date: "" },
       hopeHuv1: { value: "", date: "" },
@@ -629,6 +689,7 @@ function ChecklistModal({
       volunteerNotes,
       miscellaneous,
       discharge,
+      bereavement,
       compliance,
       poc,
       remarks,
@@ -1037,13 +1098,31 @@ function ChecklistModal({
             </AccordionDetails>
           </Accordion>
 
-          {/* 11. Compliance */}
+          {/* 11. Bereavement */}
           <Accordion className={classes.accordion}>
             <AccordionSummary
               expandIcon={<ExpandMore />}
               className={classes.accordionSummary}
             >
-              <Typography variant="h6">11. Compliance</Typography>
+              <Typography variant="h6">11. Bereavement</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <div className={classes.sectionContent}>
+                {renderYNNASelect("Record of Death", bereavement.recordOfDeath, bereavement, setBereavement, "recordOfDeath")}
+                {renderYNNASelect("Drug Disposal/Refusal Form", bereavement.drugDisposalRefusalForm, bereavement, setBereavement, "drugDisposalRefusalForm")}
+                {renderYNNASelect("Sympathy Card", bereavement.sympathyCard, bereavement, setBereavement, "sympathyCard")}
+                {renderYNNASelect("Letters of Bereavement", bereavement.lettersOfBereavement, bereavement, setBereavement, "lettersOfBereavement")}
+              </div>
+            </AccordionDetails>
+          </Accordion>
+
+          {/* 12. Compliance */}
+          <Accordion className={classes.accordion}>
+            <AccordionSummary
+              expandIcon={<ExpandMore />}
+              className={classes.accordionSummary}
+            >
+              <Typography variant="h6">12. Compliance</Typography>
             </AccordionSummary>
             <AccordionDetails>
               <div className={classes.sectionContent}>
@@ -1068,13 +1147,13 @@ function ChecklistModal({
             </AccordionDetails>
           </Accordion>
 
-          {/* 12. Plan of Care (POC) */}
+          {/* 13. Plan of Care (POC) */}
           <Accordion className={classes.accordion}>
             <AccordionSummary
               expandIcon={<ExpandMore />}
               className={classes.accordionSummary}
             >
-              <Typography variant="h6">12. Plan of Care (POC)</Typography>
+              <Typography variant="h6">13. Plan of Care (POC)</Typography>
             </AccordionSummary>
             <AccordionDetails>
               <div className={classes.sectionContent}>
@@ -1125,13 +1204,13 @@ function ChecklistModal({
             </AccordionDetails>
           </Accordion>
 
-          {/* 13. General Remarks */}
+          {/* 14. General Remarks */}
           <Accordion className={classes.accordion}>
             <AccordionSummary
               expandIcon={<ExpandMore />}
               className={classes.accordionSummary}
             >
-              <Typography variant="h6">13. General Remarks</Typography>
+              <Typography variant="h6">14. General Remarks</Typography>
             </AccordionSummary>
             <AccordionDetails>
               <div className={classes.sectionContent}>

@@ -245,9 +245,10 @@ const GROUP_LABELS = {
   volunteerNotes: "8. Volunteer Notes",
   miscellaneous: "9. Miscellaneous",
   discharge: "10. Discharge",
-  compliance: "11. Compliance",
-  poc: "12. Plan of Care (POC)",
-  generalRemarks: "13. General Remarks",
+  bereavement: "11. Bereavement",
+  compliance: "12. Compliance",
+  poc: "13. Plan of Care (POC)",
+  generalRemarks: "14. General Remarks",
 };
 
 const ITEM_LABELS = {
@@ -277,6 +278,10 @@ const ITEM_LABELS = {
   id: "ID",
   dme: "DME",
   transportation: "Transportation",
+  recordOfDeath: "Record of Death",
+  drugDisposalRefusalForm: "Drug Disposal/Refusal Form",
+  sympathyCard: "Sympathy Card",
+  lettersOfBereavement: "Letters of Bereavement",
   lcdEligibility: "LCD Eligibility",
 };
 
@@ -740,6 +745,21 @@ const ChecklistPrintDocument = ({ patientData }) => {
     );
   };
 
+  const renderBereavement = () => {
+    const data = patientData.bereavement;
+    if (!data) return null;
+
+    return (
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>{GROUP_LABELS.bereavement}</Text>
+        {renderSelectItem("recordOfDeath", data.recordOfDeath)}
+        {renderSelectItem("drugDisposalRefusalForm", data.drugDisposalRefusalForm)}
+        {renderSelectItem("sympathyCard", data.sympathyCard)}
+        {renderSelectItem("lettersOfBereavement", data.lettersOfBereavement)}
+      </View>
+    );
+  };
+
   const renderCompliance = () => {
     const data = patientData.compliance;
     if (!data) return null;
@@ -815,6 +835,7 @@ const ChecklistPrintDocument = ({ patientData }) => {
         {renderVolunteerNotes()}
         {renderMiscellaneous()}
         {renderDischarge()}
+        {renderBereavement()}
         {renderCompliance()}
         {renderPoc()}
         {renderGeneralRemarks()}

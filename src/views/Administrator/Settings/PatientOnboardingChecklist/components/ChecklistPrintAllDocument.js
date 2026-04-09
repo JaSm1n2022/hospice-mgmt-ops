@@ -258,9 +258,10 @@ const GROUP_LABELS = {
   volunteerNotes: "8. Volunteer Notes",
   miscellaneous: "9. Miscellaneous",
   discharge: "10. Discharge",
-  compliance: "11. Compliance",
-  poc: "12. Plan of Care (POC)",
-  generalRemarks: "13. General Remarks",
+  bereavement: "11. Bereavement",
+  compliance: "12. Compliance",
+  poc: "13. Plan of Care (POC)",
+  generalRemarks: "14. General Remarks",
 };
 
 const ITEM_LABELS = {
@@ -290,6 +291,10 @@ const ITEM_LABELS = {
   id: "ID",
   dme: "DME",
   transportation: "Transportation",
+  recordOfDeath: "Record of Death",
+  drugDisposalRefusalForm: "Drug Disposal/Refusal Form",
+  sympathyCard: "Sympathy Card",
+  lettersOfBereavement: "Letters of Bereavement",
   hopeAdmission: "HOPE Admission",
   hopeHuv1: "HOPE HUV 1",
   hopeHuv2: "HOPE HUV 2",
@@ -386,6 +391,15 @@ const collectPatientAlerts = (patient) => {
     ["medicalRecords", "dpoa", "hp", "eligibility", "insuranceCard", "id", "dme", "transportation"].forEach((key) => {
       if (!patient.miscellaneous[key] || (patient.miscellaneous[key] !== "Y" && patient.miscellaneous[key] !== "NA")) {
         incompleteItems.push(`Miscellaneous: ${ITEM_LABELS[key]}`);
+      }
+    });
+  }
+
+  // Check Bereavement items
+  if (patient.bereavement) {
+    ["recordOfDeath", "drugDisposalRefusalForm", "sympathyCard", "lettersOfBereavement"].forEach((key) => {
+      if (!patient.bereavement[key] || (patient.bereavement[key] !== "Y" && patient.bereavement[key] !== "NA")) {
+        incompleteItems.push(`Bereavement: ${ITEM_LABELS[key]}`);
       }
     });
   }
@@ -872,6 +886,29 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
                 {patient.discharge.documentation?.checked ? "YES" : "NO"}
               </Text>
             </View>
+          </View>
+        )}
+
+        {/* Bereavement */}
+        {patient.bereavement && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{GROUP_LABELS.bereavement}</Text>
+            {renderSelectItem(
+              "recordOfDeath",
+              patient.bereavement.recordOfDeath
+            )}
+            {renderSelectItem(
+              "drugDisposalRefusalForm",
+              patient.bereavement.drugDisposalRefusalForm
+            )}
+            {renderSelectItem(
+              "sympathyCard",
+              patient.bereavement.sympathyCard
+            )}
+            {renderSelectItem(
+              "lettersOfBereavement",
+              patient.bereavement.lettersOfBereavement
+            )}
           </View>
         )}
 

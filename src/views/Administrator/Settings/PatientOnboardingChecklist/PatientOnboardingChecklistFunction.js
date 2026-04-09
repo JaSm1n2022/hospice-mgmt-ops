@@ -161,6 +161,14 @@ const CHECKLIST_STRUCTURE = {
       { key: "dischargeDocumentation", type: "boolean", mandatory: false },
     ],
   },
+  bereavement: {
+    items: [
+      { key: "recordOfDeath", type: "select", mandatory: true },
+      { key: "drugDisposalRefusalForm", type: "select", mandatory: true },
+      { key: "sympathyCard", type: "select", mandatory: true },
+      { key: "lettersOfBereavement", type: "select", mandatory: true },
+    ],
+  },
   compliance: {
     items: [
       { key: "hopeAdmission", type: "selectWithDate", mandatory: true },
@@ -459,6 +467,10 @@ function PatientOnboardingChecklistFunction(props) {
         checklist.discharge,
         CHECKLIST_STRUCTURE.discharge.items
       );
+      const bereavementStatus = PatientOnboardingHandler.calculateGroupStatus(
+        checklist.bereavement,
+        CHECKLIST_STRUCTURE.bereavement.items
+      );
       const complianceStatus = PatientOnboardingHandler.calculateGroupStatus(
         checklist.compliance,
         CHECKLIST_STRUCTURE.compliance.items
@@ -484,6 +496,7 @@ function PatientOnboardingChecklistFunction(props) {
         volunteerNotesStatus.completed +
         miscellaneousStatus.completed +
         dischargeStatus.completed +
+        bereavementStatus.completed +
         complianceStatus.completed +
         pocStatus.completed;
       const overallProgress = `${Math.round(
@@ -505,6 +518,7 @@ function PatientOnboardingChecklistFunction(props) {
         volunteerNotesStatus,
         miscellaneousStatus,
         dischargeStatus,
+        bereavementStatus,
         complianceStatus, // Includes all 5 items: 4 HOPE + LCD
         pocStatus,
         overallProgress,
@@ -563,6 +577,7 @@ function PatientOnboardingChecklistFunction(props) {
       volunteerNotes: data.volunteerNotes || {},
       miscellaneous: data.miscellaneous || {},
       discharge: data.discharge || {},
+      bereavement: data.bereavement || {},
       compliance: data.compliance || {},
       poc: data.poc || [],
       remarks: data.remarks || [],

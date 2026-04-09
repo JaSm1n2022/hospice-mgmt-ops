@@ -89,6 +89,13 @@ class PatientOnboardingHandler {
       {
         defaultFlex: 1,
         minWidth: 180,
+        name: "bereavementStatus",
+        header: "Bereavement",
+        render: ({ value }) => this.renderGroupStatus(value),
+      },
+      {
+        defaultFlex: 1,
+        minWidth: 180,
         name: "complianceStatus",
         header: "Compliance",
         render: ({ value }) => this.renderGroupStatus(value),
@@ -338,6 +345,12 @@ class PatientOnboardingHandler {
       dischargeDate: "Discharge Date",
       dischargeReason: "Discharge Reason",
       dischargeDocumentation: "Discharge Documentation",
+
+      // Bereavement
+      recordOfDeath: "Record of Death",
+      drugDisposalRefusalForm: "Drug Disposal/Refusal Form",
+      sympathyCard: "Sympathy Card",
+      lettersOfBereavement: "Letters of Bereavement",
 
       // Compliance
       hopeAdmission: "HOPE Admission",
