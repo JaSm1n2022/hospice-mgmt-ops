@@ -18,6 +18,30 @@ class PatientOnboardingHandler {
       },
       {
         defaultFlex: 1,
+        minWidth: 120,
+        name: "patientStatus",
+        header: "Status",
+        render: ({ value }) => {
+          const isActive = value === "Active";
+          return (
+            <div
+              style={{
+                display: "inline-block",
+                padding: "4px 12px",
+                borderRadius: "12px",
+                fontSize: "12px",
+                fontWeight: "600",
+                backgroundColor: isActive ? "#e8f5e9" : "#ffebee",
+                color: isActive ? "#2e7d32" : "#c62828",
+              }}
+            >
+              {value || "Unknown"}
+            </div>
+          );
+        },
+      },
+      {
+        defaultFlex: 1,
         minWidth: 180,
         name: "admissionStatus",
         header: "Admission",

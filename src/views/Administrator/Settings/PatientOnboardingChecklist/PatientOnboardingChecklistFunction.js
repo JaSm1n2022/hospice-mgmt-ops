@@ -19,6 +19,7 @@ import moment from "moment";
 import TextField from "@material-ui/core/TextField";
 import SearchIcon from "@material-ui/icons/Search";
 import { Print as PrintIcon, Warning as WarningIcon } from "@material-ui/icons";
+import { FormControl, InputLabel, Select, MenuItem, Chip } from "@material-ui/core";
 
 import PatientOnboardingHandler from "./handler/PatientOnboardingHandler";
 import ChecklistModal from "./components/ChecklistModal";
@@ -191,6 +192,7 @@ function PatientOnboardingChecklistFunction(props) {
   const [filteredDataSource, setFilteredDataSource] = useState([]);
   const [rawChecklists, setRawChecklists] = useState([]); // Store raw checklist data for printing
   const [searchKeyword, setSearchKeyword] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All"); // All, Active, Inactive
   const [columns, setColumns] = useState(PatientOnboardingHandler.columns(true));
   const [patientList, setPatientList] = useState([]);
   const [selectedRows, setSelectedRows] = useState({}); // Track selected rows for Print All
@@ -302,20 +304,30 @@ function PatientOnboardingChecklistFunction(props) {
     setSearchKeyword(keyword);
   };
 
-  // Filter data based on search keyword
+  const handleStatusFilterChange = (status) => {
+    setStatusFilter(status);
+  };
+
+  // Filter data based on search keyword and status
   useEffect(() => {
-    if (searchKeyword.trim() === "") {
-      setFilteredDataSource(dataSource);
-    } else {
-      const filtered = dataSource.filter((item) => {
+    let filtered = dataSource;
+
+    // Apply search filter
+    if (searchKeyword.trim() !== "") {
+      filtered = filtered.filter((item) => {
         const patientCd = item.patientCd?.toLowerCase() || "";
         const keyword = searchKeyword.toLowerCase();
-
         return patientCd.includes(keyword);
       });
-      setFilteredDataSource(filtered);
     }
-  }, [searchKeyword, dataSource]);
+
+    // Apply status filter
+    if (statusFilter !== "All") {
+      filtered = filtered.filter((item) => item.patientStatus === statusFilter);
+    }
+
+    setFilteredDataSource(filtered);
+  }, [searchKeyword, statusFilter, dataSource]);
 
   // Handle status changes
   useEffect(() => {
@@ -441,6 +453,11 @@ function PatientOnboardingChecklistFunction(props) {
 
     // Transform database format to table format
     const tableData = fetchedChecklists.map((checklist) => {
+      // Lookup patient to get status (based on EOC)
+      const patient = patientList.find((p) => p.patientCd === checklist.patientCd);
+      const patientStatus = patient?.eoc ? "Inactive" : "Active";
+      const patientEoc = patient?.eoc || null;
+
       // Calculate group statuses
       const admissionStatus = PatientOnboardingHandler.calculateGroupStatus(
         checklist.admission,
@@ -523,6 +540,8 @@ function PatientOnboardingChecklistFunction(props) {
         id: checklist.id,
         patientId: checklist.patientId,
         patientCd: checklist.patientCd,
+        patientStatus,
+        patientEoc,
         admissionStatus,
         assessmentStatus,
         treatmentOrderStatus,
@@ -695,17 +714,59 @@ function PatientOnboardingChecklistFunction(props) {
                     </div>
                   </Grid>
                   <Grid item xs={12} md={6}>
-                    <TextField
-                      label="Search by Patient Code"
-                      variant="outlined"
-                      size="small"
-                      fullWidth
-                      value={searchKeyword}
-                      onChange={handleSearchChange}
-                      InputProps={{
-                        startAdornment: <SearchIcon style={{ marginRight: 8, color: "#999" }} />,
-                      }}
-                    />
+                    <div style={{ display: "flex", gap: 10 }}>
+                      <FormControl variant="outlined" size="small" style={{ minWidth: 150 }}>
+                        <InputLabel>Status</InputLabel>
+                        <Select
+                          value={statusFilter}
+                          onChange={(e) => handleStatusFilterChange(e.target.value)}
+                          label="Status"
+                        >
+                          <MenuItem value="All">
+                            All
+                            {statusFilter === "All" && (
+                              <Chip
+                                label={dataSource.length}
+                                size="small"
+                                style={{ marginLeft: 8, height: 20 }}
+                              />
+                            )}
+                          </MenuItem>
+                          <MenuItem value="Active">
+                            Active
+                            {statusFilter === "Active" && (
+                              <Chip
+                                label={dataSource.filter(d => d.patientStatus === "Active").length}
+                                size="small"
+                                color="primary"
+                                style={{ marginLeft: 8, height: 20 }}
+                              />
+                            )}
+                          </MenuItem>
+                          <MenuItem value="Inactive">
+                            Inactive
+                            {statusFilter === "Inactive" && (
+                              <Chip
+                                label={dataSource.filter(d => d.patientStatus === "Inactive").length}
+                                size="small"
+                                style={{ marginLeft: 8, height: 20, backgroundColor: "#ffebee", color: "#c62828" }}
+                              />
+                            )}
+                          </MenuItem>
+                        </Select>
+                      </FormControl>
+                      <TextField
+                        label="Search by Patient Code"
+                        variant="outlined"
+                        size="small"
+                        fullWidth
+                        value={searchKeyword}
+                        onChange={handleSearchChange}
+                        InputProps={{
+                          startAdornment: <SearchIcon style={{ marginRight: 8, color: "#999" }} />,
+                        }}
+                      />
+                    </div>
                   </Grid>
                 </GridContainer>
 
