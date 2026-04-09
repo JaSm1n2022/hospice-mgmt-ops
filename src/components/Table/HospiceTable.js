@@ -10,18 +10,25 @@ const HospiceTable = (props) => {
   const [dataSource, setDataSource] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState({});
+
   useEffect(() => {
     setColumns(props.columns);
     setDataSource(props.dataSource);
-    isWithCheckItem = (props.dataSource || []).find((d) => d.isChecked);
+  }, [props.columns, props.dataSource]);
 
-    // Sync with external selected prop if provided, otherwise reset if no check items
+  // Separate effect for selection to avoid unnecessary resets
+  useEffect(() => {
     if (props.selected !== undefined) {
       setSelected(props.selected);
-    } else if (!isWithCheckItem) {
-      setSelected({});
+    } else {
+      // Only reset if there are no items with isChecked property
+      isWithCheckItem = (props.dataSource || []).find((d) => d.isChecked);
+      if (!isWithCheckItem && Object.keys(selected).length > 0) {
+        // Only reset if we previously had selections
+        setSelected({});
+      }
     }
-  }, [props]);
+  }, [props.selected]);
 
   useEffect(() => {
     setLoading(props.loading);
