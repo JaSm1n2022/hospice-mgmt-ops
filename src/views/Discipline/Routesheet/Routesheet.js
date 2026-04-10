@@ -105,7 +105,7 @@ function Routesheet(props) {
   const [client, setClient] = useState("");
   const [notes, setNotes] = useState("");
   const [clients, setClients] = useState([]);
-  const [clientService, setClientService] = useState("RV"); // Default to Regular Visit
+  const [clientService, setClientService] = useState("Regular Visit"); // Default to Regular Visit
   const [isRefresh, setIsRefresh] = useState(false);
   const [isSignRequired, setIsSignRequired] = useState(false);
   const [isMileageRate, setIsMileageRate] = useState(false);
@@ -354,7 +354,7 @@ function Routesheet(props) {
 
     setIsMileageRate(false);
     setMileage(0);
-    setClientService("RV"); // Reset to Regular Visit default
+    setClientService("Regular Visit"); // Reset to Regular Visit default
     setNotes("");
     sigCanvas.current?.clear();
     setSignaturePreview(null);
