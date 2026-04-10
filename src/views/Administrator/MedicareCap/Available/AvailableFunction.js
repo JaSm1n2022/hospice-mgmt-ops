@@ -15,7 +15,8 @@ import { ACTION_STATUSES } from "utils/constants";
 import { Button, CircularProgress, Grid } from "@material-ui/core";
 
 import HospiceTable from "components/Table/HospiceTable";
-import { ImportExport } from "@material-ui/icons";
+import { ImportExport, Print } from "@material-ui/icons";
+import PrintOverviewModal from "./components/PrintOverviewModal";
 import Helper from "utils/helper";
 import * as FileSaver from "file-saver";
 
@@ -78,6 +79,7 @@ function AvailableFunction(props) {
   const [keywordValue, setKeywordValue] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [isPrintOverviewModalOpen, setIsPrintOverviewModalOpen] = useState(false);
   const createFormHandler = (data, mode) => {
     setItem(data);
     setMode(mode || "create");
@@ -174,6 +176,20 @@ function AvailableFunction(props) {
     if (excelData && excelData.length) {
     }
   };
+
+  const printOverviewHandler = () => {
+    const selectedData = dataSource.filter((r) => r.isChecked);
+    if (selectedData.length === 0) {
+      alert("Please select at least one patient to print overview");
+      return;
+    }
+    console.log("Print overview for selected patients:", selectedData);
+    setIsPrintOverviewModalOpen(true);
+  };
+
+  const closePrintOverviewModal = () => {
+    setIsPrintOverviewModalOpen(false);
+  };
   const onPressEnterKeyHandler = (value) => {
     filterRecordHandler(value);
     setKeywordValue(value);
@@ -189,6 +205,11 @@ function AvailableFunction(props) {
 
   return (
     <>
+      <PrintOverviewModal
+        isOpen={isPrintOverviewModalOpen}
+        onClose={closePrintOverviewModal}
+        patientsData={dataSource.filter((r) => r.isChecked)}
+      />
       {!isProcessDone ? (
         <div>
           <CircularProgress />
@@ -224,26 +245,48 @@ function AvailableFunction(props) {
                       }}
                     >
                       {isAddGroupButtons && (
-                        <Button
-                          onClick={() => exportToExcelHandler()}
-                          variant="outlined"
-                          style={{
-                            fontFamily: "Roboto",
-                            fontSize: "12px",
-                            fontWeight: 500,
-                            fontStretch: "normal",
-                            fontStyle: "normal",
-                            lineHeight: 1.71,
-                            letterSpacing: "0.4px",
-                            textAlign: "left",
-                            cursor: "pointer",
-                          }}
-                          component="span"
-                          startIcon={<ImportExport />}
-                        >
-                          {" "}
-                          Export Excel{" "}
-                        </Button>
+                        <>
+                          <Button
+                            onClick={() => exportToExcelHandler()}
+                            variant="outlined"
+                            style={{
+                              fontFamily: "Roboto",
+                              fontSize: "12px",
+                              fontWeight: 500,
+                              fontStretch: "normal",
+                              fontStyle: "normal",
+                              lineHeight: 1.71,
+                              letterSpacing: "0.4px",
+                              textAlign: "left",
+                              cursor: "pointer",
+                            }}
+                            component="span"
+                            startIcon={<ImportExport />}
+                          >
+                            {" "}
+                            Export Excel{" "}
+                          </Button>
+                          <Button
+                            onClick={() => printOverviewHandler()}
+                            variant="outlined"
+                            style={{
+                              fontFamily: "Roboto",
+                              fontSize: "12px",
+                              fontWeight: 500,
+                              fontStretch: "normal",
+                              fontStyle: "normal",
+                              lineHeight: 1.71,
+                              letterSpacing: "0.4px",
+                              textAlign: "left",
+                              cursor: "pointer",
+                            }}
+                            component="span"
+                            startIcon={<Print />}
+                          >
+                            {" "}
+                            Print Overview{" "}
+                          </Button>
+                        </>
                       )}
                     </div>
 

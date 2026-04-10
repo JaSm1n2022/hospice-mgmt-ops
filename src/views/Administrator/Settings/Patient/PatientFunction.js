@@ -19,11 +19,12 @@ import { CircularProgress, Grid } from "@material-ui/core";
 import AddIcon from "@material-ui/icons/Add";
 
 import HospiceTable from "components/Table/HospiceTable";
-import { AddAlert, ImportExport } from "@material-ui/icons";
+import { AddAlert, ImportExport, Print } from "@material-ui/icons";
 import Helper from "utils/helper";
 import * as FileSaver from "file-saver";
 
 import PatientForm from "./components/Form";
+import PrintAssessmentTrendsModal from "./components/PrintAssessmentTrendsModal";
 import { attemptToUpdatePatient } from "store/actions/patientAction";
 
 import { patientListStateSelector } from "store/selectors/patientSelector";
@@ -107,6 +108,8 @@ function PatientFunction(props) {
   const [mode, setMode] = useState("create");
   const [isAddGroupButtons, setIsAddGroupButtons] = useState(false);
   const [keywordValue, setKeywordValue] = useState("");
+  const [isAssessmentTrendsModalOpen, setIsAssessmentTrendsModalOpen] = useState(false);
+  const [logoBase64, setLogoBase64] = useState(null);
 
   const showNotification = (place, color, msg) => {
     setMessage(msg);
@@ -184,6 +187,18 @@ function PatientFunction(props) {
       props.listPatients({ companyId: context.userProfile?.companyId });
       props.listLocations({ companyId: context.userProfile?.companyId });
     }
+
+    // Load logo for PDF generation
+    const loadLogo = async () => {
+      try {
+        const logoUrl = "https://acwocotrngkeaxtzdzfz.supabase.co/storage/v1/object/public/images/headerdoc.png";
+        const logo = await Helper.getImageBase64(logoUrl);
+        setLogoBase64(logo);
+      } catch (error) {
+        console.error("Failed to load logo:", error);
+      }
+    };
+    loadLogo();
   }, []);
 
   const sortByWorth = (items) => {
@@ -276,6 +291,7 @@ function PatientFunction(props) {
       eoc_discharge: payload.eocDischarge?.name,
       new_hospice_care_day: parseInt(payload.newHospiceCareDays || 0, 10),
       admitted_benefits_period: parseInt(payload.numberOfBenefits || 0, 10),
+      assessment: payload.assessment?.value || payload.assessment || null,
       companyId: context.userProfile?.companyId,
       updatedUser: {
         name: context.userProfile?.name,
@@ -430,13 +446,22 @@ function PatientFunction(props) {
               <CardBody>
                 <GridContainer alignItems="center" style={{ paddingLeft: 12 }}>
                   <Grid item xs={12} md={6}>
-                    <div style={{ display: "inline-flex", gap: 10 }}>
+                    <div style={{ display: "inline-flex", gap: 10, flexWrap: "wrap" }}>
                       <Button
                         color="info"
                         className={classes.marginRight}
                         onClick={() => createFormHandler()}
                       >
                         <AddIcon className={classes.icons} /> Add Patient
+                      </Button>
+
+                      <Button
+                        color="rose"
+                        className={classes.marginRight}
+                        onClick={() => setIsAssessmentTrendsModalOpen(true)}
+                        disabled={!dataSource || dataSource.length === 0}
+                      >
+                        <Print className={classes.icons} /> Assessment Trends
                       </Button>
 
                       {isAddGroupButtons && (
@@ -496,6 +521,14 @@ function PatientFunction(props) {
           isEdit={false}
           item={item}
           closeFormModalHandler={closeFormModalHandler}
+        />
+      )}
+      {isAssessmentTrendsModalOpen && (
+        <PrintAssessmentTrendsModal
+          isOpen={isAssessmentTrendsModalOpen}
+          onClose={() => setIsAssessmentTrendsModalOpen(false)}
+          patientsData={dataSource}
+          logoBase64={logoBase64}
         />
       )}
     </>

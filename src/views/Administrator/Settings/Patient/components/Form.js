@@ -27,6 +27,7 @@ import { PATIENT_STATUS } from "utils/constants";
 import { INSURANCE } from "utils/constants";
 import { DISCHARGE_REASON } from "utils/constants";
 import { US_STATES } from "utils/constants";
+import { CLINICIAN_ASSESSMENT } from "utils/constants";
 import { getCountiesByState } from "utils/usCounties";
 import BenefitPeriodCalculator from "utils/BenefitPeriodCalculator";
 import ModalFooter from "components/Modal/ModalFooter/ModalFooter";
@@ -360,6 +361,22 @@ function PatientForm(props) {
         name: "recertDt",
         cols: 6,
       },
+      {
+        id: "assessment",
+        component: "singlecomplete",
+        placeholder: "Clinician Assessment",
+        label: "Clinician Assessment",
+        name: "assessment",
+        hide: false,
+        options: Object.keys(CLINICIAN_ASSESSMENT).map((key) => ({
+          id: key,
+          name: key,
+          value: key,
+          label: key,
+          category: "assessment",
+        })),
+        cols: 6,
+      },
       // EOC/DISCHARGE SECTION
       {
         id: "eocHeader",
@@ -485,6 +502,18 @@ function PatientForm(props) {
 
       fm.location.value = fm.location?.name;
       fm.location.label = fm.location?.name;
+
+      // Load assessment if it exists
+      if (props.item.assessment) {
+        fm.assessment = {
+          id: props.item.assessment,
+          name: props.item.assessment,
+          value: props.item.assessment,
+          label: props.item.assessment,
+          category: "assessment",
+        };
+      }
+
       setPatientIdentity(fm.patientCd);
       setGeneralForm(fm);
     }
@@ -682,6 +711,8 @@ function PatientForm(props) {
       src.county = DEFAULT_ITEM;
     } else if (item.category === "county") {
       src.county = item;
+    } else if (item.category === "assessment") {
+      src.assessment = item;
     }
 
     // Only update components if there are errors to clear

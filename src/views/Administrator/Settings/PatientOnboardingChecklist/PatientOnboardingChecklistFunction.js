@@ -26,6 +26,7 @@ import ChecklistModal from "./components/ChecklistModal";
 import PrintModal from "./components/PrintModal";
 import PrintAllModal from "./components/PrintAllModal";
 import PrintAlertModal from "./components/PrintAlertModal";
+import PrintAlertViewModal from "./components/PrintAlertViewModal";
 
 // Redux imports for Patient
 import { patientListStateSelector } from "store/selectors/patientSelector";
@@ -220,6 +221,7 @@ function PatientOnboardingChecklistFunction(props) {
   const [selectedPrintData, setSelectedPrintData] = useState(null);
   const [isPrintAllModalOpen, setIsPrintAllModalOpen] = useState(false);
   const [isPrintAlertModalOpen, setIsPrintAlertModalOpen] = useState(false);
+  const [isPrintAlertViewModalOpen, setIsPrintAlertViewModalOpen] = useState(false);
 
   const showNotification = (place, color, msg) => {
     setMessage(msg);
@@ -292,11 +294,36 @@ function PatientOnboardingChecklistFunction(props) {
     setIsPrintAllModalOpen(false);
   };
 
+  const printAlertViewHandler = () => {
+    const selectedIds = Object.keys(selectedRows).filter(id => selectedRows[id]);
+
+    if (selectedIds.length === 0) {
+      alert("Please select at least one patient to view alerts");
+      return;
+    }
+
+    console.log("Print alert view for selected checklists:", selectedIds);
+    setIsPrintAlertViewModalOpen(true);
+  };
+
+  const closePrintAlertViewModal = () => {
+    setIsPrintAlertViewModalOpen(false);
+  };
+
   const handleCheckboxSelection = (data, isMarkAll, isChecked, selectedMap) => {
     console.log("Checkbox selection:", { data, isMarkAll, isChecked, selectedMap });
 
-    // Directly use the selectedMap from the table for accurate state
-    setSelectedRows(selectedMap || {});
+    // If "Mark All" is triggered, build the selectedMap from data array
+    if (isMarkAll && Array.isArray(data) && data.length > 0) {
+      const allSelectedMap = {};
+      data.forEach(item => {
+        allSelectedMap[item.id] = true;
+      });
+      setSelectedRows(allSelectedMap);
+    } else {
+      // For individual selections or unselect all, use the selectedMap from the table
+      setSelectedRows(selectedMap || {});
+    }
   };
 
   const handleSearchChange = (event) => {
@@ -672,6 +699,11 @@ function PatientOnboardingChecklistFunction(props) {
         onClose={closePrintAllModal}
         patientsData={dataSource.filter(patient => selectedRows[patient.id])}
       />
+      <PrintAlertViewModal
+        isOpen={isPrintAlertViewModalOpen}
+        onClose={closePrintAlertViewModal}
+        patientsData={dataSource.filter(patient => selectedRows[patient.id])}
+      />
       <div style={{ marginTop: "10px" }}>
         <GridContainer>
           <GridItem xs={12} sm={12} md={12}>
@@ -694,7 +726,7 @@ function PatientOnboardingChecklistFunction(props) {
                   style={{ paddingLeft: 12, marginBottom: 20 }}
                 >
                   <Grid item xs={12} md={6}>
-                    <div style={{ display: "inline-flex", gap: 10 }}>
+                    <div style={{ display: "inline-flex", gap: 10, flexWrap: "wrap" }}>
                       <Button
                         color="info"
                         onClick={() => createFormHandler({}, "create")}
@@ -707,6 +739,16 @@ function PatientOnboardingChecklistFunction(props) {
                         disabled={dataSource.length === 0}
                       >
                         <PrintIcon className={classes.icons} /> Print Selected
+                        {Object.keys(selectedRows).filter(id => selectedRows[id]).length > 0 &&
+                          ` (${Object.keys(selectedRows).filter(id => selectedRows[id]).length})`
+                        }
+                      </Button>
+                      <Button
+                        color="rose"
+                        onClick={printAlertViewHandler}
+                        disabled={dataSource.length === 0}
+                      >
+                        <WarningIcon className={classes.icons} /> Alert View
                         {Object.keys(selectedRows).filter(id => selectedRows[id]).length > 0 &&
                           ` (${Object.keys(selectedRows).filter(id => selectedRows[id]).length})`
                         }

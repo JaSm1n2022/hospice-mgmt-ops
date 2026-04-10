@@ -50,6 +50,16 @@ class PatientHandler {
       },
       {
         defaultFlex: 1,
+        minWidth: 150,
+        name: "soc",
+        header: "SOC",
+        render: ({ value }) => {
+          if (!value) return "";
+          return moment(value).format("MM/DD/YYYY");
+        },
+      },
+      {
+        defaultFlex: 1,
         minWidth: 200,
         name: "careType",
         header: "Care Type",
@@ -105,6 +115,12 @@ class PatientHandler {
         minWidth: 200,
         name: "county",
         header: "County",
+      },
+      {
+        defaultFlex: 1,
+        minWidth: 150,
+        name: "assessment",
+        header: "Assessment",
       },
     ];
   }

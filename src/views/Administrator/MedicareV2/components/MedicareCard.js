@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { makeStyles } from "@material-ui/core/styles";
 import {
   Card,
@@ -19,8 +19,10 @@ import {
   AttachMoney,
   Timeline,
   Warning,
+  Print,
 } from "@material-ui/icons";
 import moment from "moment";
+import PrintPatientModal from "./PrintPatientModal";
 
 const useStyles = makeStyles((theme) => ({
   card: {
@@ -95,6 +97,15 @@ const useStyles = makeStyles((theme) => ({
 
 const MedicareCard = ({ data }) => {
   const classes = useStyles();
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+
+  const handlePrintClick = () => {
+    setIsPrintModalOpen(true);
+  };
+
+  const closePrintModal = () => {
+    setIsPrintModalOpen(false);
+  };
 
   const formatCurrency = (value) => {
     if (value === undefined || value === null) return "$0.00";
@@ -161,53 +172,66 @@ const MedicareCard = ({ data }) => {
     !data.eoc_discharge.toLowerCase().includes("death");
 
   return (
-    <Card className={classes.card}>
-      <CardHeader
-        className={
-          isActive ? classes.cardHeaderActive : classes.cardHeaderInactive
-        }
-        title={
-          <Box
-            display="flex"
-            alignItems="center"
-            justifyContent="space-between"
-          >
-            <Box display="flex" alignItems="center" gap={1}>
-              <Person />
-              <Typography variant="h6">{data.clientName || "N/A"}</Typography>
-            </Box>
-            <Box display="flex" alignItems="center" gap={1}>
-              {shouldShowAlert && (
-                <Tooltip
-                  title="⚠️ Patient discharged (non-death). Please review the Post-Discharge (EOC) number of care days. Verify eligibility and update the patient's post-discharge total days in the patient profile."
-                  arrow
-                >
-                  <IconButton size="small" style={{ color: "white" }}>
-                    <Warning />
+    <>
+      <PrintPatientModal
+        isOpen={isPrintModalOpen}
+        onClose={closePrintModal}
+        patientData={data}
+      />
+      <Card className={classes.card}>
+        <CardHeader
+          className={
+            isActive ? classes.cardHeaderActive : classes.cardHeaderInactive
+          }
+          title={
+            <Box
+              display="flex"
+              alignItems="center"
+              justifyContent="space-between"
+            >
+              <Box display="flex" alignItems="center" gap={1}>
+                <Person />
+                {data.clientName && (
+                  <Typography variant="h6">{data.clientName}</Typography>
+                )}
+              </Box>
+              <Box display="flex" alignItems="center" gap={1}>
+                <Tooltip title="Print Patient Summary" arrow>
+                  <IconButton size="small" style={{ color: "white" }} onClick={handlePrintClick}>
+                    <Print />
                   </IconButton>
                 </Tooltip>
-              )}
-              <Chip
-                label={statusText}
-                size="small"
-                className={classes.statusChip}
-                style={{
-                  backgroundColor: "rgba(255,255,255,0.3)",
-                  color: "white",
-                }}
-              />
+                {shouldShowAlert && (
+                  <Tooltip
+                    title="⚠️ Patient discharged (non-death). Please review the Post-Discharge (EOC) number of care days. Verify eligibility and update the patient's post-discharge total days in the patient profile."
+                    arrow
+                  >
+                    <IconButton size="small" style={{ color: "white" }}>
+                      <Warning />
+                    </IconButton>
+                  </Tooltip>
+                )}
+                <Chip
+                  label={statusText}
+                  size="small"
+                  className={classes.statusChip}
+                  style={{
+                    backgroundColor: "rgba(255,255,255,0.3)",
+                    color: "white",
+                  }}
+                />
+              </Box>
             </Box>
-          </Box>
-        }
-        subheader={
-          <Typography
-            variant="body2"
-            style={{ color: "rgba(255,255,255,0.9)" }}
-          >
-            Patient # {data.patientCd || "N/A"}
-          </Typography>
-        }
-      />
+          }
+          subheader={
+            <Typography
+              variant="body2"
+              style={{ color: "rgba(255,255,255,0.9)" }}
+            >
+              Patient # {data.patientCd || "N/A"}
+            </Typography>
+          }
+        />
 
       <CardContent className={classes.cardContent}>
         {/* Basic Information */}
@@ -685,6 +709,7 @@ const MedicareCard = ({ data }) => {
         })()}
       </CardContent>
     </Card>
+    </>
   );
 };
 

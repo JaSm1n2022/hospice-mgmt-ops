@@ -1017,6 +1017,26 @@ export const EMPLOYMENT_STATUS = [
   "Volunteer",
 ];
 
+export const CLINICIAN_ASSESSMENT = {
+  ALS: "ALS",
+  ALZ: "Alzheimer",
+  AUTOIMD: "Autoimmune Disease",
+  CAN: "Cancer",
+  DEM: "Dementia",
+  DIAB: "Diabetes",
+  DIGEST: "Digestive Disease",
+  HEART: "Heart Disease",
+  HIV: "HIV",
+  KIDNEY: "Kidney Disease",
+  PULMON: "Pulmonary Disease",
+  LIVER: "Liver Disease",
+  NEURO: "Neuro (CVA, MS, Parkinson's)",
+  NONSPEC: "Non-Specific Disease",
+  RENAL: "Renal Disease",
+  STRKCOMA: "Stroke and Coma",
+  OTH: "Others",
+};
+
 export const PATIENT_DASHBOARD_CATEGORY = [
   "Underpads",
   "Brief",

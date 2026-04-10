@@ -11,6 +11,7 @@ import CardBody from "components/Card/CardBody.js";
 import MedicareHandler from "./components/MedicareHandler";
 import MedicareCard from "./components/MedicareCard";
 import SummaryStats from "./components/SummaryStats";
+import PrintOverviewModal from "./components/PrintOverviewModal";
 import { connect } from "react-redux";
 
 import { ACTION_STATUSES } from "utils/constants";
@@ -26,8 +27,9 @@ import {
   Paper,
   Box,
   Typography,
+  Button,
 } from "@material-ui/core";
-import { Search, AttachMoney } from "@material-ui/icons";
+import { Search, AttachMoney, Print } from "@material-ui/icons";
 
 import { attemptToFetchPatient } from "store/actions/patientAction";
 import { resetFetchPatientState } from "store/actions/patientAction";
@@ -115,6 +117,7 @@ function MedicareV2Function(props) {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [fiscalYear, setFiscalYear] = useState("");
+  const [isPrintOverviewModalOpen, setIsPrintOverviewModalOpen] = useState(false);
 
   useEffect(() => {
     console.log("Medicare V2 - loading patient data");
@@ -254,10 +257,135 @@ function MedicareV2Function(props) {
 
   const totalRevenue = calculateTotalRevenue();
 
+  // Calculate summary statistics for PDF (same logic as SummaryStats component)
+  const calculateSummaryStats = () => {
+    if (!dataSource || dataSource.length === 0) {
+      return {
+        totalPatients: 0,
+        totalActive: 0,
+        totalInactive: 0,
+        fy2025TotalAggregate: 0,
+        fy2025TotalUsed: 0,
+        fy2025TotalAvailable: 0,
+        fy2025AvailableCapReadyToUse: 0,
+        fy2025AdmittedCount: 0,
+        fy2025DischargedCount: 0,
+        fy2026TotalAggregate: 0,
+        fy2026TotalUsed: 0,
+        fy2026TotalAvailable: 0,
+        fy2026AvailableCapReadyToUse: 0,
+        fy2026AdmittedCount: 0,
+        fy2026DischargedCount: 0,
+      };
+    }
+
+    return dataSource.reduce(
+      (acc, patient) => {
+        acc.totalPatients += 1;
+
+        if (!patient.eoc || patient.eoc === "N/A") {
+          acc.totalActive += 1;
+        } else {
+          acc.totalInactive += 1;
+        }
+
+        if (patient.soc) {
+          const socDate = new Date(`${patient.soc} 17:00`);
+          const fy2025Start = new Date("2024-10-01 17:00");
+          const fy2025End = new Date("2025-09-30 17:00");
+          const fy2026Start = new Date("2025-10-01 17:00");
+          const fy2026End = new Date("2026-09-30 17:00");
+
+          if (socDate >= fy2025Start && socDate <= fy2025End) {
+            const allowedCap = parseFloat(patient.allowedCapFirstPeriod || 0);
+
+            if (allowedCap > 0) {
+              acc.fy2025TotalAggregate += parseFloat(patient.firstPeriodCap || 0);
+              acc.fy2025TotalUsed += parseFloat(patient.usedCapFirstPeriod || 0) + parseFloat(patient.usedCapSecondPeriod || 0);
+              acc.fy2025TotalAvailable += parseFloat(patient.availableCapFirstPeriod || 0);
+            }
+
+            if (
+              patient.eoc_discharge === "Death Discharge" &&
+              parseFloat(patient.availableCapFirstPeriod || 0) > 0
+            ) {
+              acc.fy2025AvailableCapReadyToUse += parseFloat(patient.availableCapFirstPeriod || 0);
+            }
+
+            acc.fy2025AdmittedCount += 1;
+
+            if (patient.eoc && patient.eoc !== "N/A") {
+              acc.fy2025DischargedCount += 1;
+            }
+          }
+
+          if (socDate >= fy2026Start && socDate <= fy2026End) {
+            const allowedCap = parseFloat(patient.allowedCapFirstPeriod || 0);
+
+            if (allowedCap > 0) {
+              acc.fy2026TotalAggregate += parseFloat(patient.firstPeriodCap || 0);
+              acc.fy2026TotalUsed += parseFloat(patient.usedCapFirstPeriod || 0) + parseFloat(patient.usedCapSecondPeriod || 0);
+              acc.fy2026TotalAvailable += parseFloat(patient.availableCapFirstPeriod || 0);
+            }
+
+            if (
+              patient.eoc_discharge === "Death Discharge" &&
+              parseFloat(patient.availableCapFirstPeriod || 0) > 0
+            ) {
+              acc.fy2026AvailableCapReadyToUse += parseFloat(patient.availableCapFirstPeriod || 0);
+            }
+
+            acc.fy2026AdmittedCount += 1;
+
+            if (patient.eoc && patient.eoc !== "N/A") {
+              acc.fy2026DischargedCount += 1;
+            }
+          }
+        }
+
+        return acc;
+      },
+      {
+        totalPatients: 0,
+        totalActive: 0,
+        totalInactive: 0,
+        fy2025TotalAggregate: 0,
+        fy2025TotalUsed: 0,
+        fy2025TotalAvailable: 0,
+        fy2025AvailableCapReadyToUse: 0,
+        fy2025AdmittedCount: 0,
+        fy2025DischargedCount: 0,
+        fy2026TotalAggregate: 0,
+        fy2026TotalUsed: 0,
+        fy2026TotalAvailable: 0,
+        fy2026AvailableCapReadyToUse: 0,
+        fy2026AdmittedCount: 0,
+        fy2026DischargedCount: 0,
+      }
+    );
+  };
+
+  const printOverviewHandler = () => {
+    console.log("Print Medicare Cap Overview");
+    setIsPrintOverviewModalOpen(true);
+  };
+
+  const closePrintOverviewModal = () => {
+    setIsPrintOverviewModalOpen(false);
+  };
+
+  const summaryStats = calculateSummaryStats();
+
   isProcessDone = isPatientListDone;
 
   return (
     <>
+      <PrintOverviewModal
+        isOpen={isPrintOverviewModalOpen}
+        onClose={closePrintOverviewModal}
+        summaryData={summaryStats}
+        totalRevenue={totalRevenue}
+      />
       {!isProcessDone ? (
         <div style={{ textAlign: "center", padding: "40px" }}>
           <CircularProgress />
@@ -269,11 +397,23 @@ function MedicareV2Function(props) {
             <GridItem xs={12} sm={12} md={12}>
               <Card>
                 <CardHeader color="success">
-                  <Grid container justifyContent="space-between">
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <h4 className={classes.cardTitleWhite}>
                       Medicare Cap Management - Dashboard
                     </h4>
-                  </Grid>
+                    <Button
+                      variant="contained"
+                      style={{
+                        backgroundColor: "white",
+                        color: "#4caf50",
+                        fontWeight: "500",
+                      }}
+                      startIcon={<Print />}
+                      onClick={printOverviewHandler}
+                    >
+                      Print Overview
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardBody>
                   {/* Search and Filter Section */}

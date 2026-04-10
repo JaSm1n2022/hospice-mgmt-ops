@@ -105,7 +105,7 @@ function Routesheet(props) {
   const [client, setClient] = useState("");
   const [notes, setNotes] = useState("");
   const [clients, setClients] = useState([]);
-  const [clientService, setClientService] = useState("");
+  const [clientService, setClientService] = useState("RV"); // Default to Regular Visit
   const [isRefresh, setIsRefresh] = useState(false);
   const [isSignRequired, setIsSignRequired] = useState(false);
   const [isMileageRate, setIsMileageRate] = useState(false);
@@ -240,7 +240,7 @@ function Routesheet(props) {
         patientCd: uniqueList,
       });
       if (uniqueList?.length === 1) {
-        //setClient(uniqueList[0]);
+        setClient(uniqueList[0]); // Auto-select if only one client
       }
     }
     if (
@@ -345,11 +345,16 @@ function Routesheet(props) {
 
   const clearHandler = () => {
     //clear
-    setClient("");
+    // Auto-select client if only one available
+    if (clients?.length === 1) {
+      setClient(clients[0]);
+    } else {
+      setClient("");
+    }
 
     setIsMileageRate(false);
     setMileage(0);
-    setClientService("");
+    setClientService("RV"); // Reset to Regular Visit default
     setNotes("");
     sigCanvas.current?.clear();
     setSignaturePreview(null);
