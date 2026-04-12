@@ -45,7 +45,7 @@ import AddIcon from "@material-ui/icons/Add";
 import UploadIcon from "@material-ui/icons/CloudUpload";
 
 import HospiceTable from "components/Table/HospiceTable";
-import { AddAlert, ArrowDownward, ImportExport } from "@material-ui/icons";
+import { AddAlert, ArrowDownward, ImportExport, Warning } from "@material-ui/icons";
 import Helper from "utils/helper";
 import * as FileSaver from "file-saver";
 import SearchCustomTextField from "components/TextField/SearchCustomTextField";
@@ -80,6 +80,7 @@ import { resetCreateTransactionState } from "store/actions/transactionAction";
 import { transactionCreateStateSelector } from "store/selectors/transactionSelector";
 import { SupaContext } from "App";
 import Snackbar from "components/Snackbar/Snackbar";
+import DuplicateBillingModal from "./components/DuplicateBillingModal";
 const styles = {
   cardCategoryWhite: {
     "&,& a,& a:hover,& a:focus": {
@@ -147,6 +148,8 @@ function PayrollFunction(props) {
   );
   const [printData, setPrintData] = useState({});
   const [columns, setColumns] = useState(PayrollHandler.columns());
+  const [isDuplicateBillingModalOpen, setIsDuplicateBillingModalOpen] = useState(false);
+  const [logoBase64, setLogoBase64] = useState(null);
   const [isPayrollsCollection, setIsPayrollsCollection] = useState(true);
   const [isCreatePayrollCollection, setIsCreatePayrollCollection] = useState(
     true
@@ -242,6 +245,18 @@ function PayrollFunction(props) {
       const dates = Helper.formatDateRangeByCriteriaV2("thisMonth");
       setDateFrom(dates.from);
       setDateTo(dates.to);
+
+      // Load logo for PDF generation
+      const loadLogo = async () => {
+        try {
+          const logoUrl = "https://acwocotrngkeaxtzdzfz.supabase.co/storage/v1/object/public/images/headerdoc.png";
+          const logo = await Helper.getImageBase64(logoUrl);
+          setLogoBase64(logo);
+        } catch (error) {
+          console.error("Failed to load logo:", error);
+        }
+      };
+      loadLogo();
       setPayDateFrom(dates.from);
       setPayDateTo(dates.to);
       setActiveFilterLabel("Filter By Pay Date (This Month)");
@@ -1148,6 +1163,14 @@ function PayrollFunction(props) {
                       >
                         <AddIcon className={classes.icons} /> Add Payroll
                       </Button>
+                      <Button
+                        color="rose"
+                        className={classes.marginRight}
+                        onClick={() => setIsDuplicateBillingModalOpen(true)}
+                        disabled={!dataSource || dataSource.length === 0}
+                      >
+                        <Warning className={classes.icons} /> Duplicate Billing Report
+                      </Button>
                       <div style={{ flex: "0 0 300px" }}>
                         <SearchCustomTextField
                           background={"white"}
@@ -1344,6 +1367,16 @@ function PayrollFunction(props) {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Duplicate Billing Modal */}
+      {isDuplicateBillingModalOpen && (
+        <DuplicateBillingModal
+          isOpen={isDuplicateBillingModalOpen}
+          onClose={() => setIsDuplicateBillingModalOpen(false)}
+          payrollData={dataSource}
+          logoBase64={logoBase64}
+        />
+      )}
     </>
   );
 }
