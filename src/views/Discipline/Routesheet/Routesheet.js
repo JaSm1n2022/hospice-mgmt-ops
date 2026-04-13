@@ -622,7 +622,10 @@ function Routesheet(props) {
 
   const timeInputHandler = (name, value) => {
     if (name === "timeIn") {
-      setTimeIn(dayjs(value));
+      const newTimeIn = dayjs(value);
+      setTimeIn(newTimeIn);
+      // Automatically adjust timeOut to be 45 minutes after timeIn
+      setTimeOut(newTimeIn.add(45, "minute"));
     } else if (name === "timeOut") {
       setTimeOut(dayjs(value));
     }
