@@ -74,25 +74,28 @@ const styles = StyleSheet.create({
     borderRightStyle: "solid",
   },
   tableColPatient: {
-    width: "12%",
+    width: "11%",
   },
   tableColService: {
-    width: "8%",
+    width: "7%",
   },
   tableColDate: {
-    width: "10%",
+    width: "9%",
   },
   tableColTimeBegin: {
-    width: "8%",
+    width: "7%",
   },
   tableColTimeEnd: {
-    width: "8%",
+    width: "7%",
+  },
+  tableColDuration: {
+    width: "7%",
   },
   tableColSignature: {
-    width: "15%",
+    width: "14%",
   },
   tableColRate: {
-    width: "10%",
+    width: "9%",
   },
   tableColComments: {
     width: "29%",
@@ -287,6 +290,9 @@ const RoutesheetPrintDocument = ({ groupedData, logoBase64 }) => {
                   <Text style={styles.headerText}>Time</Text>
                   <Text style={styles.headerText}>End</Text>
                 </View>
+                <View style={[styles.tableCol, styles.tableColDuration, { justifyContent: "center", alignItems: "center" }]}>
+                  <Text style={styles.headerText}>Duration</Text>
+                </View>
                 <View style={[styles.tableCol, styles.tableColSignature, { justifyContent: "center", alignItems: "center" }]}>
                   <Text style={styles.headerText}>Signature</Text>
                 </View>
@@ -338,6 +344,17 @@ const RoutesheetPrintDocument = ({ groupedData, logoBase64 }) => {
                   serviceCode = serviceMatch ? serviceMatch.code : row.service;
                 }
 
+                // Calculate duration
+                let duration = "";
+                if (row.timeIn && row.timeOut) {
+                  const start = moment(row.timeIn);
+                  const end = moment(row.timeOut);
+                  const durationMinutes = end.diff(start, "minutes");
+                  const hours = Math.floor(durationMinutes / 60);
+                  const minutes = durationMinutes % 60;
+                  duration = `${hours}h ${minutes}m`;
+                }
+
                 return (
                   <View key={`row-${rowIndex}`} style={styles.tableRow} wrap={false}>
                     <Text style={[styles.tableCol, styles.tableColPatient]}>
@@ -354,6 +371,9 @@ const RoutesheetPrintDocument = ({ groupedData, logoBase64 }) => {
                     </Text>
                     <Text style={[styles.tableCol, styles.tableColTimeEnd]}>
                       {timeEnd}
+                    </Text>
+                    <Text style={[styles.tableCol, styles.tableColDuration]}>
+                      {duration}
                     </Text>
                     <View style={[styles.tableCol, styles.tableColSignature, { justifyContent: "center", alignItems: "center" }]}>
                       {row.signature_based ? (
