@@ -523,6 +523,11 @@ function RoutesheetForm(props) {
     }
     params.patientCd = patient?.patientCd || "";
 
+    // Include id when editing
+    if (props.mode === "edit" && props.item?.id) {
+      params.id = props.item.id;
+    }
+
     console.log("[PARAMS]", params);
     props.createRoutesheetHandler([params], props.mode || "create");
   };

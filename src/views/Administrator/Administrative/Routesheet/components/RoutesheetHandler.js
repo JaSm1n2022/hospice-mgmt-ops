@@ -15,6 +15,7 @@ class RoutesheetHandler {
       // { defaultFlex: 1, minWidth: 120, name: "dos", header: "DOS" },
       { defaultFlex: 1, minWidth: 120, name: "timeIn", header: "Time In" },
       { defaultFlex: 1, minWidth: 120, name: "timeOut", header: "Time Out" },
+      { defaultFlex: 1, minWidth: 100, name: "duration", header: "Duration" },
       { defaultFlex: 1, minWidth: 200, name: "requestor", header: "Employee" },
       {
         defaultFlex: 1,
@@ -100,6 +101,18 @@ class RoutesheetHandler {
       ).toFixed(2);
       item.timeIn = moment(new Date(item.dosStart)).format("YYYY-MM-DD HH:mm");
       item.timeOut = moment(new Date(item.dosEnd)).format("YYYY-MM-DD HH:mm");
+
+      // Calculate duration
+      if (item.dosStart && item.dosEnd) {
+        const start = moment(new Date(item.dosStart));
+        const end = moment(new Date(item.dosEnd));
+        const durationMinutes = end.diff(start, "minutes");
+        const hours = Math.floor(durationMinutes / 60);
+        const minutes = durationMinutes % 60;
+        item.duration = `${hours}h ${minutes}m`;
+      } else {
+        item.duration = "";
+      }
     });
 
     return items;

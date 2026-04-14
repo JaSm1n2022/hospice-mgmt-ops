@@ -264,8 +264,9 @@ function RoutesheetFunction(props) {
     if (mode === "create") {
       props.createRoutesheet(payload);
     } else if (mode === "edit") {
-      payload.id = payload.id;
-      props.updateRoutesheet(payload);
+      // payload is an array with one object, extract the object
+      const routesheetData = Array.isArray(payload) ? payload[0] : payload;
+      props.updateRoutesheet(routesheetData);
     }
     closeFormModalHandler();
   };
@@ -697,7 +698,7 @@ function RoutesheetFunction(props) {
                               </Button>
 
                               <Button
-                                onClick={() => bulkStatusUpdateHandler("Payroll Submission")}
+                                onClick={() => bulkStatusUpdateHandler("Approved")}
                                 disabled={bulkStatusLoading}
                                 variant="contained"
                                 style={{
@@ -709,11 +710,11 @@ function RoutesheetFunction(props) {
                                   textTransform: "none",
                                 }}
                               >
-                                Payroll Submission
+                                Approved
                               </Button>
 
                               <Button
-                                onClick={() => bulkStatusUpdateHandler("Payroll Pending")}
+                                onClick={() => bulkStatusUpdateHandler("Payroll Submission")}
                                 disabled={bulkStatusLoading}
                                 variant="contained"
                                 style={{
@@ -725,7 +726,7 @@ function RoutesheetFunction(props) {
                                   textTransform: "none",
                                 }}
                               >
-                                Payroll Pending
+                                Payroll Submission
                               </Button>
 
                               <Button
@@ -742,22 +743,6 @@ function RoutesheetFunction(props) {
                                 }}
                               >
                                 Payroll Paid
-                              </Button>
-
-                              <Button
-                                onClick={() => bulkStatusUpdateHandler("Review")}
-                                disabled={bulkStatusLoading}
-                                variant="contained"
-                                style={{
-                                  backgroundColor: bulkStatusLoading ? "#ccc" : "#f44336",
-                                  color: "white",
-                                  fontSize: "12px",
-                                  fontWeight: 500,
-                                  height: "36px",
-                                  textTransform: "none",
-                                }}
-                              >
-                                Review
                               </Button>
 
                               <Button
