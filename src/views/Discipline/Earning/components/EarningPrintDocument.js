@@ -165,8 +165,35 @@ const EarningPrintDocument = ({ data, logoBase64, employeeName, dateStart, dateE
 
           {/* Table Rows */}
           {data.map((row, rowIndex) => {
-            // Format date with day of week
-            const dateWithDay = dayjs(row.dosStart).format("YYYY-MM-DD HH:mm") + ` (${dayjs(row.dosStart).format("ddd")})`;
+            // Clean patient code - remove date suffix
+            const patientCode = row.patientCd || "";
+            const cleanedPatient = patientCode.includes(".")
+              ? patientCode.split(".")[0]
+              : patientCode;
+
+            // Format date
+            const date = row.dosStart ? dayjs(row.dosStart).format("YYYY-MM-DD") : "";
+
+            // Format times
+            const timeIn = row.dosStart ? dayjs(row.dosStart).format("HH:mm") : "";
+            const timeOut = row.dosEnd ? dayjs(row.dosEnd).format("HH:mm") : "";
+
+            // Get day of week
+            const dayOfWeek = row.dosStart ? dayjs(row.dosStart).format("ddd") : "";
+
+            // Calculate duration
+            let duration = "";
+            if (row.dosStart && row.dosEnd) {
+              const start = dayjs(row.dosStart);
+              const end = dayjs(row.dosEnd);
+              const durationMinutes = end.diff(start, "minutes");
+              const hours = Math.floor(durationMinutes / 60);
+              const minutes = durationMinutes % 60;
+              duration = `${hours}h ${minutes}m`;
+            }
+
+            // Combine: Date TimeIn - TimeOut (Day) Duration
+            const dateTimeDisplay = `${date} ${timeIn} - ${timeOut} (${dayOfWeek}) ${duration}`;
 
             // Format payment
             const payment = row.estimatedPayment
@@ -176,10 +203,10 @@ const EarningPrintDocument = ({ data, logoBase64, employeeName, dateStart, dateE
             return (
               <View key={`row-${rowIndex}`} style={styles.tableRow} wrap={false}>
                 <Text style={[styles.tableCol, styles.tableColClient]}>
-                  {row.patientCd || ""}
+                  {cleanedPatient}
                 </Text>
                 <Text style={[styles.tableCol, styles.tableColDate]}>
-                  {dateWithDay}
+                  {dateTimeDisplay}
                 </Text>
                 <Text style={[styles.tableCol, styles.tableColService]}>
                   {row.service || ""}
