@@ -240,7 +240,48 @@ function Routesheet(props) {
         patientCd: uniqueList,
       });
       if (uniqueList?.length === 1) {
-        setClient(uniqueList[0]); // Auto-select if only one client
+        const selectedClient = uniqueList[0];
+        setClient(selectedClient); // Auto-select if only one client
+
+        // Trigger contract lookup for auto-selected client
+        let m = contractList.find(
+          (c) =>
+            c.serviceType?.toLowerCase() === clientService?.toLowerCase() &&
+            c.patientCd === selectedClient &&
+            context.employeeProfile.id === c.employeeId
+        );
+        if (!m) {
+          m = contractList.find(
+            (c) =>
+              c.serviceType?.toLowerCase() === clientService?.toLowerCase() &&
+              context.employeeProfile.id === c.employeeId
+          );
+        }
+        if (m) {
+          setContractRate(m);
+          if (m?.isMileageRate) {
+            setIsMileageRate(m?.isMileageRate);
+          } else {
+            setIsMileageRate(false);
+          }
+        }
+
+        // Set patient info for auto-selected client
+        const assignPatient = assignmentList.find(
+          (a) => a.patientCd === selectedClient && a.disciplinePosition === context.employeeProfile?.position
+        );
+        setPatientInfo(assignPatient?.patient);
+
+        // Set Time In and Time Out based on IDT assignment
+        if (assignPatient) {
+          const assignedTime = assignPatient.timeOfVisit;
+          if (assignedTime && assignedTime !== "Open") {
+            const [hours, minutes] = assignedTime.split(":");
+            const timeInValue = dayjs(new Date()).set("hour", parseInt(hours)).set("minute", parseInt(minutes));
+            setTimeIn(timeInValue);
+            setTimeOut(timeInValue.add(45, "minute"));
+          }
+        }
       }
     }
     if (
