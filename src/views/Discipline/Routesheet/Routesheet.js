@@ -703,12 +703,27 @@ function Routesheet(props) {
 
   const timeInputHandler = (name, value) => {
     if (name === "timeIn") {
-      const newTimeIn = dayjs(value);
-      setTimeIn(newTimeIn);
-      // Automatically adjust timeOut to be 45 minutes after timeIn
-      setTimeOut(newTimeIn.add(45, "minute"));
+      // Handle both string (from HTML input) and dayjs object (from Datetime picker)
+      if (typeof value === "string") {
+        // Parse HH:mm format
+        const [hours, minutes] = value.split(":");
+        const newTimeIn = dayjs(new Date()).set("hour", parseInt(hours)).set("minute", parseInt(minutes));
+        setTimeIn(newTimeIn);
+        // Automatically adjust timeOut to be 45 minutes after timeIn
+        setTimeOut(newTimeIn.add(45, "minute"));
+      } else {
+        const newTimeIn = dayjs(value);
+        setTimeIn(newTimeIn);
+        setTimeOut(newTimeIn.add(45, "minute"));
+      }
     } else if (name === "timeOut") {
-      setTimeOut(dayjs(value));
+      if (typeof value === "string") {
+        const [hours, minutes] = value.split(":");
+        const newTimeOut = dayjs(new Date()).set("hour", parseInt(hours)).set("minute", parseInt(minutes));
+        setTimeOut(newTimeOut);
+      } else {
+        setTimeOut(dayjs(value));
+      }
     }
   };
   const isClientRequiredHandler = () => {
@@ -1281,30 +1296,38 @@ function Routesheet(props) {
                           <GridItem xs={12} sm={6} md={3}>
                             <h4>Time In</h4>
                             <FormControl fullWidth>
-                              <Datetime
-                                dateFormat={false}
-                                timeFormat="hh:mm A"
-                                inputProps={{
-                                  placeholder: "HH:mm A",
-                                  name: "timeIn",
+                              <input
+                                type="time"
+                                name="timeIn"
+                                value={timeIn ? dayjs(timeIn).format("HH:mm") : ""}
+                                onChange={(e) => timeInputHandler("timeIn", e.target.value)}
+                                style={{
+                                  width: "100%",
+                                  padding: "10px",
+                                  fontSize: "16px",
+                                  border: "1px solid #ccc",
+                                  borderRadius: "4px",
+                                  fontFamily: "'Roboto', 'Helvetica', 'Arial', sans-serif",
                                 }}
-                                value={timeIn ? timeIn.toDate() : new Date()}
-                                onChange={(e) => timeInputHandler("timeIn", e)}
                               />
                             </FormControl>
                           </GridItem>
                           <GridItem xs={12} sm={6} md={3}>
                             <h4>Time Out</h4>
                             <FormControl fullWidth>
-                              <Datetime
-                                dateFormat={false}
-                                timeFormat="hh:mm A"
-                                inputProps={{
-                                  placeholder: "HH:mm A",
-                                  name: "timeOut",
+                              <input
+                                type="time"
+                                name="timeOut"
+                                value={timeOut ? dayjs(timeOut).format("HH:mm") : ""}
+                                onChange={(e) => timeInputHandler("timeOut", e.target.value)}
+                                style={{
+                                  width: "100%",
+                                  padding: "10px",
+                                  fontSize: "16px",
+                                  border: "1px solid #ccc",
+                                  borderRadius: "4px",
+                                  fontFamily: "'Roboto', 'Helvetica', 'Arial', sans-serif",
                                 }}
-                                value={timeOut ? timeOut.toDate() : new Date()}
-                                onChange={(e) => timeInputHandler("timeOut", e)}
                               />
                             </FormControl>
                           </GridItem>
