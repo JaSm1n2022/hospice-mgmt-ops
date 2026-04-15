@@ -506,10 +506,40 @@ function RoutesheetForm(props) {
       params.mileageCost > params.mileageMaxReimbursement
         ? params.mileageMaxReimbursement
         : params.mileageCost;
+
+    // Calculate service payment based on rate type
+    let servicePayment = parseFloat(params.serviceRate) || 0;
+
+    console.log("[RATE CALCULATION DEBUG]", {
+      serviceRateType: params.serviceRateType,
+      serviceRate: params.serviceRate,
+      dosStart: dosStartCombined.format("YYYY-MM-DD HH:mm"),
+      dosEnd: dosEndCombined.format("YYYY-MM-DD HH:mm"),
+    });
+
+    // If hourly rate, calculate based on duration
+    if (params.serviceRateType?.toLowerCase() === "hourly") {
+      const durationMinutes = dosEndCombined.diff(dosStartCombined, "minutes");
+      const durationHours = durationMinutes / 60;
+      servicePayment = durationHours * (parseFloat(params.serviceRate) || 0);
+
+      console.log("[HOURLY RATE CALCULATION]", {
+        durationMinutes,
+        durationHours,
+        hourlyRate: params.serviceRate,
+        servicePayment,
+      });
+    }
+
     params.estimatedPayment = parseFloat(
-      parseFloat(params.totalMileageReimbursement) +
-        parseFloat(params.serviceRate)
+      parseFloat(params.totalMileageReimbursement) + servicePayment
     ).toFixed(2);
+
+    console.log("[FINAL ESTIMATED PAYMENT]", {
+      totalMileageReimbursement: params.totalMileageReimbursement,
+      servicePayment,
+      estimatedPayment: params.estimatedPayment,
+    });
 
     if (clientService?.name?.toLowerCase() === "other") {
       params.service = otherService || "Other";

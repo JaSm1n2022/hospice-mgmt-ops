@@ -31,6 +31,7 @@ import AddIcon from "@material-ui/icons/Add";
 
 import HospiceTable from "components/Table/HospiceTable";
 import { AddAlert, ImportExport } from "@material-ui/icons";
+import PrintIcon from "@material-ui/icons/Print";
 import Helper from "utils/helper";
 import * as FileSaver from "file-saver";
 import SearchCustomTextField from "components/TextField/SearchCustomTextField";
@@ -48,6 +49,9 @@ import { exportToXlsx } from "utils/XlsxHelper";
 import { SupaContext } from "App";
 import { handleExport } from "utils/XlsxHelper";
 import Snackbar from "components/Snackbar/Snackbar";
+import { pdf } from "@react-pdf/renderer";
+import ContractPrintDocument from "./components/ContractPrintDocument";
+import dayjs from "dayjs";
 const styles = {
   cardCategoryWhite: {
     "&,& a,& a:hover,& a:focus": {
@@ -383,6 +387,66 @@ function ContractFunction(props) {
       handleExport(excel, fileName);
     }
   };
+
+  const printContractsHandler = async () => {
+    try {
+      // Get selected contracts
+      const selectedContracts = dataSource.filter((r) => r.isChecked);
+
+      if (!selectedContracts || selectedContracts.length === 0) {
+        showNotification("tc", "warning", "Please select contracts to print.");
+        return;
+      }
+
+      // Group contracts by employee
+      const contractsByEmployee = {};
+      selectedContracts.forEach((contract) => {
+        const employeeKey = contract.employeeId || contract.employeeName;
+        if (!contractsByEmployee[employeeKey]) {
+          contractsByEmployee[employeeKey] = {
+            employeeName: contract.employeeName || "",
+            employeeTitle: contract.employeeTitle || "",
+            employeeType: contract.employeeType || "",
+            contracts: [],
+          };
+        }
+        contractsByEmployee[employeeKey].contracts.push(contract);
+      });
+
+      // Convert to array
+      const groupedContracts = Object.values(contractsByEmployee);
+
+      // Load logo
+      const logoUrl = "https://acwocotrngkeaxtzdzfz.supabase.co/storage/v1/object/public/images/headerdoc.png";
+      const logoBase64 = await Helper.getImageBase64(logoUrl);
+
+      // Generate PDF
+      const pdfDocument = (
+        <ContractPrintDocument
+          contractsByEmployee={groupedContracts}
+          logoBase64={logoBase64}
+        />
+      );
+
+      const blob = await pdf(pdfDocument).toBlob();
+
+      // Create filename with date
+      const dateStr = dayjs().format("YYYY-MM-DD");
+      const filename = `contract_report_${dateStr}.pdf`;
+
+      // Download the PDF
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      link.click();
+
+      showNotification("tc", "success", "Contract report generated successfully.");
+    } catch (error) {
+      console.error("Error generating contract report:", error);
+      showNotification("tc", "danger", "Failed to generate contract report.");
+    }
+  };
+
   const onPressEnterKeyHandler = (value) => {
     filterRecordHandler(value);
     setKeywordValue(value);
@@ -443,14 +507,23 @@ function ContractFunction(props) {
                       </Button>
 
                       {isAddGroupButtons && (
-                        <Button
-                          color="success"
-                          className={classes.marginRight}
-                          onClick={() => exportToExcelHandler()}
-                        >
-                          <ImportExport className={classes.icons} /> Export
-                          Excel
-                        </Button>
+                        <>
+                          <Button
+                            color="success"
+                            className={classes.marginRight}
+                            onClick={() => exportToExcelHandler()}
+                          >
+                            <ImportExport className={classes.icons} /> Export
+                            Excel
+                          </Button>
+                          <Button
+                            color="primary"
+                            className={classes.marginRight}
+                            onClick={() => printContractsHandler()}
+                          >
+                            <PrintIcon className={classes.icons} /> Print Contract
+                          </Button>
+                        </>
                       )}
                     </div>
                   </GridItem>

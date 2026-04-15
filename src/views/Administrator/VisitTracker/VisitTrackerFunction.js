@@ -94,6 +94,10 @@ const useStyles = makeStyles((theme) => ({
     backgroundColor: "#ffebee",
     color: "#d32f2f",
   },
+  excessBadge: {
+    backgroundColor: "#fff3e0",
+    color: "#f57c00",
+  },
   patientSection: {
     marginBottom: "30px",
   },
@@ -439,7 +443,9 @@ export default function VisitTrackerFunction() {
       let scheduled = 0;
       let completed = 0;
       let missing = 0;
+      let excess = 0;
       let totalEstimatedPayment = 0;
+      let totalActualVisits = 0;
 
       patientMap.forEach((patientData) => {
         patientData.expected.forEach((exp) => {
@@ -456,21 +462,28 @@ export default function VisitTrackerFunction() {
           }
         });
 
-        // Calculate total estimated payment for actual visits
+        // Count total actual visits and calculate total estimated payment
         patientData.actual.forEach((act) => {
+          totalActualVisits++;
           totalEstimatedPayment += parseFloat(act.estimatedPayment || 0);
         });
       });
 
-      // If all scheduled visits are completed, set missing to 0
-      if (scheduled > 0 && scheduled === completed) {
+      // Calculate excess or missing
+      if (totalActualVisits > scheduled) {
+        // More visits than scheduled = excess
+        excess = totalActualVisits - scheduled;
         missing = 0;
+      } else if (scheduled > 0 && scheduled === completed) {
+        // All scheduled visits completed
+        missing = 0;
+        excess = 0;
       }
 
       return {
         employee,
         patients: Array.from(patientMap.values()),
-        stats: { scheduled, completed, missing, totalEstimatedPayment },
+        stats: { scheduled, completed, missing, excess, totalEstimatedPayment },
         hasActivity: scheduled > 0 || employeeRoutesheets.length > 0,
       };
     });
@@ -559,9 +572,15 @@ export default function VisitTrackerFunction() {
                       <span className={`${classes.badge} ${classes.completedBadge}`}>
                         {empData.stats.completed} completed
                       </span>
-                      <span className={`${classes.badge} ${classes.missingBadge}`}>
-                        {empData.stats.missing} missing
-                      </span>
+                      {empData.stats.excess > 0 ? (
+                        <span className={`${classes.badge} ${classes.excessBadge}`}>
+                          {empData.stats.excess} excess
+                        </span>
+                      ) : (
+                        <span className={`${classes.badge} ${classes.missingBadge}`}>
+                          {empData.stats.missing} missing
+                        </span>
+                      )}
                     </div>
                   </div>
                 </AccordionSummary>
