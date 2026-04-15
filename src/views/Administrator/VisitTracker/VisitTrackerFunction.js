@@ -98,6 +98,10 @@ const useStyles = makeStyles((theme) => ({
     backgroundColor: "#fff3e0",
     color: "#f57c00",
   },
+  warningsBadge: {
+    backgroundColor: "#fff9c4",
+    color: "#f57f17",
+  },
   patientSection: {
     marginBottom: "30px",
   },
@@ -441,24 +445,21 @@ export default function VisitTrackerFunction() {
 
       // Calculate statistics
       let scheduled = 0;
-      let completed = 0;
-      let missing = 0;
-      let excess = 0;
       let totalEstimatedPayment = 0;
       let totalActualVisits = 0;
+      let warnings = 0; // Count of scheduled visits without matching dates
 
       patientMap.forEach((patientData) => {
         patientData.expected.forEach((exp) => {
           scheduled++;
+          // Check if this expected visit has a matching actual visit (for warning indicator)
           const match = patientData.actual.find(
             (act) => moment(act.dos).format("YYYY-MM-DD") === exp.date
           );
-          if (match) {
-            exp.matched = true;
-            completed++;
-          } else {
-            exp.matched = false;
-            missing++;
+          exp.matched = !!match; // Keep matching logic for warning indicators in UI
+
+          if (!match) {
+            warnings++; // Count unmatched scheduled visits as warnings
           }
         });
 
@@ -469,21 +470,28 @@ export default function VisitTrackerFunction() {
         });
       });
 
+      // Completed = total actual visits
+      const completed = totalActualVisits;
+
       // Calculate excess or missing
-      if (totalActualVisits > scheduled) {
-        // More visits than scheduled = excess
-        excess = totalActualVisits - scheduled;
+      let excess = 0;
+      let missing = 0;
+
+      if (completed > scheduled) {
+        // More actual visits than scheduled = excess
+        excess = completed - scheduled;
         missing = 0;
-      } else if (scheduled > 0 && scheduled === completed) {
-        // All scheduled visits completed
-        missing = 0;
+      } else if (completed < scheduled) {
+        // Fewer actual visits than scheduled = missing
+        missing = scheduled - completed;
         excess = 0;
       }
+      // If completed === scheduled, both missing and excess remain 0
 
       return {
         employee,
         patients: Array.from(patientMap.values()),
-        stats: { scheduled, completed, missing, excess, totalEstimatedPayment },
+        stats: { scheduled, completed, missing, excess, warnings, totalEstimatedPayment },
         hasActivity: scheduled > 0 || employeeRoutesheets.length > 0,
       };
     });
@@ -576,9 +584,14 @@ export default function VisitTrackerFunction() {
                         <span className={`${classes.badge} ${classes.excessBadge}`}>
                           {empData.stats.excess} excess
                         </span>
-                      ) : (
+                      ) : empData.stats.missing > 0 ? (
                         <span className={`${classes.badge} ${classes.missingBadge}`}>
                           {empData.stats.missing} missing
+                        </span>
+                      ) : null}
+                      {empData.stats.warnings > 0 && (
+                        <span className={`${classes.badge} ${classes.warningsBadge}`}>
+                          {empData.stats.warnings} warnings
                         </span>
                       )}
                     </div>
