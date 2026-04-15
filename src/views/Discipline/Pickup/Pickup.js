@@ -63,6 +63,10 @@ import {
   FormLabel,
   TextField,
   Tooltip,
+  Typography,
+  Radio,
+  RadioGroup,
+  FormControlLabel,
 } from "@material-ui/core";
 import CustomInput from "components/CustomInput/CustomInput";
 let originalSource = [];
@@ -103,6 +107,11 @@ const Pickup = (props) => {
   const [isDistributionCollection, setIsDistributionCollection] = useState(
     true
   );
+  const [signatureModal, setSignatureModal] = useState(false);
+  const [signatureMode, setSignatureMode] = useState("draw"); // "draw" or "type"
+  const [typedName, setTypedName] = useState("");
+  const [selectedFont, setSelectedFont] = useState("Dancing Script");
+  const [signaturePreview, setSignaturePreview] = useState(null);
   const classes = useStyles();
   const classes2 = useStyles2();
 
@@ -225,20 +234,55 @@ const Pickup = (props) => {
     setIsRefresh(!isRefresh);
   };
 
+  const handleSignatureConfirm = () => {
+    if (signatureMode === "draw") {
+      const signImg = sigCanvas.current?.getCanvas().toDataURL("image/png");
+      setSignaturePreview(signImg);
+      isSigned = true;
+    } else if (signatureMode === "type" && typedName.trim()) {
+      // Create canvas with typed signature
+      const canvas = document.createElement("canvas");
+      canvas.width = 500;
+      canvas.height = 100;
+      const ctx = canvas.getContext("2d");
+
+      // Set background
+      ctx.fillStyle = "white";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Set text style
+      ctx.fillStyle = "green";
+      ctx.font = `48px '${selectedFont}', cursive`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(typedName, canvas.width / 2, canvas.height / 2);
+
+      const signImg = canvas.toDataURL("image/png");
+      setSignaturePreview(signImg);
+      isSigned = true;
+    }
+    setSignatureModal(false);
+  };
+
+  const handleSignatureModalOpen = () => {
+    setSignatureModal(true);
+  };
+
   const clearSignatureHandler = () => {
     sigCanvas.current?.clear();
+    setSignaturePreview(null);
     isSigned = false;
-
     setIsRefresh(!isRefresh);
   };
 
   const clearHandler = () => {
     setClient("");
     sigCanvas.current?.clear();
+    setSignaturePreview(null);
     setDataSource([]);
     setImgSrc("");
-
     setPrintedName("");
+    isSigned = false;
   };
 
   const takePhotoHandler = () => {
@@ -285,7 +329,8 @@ const Pickup = (props) => {
   };
 
   const saveHandler = () => {
-    const signImg = sigCanvas.current?.getCanvas().toDataURL("image/png");
+    const signImg =
+      signaturePreview || sigCanvas.current?.getCanvas().toDataURL("image/png");
     const orderIds = dataSource.map((p) => p.record_id);
     let isValid = true;
     if (!isSigned) {
@@ -717,19 +762,40 @@ const Pickup = (props) => {
                       </div>
                     </CardHeader>
                     <CardBody>
-                      <ReactSignatureCanvas
-                        penColor="green"
-                        onBegin={(e) => onBeginHandler(e)}
-                        ref={(ref) => {
-                          sigCanvas.current = ref;
-                        }}
-                        canvasProps={{
-                          height: 60,
-                          width: 500,
-                          background: "white",
-                          className: "sigCanvas",
-                        }}
-                      />
+                      {signaturePreview ? (
+                        <div style={{ textAlign: "center" }}>
+                          <img
+                            src={signaturePreview}
+                            alt="Signature"
+                            style={{
+                              maxWidth: "100%",
+                              border: "1px solid #ccc",
+                              borderRadius: "4px",
+                              padding: "10px",
+                              backgroundColor: "white",
+                            }}
+                          />
+                          <div style={{ marginTop: "10px" }}>
+                            <Button
+                              color="info"
+                              onClick={handleSignatureModalOpen}
+                            >
+                              Change Signature
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ textAlign: "center", padding: "20px" }}>
+                          <Button
+                            color="info"
+                            onClick={handleSignatureModalOpen}
+                            size="lg"
+                          >
+                            <Gesture style={{ marginRight: "8px" }} />
+                            Add Signature
+                          </Button>
+                        </div>
+                      )}
                       {signatureError.isError && (
                         <SnackbarContent
                           message={signatureError.message}
@@ -815,6 +881,233 @@ const Pickup = (props) => {
           onUsePhotoHandler={onUsePhotoHandler}
         />
       )}
+
+      {/* Signature Modal */}
+      <Dialog
+        open={signatureModal}
+        TransitionComponent={Transition}
+        keepMounted
+        onClose={() => setSignatureModal(false)}
+        aria-labelledby="signature-modal-title"
+      >
+        <DialogTitle
+          id="signature-modal-title"
+          disableTypography
+          className={classes2.modalHeader}
+        >
+          <Button
+            justIcon
+            className={classes2.modalCloseButton}
+            key="close"
+            aria-label="Close"
+            color="transparent"
+            onClick={() => setSignatureModal(false)}
+          >
+            <Close className={classes2.modalClose} />
+          </Button>
+          <div align="center">
+            <h4 className={classes2.modalTitle}>Add Your Signature</h4>
+          </div>
+        </DialogTitle>
+        <DialogContent id="signature-modal-content">
+          <Card>
+            <CardBody>
+              {/* Radio buttons for Draw/Type selection */}
+              <div style={{ marginBottom: "20px", textAlign: "center" }}>
+                <RadioGroup
+                  row
+                  value={signatureMode}
+                  onChange={(e) => setSignatureMode(e.target.value)}
+                  style={{ justifyContent: "center" }}
+                >
+                  <FormControlLabel
+                    value="draw"
+                    control={<Radio color="primary" />}
+                    label="Draw Signature"
+                  />
+                  <FormControlLabel
+                    value="type"
+                    control={<Radio color="primary" />}
+                    label="Type Signature"
+                  />
+                </RadioGroup>
+              </div>
+
+              {/* Draw Mode */}
+              {signatureMode === "draw" && (
+                <div>
+                  <div
+                    style={{
+                      marginBottom: "10px",
+                      textAlign: "center",
+                      color: "#666",
+                    }}
+                  >
+                    <p>Draw your signature below using your mouse or finger</p>
+                  </div>
+                  <div
+                    style={{
+                      border: "2px solid #00acc1",
+                      borderRadius: "8px",
+                      padding: "15px",
+                      backgroundColor: "#f9f9f9",
+                    }}
+                  >
+                    <ReactSignatureCanvas
+                      penColor="green"
+                      onBegin={(e) => onBeginHandler(e)}
+                      ref={(ref) => {
+                        sigCanvas.current = ref;
+                      }}
+                      canvasProps={{
+                        height: window.innerWidth <= 768 ? 300 : 200,
+                        className: "sigCanvas",
+                        style: {
+                          width: "100%",
+                          border: "1px dashed #ccc",
+                          backgroundColor: "white",
+                          borderRadius: "4px",
+                        },
+                      }}
+                    />
+                  </div>
+                  <div style={{ marginTop: "10px", textAlign: "center" }}>
+                    <Button
+                      color="rose"
+                      simple
+                      onClick={() => sigCanvas.current?.clear()}
+                    >
+                      Clear Canvas
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Type Mode */}
+              {signatureMode === "type" && (
+                <div>
+                  <div
+                    style={{
+                      marginBottom: "20px",
+                      textAlign: "center",
+                      color: "#666",
+                    }}
+                  >
+                    <p>Type your name and select a signature style</p>
+                  </div>
+                  <TextField
+                    fullWidth
+                    label="Type your name"
+                    variant="outlined"
+                    value={typedName}
+                    onChange={(e) => setTypedName(e.target.value)}
+                    style={{ marginBottom: "20px" }}
+                  />
+
+                  <div style={{ marginBottom: "10px" }}>
+                    <Typography
+                      variant="subtitle2"
+                      style={{ marginBottom: "10px" }}
+                    >
+                      Select signature style:
+                    </Typography>
+                    <RadioGroup
+                      value={selectedFont}
+                      onChange={(e) => setSelectedFont(e.target.value)}
+                    >
+                      <FormControlLabel
+                        value="Dancing Script"
+                        control={<Radio color="primary" />}
+                        label={
+                          <span
+                            style={{
+                              fontFamily: "'Dancing Script', cursive",
+                              fontSize: "24px",
+                            }}
+                          >
+                            {typedName || "Dancing Script"}
+                          </span>
+                        }
+                      />
+                      <FormControlLabel
+                        value="Great Vibes"
+                        control={<Radio color="primary" />}
+                        label={
+                          <span
+                            style={{
+                              fontFamily: "'Great Vibes', cursive",
+                              fontSize: "24px",
+                            }}
+                          >
+                            {typedName || "Great Vibes"}
+                          </span>
+                        }
+                      />
+                      <FormControlLabel
+                        value="Pacifico"
+                        control={<Radio color="primary" />}
+                        label={
+                          <span
+                            style={{
+                              fontFamily: "'Pacifico', cursive",
+                              fontSize: "24px",
+                            }}
+                          >
+                            {typedName || "Pacifico"}
+                          </span>
+                        }
+                      />
+                      <FormControlLabel
+                        value="Satisfy"
+                        control={<Radio color="primary" />}
+                        label={
+                          <span
+                            style={{
+                              fontFamily: "'Satisfy', cursive",
+                              fontSize: "24px",
+                            }}
+                          >
+                            {typedName || "Satisfy"}
+                          </span>
+                        }
+                      />
+                      <FormControlLabel
+                        value="Allura"
+                        control={<Radio color="primary" />}
+                        label={
+                          <span
+                            style={{
+                              fontFamily: "'Allura', cursive",
+                              fontSize: "24px",
+                            }}
+                          >
+                            {typedName || "Allura"}
+                          </span>
+                        }
+                      />
+                    </RadioGroup>
+                  </div>
+                </div>
+              )}
+            </CardBody>
+          </Card>
+        </DialogContent>
+        <DialogActions
+          className={classes2.modalFooter + " " + classes2.modalFooterCenter}
+        >
+          <Button onClick={() => setSignatureModal(false)} color="rose" simple>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSignatureConfirm}
+            color="success"
+            round
+            disabled={signatureMode === "type" && !typedName.trim()}
+          >
+            Confirm Signature
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };
