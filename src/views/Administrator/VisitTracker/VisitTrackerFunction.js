@@ -288,18 +288,32 @@ export default function VisitTrackerFunction() {
   // Generate expected schedule from assignments
   const generateExpectedSchedule = (assignment, startDate, endDate) => {
     const expectedVisits = [];
-    const { dayOfTheWeek = [], frequencyVisit = 0, frequency = 0 } = assignment;
+    const { dayOfTheWeek = [], frequencyVisit = 0, frequency = 0, visitType = "week" } = assignment;
     const freq = frequencyVisit || frequency;
 
-    if (!dayOfTheWeek || dayOfTheWeek.length === 0) {
+    if (!dayOfTheWeek || dayOfTheWeek.length === 0 || freq === 0) {
       return expectedVisits;
+    }
+
+    // Calculate how many weeks or months are in the date range
+    const start = moment(startDate);
+    const end = moment(endDate);
+    let totalExpectedVisits = freq;
+
+    if (visitType === "week" || visitType === "Week") {
+      // Calculate number of weeks in the range
+      const weeks = Math.ceil(end.diff(start, "days") / 7);
+      totalExpectedVisits = freq * weeks;
+    } else if (visitType === "month" || visitType === "Month") {
+      // Calculate number of months in the range
+      const months = end.diff(start, "months") + 1;
+      totalExpectedVisits = freq * months;
     }
 
     // Iterate through each day in the date range
     let currentDate = moment(startDate);
-    const end = moment(endDate);
 
-    while (currentDate.isSameOrBefore(end, "day") && expectedVisits.length < freq) {
+    while (currentDate.isSameOrBefore(end, "day") && expectedVisits.length < totalExpectedVisits) {
       const dayLabel = currentDate.format("ddd"); // Mon, Tue, Wed, etc.
 
       if (dayOfTheWeek.includes(dayLabel)) {
