@@ -18,6 +18,12 @@ import Typography from "@material-ui/core/Typography";
 import Badge from "@material-ui/core/Badge";
 import CheckCircleIcon from "@material-ui/icons/CheckCircle";
 import WarningIcon from "@material-ui/icons/Warning";
+import Button from "components/CustomButtons/Button.js";
+import PrintIcon from "@material-ui/icons/Print";
+import TextField from "@material-ui/core/TextField";
+import { pdf } from "@react-pdf/renderer";
+import Helper from "utils/helper";
+import VisitTrackerPrintDocument from "./VisitTrackerPrintDocument";
 
 // Redux actions
 import { attemptToFetchEmployee } from "store/actions/employeeAction";
@@ -506,6 +512,44 @@ export default function VisitTrackerFunction() {
     setEndDate(date);
   };
 
+  // Print handler
+  const handlePrintReport = async () => {
+    try {
+      // Filter out employees with 0 scheduled visits (same as UI display)
+      const employeesToPrint = employeeData.filter((empData) => empData.stats.scheduled > 0);
+
+      // Load logo
+      const logoUrl = "https://acwocotrngkeaxtzdzfz.supabase.co/storage/v1/object/public/images/headerdoc.png";
+      const logoBase64 = await Helper.getImageBase64(logoUrl);
+
+      // Generate PDF
+      const pdfDocument = (
+        <VisitTrackerPrintDocument
+          employeeData={employeesToPrint}
+          startDate={startDate}
+          endDate={endDate}
+          logoBase64={logoBase64}
+        />
+      );
+
+      const blob = await pdf(pdfDocument).toBlob();
+
+      // Create filename with date range
+      const startStr = moment(startDate).format("YYYY-MM-DD");
+      const endStr = moment(endDate).format("YYYY-MM-DD");
+      const filename = `visit_tracker_${startStr}_to_${endStr}.pdf`;
+
+      // Download the PDF
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      link.click();
+    } catch (error) {
+      console.error("Error generating visit tracker report:", error);
+      alert("Failed to generate report. Please try again.");
+    }
+  };
+
   return (
     <GridContainer>
       <GridItem xs={12}>
@@ -548,6 +592,16 @@ export default function VisitTrackerFunction() {
                     outline: "none",
                   }}
                 />
+              </div>
+              <div>
+                <Button
+                  color="primary"
+                  onClick={handlePrintReport}
+                  style={{ height: "40px" }}
+                >
+                  <PrintIcon style={{ marginRight: "8px" }} />
+                  Print Report
+                </Button>
               </div>
             </div>
 
