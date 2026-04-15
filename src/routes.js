@@ -30,6 +30,7 @@ import VectorMap from "views/Maps/VectorMap.js";
 import Widgets from "views/Widgets/Widgets.js";
 import Wizard from "views/Forms/Wizard.js";
 import IdtAssignment from "views/Administrator/Assignment/AssignmentMain.js";
+import VisitTracker from "views/Administrator/VisitTracker/VisitTrackerFunction.js";
 import Distribution from "views/Administrator/Logistics/Distribution/Distribution.js";
 // @material-ui/icons
 import Apps from "@material-ui/icons/Apps";
@@ -241,6 +242,15 @@ var dashRoutes = [
         mini: "OM",
         rtlMini: "ع",
         component: IdtAssignment,
+        layout: "/admin",
+      },
+      {
+        path: "/visit-tracker",
+        name: "Visit Tracker",
+        rtlName: "عالتسعير",
+        mini: "VT",
+        rtlMini: "ع",
+        component: VisitTracker,
         layout: "/admin",
       },
     ],
