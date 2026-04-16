@@ -8,6 +8,9 @@ import Datetime from "react-datetime";
 import { makeStyles } from "@material-ui/core/styles";
 import Tooltip from "@material-ui/core/Tooltip";
 import Icon from "@material-ui/core/Icon";
+import Menu from "@material-ui/core/Menu";
+import MenuItem from "@material-ui/core/MenuItem";
+import ArrowDropDownIcon from "@material-ui/icons/ArrowDropDown";
 
 // @material-ui/icons
 // import ContentCopy from "@material-ui/icons/ContentCopy";
@@ -122,6 +125,7 @@ function Earning(props) {
   );
   const [printLoading, setPrintLoading] = useState(false);
   const [printRoutesheetLoading, setPrintRoutesheetLoading] = useState(false);
+  const [printMenuAnchor, setPrintMenuAnchor] = useState(null);
   const classes = useStyles();
   useEffect(() => {
     const dates = Helper.formatDateRangeByCriteriaV2("thisWeek");
@@ -381,6 +385,7 @@ function Earning(props) {
   const printRoutesheetHandler = async () => {
     try {
       setPrintRoutesheetLoading(true);
+      setPrintMenuAnchor(null); // Close menu
 
       if (!routesheetList || routesheetList.length === 0) {
         alert("No data available to print");
@@ -429,6 +434,24 @@ function Earning(props) {
     } finally {
       setPrintRoutesheetLoading(false);
     }
+  };
+
+  const handlePrintMenuOpen = (event) => {
+    setPrintMenuAnchor(event.currentTarget);
+  };
+
+  const handlePrintMenuClose = () => {
+    setPrintMenuAnchor(null);
+  };
+
+  const handlePrintStatement = () => {
+    setPrintMenuAnchor(null);
+    printReportHandler();
+  };
+
+  const handlePrintRoutesheet = () => {
+    setPrintMenuAnchor(null);
+    printRoutesheetHandler();
   };
 
   const tableData = earnings?.map((item, index) => [
@@ -525,28 +548,33 @@ function Earning(props) {
                       >
                         Apply
                       </Button>
+                    </div>
+                    <div style={{ flex: "0 0 100%", paddingTop: "10px" }}>
                       <Button
                         color="success"
                         size={"small"}
                         round
-                        onClick={() => printReportHandler()}
-                        disabled={printLoading || !routesheetList || routesheetList.length === 0}
-                        style={{ marginLeft: "10px" }}
+                        onClick={handlePrintMenuOpen}
+                        disabled={printLoading || printRoutesheetLoading || !routesheetList || routesheetList.length === 0}
                       >
                         <PrintIcon style={{ marginRight: "5px", fontSize: "18px" }} />
-                        {printLoading ? "Generating..." : "Print Statement"}
+                        {printLoading || printRoutesheetLoading ? "Generating..." : "Print"}
+                        <ArrowDropDownIcon style={{ marginLeft: "5px", fontSize: "18px" }} />
                       </Button>
-                      <Button
-                        color="info"
-                        size={"small"}
-                        round
-                        onClick={() => printRoutesheetHandler()}
-                        disabled={printRoutesheetLoading || !routesheetList || routesheetList.length === 0}
-                        style={{ marginLeft: "10px" }}
+                      <Menu
+                        anchorEl={printMenuAnchor}
+                        open={Boolean(printMenuAnchor)}
+                        onClose={handlePrintMenuClose}
                       >
-                        <PrintIcon style={{ marginRight: "5px", fontSize: "18px" }} />
-                        {printRoutesheetLoading ? "Generating..." : "Print Routesheet"}
-                      </Button>
+                        <MenuItem onClick={handlePrintStatement}>
+                          <PrintIcon style={{ marginRight: "10px", fontSize: "18px" }} />
+                          Statement
+                        </MenuItem>
+                        <MenuItem onClick={handlePrintRoutesheet}>
+                          <PrintIcon style={{ marginRight: "10px", fontSize: "18px" }} />
+                          Routesheet
+                        </MenuItem>
+                      </Menu>
                     </div>
 
                     <div style={{ paddingTop: 4 }}>
@@ -662,29 +690,32 @@ function Earning(props) {
                           Apply
                         </Button>
                       </div>
-                      <div style={{ flex: "0 0 10%" }} align="right">
+                      <div style={{ flex: "0 0 100%", paddingTop: "10px" }}>
                         <Button
                           color="success"
                           round
                           size={"small"}
-                          onClick={() => printReportHandler()}
-                          disabled={printLoading || !routesheetList || routesheetList.length === 0}
+                          onClick={handlePrintMenuOpen}
+                          disabled={printLoading || printRoutesheetLoading || !routesheetList || routesheetList.length === 0}
                         >
                           <PrintIcon style={{ marginRight: "5px", fontSize: "18px" }} />
-                          {printLoading ? "Generating..." : "Print Statement"}
+                          {printLoading || printRoutesheetLoading ? "Generating..." : "Print"}
+                          <ArrowDropDownIcon style={{ marginLeft: "5px", fontSize: "18px" }} />
                         </Button>
-                      </div>
-                      <div style={{ flex: "0 0 12%" }} align="right">
-                        <Button
-                          color="info"
-                          round
-                          size={"small"}
-                          onClick={() => printRoutesheetHandler()}
-                          disabled={printRoutesheetLoading || !routesheetList || routesheetList.length === 0}
+                        <Menu
+                          anchorEl={printMenuAnchor}
+                          open={Boolean(printMenuAnchor)}
+                          onClose={handlePrintMenuClose}
                         >
-                          <PrintIcon style={{ marginRight: "5px", fontSize: "18px" }} />
-                          {printRoutesheetLoading ? "Generating..." : "Print Routesheet"}
-                        </Button>
+                          <MenuItem onClick={handlePrintStatement}>
+                            <PrintIcon style={{ marginRight: "10px", fontSize: "18px" }} />
+                            Statement
+                          </MenuItem>
+                          <MenuItem onClick={handlePrintRoutesheet}>
+                            <PrintIcon style={{ marginRight: "10px", fontSize: "18px" }} />
+                            Routesheet
+                          </MenuItem>
+                        </Menu>
                       </div>
                     </div>
                     <div style={{ paddingTop: 4 }}>
