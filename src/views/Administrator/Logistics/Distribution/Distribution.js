@@ -226,6 +226,7 @@ const Distribution = (props) => {
   const [printOrdersDatePickup, setPrintOrdersDatePickup] = useState(
     moment().format("YYYY-MM-DD")
   );
+  const [printOrdersRequestor, setPrintOrdersRequestor] = useState(null);
   const showNotification = (place, color, msg) => {
     setMessage(msg);
     switch (place) {
@@ -829,6 +830,7 @@ const Distribution = (props) => {
         delivery_location: general.facility,
         requestor: general.requestorName,
         requestor_id: general.requestorId || general.requestor_id,
+        requestor_position: general.position,
         patient_caregiver: general.caregiver,
         patient_id: general.patientId || 0,
         stock_status: payload.stockStatus,
@@ -1355,6 +1357,41 @@ const Distribution = (props) => {
         setPrintOrdersPatientName(patientName);
         setPrintOrdersLocation(location);
       }
+
+      // Set requestor from first selected item
+      if (firstItem.requestor_id) {
+        const requestorEmployee = employeeList.find((e) => e.id === firstItem.requestor_id);
+        if (requestorEmployee) {
+          setPrintOrdersRequestor({
+            ...requestorEmployee,
+            label: requestorEmployee.name || "",
+            value: requestorEmployee.name || "",
+            categoryType: "employee"
+          });
+        }
+      } else if (firstItem.requestor) {
+        // Fallback: try to find by name if ID not available
+        const requestorEmployee = employeeList.find((e) => e.name === firstItem.requestor);
+        if (requestorEmployee) {
+          setPrintOrdersRequestor({
+            ...requestorEmployee,
+            label: requestorEmployee.name || "",
+            value: requestorEmployee.name || "",
+            categoryType: "employee"
+          });
+        }
+      } else {
+        // If no requestor in first item, default to current user
+        const currentUser = employeeList.find((e) => e.id === context.userProfile?.id);
+        if (currentUser) {
+          setPrintOrdersRequestor({
+            ...currentUser,
+            label: currentUser.name || "",
+            value: currentUser.name || "",
+            categoryType: "employee"
+          });
+        }
+      }
     }
 
     setIsPrintOrdersDialogOpen(true);
@@ -1365,11 +1402,17 @@ const Distribution = (props) => {
     setPrintOrdersPatientName("");
     setPrintOrdersLocation("");
     setPrintOrdersDatePickup(moment().format("YYYY-MM-DD"));
+    setPrintOrdersRequestor(null);
   };
 
   const handlePrintOrdersGenerate = async () => {
     if (!printOrdersPatientName.trim()) {
       showNotification("tc", "warning", "Please enter patient name");
+      return;
+    }
+
+    if (!printOrdersRequestor) {
+      showNotification("tc", "warning", "Please select a requestor");
       return;
     }
 
@@ -1380,6 +1423,30 @@ const Distribution = (props) => {
         showNotification("tc", "warning", "Please select at least one item");
         return;
       }
+
+      // Update requestor for all selected records
+      const updatePromises = selectedData.map((record) => {
+        return props.updateDistribution({
+          id: record.id,
+          requestor: printOrdersRequestor.name,
+          requestor_id: printOrdersRequestor.id,
+          requestor_position: printOrdersRequestor.position,
+          companyId: context.userProfile?.companyId,
+        });
+      });
+
+      await Promise.all(updatePromises);
+
+      // Refresh the distribution list to show updated requestor
+      props.listDistributions({ companyId: context.userProfile?.companyId });
+
+      // Update selected data with new requestor for PDF generation
+      const updatedSelectedData = selectedData.map((record) => ({
+        ...record,
+        requestor: printOrdersRequestor.name,
+        requestor_id: printOrdersRequestor.id,
+        requestor_position: printOrdersRequestor.position,
+      }));
 
       setIsPrintOrdersDialogOpen(false);
 
@@ -1400,7 +1467,7 @@ const Distribution = (props) => {
       const doc = (
         <PrintOrdersPdfDocument
           patientName={printOrdersPatientName}
-          selectedData={selectedData}
+          selectedData={updatedSelectedData}
           productList={productList}
           location={printOrdersLocation}
           datePickup={printOrdersDatePickup}
@@ -1417,6 +1484,7 @@ const Distribution = (props) => {
       setPrintOrdersPatientName("");
       setPrintOrdersLocation("");
       setPrintOrdersDatePickup(moment().format("YYYY-MM-DD"));
+      setPrintOrdersRequestor(null);
       showNotification("tc", "success", "PDF generated successfully");
     } catch (error) {
       console.error("Error generating PDF:", error);
@@ -1744,6 +1812,28 @@ const Distribution = (props) => {
                 InputLabelProps={{
                   shrink: true,
                 }}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <CustomSingleAutoComplete
+                name="requestor"
+                placeholder="Requestor"
+                label="Requestor (Required)"
+                value={printOrdersRequestor}
+                onSelectHandler={(item) => {
+                  setPrintOrdersRequestor(item);
+                }}
+                onChangeHandler={(e) => {
+                  if (!e.target.value) {
+                    setPrintOrdersRequestor(null);
+                  }
+                }}
+                options={employeeList.map(emp => ({
+                  ...emp,
+                  label: emp.name || "",
+                  value: emp.name || "",
+                  categoryType: "employee"
+                }))}
               />
             </Grid>
           </Grid>
