@@ -78,6 +78,7 @@ import AttachMoneyOutlined from "@material-ui/icons/AttachMoneyOutlined";
 import PrintIcon from "@material-ui/icons/Print";
 import { pdf } from "@react-pdf/renderer";
 import EarningPrintDocument from "./components/EarningPrintDocument";
+import RoutesheetPrintDocument from "../../Administrator/Administrative/Routesheet/components/RoutesheetPrintDocument";
 
 let isAssignmentDone = false;
 let isRoutesheetDone = false;
@@ -120,6 +121,7 @@ function Earning(props) {
     dayjs(new Date()).add(1, "hour").format("MM/DD/YYYY")
   );
   const [printLoading, setPrintLoading] = useState(false);
+  const [printRoutesheetLoading, setPrintRoutesheetLoading] = useState(false);
   const classes = useStyles();
   useEffect(() => {
     const dates = Helper.formatDateRangeByCriteriaV2("thisWeek");
@@ -376,6 +378,59 @@ function Earning(props) {
     }
   };
 
+  const printRoutesheetHandler = async () => {
+    try {
+      setPrintRoutesheetLoading(true);
+
+      if (!routesheetList || routesheetList.length === 0) {
+        alert("No data available to print");
+        return;
+      }
+
+      // Load logo
+      const logoUrl = "https://acwocotrngkeaxtzdzfz.supabase.co/storage/v1/object/public/images/headerdoc.png";
+      const logoBase64 = await Helper.getImageBase64(logoUrl);
+
+      // Transform data to match RoutesheetPrintDocument expected format
+      // Group by employee (in this case, it's the current logged-in employee)
+      const employeeName = context.employeeProfile?.name || "";
+      const employeePosition = context.employeeProfile?.position || "";
+
+      const groupedData = {
+        [employeeName]: {
+          employeeName: employeeName,
+          position: employeePosition,
+          rows: routesheetList
+        }
+      };
+
+      // Generate PDF using admin routesheet format
+      const pdfDocument = (
+        <RoutesheetPrintDocument
+          groupedData={groupedData}
+          logoBase64={logoBase64}
+        />
+      );
+
+      const blob = await pdf(pdfDocument).toBlob();
+
+      // Create filename with date
+      const dateStr = dayjs().format("YYYY-MM-DD");
+      const filename = `routesheet_${dateStr}.pdf`;
+
+      // Download the PDF
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      link.click();
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      alert(error.message || "Failed to generate PDF. Please try again.");
+    } finally {
+      setPrintRoutesheetLoading(false);
+    }
+  };
+
   const tableData = earnings?.map((item, index) => [
     <div
       key={index}
@@ -479,7 +534,18 @@ function Earning(props) {
                         style={{ marginLeft: "10px" }}
                       >
                         <PrintIcon style={{ marginRight: "5px", fontSize: "18px" }} />
-                        {printLoading ? "Generating..." : "Print"}
+                        {printLoading ? "Generating..." : "Print Statement"}
+                      </Button>
+                      <Button
+                        color="info"
+                        size={"small"}
+                        round
+                        onClick={() => printRoutesheetHandler()}
+                        disabled={printRoutesheetLoading || !routesheetList || routesheetList.length === 0}
+                        style={{ marginLeft: "10px" }}
+                      >
+                        <PrintIcon style={{ marginRight: "5px", fontSize: "18px" }} />
+                        {printRoutesheetLoading ? "Generating..." : "Print Routesheet"}
                       </Button>
                     </div>
 
@@ -605,7 +671,19 @@ function Earning(props) {
                           disabled={printLoading || !routesheetList || routesheetList.length === 0}
                         >
                           <PrintIcon style={{ marginRight: "5px", fontSize: "18px" }} />
-                          {printLoading ? "Generating..." : "Print"}
+                          {printLoading ? "Generating..." : "Print Statement"}
+                        </Button>
+                      </div>
+                      <div style={{ flex: "0 0 12%" }} align="right">
+                        <Button
+                          color="info"
+                          round
+                          size={"small"}
+                          onClick={() => printRoutesheetHandler()}
+                          disabled={printRoutesheetLoading || !routesheetList || routesheetList.length === 0}
+                        >
+                          <PrintIcon style={{ marginRight: "5px", fontSize: "18px" }} />
+                          {printRoutesheetLoading ? "Generating..." : "Print Routesheet"}
                         </Button>
                       </div>
                     </div>

@@ -49,6 +49,29 @@ import {
 
 let categoryList = [];
 let uoms = [];
+
+const COMMENT_OPTIONS = [
+  { value: "", label: "-- Select a Comment --" },
+  { value: "Refused Visit", label: "Refused Visit" },
+  { value: "No One Answering", label: "No One Answering" },
+  { value: "Patient Hospitalized", label: "Patient Hospitalized" },
+  { value: "Patient Unavailable / Not Home", label: "Patient Unavailable / Not Home" },
+  { value: "Visit Rescheduled", label: "Visit Rescheduled" },
+  { value: "Patient Deceased", label: "Patient Deceased" },
+  { value: "Patient on Vacation / Out of Town", label: "Patient on Vacation / Out of Town" },
+  { value: "Caregiver Cancelled", label: "Caregiver Cancelled" },
+  { value: "Weather / Road Conditions", label: "Weather / Road Conditions" },
+  { value: "Wrong Address / Unable to Locate Patient", label: "Wrong Address / Unable to Locate Patient" },
+  { value: "Patient Transferred to Facility", label: "Patient Transferred to Facility" },
+  { value: "Visit Completed – No Issues", label: "Visit Completed – No Issues" },
+  { value: "HUV1", label: "HUV1" },
+  { value: "HUV2", label: "HUV2" },
+  { value: "Hope Admission", label: "Hope Admission" },
+  { value: "SFV1", label: "SFV1" },
+  { value: "SFV2", label: "SFV2" },
+  { value: "SFV Admission", label: "SFV Admission" },
+  { value: "Other", label: "Other" },
+];
 QUANTITY_UOM.forEach((item, index) => {
   uoms.push({
     id: index,
@@ -135,6 +158,11 @@ function RoutesheetForm(props) {
   const [approvedPayment, setApprovedPayment] = useState(0);
   const [isApproved, setIsApproved] = useState(false);
   const [comments, setComments] = useState("");
+  const [otherComments, setOtherComments] = useState("");
+  const [otherCommentsError, setOtherCommentsError] = useState({
+    isError: false,
+    message: "",
+  });
   const sigCanvas = useRef();
   const [dosStartDate, setDosStartDate] = useState(new Date());
   const [dosStartTime, setDosStartTime] = useState(
@@ -454,6 +482,12 @@ function RoutesheetForm(props) {
       isValid = false;
     }
 
+    // Validate "Other" comments
+    if (comments === "Other" && !otherComments.trim()) {
+      setOtherCommentsError({ isError: true, message: "Please specify other comment." });
+      isValid = false;
+    }
+
     if (!isValid) {
       return;
     }
@@ -488,7 +522,7 @@ function RoutesheetForm(props) {
       mileage: mileage || 0,
       isMileageRate: isMileageRate || false,
       serviceRate: contractRate || 0,
-      comments: comments,
+      comments: comments === "Other" ? `Other: ${otherComments}` : comments,
       approvedPayment: approvedPayment || contractRate,
       serviceRateType: currentContract?.serviceRateType || "",
       serviceNotes: notes || "",
@@ -1046,15 +1080,39 @@ function RoutesheetForm(props) {
                             type="number"
                           />
                           <div style={{ paddingTop: 10 }}>
-                            <CustomTextField
+                            <CustomSelect
                               name="comments"
-                              placeholder="Comments"
-                              label="Comments"
-                              onChange={inputHandler}
+                              placeholder="-- Select a Comment --"
+                              label="Comments (Optional)"
+                              onChange={(e) => {
+                                setComments(e.target.value);
+                                setOtherCommentsError({ isError: false, message: "" });
+                                if (e.target.value !== "Other") {
+                                  setOtherComments("");
+                                }
+                              }}
                               value={comments}
-                              type="text"
+                              options={COMMENT_OPTIONS}
                             />
                           </div>
+                          {comments === "Other" && (
+                            <div style={{ paddingTop: 10 }}>
+                              <CustomTextField
+                                name="otherComments"
+                                placeholder="Please specify"
+                                label="Other Comment (Required)"
+                                onChange={(e) => {
+                                  setOtherComments(e.target.value);
+                                  setOtherCommentsError({ isError: false, message: "" });
+                                }}
+                                value={otherComments}
+                                multiline
+                                rows={4}
+                                error={otherCommentsError.isError}
+                                helperText={otherCommentsError.message}
+                              />
+                            </div>
+                          )}
                           <div style={{ paddingTop: 10 }}>
                             <CustomCheckbox
                               label="Is Approved for Payment?"

@@ -83,6 +83,12 @@ class RoutesheetHandler {
         minWidth: 200,
         name: "comments",
         header: "Comments",
+        render: ({ data }) => {
+          const serviceNotes = data.serviceNotes || "";
+          const comments = data.comments || "";
+          const combined = [serviceNotes, comments].filter(Boolean).join(" ");
+          return combined || "-";
+        },
       },
       {
         defaultFlex: 1,

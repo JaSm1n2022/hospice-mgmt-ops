@@ -81,6 +81,29 @@ import { CLIENT_SERVICES } from "utils/constants.js";
 import SnackbarContent from "components/Snackbar/SnackbarContent.js";
 import Snackbar from "components/Snackbar/Snackbar.js";
 
+const COMMENT_OPTIONS = [
+  { value: "", label: "-- Select a Comment --" },
+  { value: "Refused Visit", label: "Refused Visit" },
+  { value: "No One Answering", label: "No One Answering" },
+  { value: "Patient Hospitalized", label: "Patient Hospitalized" },
+  { value: "Patient Unavailable / Not Home", label: "Patient Unavailable / Not Home" },
+  { value: "Visit Rescheduled", label: "Visit Rescheduled" },
+  { value: "Patient Deceased", label: "Patient Deceased" },
+  { value: "Patient on Vacation / Out of Town", label: "Patient on Vacation / Out of Town" },
+  { value: "Caregiver Cancelled", label: "Caregiver Cancelled" },
+  { value: "Weather / Road Conditions", label: "Weather / Road Conditions" },
+  { value: "Wrong Address / Unable to Locate Patient", label: "Wrong Address / Unable to Locate Patient" },
+  { value: "Patient Transferred to Facility", label: "Patient Transferred to Facility" },
+  { value: "Visit Completed – No Issues", label: "Visit Completed – No Issues" },
+  { value: "HUV1", label: "HUV1" },
+  { value: "HUV2", label: "HUV2" },
+  { value: "Hope Admission", label: "Hope Admission" },
+  { value: "SFV1", label: "SFV1" },
+  { value: "SFV2", label: "SFV2" },
+  { value: "SFV Admission", label: "SFV Admission" },
+  { value: "Other", label: "Other" },
+];
+
 const useStyles = makeStyles(styles);
 const useStyles2 = makeStyles(styles2);
 const Transition = React.forwardRef(function Transition(props, ref) {
@@ -136,6 +159,11 @@ function Routesheet(props) {
   const [anchorEl, setAnchorEl] = useState(null);
   const [otherService, setOtherService] = useState("");
   const [otherServiceError, setOtherServiceError] = useState({
+    isError: false,
+    message: "",
+  });
+  const [otherComments, setOtherComments] = useState("");
+  const [otherCommentsError, setOtherCommentsError] = useState({
     isError: false,
     message: "",
   });
@@ -402,6 +430,7 @@ function Routesheet(props) {
     setMileage(0);
     setClientService("Regular Visit"); // Reset to Regular Visit default
     setNotes("");
+    setOtherComments("");
     sigCanvas.current?.clear();
     setSignaturePreview(null);
     setTypedName("");
@@ -580,6 +609,12 @@ function Routesheet(props) {
       setOtherServiceError({ isError: false, message: "" });
     }
 
+    // Validate "Other" comments
+    if (notes === "Other" && !otherComments.trim()) {
+      setOtherCommentsError({ isError: true, message: "Please specify other comment." });
+      isValid = false;
+    }
+
     if (!isValid) {
       return;
     }
@@ -615,7 +650,8 @@ function Routesheet(props) {
       mileage: mileage || 0,
       isMileageRate: isMileageRate || false,
       serviceRate: contractRate?.serviceRate || 0,
-      serviceNotes: notes || "",
+      comments: notes === "Other" ? `Other: ${otherComments}` : notes,
+      serviceNotes: "",
       mileageRate: contractRate?.mileageRate || 0,
       mileageMaxReimbursement: contractRate?.maxReimbursement || 0,
       mileageCost: contractRate?.mileageRate
@@ -1470,26 +1506,70 @@ function Routesheet(props) {
                       <CardIcon color="warning">
                         <NotesOutlined />
                       </CardIcon>
-                      <h4 className={classes.cardIconTitle}>Comments</h4>
+                      <h4 className={classes.cardIconTitle}>Comments (Optional)</h4>
                     </CardHeader>
                     <CardBody>
-                      <TextareaAutosize
-                        aria-label="empty textarea"
-                        minRows={4}
-                        rows={4}
-                        value={notes}
-                        placeholder="comments here"
-                        name={"notes"}
-                        style={{ width: "100%", border: 0 }}
-                        className="form-control"
-                        onKeyPress={(ev) => {
-                          if (ev.key === "Enter") {
-                            // Do code here
-                            ev.preventDefault();
-                          }
-                        }}
-                        onChange={inputHandler}
-                      />
+                      <FormControl fullWidth className={classes.selectFormControl}>
+                        <InputLabel
+                          htmlFor="comments-select"
+                          className={classes.selectLabel}
+                        >
+                          -- Select a Comment --
+                        </InputLabel>
+                        <Select
+                          MenuProps={{
+                            className: classes.selectMenu,
+                          }}
+                          classes={{
+                            select: classes.select,
+                          }}
+                          onChange={(e) => {
+                            setNotes(e.target.value);
+                            setOtherCommentsError({ isError: false, message: "" });
+                            if (e.target.value !== "Other") {
+                              setOtherComments("");
+                            }
+                          }}
+                          inputProps={{
+                            name: "notes",
+                            id: "comments-select",
+                          }}
+                          value={notes}
+                        >
+                          {COMMENT_OPTIONS.map((option, index) => (
+                            <MenuItem
+                              key={index}
+                              value={option.value}
+                              classes={{
+                                root: classes.selectMenuItem,
+                                selected: classes.selectMenuItemSelected,
+                              }}
+                            >
+                              {option.label}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                      {notes === "Other" && (
+                        <div style={{ paddingTop: 10 }}>
+                          <TextField
+                            fullWidth
+                            name="otherComments"
+                            placeholder="Please specify"
+                            label="Other Comment (Required)"
+                            onChange={(e) => {
+                              setOtherComments(e.target.value);
+                              setOtherCommentsError({ isError: false, message: "" });
+                            }}
+                            value={otherComments}
+                            multiline
+                            rows={4}
+                            error={otherCommentsError.isError}
+                            helperText={otherCommentsError.message}
+                            variant="outlined"
+                          />
+                        </div>
+                      )}
                     </CardBody>
                   </Card>
                 </GridItem>

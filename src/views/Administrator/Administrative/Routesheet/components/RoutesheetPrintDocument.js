@@ -307,17 +307,20 @@ const RoutesheetPrintDocument = ({ groupedData, logoBase64 }) => {
 
               {/* Table Rows */}
               {rows.map((row, rowIndex) => {
-                // Extract date from timeIn
-                const date = row.timeIn
-                  ? moment(row.timeIn).format("YYYY-MM-DD")
+                // Extract date from timeIn or dosStart (for discipline routesheet compatibility)
+                const startTime = row.timeIn || row.dosStart;
+                const endTime = row.timeOut || row.dosEnd;
+
+                const date = startTime
+                  ? moment(startTime).format("YYYY-MM-DD")
                   : "";
 
-                // Extract time from timeIn and timeOut
-                const timeBegin = row.timeIn
-                  ? moment(row.timeIn).format("HH:mm")
+                // Extract time from timeIn/dosStart and timeOut/dosEnd
+                const timeBegin = startTime
+                  ? moment(startTime).format("HH:mm")
                   : "";
-                const timeEnd = row.timeOut
-                  ? moment(row.timeOut).format("HH:mm")
+                const timeEnd = endTime
+                  ? moment(endTime).format("HH:mm")
                   : "";
 
                 // Format approved payment
@@ -346,9 +349,9 @@ const RoutesheetPrintDocument = ({ groupedData, logoBase64 }) => {
 
                 // Calculate duration
                 let duration = "";
-                if (row.timeIn && row.timeOut) {
-                  const start = moment(row.timeIn);
-                  const end = moment(row.timeOut);
+                if (startTime && endTime) {
+                  const start = moment(startTime);
+                  const end = moment(endTime);
                   const durationMinutes = end.diff(start, "minutes");
                   const hours = Math.floor(durationMinutes / 60);
                   const minutes = durationMinutes % 60;
@@ -389,7 +392,7 @@ const RoutesheetPrintDocument = ({ groupedData, logoBase64 }) => {
                       {serviceRate}
                     </Text>
                     <Text style={[styles.tableCol, styles.tableColComments, { borderRightWidth: 0 }]}>
-                      {row.comments || ""}
+                      {[row.serviceNotes || "", row.comments || ""].filter(Boolean).join(" ") || ""}
                     </Text>
                   </View>
                 );
