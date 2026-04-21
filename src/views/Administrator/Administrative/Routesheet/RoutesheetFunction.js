@@ -18,11 +18,12 @@ import { CircularProgress, Grid } from "@material-ui/core";
 import AddIcon from "@material-ui/icons/Add";
 
 import HospiceTable from "components/Table/HospiceTable";
-import { ImportExport } from "@material-ui/icons";
+import { ImportExport, Warning } from "@material-ui/icons";
 import Helper from "utils/helper";
 import * as FileSaver from "file-saver";
 import SearchCustomTextField from "components/TextField/SearchCustomTextField";
 import RoutesheetForm from "./components/RoutesheetForm";
+import { Select, MenuItem, FormControl, InputLabel } from "@material-ui/core";
 
 import TOAST from "modules/toastManager";
 import moment from "moment";
@@ -134,6 +135,10 @@ function RoutesheetFunction(props) {
   const [notification, setNotification] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState("");
   const [notificationColor, setNotificationColor] = useState("success");
+  const [thresholdHours, setThresholdHours] = useState(48); // Default 48 hours
+  const [statusFilter, setStatusFilter] = useState("All"); // Default "All"
+  const [thresholdReportLoading, setThresholdReportLoading] = useState(false);
+
   const createFormHandler = (data, mode) => {
     setItem(data);
     setMode(mode || "create");
@@ -210,6 +215,48 @@ function RoutesheetFunction(props) {
     }
   }, []);
 
+  // Update columns when threshold changes
+  useEffect(() => {
+    if (dataSource.length > 0) {
+      const cols = RoutesheetHandler.columns(main, thresholdHours).map((col, index) => {
+        if (col.name === "actions") {
+          return {
+            ...col,
+            editable: () => false,
+            render: (cellProps) => (
+              <ActionsFunction
+                deleteRecordItemHandler={deleteRecordItemHandler}
+                createFormHandler={createFormHandler}
+                data={{ ...cellProps.data }}
+              />
+            ),
+          };
+        }
+        if (col.name === "signature") {
+          return {
+            ...col,
+            editable: () => false,
+            render: (cellProps) => (
+              <SignatureBased data={{ ...cellProps.data }} />
+            ),
+          };
+        }
+        if (col.name === "patientCd") {
+          // Patient column with alert icon
+          return {
+            ...col,
+            editable: () => false,
+          };
+        }
+        return {
+          ...col,
+          editable: () => false,
+        };
+      });
+      setColumns(cols);
+    }
+  }, [thresholdHours]);
+
   if (
     isRoutesheetCollection &&
     props.routesheet &&
@@ -222,7 +269,7 @@ function RoutesheetFunction(props) {
       source = RoutesheetHandler.mapData(source, productList);
     }
 
-    const cols = RoutesheetHandler.columns(main).map((col, index) => {
+    const cols = RoutesheetHandler.columns(main, thresholdHours).map((col, index) => {
       if (col.name === "actions") {
         return {
           ...col,
@@ -243,6 +290,13 @@ function RoutesheetFunction(props) {
           render: (cellProps) => (
             <SignatureBased data={{ ...cellProps.data }} />
           ),
+        };
+      }
+      if (col.name === "patientCd") {
+        // Patient column with alert icon
+        return {
+          ...col,
+          editable: () => false,
         };
       }
       return {
@@ -437,6 +491,105 @@ function RoutesheetFunction(props) {
       );
     } finally {
       setBulkStatusLoading(false);
+    }
+  };
+
+  const generateThresholdReportHandler = async () => {
+    try {
+      setThresholdReportLoading(true);
+
+      // Get all rows that exceed threshold and are in Review status
+      const pendingRows = dataSource.filter((row) => {
+        return (
+          row.status === "Review" &&
+          row.dosStart &&
+          moment().diff(moment(row.dosStart), "hours") > thresholdHours
+        );
+      });
+
+      if (pendingRows.length === 0) {
+        showNotification(
+          `No routesheets found exceeding ${thresholdHours}h threshold with Review status`,
+          "warning"
+        );
+        return;
+      }
+
+      // Group by employee (requestor)
+      const groupedByEmployee = {};
+
+      pendingRows.forEach((row) => {
+        const employeeName = row.requestor || "Unknown Employee";
+        const position = row.requestorTitle || "";
+
+        if (!groupedByEmployee[employeeName]) {
+          groupedByEmployee[employeeName] = {
+            employeeName,
+            position,
+            rows: [],
+          };
+        }
+
+        groupedByEmployee[employeeName].rows.push(row);
+      });
+
+      // Sort rows within each employee group
+      Object.keys(groupedByEmployee).forEach((employeeName) => {
+        const employeeData = groupedByEmployee[employeeName];
+        employeeData.rows.sort((a, b) => {
+          const patientCompare = (a.patientCd || "").localeCompare(
+            b.patientCd || ""
+          );
+          if (patientCompare !== 0) return patientCompare;
+
+          const serviceCompare = (a.service || "").localeCompare(
+            b.service || ""
+          );
+          if (serviceCompare !== 0) return serviceCompare;
+
+          const dateA = a.timeIn ? moment(a.timeIn) : moment(0);
+          const dateB = b.timeIn ? moment(b.timeIn) : moment(0);
+          return dateA.diff(dateB);
+        });
+      });
+
+      // Load logo
+      const logoUrl =
+        "https://acwocotrngkeaxtzdzfz.supabase.co/storage/v1/object/public/images/headerdoc.png";
+      const logoBase64 = await Helper.getImageBase64(logoUrl);
+
+      // Generate PDF
+      const pdfDocument = (
+        <RoutesheetPrintDocument
+          groupedData={groupedByEmployee}
+          logoBase64={logoBase64}
+        />
+      );
+
+      const blob = await pdf(pdfDocument).toBlob();
+
+      // Create filename with date and threshold
+      const dateStr = moment().format("YYYY-MM-DD");
+      const filename = `pending_routesheets_${thresholdHours}h_threshold_${dateStr}.pdf`;
+
+      // Download the PDF
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      link.click();
+
+      showNotification(
+        `PDF generated: ${pendingRows.length} routesheet(s) exceeding ${thresholdHours}h threshold`,
+        "success"
+      );
+    } catch (error) {
+      console.error("Error generating threshold report:", error);
+      showNotification(
+        error.message || "Failed to generate PDF. Please try again.",
+        "danger"
+      );
+    } finally {
+      setThresholdReportLoading(false);
     }
   };
 
@@ -637,11 +790,31 @@ function RoutesheetFunction(props) {
                 </CardHeader>
                 <CardBody>
                   <GridContainer style={{ paddingLeft: 20 }}>
-                    <GridItem md={12} sm={12} xs={12}>
+                    <GridItem md={10} sm={8} xs={12}>
                       <FilterTable
                         filterRecordHandler={filterRecordHandler}
                         filterByDateHandler={filterByDateHandler}
                       />
+                    </GridItem>
+                    <GridItem md={2} sm={4} xs={12}>
+                      <FormControl
+                        fullWidth
+                        variant="outlined"
+                        size="small"
+                        style={{ marginTop: 8 }}
+                      >
+                        <InputLabel>Alert Threshold (hours)</InputLabel>
+                        <Select
+                          value={thresholdHours}
+                          onChange={(e) => setThresholdHours(e.target.value)}
+                          label="Alert Threshold (hours)"
+                        >
+                          <MenuItem value={24}>24 hours</MenuItem>
+                          <MenuItem value={48}>48 hours</MenuItem>
+                          <MenuItem value={72}>72 hours</MenuItem>
+                          <MenuItem value={96}>96 hours</MenuItem>
+                        </Select>
+                      </FormControl>
                     </GridItem>
                   </GridContainer>
                   <GridContainer style={{ paddingLeft: 14 }}>

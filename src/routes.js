@@ -95,6 +95,7 @@ import RecertificationTimeline from "views/Administrator/RecertificationTimeline
 import BereavementTimeline from "views/Administrator/BereavementTimeline/BereavementTimelineFunction";
 import UpdateBenefits from "views/Administrator/Utilities/UpdateBenefits";
 import QAChart from "views/Administrator/Utilities/QAChart";
+import DmeManagement from "views/Administrator/Operations/DmeManagement/DmeManagement";
 var dashRoutes = [
   {
     path: "/dashboard",
@@ -251,6 +252,15 @@ var dashRoutes = [
         mini: "VT",
         rtlMini: "ع",
         component: VisitTracker,
+        layout: "/admin",
+      },
+      {
+        path: "/dme-management",
+        name: "DME Management",
+        rtlName: "عالتسعير",
+        mini: "DM",
+        rtlMini: "ع",
+        component: DmeManagement,
         layout: "/admin",
       },
     ],

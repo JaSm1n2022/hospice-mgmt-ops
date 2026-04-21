@@ -1,0 +1,549 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Invoice Section Extractor</title>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    max-width: 1400px;
+    margin: 2rem auto;
+    padding: 1rem;
+    color: #1a1a1a;
+    background: #fafaf7;
+  }
+  h1 { font-size: 22px; margin: 0 0 1rem; }
+  h2 { font-size: 18px; color: #333; margin: 0 0 4px; }
+  input[type=file] {
+    margin-bottom: 1.5rem;
+    font-size: 13px;
+    padding: 6px 8px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  }
+  thead {
+    background: #f4f2ea;
+    position: sticky;
+    top: 0;
+  }
+  th {
+    text-align: left;
+    padding: 10px 12px;
+    font-weight: 600;
+    color: #555;
+    border-bottom: 1px solid rgba(0,0,0,0.12);
+    white-space: nowrap;
+  }
+  td {
+    padding: 6px 12px;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    vertical-align: top;
+  }
+  tbody tr:hover { background: #fafaf7; }
+</style>
+</head>
+<body>
+
+<h1>Invoice Section Extractor</h1>
+<input type="file" id="pdf-upload" accept=".pdf">
+
+<div style="display: flex; gap: 8px; margin-bottom: 1rem;">
+  <button id="tab-dme" class="tab-button active" onclick="switchTab('dme')" style="padding: 8px 16px; border-radius: 6px; border: 1px solid #ccc; background: #e6f1fb; cursor: pointer; font-weight: 500;">DME Invoice</button>
+  <button id="tab-full" class="tab-button" onclick="switchTab('full')" style="padding: 8px 16px; border-radius: 6px; border: 1px solid #ccc; background: white; cursor: pointer;">Full Invoice</button>
+</div>
+
+<div id="output"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// Global state
+let globalPatients = [];
+let currentView = 'dme';
+let patientCodesList = []; // List of patient codes from React app
+
+// Column X-ranges derived from ACTUAL data positions in the invoice.
+// Patient names sit at x=85-170; addresses at x=185-265 (NOT overlapping).
+const COLUMNS = [
+  { name: 'inv',          xStart: 20,  xEnd: 80  },
+  { name: 'patient_name', xStart: 80,  xEnd: 180 },
+  { name: 'address',      xStart: 180, xEnd: 330 },
+  { name: 'delivery_date',xStart: 330, xEnd: 430 },
+  { name: 'equipment',    xStart: 430, xEnd: 590 },
+  { name: 'qty',          xStart: 590, xEnd: 635 },
+  { name: 'pickup_date',  xStart: 635, xEnd: 685 },
+  { name: 'rate',         xStart: 685, xEnd: 730 },
+  { name: 'total',        xStart: 730, xEnd: 780 }
+];
+
+// Listen for patient data from parent React component
+window.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'PATIENT_DATA') {
+    const allPatients = event.data.patientCodes || [];
+
+    // Filter patients: Active OR Inactive with EOC within 60 days
+    const today = new Date();
+    const sixtyDaysAgo = new Date(today);
+    sixtyDaysAgo.setDate(today.getDate() - 60);
+
+    patientCodesList = allPatients.filter(patient => {
+      const patientData = patient.fullData || patient;
+
+      // Include if patient is active
+      if (patientData.status === 'Active' || patientData.status === 'active') {
+        return true;
+      }
+
+      // Include if patient is inactive but EOC is within 60 days
+      if (patientData.eoc_date || patientData.eocDate) {
+        const eocDate = new Date(patientData.eoc_date || patientData.eocDate);
+        return eocDate >= sixtyDaysAgo;
+      }
+
+      return false;
+    });
+
+    console.log('✓ Received and filtered', patientCodesList.length, 'eligible patients');
+
+    // Re-render if we already have extracted data
+    if (globalPatients.length > 0) {
+      renderCurrentView();
+    }
+  }
+});
+
+document.getElementById('pdf-upload').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async (ev) => {
+    const typedArray = new Uint8Array(ev.target.result);
+    const pdf = await pdfjsLib.getDocument(typedArray).promise;
+
+    const output = document.getElementById('output');
+    output.innerHTML = '<p>Extracting…</p>';
+
+    // ── Step 1: Collect ALL rows from ALL pages first ──
+    const allRowsFromAllPages = [];
+
+    for (let p = 1; p <= pdf.numPages; p++) {
+      const page = await pdf.getPage(p);
+      const viewport = page.getViewport({ scale: 1 });
+      const pageHeight = viewport.height;
+
+      // Get text items with positions
+      const textContent = await page.getTextContent();
+      const allItems = textContent.items
+        .filter(it => it.str.trim() !== '')
+        .map(it => ({
+          text: it.str,
+          x: it.transform[4],
+          y: it.transform[5],
+          width: it.width,
+          height: it.height
+        }));
+
+      // Skip the CUSTOMER header block on page 1
+      const invHeader = allItems.find(it => it.text.trim() === 'Inv.');
+      const headerY = invHeader ? invHeader.y : pageHeight;
+      const items = allItems.filter(it => it.y < headerY - 2);
+
+      // Group items into rows and assign to columns
+      const pageRows = groupItemsIntoRows(items).map(assignToColumns);
+
+      // Add all rows from this page to the master list
+      allRowsFromAllPages.push(...pageRows);
+    }
+
+    // ── Step 2: Group ALL rows by patient ──
+    // Rules:
+    // - Patient group STARTS when we find a patient_name with length > 2
+    // - Patient group ENDS when we find:
+    //   1. "R" or "GH" (location markers indicating end of patient)
+    //   2. A NEW patient_name (length > 2)
+    //   3. "Sub-Total" text
+
+    const allPatients = [];
+    let currentPatientRows = [];
+    let currentPatientName = null;
+
+    for (const row of allRowsFromAllPages) {
+      // Check if this row contains "Sub-Total" - end of patient group
+      const hasSubTotal = Object.values(row).some(val =>
+        val && val.toString().includes('Sub-Total')
+      );
+
+      if (hasSubTotal) {
+        // Save current patient group if it has data
+        if (currentPatientName && currentPatientRows.length > 0) {
+          allPatients.push({
+            patientName: currentPatientName,
+            rows: [...currentPatientRows]
+          });
+        }
+        // Reset for next patient
+        currentPatientRows = [];
+        currentPatientName = null;
+        continue;
+      }
+
+      // Check if this row is an end marker: "R" or "GH"
+      const patientNameValue = row.patient_name ? row.patient_name.trim() : '';
+      const isEndMarker = patientNameValue === 'R' || patientNameValue === 'GH';
+
+      if (isEndMarker) {
+        // Save current patient group and reset
+        if (currentPatientName && currentPatientRows.length > 0) {
+          allPatients.push({
+            patientName: currentPatientName,
+            rows: [...currentPatientRows]
+          });
+        }
+        currentPatientRows = [];
+        currentPatientName = null;
+        continue;
+      }
+
+      // Check if this row has a NEW patient name (length > 2)
+      // Exclude "(RETURN)" - it's a note, not a patient
+      const hasNewPatientName = patientNameValue &&
+                                patientNameValue.length > 2 &&
+                                !patientNameValue.includes('(RETURN)');
+
+      if (hasNewPatientName) {
+        // If we already have a patient, save it first
+        if (currentPatientName && currentPatientRows.length > 0) {
+          allPatients.push({
+            patientName: currentPatientName,
+            rows: [...currentPatientRows]
+          });
+        }
+        // Start new patient group
+        currentPatientName = patientNameValue;
+        currentPatientRows = [row];
+        continue;
+      }
+
+      // Add row to current patient group (equipment/detail rows)
+      if (currentPatientName) {
+        currentPatientRows.push(row);
+      }
+    }
+
+    // Don't forget the last patient
+    if (currentPatientName && currentPatientRows.length > 0) {
+      allPatients.push({
+        patientName: currentPatientName,
+        rows: [...currentPatientRows]
+      });
+    }
+
+    // ── Store and render all patients ──
+    globalPatients = allPatients;
+    renderCurrentView();
+  };
+  reader.readAsArrayBuffer(file);
+});
+
+function switchTab(view) {
+  currentView = view;
+
+  // Update button styles
+  document.getElementById('tab-full').style.background = view === 'full' ? '#e6f1fb' : 'white';
+  document.getElementById('tab-full').style.fontWeight = view === 'full' ? '500' : '400';
+  document.getElementById('tab-dme').style.background = view === 'dme' ? '#e6f1fb' : 'white';
+  document.getElementById('tab-dme').style.fontWeight = view === 'dme' ? '500' : '400';
+
+  renderCurrentView();
+}
+
+function renderCurrentView() {
+  const output = document.getElementById('output');
+  if (currentView === 'full') {
+    renderFullInvoice(output, globalPatients);
+  } else {
+    renderDMEInvoice(output, globalPatients);
+  }
+}
+
+function renderFullInvoice(container, patients) {
+  container.innerHTML = '';
+
+  // Summary header
+  const header = document.createElement('div');
+  header.innerHTML = `<h2 style="margin:0 0 4px;">Full Invoice Report</h2>
+    <p style="color:#666;margin:0 0 1.5rem;">${patients.length} patients extracted across all pages</p>`;
+  container.appendChild(header);
+
+  // One unified table for the whole invoice
+  const table = document.createElement('table');
+  table.innerHTML = `
+    <thead>
+      <tr>
+        <th>Inv</th>
+        <th>Patient Name</th>
+        <th>Address</th>
+        <th>Delivery Date</th>
+        <th>Equipment</th>
+        <th>Qty</th>
+        <th>Pickup Date</th>
+        <th>Rate</th>
+        <th>Total</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  `;
+  const tbody = table.querySelector('tbody');
+
+  patients.forEach((patient, idx) => {
+    patient.rows.forEach((row, rowIdx) => {
+      const tr = document.createElement('tr');
+      // Slightly highlight the first row of each patient (where the name lives)
+      if (rowIdx === 0) tr.style.borderTop = '2px solid #999';
+      tr.innerHTML = `
+        <td>${escapeHTML(row.inv || '')}</td>
+        <td style="font-weight:${rowIdx === 0 ? '600' : '400'}">${escapeHTML(row.patient_name || '')}</td>
+        <td>${escapeHTML(row.address || '')}</td>
+        <td>${escapeHTML(row.delivery_date || '')}</td>
+        <td>${escapeHTML(row.equipment || '')}</td>
+        <td>${escapeHTML(row.qty || '')}</td>
+        <td>${escapeHTML(row.pickup_date || '')}</td>
+        <td>${escapeHTML(row.rate || '')}</td>
+        <td style="text-align:right;">${escapeHTML(row.total || '')}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  });
+
+  container.appendChild(table);
+}
+
+function renderDMEInvoice(container, patients) {
+  container.innerHTML = '';
+
+  // Summary header
+  const header = document.createElement('div');
+  const patientCodesInfo = patientCodesList.length > 0
+    ? `<span style="color:#0f6e56;">✓ ${patientCodesList.length} patient codes available</span>`
+    : '<span style="color:#854f0b;">⚠ Waiting for patient codes...</span>';
+  header.innerHTML = `<h2 style="margin:0 0 4px;">DME Invoice Report</h2>
+    <p style="color:#666;margin:0 0 0.5rem;">${patients.length} patients - Grouped by patient with totals</p>
+    <p style="margin:0 0 1.5rem; font-size:12px;">${patientCodesInfo}</p>`;
+  container.appendChild(header);
+
+  // Create grouped table
+  const table = document.createElement('table');
+  table.innerHTML = `
+    <thead>
+      <tr>
+        <th style="width: 200px;">Patient Code</th>
+        <th>Patient Name</th>
+        <th>Equipment</th>
+        <th style="width: 120px; text-align: right;">Total</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  `;
+  const tbody = table.querySelector('tbody');
+
+  // Group and aggregate data for each patient
+  patients.forEach((patient, idx) => {
+    const tr = document.createElement('tr');
+
+    // Patient name - ALWAYS from the first row with data
+    const patientName = patient.patientName ||
+                       (patient.rows.length > 0 ? patient.rows[0].patient_name : '') ||
+                       '';
+
+    // Collect all equipment items (filter out empty values and "Daily Rate")
+    const equipmentItems = patient.rows
+      .map(row => row.equipment)
+      .filter(eq => eq && eq.trim().length > 0 && eq.trim() !== 'Daily Rate')
+      .map(eq => {
+        // Clean equipment text
+        let cleaned = eq;
+
+        // Remove (PU ...) notes - e.g., "(PU 2/20)", "(PU 1/31)"
+        cleaned = cleaned.replace(/\(PU[^)]*\)/gi, '').trim();
+
+        // Replace "E-Tank,Cart,Reg" with "E-tank Cart Reg"
+        if (cleaned.toLowerCase().includes('e-tank') && cleaned.includes(',')) {
+          cleaned = cleaned
+            .replace(/E-Tank,Cart,Reg/gi, 'E-tank Cart Reg')
+            .replace(/E-Tank,\s*Cart,\s*Reg/gi, 'E-tank Cart Reg');
+        }
+
+        return cleaned;
+      })
+      .filter(eq => eq.length > 0); // Remove empty strings after cleaning
+
+    const equipmentString = equipmentItems.join(', ');
+
+    // Calculate total (sum all totals, parse dollar amounts)
+    const totalAmount = patient.rows.reduce((sum, row) => {
+      if (row.total) {
+        const numericValue = parseFloat(row.total.replace(/[$,]/g, '')) || 0;
+        return sum + numericValue;
+      }
+      return sum;
+    }, 0);
+
+    // Create the select dropdown
+    const selectHtml = `
+      <select style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
+        <option value="">— Select Patient Code —</option>
+        ${patientCodesList.map(p => {
+          const code = typeof p === 'string' ? p : p.code;
+          const name = typeof p === 'string' ? '' : (p.name || '');
+          const fullData = typeof p === 'string' ? null : p.fullData;
+          const status = fullData?.status || '';
+          const displayText = name ? `${code} - ${name}` : code;
+          const statusBadge = status === 'Active' || status === 'active' ? '🟢' : '🔴';
+          return `<option value="${escapeHTML(code)}">${statusBadge} ${escapeHTML(displayText)}</option>`;
+        }).join('')}
+      </select>
+    `;
+
+    tr.innerHTML = `
+      <td>${selectHtml}</td>
+      <td style="font-weight: 500;">${escapeHTML(patientName)}</td>
+      <td>${escapeHTML(equipmentString)}</td>
+      <td style="text-align: right; font-weight: 500;">$${totalAmount.toFixed(2)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  container.appendChild(table);
+
+  // Calculate and show grand total
+  const grandTotal = patients.reduce((sum, patient) => {
+    return sum + patient.rows.reduce((rowSum, row) => {
+      if (row.total) {
+        return rowSum + (parseFloat(row.total.replace(/[$,]/g, '')) || 0);
+      }
+      return rowSum;
+    }, 0);
+  }, 0);
+
+  const totalRow = document.createElement('div');
+  totalRow.style.cssText = 'margin-top: 1rem; text-align: right; font-size: 16px; font-weight: 600;';
+  totalRow.innerHTML = `Grand Total: $${grandTotal.toFixed(2)}`;
+  container.appendChild(totalRow);
+}
+
+// ────────────────────────────────────────────────────────────────
+// Find horizontal border lines using the page operator list.
+// PDF.js draws lines/rectangles as path operations. A horizontal
+// border is any path whose y-range is tiny and whose x-range is wide.
+// ────────────────────────────────────────────────────────────────
+async function getHorizontalBorders(page, pageHeight) {
+  const ops = await page.getOperatorList();
+  const OPS = pdfjsLib.OPS;
+  const borders = [];
+
+  for (let i = 0; i < ops.fnArray.length; i++) {
+    const fn = ops.fnArray[i];
+    // constructPath carries the path commands + coordinates
+    if (fn === OPS.constructPath) {
+      const args = ops.argsArray[i];
+      // args[0] = array of op codes (moveTo, lineTo, rectangle, etc.)
+      // args[1] = flat array of coordinates
+      const pathOps = args[0];
+      const coords = args[1];
+
+      // Check for rectangle op (op code 19) — your PDF draws borders as rects
+      let idx = 0;
+      for (const op of pathOps) {
+        if (op === OPS.rectangle) {
+          const x = coords[idx], y = coords[idx+1];
+          const w = coords[idx+2], h = coords[idx+3];
+          idx += 4;
+          // Thin and wide → horizontal border
+          if (Math.abs(h) < 2 && Math.abs(w) > 500) {
+            borders.push(y); // bottom-up Y
+          }
+        } else if (op === OPS.moveTo || op === OPS.lineTo) {
+          idx += 2;
+        } else if (op === OPS.curveTo) {
+          idx += 6;
+        } else if (op === OPS.curveTo2 || op === OPS.curveTo3) {
+          idx += 4;
+        }
+      }
+    }
+  }
+
+  // Also add top and bottom of page as implicit borders
+  // so the top-most and bottom-most sections are bounded
+  borders.push(pageHeight);
+  borders.push(0);
+
+  // Dedupe nearby Y-values (within 2pt of each other)
+  const unique = [];
+  borders.sort((a, b) => b - a).forEach(y => {
+    if (!unique.length || Math.abs(unique[unique.length-1] - y) > 2) {
+      unique.push(y);
+    }
+  });
+  return unique;
+}
+
+// ────────────────────────────────────────────────────────────────
+// Group items with similar Y into rows
+// ────────────────────────────────────────────────────────────────
+function groupItemsIntoRows(items, yTolerance = 3) {
+  const rowMap = new Map();
+  items.forEach(it => {
+    let matchedKey = null;
+    for (const key of rowMap.keys()) {
+      if (Math.abs(key - it.y) < yTolerance) { matchedKey = key; break; }
+    }
+    const key = matchedKey ?? it.y;
+    if (!rowMap.has(key)) rowMap.set(key, []);
+    rowMap.get(key).push(it);
+  });
+  // Return rows sorted top-to-bottom (higher y first)
+  return [...rowMap.entries()]
+    .sort((a, b) => b[0] - a[0])
+    .map(([y, rowItems]) => rowItems.sort((a, b) => a.x - b.x));
+}
+
+// ────────────────────────────────────────────────────────────────
+// Assign each item in a row to its column based on X position
+// ────────────────────────────────────────────────────────────────
+function assignToColumns(rowItems) {
+  const row = {};
+  COLUMNS.forEach(c => row[c.name] = '');
+  rowItems.forEach(it => {
+    const col = COLUMNS.find(c => it.x >= c.xStart && it.x < c.xEnd);
+    if (col) {
+      row[col.name] = (row[col.name] + ' ' + it.text).trim();
+    }
+  });
+  return row;
+}
+
+// ────────────────────────────────────────────────────────────────
+// Escape HTML
+// ────────────────────────────────────────────────────────────────
+function escapeHTML(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+</script>
+
+</body>
+</html>

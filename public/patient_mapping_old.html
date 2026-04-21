@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Haloes Touch - Patient Equipment Mapping</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+    color: #1a1a1a;
+    background: #fafaf7;
+  }
+  h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
+  .subtitle { font-size: 13px; color: #666; margin: 0; }
+
+  .header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .progress-pill {
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: #eeece4;
+    color: #666;
+  }
+  .progress-pill.complete {
+    background: #e1f5ee;
+    color: #0f6e56;
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+    border: 0.5px solid rgba(0,0,0,0.15);
+    border-radius: 12px;
+    background: white;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    table-layout: fixed;
+  }
+  thead tr { background: #f4f2ea; }
+  th {
+    text-align: left;
+    padding: 10px 12px;
+    font-weight: 500;
+    color: #666;
+    border-bottom: 0.5px solid rgba(0,0,0,0.15);
+  }
+  tbody tr { border-bottom: 0.5px solid rgba(0,0,0,0.1); }
+  td { padding: 10px 12px; vertical-align: top; }
+  td.name { font-weight: 500; }
+
+  select {
+    width: 100%;
+    font-size: 13px;
+    padding: 6px 8px;
+    border: 0.5px solid rgba(0,0,0,0.2);
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+  }
+  select:focus { outline: 2px solid #378add; outline-offset: -1px; }
+
+  .chip-wrap { display: flex; flex-wrap: wrap; gap: 4px; }
+  .chip {
+    font-size: 12px;
+    padding: 3px 8px;
+    background: #f4f2ea;
+    border-radius: 6px;
+    border: 0.5px solid rgba(0,0,0,0.1);
+  }
+
+  .actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  button {
+    font-size: 13px;
+    padding: 8px 16px;
+    background: white;
+    color: #1a1a1a;
+    border: 0.5px solid rgba(0,0,0,0.2);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  button:hover { background: #f4f2ea; }
+  button:active { transform: scale(0.98); }
+  button.primary {
+    font-size: 14px;
+    font-weight: 500;
+    padding: 8px 20px;
+    background: #e6f1fb;
+    color: #0c447c;
+    border-color: #b5d4f4;
+  }
+  button.primary:hover { background: #d0e4f7; }
+
+  #result-panel {
+    display: none;
+    margin-top: 1.5rem;
+    padding: 1rem 1.25rem;
+    background: white;
+    border: 0.5px solid rgba(0,0,0,0.15);
+    border-radius: 12px;
+  }
+  .result-success { color: #0f6e56; font-weight: 500; font-size: 14px; margin-bottom: 12px; }
+  .result-warning { color: #854f0b; font-weight: 500; font-size: 14px; }
+  .result-danger { color: #791f1f; font-weight: 500; font-size: 14px; }
+  .code-cell { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div class="header-row">
+  <div>
+    <h1>Haloes Touch — March 2026</h1>
+    <p class="subtitle">Upload PDF invoice or use existing data below</p>
+  </div>
+  <div id="progress-pill" class="progress-pill">0 of 18 mapped</div>
+</div>
+
+<div class="upload-section" style="margin-bottom: 1.5rem; padding: 1rem 1.25rem; background: white; border: 0.5px solid rgba(0,0,0,0.15); border-radius: 12px;">
+  <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+    <label for="pdf-upload" style="font-size: 13px; font-weight: 500; color: #666;">Upload Invoice PDF:</label>
+    <input type="file" id="pdf-upload" accept=".pdf" style="font-size: 13px; padding: 6px 8px;">
+    <button id="extract-btn" style="display: none;" class="primary">Extract Patient Data</button>
+  </div>
+  <div id="upload-status" style="margin-top: 8px; font-size: 12px; color: #666;"></div>
+</div>
+
+<div class="table-wrap">
+  <table id="patient-table">
+    <colgroup>
+      <col style="width: 160px;">
+      <col style="width: 200px;">
+      <col>
+      <col style="width: 120px;">
+    </colgroup>
+    <thead>
+      <tr>
+        <th>Patient Cd</th>
+        <th>Patient Name</th>
+        <th>Equipments</th>
+        <th>Invoice Amt</th>
+      </tr>
+    </thead>
+    <tbody id="patient-tbody"></tbody>
+    <tfoot>
+      <tr style="border-top: 2px solid rgba(0,0,0,0.2); background: #f4f2ea;">
+        <td colspan="3" style="text-align: right; padding: 12px; font-weight: 600; font-size: 14px;">Grand Total:</td>
+        <td id="grand-total" style="text-align: right; padding: 12px; font-weight: 600; font-size: 14px;">$0.00</td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+
+<div class="actions">
+  <button id="reset-btn">Reset</button>
+  <button id="submit-btn" class="primary">Submit</button>
+</div>
+
+<div id="result-panel"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+// Configure PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+</script>
+<script>
+// =============================================================
+// PDF UPLOAD & EXTRACTION
+// =============================================================
+const pdfUpload = document.getElementById("pdf-upload");
+const extractBtn = document.getElementById("extract-btn");
+const uploadStatus = document.getElementById("upload-status");
+let selectedFile = null;
+
+pdfUpload.addEventListener("change", (e) => {
+  selectedFile = e.target.files[0];
+  if (selectedFile && selectedFile.type === "application/pdf") {
+    extractBtn.style.display = "inline-block";
+    uploadStatus.textContent = `Selected: ${selectedFile.name}`;
+    uploadStatus.style.color = "#0c447c";
+  } else {
+    extractBtn.style.display = "none";
+    uploadStatus.textContent = "Please select a valid PDF file";
+    uploadStatus.style.color = "#791f1f";
+  }
+});
+
+extractBtn.addEventListener("click", async () => {
+  if (!selectedFile) return;
+
+  uploadStatus.textContent = "Extracting patient data from PDF...";
+  uploadStatus.style.color = "#854f0b";
+
+  try {
+    const arrayBuffer = await selectedFile.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let fullText = "";
+
+    // Extract text from all pages with better line preservation
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+
+      // Group items by Y position to preserve lines
+      const lineMap = {};
+      textContent.items.forEach(item => {
+        const y = Math.round(item.transform[5]); // Y position
+        if (!lineMap[y]) lineMap[y] = [];
+        lineMap[y].push(item.str);
+      });
+
+      // Sort by Y position (top to bottom) and join items on same line
+      const sortedY = Object.keys(lineMap).sort((a, b) => b - a);
+      sortedY.forEach(y => {
+        fullText += lineMap[y].join(" ") + "\n";
+      });
+    }
+
+    // Log the extracted text for debugging
+    console.log("Extracted PDF Text (first 500 chars):", fullText.substring(0, 500));
+    console.log("Total text length:", fullText.length);
+
+    // Also log the first 50 lines to see structure with character positions
+    const lines = fullText.split('\n');
+    console.log("First 50 lines with char positions:");
+    lines.slice(0, 50).forEach((line, idx) => {
+      // Show line with a ruler every 10 chars
+      const ruler = Array.from({length: Math.ceil(line.length / 10)}, (_, i) => `${i * 10}`.padStart(10, ' ')).join('');
+      const ruler2 = '0123456789'.repeat(Math.ceil(line.length / 10)).substring(0, line.length);
+
+      // Check for border/special characters
+      const hasBorderChars = /[─│┌┐└┘├┤┬┴┼═║╔╗╚╝╠╣╦╩╬▀▄█▌▐░▒▓■□▪▫●○◘◙☺☻♀♂♠♣♥♦←↑→↓↔▲►▼◄|_\-=+*#]/.test(line);
+      const hasOnlySpecialChars = /^[─│┌┐└┘├┤┬┴┼═║╔╗╚╝╠╣╦╩╬▀▄█▌▐░▒▓■□▪▫●○◘◙☺☻♀♂♠♣♥♦←↑→↓↔▲►▼◄|_\-=+*#\s]+$/.test(line);
+
+      console.log(`\n━━━ Line ${idx} (Length: ${line.length} chars) ━━━`);
+      if (hasBorderChars) {
+        console.log("⚠️  Contains border/special characters");
+      }
+      if (hasOnlySpecialChars && line.trim().length > 0) {
+        console.log("🚫 Line is ONLY borders/decorations - should be skipped");
+      }
+
+      // Show character codes for first 20 characters to identify special chars
+      const first20 = line.substring(0, 20);
+      const charCodes = Array.from(first20).map(c => `${c}(${c.charCodeAt(0)})`).join(' ');
+      console.log("First 20 chars with codes:", charCodes);
+
+      console.log(ruler);
+      console.log(ruler2);
+      console.log(line);
+      console.log('─'.repeat(Math.min(line.length, 100)));
+    });
+
+    // Line length analysis
+    console.log("\n\n═══════════════════════════════════════");
+    console.log("📊 LINE LENGTH ANALYSIS");
+    console.log("═══════════════════════════════════════");
+
+    const lengthGroups = {};
+    lines.forEach((line, idx) => {
+      const len = line.length;
+      if (!lengthGroups[len]) lengthGroups[len] = [];
+      lengthGroups[len].push(idx);
+    });
+
+    console.log("Total lines:", lines.length);
+    console.log("\nLines grouped by length:");
+    Object.keys(lengthGroups).sort((a, b) => b - a).forEach(len => {
+      const count = lengthGroups[len].length;
+      console.log(`  ${len} chars: ${count} lines (line numbers: ${lengthGroups[len].slice(0, 5).join(', ')}${lengthGroups[len].length > 5 ? '...' : ''})`);
+    });
+
+    // Find the most common line length (likely data rows)
+    const mostCommonLength = Object.keys(lengthGroups).reduce((a, b) =>
+      lengthGroups[a].length > lengthGroups[b].length ? a : b
+    );
+    console.log("\n✓ Most common line length:", mostCommonLength, "characters");
+    console.log("  (This is likely the standard data row length)");
+
+    // Find header line
+    const headerLineIdx = lines.findIndex(line => line.includes('RATE') && line.includes('TOTAL'));
+    if (headerLineIdx !== -1) {
+      console.log("\n✓ Header line found at index:", headerLineIdx);
+      console.log("  Header line length:", lines[headerLineIdx].length, "characters");
+    }
+
+    // Parse the extracted text to find patients and equipment
+    const extractedPatients = parsePatientData(fullText);
+    console.log("Parsed Patients count:", extractedPatients.length);
+    console.log("Parsed Patients:", extractedPatients);
+
+    if (extractedPatients.length > 0) {
+      // Clear existing data and load new data
+      patients.length = 0;
+      patients.push(...extractedPatients);
+
+      // Re-render the table
+      renderTable();
+
+      uploadStatus.textContent = `✓ Extracted ${extractedPatients.length} patients from PDF`;
+      uploadStatus.style.color = "#0f6e56";
+    } else {
+      uploadStatus.textContent = "⚠ No patient data found in PDF. Please check the PDF format or contact support.";
+      uploadStatus.style.color = "#791f1f";
+    }
+  } catch (error) {
+    console.error("PDF extraction error:", error);
+    uploadStatus.textContent = `⚠ Error extracting PDF: ${error.message}`;
+    uploadStatus.style.color = "#791f1f";
+  }
+});
+
+// Parse patient data from PDF text using FIXED-WIDTH FIELD EXTRACTION
+// Specification: 450 character lines, extract Patient (11-50) and Equipment (180-250)
+function parsePatientData(text) {
+  const extractedPatients = [];
+  const lines = text.split(/\n/);  // Don't trim - preserve positions
+
+  console.log("\n═══════════════════════════════════════");
+  console.log("📄 FIXED-WIDTH PARSER STARTING");
+  console.log("═══════════════════════════════════════");
+  console.log("Total lines to process:", lines.length);
+  console.log("Expected line width: 450 characters");
+  console.log("\nField Positions:");
+  console.log("  Invoice Month: positions 0-10   (11 chars)");
+  console.log("  Patient:       positions 11-50  (40 chars)");
+  console.log("  Equipment:     positions 180-250 (71 chars)");
+  console.log("═══════════════════════════════════════\n");
+
+  // First, find the header row and detect ALL column positions
+  let invColumnStart = -1;
+  let patientNameColumnStart = -1;
+  let addressColumnStart = -1;
+  let deliveryDateColumnStart = -1;
+  let equipmentColumnStart = -1;
+  let qtyColumnStart = -1;
+  let pickupDateColumnStart = -1;
+  let rateColumnStart = -1;
+  let totalColumnStart = -1;
+
+  for (let i = 0; i < Math.min(50, lines.length); i++) {
+    const line = lines[i];
+    // Look for the header row with "TOTAL" column
+    if (line.includes('RATE') && line.includes('TOTAL')) {
+      // Detect all column positions from header
+      invColumnStart = line.indexOf('INV');
+      patientNameColumnStart = line.indexOf('PATIENT NAME');
+      addressColumnStart = line.indexOf('ADDRESS');
+      deliveryDateColumnStart = line.indexOf('DELIVERY DATE');
+      equipmentColumnStart = line.indexOf('EQUIPMENT');
+      qtyColumnStart = line.indexOf('QTY');
+      pickupDateColumnStart = line.indexOf('PICKUP');
+      rateColumnStart = line.indexOf('RATE');
+      totalColumnStart = line.indexOf('TOTAL');
+
+      console.log("✓ Found header row at line", i);
+      console.log("  Header line:", line);
+      console.log("\n📊 COLUMN POSITIONS DETECTED:");
+      console.log("  INV column starts at position:", invColumnStart);
+      console.log("  PATIENT NAME column starts at position:", patientNameColumnStart);
+      console.log("  ADDRESS & PHONE column starts at position:", addressColumnStart);
+      console.log("  DELIVERY DATE column starts at position:", deliveryDateColumnStart);
+      console.log("  EQUIPMENT DESCRIPTION column starts at position:", equipmentColumnStart);
+      console.log("  QTY/DAYS column starts at position:", qtyColumnStart);
+      console.log("  PICKUP DATE column starts at position:", pickupDateColumnStart);
+      console.log("  RATE column starts at position:", rateColumnStart);
+      console.log("  TOTAL column starts at position:", totalColumnStart);
+      console.log("  Header line length:", line.length);
+
+      // Create a visual ruler to show column positions
+      console.log("\n📏 VISUAL COLUMN POSITION MAP:");
+      const ruler1 = Array.from({length: Math.ceil(line.length / 10)}, (_, i) => `${i * 10}`.padEnd(10, ' ')).join('');
+      const ruler2 = '0123456789'.repeat(Math.ceil(line.length / 10)).substring(0, line.length);
+      console.log(ruler1);
+      console.log(ruler2);
+      console.log(line);
+      console.log("^".repeat(line.length));
+      break;
+    }
+  }
+
+  if (totalColumnStart === -1) {
+    console.error("⚠ Could not find TOTAL column header - extraction will fail!");
+    console.log("First 30 lines for debugging:");
+    lines.slice(0, 30).forEach((l, idx) => {
+      console.log(`  [${idx}]: ${l}`);
+    });
+  }
+
+  // Equipment keywords
+  const equipmentKeywords = [
+    "Bed", "Rail", "Wheelchair", "Walker", "Oxygen", "Concentrator",
+    "Nebulizer", "Tank", "Pump", "Pad", "Table", "Commode", "Lift",
+    "Mattress", "Chair", "Bench", "Sling", "Mat", "Alarm", "Kit",
+    "Cushion", "Pillow", "Bar", "Suction", "Machine", "Reg", "Cart",
+    "Hoyer", "Overbed", "Transfer", "Fall", "Shower", "Trapeeze",
+    "Halo", "Mickey", "APP", "Airloss", "FE Hospital", "3-IN-1", "E-Tank"
+  ];
+
+  // Words that indicate this is NOT a patient name
+  const skipWords = [
+    "CUSTOMER", "HALOES TOUCH", "INVOICE", "RELIANT MEDICAL",
+    "Sub-Total", "TOTAL AMT", "PATIENT NAME", "DELIVERY DATE",
+    "EQUIPMENT DESCRIPTION", "Attn", "New Location", "NULOC",
+    "ADDRESS", "PHONE", "QTY", "PICKUP", "RATE", "Split Credit",
+    "(RETURN)"
+  ];
+
+  let currentPatient = null;
+  let currentEquipments = [];
+  let currentTotalAmount = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    // Skip empty or very short lines
+    if (line.length < 3) continue;
+
+    // Skip lines with skip words
+    if (skipWords.some(skip => line.includes(skip))) continue;
+
+    // Skip if line starts with MAR only (not equipment containing MAR)
+    if (line === "MAR" || line.startsWith("MAR ") && !equipmentKeywords.some(kw => line.includes(kw))) continue;
+
+    // DON'T skip date lines - they might have equipment after the date
+    // We'll handle date removal during equipment extraction
+
+    // Skip pure price lines
+    if (/^\$[\d,\.]+\s*$/.test(line)) continue;
+
+    // Skip single letters (R, GH markers) only if they're alone
+    if (/^[RGH]$/.test(line)) continue;
+
+    // Check for patient notes like (RETURN) that appear on their own line
+    if (currentPatient && /^\(.*?\)$/.test(line)) {
+      // Append note to current patient name
+      currentPatient = `${currentPatient} ${line}`;
+      console.log("  Added note to patient name:", currentPatient);
+      continue;
+    }
+
+    // Extract patient name from table row format
+    // Format: "PATIENT NAME   Address   Date   Equipment..."
+    // We need to extract just the name part before the address
+
+    // Check if line contains typical patient name pattern followed by address/date indicators
+    // Pattern: ALL CAPS NAME followed by address (number or street name) or just spaces
+    // Made more flexible: (?:\d+\s+|R\s|\s{3,}) to catch names followed by spaces too
+    const nameMatch = line.match(/^\s*([A-Z][A-Z\s\-\.]+?)\s+(?:\d+\s+|R\s|\d+\/\d+)/);
+
+    if (nameMatch) {
+      const potentialName = nameMatch[1].trim();
+
+      // Validate it's a real name (not a header or other text)
+      const hasMultipleWords = potentialName.split(/\s+/).length >= 2;
+      const reasonableLength = potentialName.length >= 5 && potentialName.length <= 50; // Reduced from 8 to 5
+      const notHeader = !/(ADDRESS|PHONE|DELIVERY|EQUIPMENT|CUSTOMER|INVOICE|RELIANT|HALOES)/i.test(potentialName);
+      const notCityState = !/(LV NV|Las Vegas|Henderson)/i.test(potentialName);
+      const notSkipWord = !skipWords.some(skip => potentialName.includes(skip));
+
+      // Debug why names are rejected
+      if (!hasMultipleWords || !reasonableLength || !notHeader || !notCityState || !notSkipWord) {
+        const reasons = [];
+        if (!hasMultipleWords) reasons.push("single word");
+        if (!reasonableLength) reasons.push(`length ${potentialName.length}`);
+        if (!notHeader) reasons.push("is header");
+        if (!notCityState) reasons.push("is city/state");
+        if (!notSkipWord) reasons.push("in skip list");
+        console.log(`  ✗ Rejected: "${potentialName}" - ${reasons.join(", ")}`);
+      }
+
+      if (hasMultipleWords && reasonableLength && notHeader && notCityState && notSkipWord) {
+        console.log("✓ Found patient name:", potentialName);
+
+        // Save previous patient if exists
+        if (currentPatient && currentEquipments.length > 0) {
+          extractedPatients.push({
+            name: currentPatient,
+            equipments: [...currentEquipments],
+            amt_invoice: currentTotalAmount || 0
+          });
+          console.log("Saved patient:", currentPatient, "with", currentEquipments.length, "equipment items, total:", currentTotalAmount);
+        }
+
+        // Start new patient
+        currentPatient = potentialName;
+        currentEquipments = [];
+        currentTotalAmount = 0; // Reset total for new patient
+
+        // Extract TOTAL from patient name line using column position
+        if (totalColumnStart > 0) {
+          const totalColumnText = line.substring(totalColumnStart);
+          const amountMatch = totalColumnText.match(/\$(\d+(?:,\d{3})*(?:\.\d{2})?)/);
+          if (amountMatch) {
+            const amount = parseFloat(amountMatch[1].replace(/,/g, ''));
+            currentTotalAmount += amount;
+            console.log("  Found TOTAL on patient line:", amountMatch[0], "->", amount);
+          }
+        }
+
+        // Log the next 20 lines after this patient for debugging
+        console.log(`--- Next 20 lines after ${potentialName} ---`);
+        for (let j = i + 1; j < Math.min(i + 21, lines.length); j++) {
+          console.log(`  [${j - i}] ${lines[j]}`);
+        }
+        console.log("--- End of preview ---");
+
+        continue;
+      }
+    }
+
+    // FIXED-WIDTH COLUMN APPROACH: Extract TOTAL from the correct column position
+    // Check for TOTAL amounts in the line (accumulate for current patient)
+    if (currentPatient) {
+      let totalAmount = null;
+
+      if (totalColumnStart > 0) {
+        // Extract text from TOTAL column position onwards
+        const totalColumnText = line.substring(totalColumnStart);
+
+        // Find the first dollar amount in this column
+        const amountMatch = totalColumnText.match(/\$(\d+(?:,\d{3})*(?:\.\d{2})?)/);
+
+        if (amountMatch) {
+          totalAmount = parseFloat(amountMatch[1].replace(/,/g, ''));
+        }
+      } else {
+        // Fallback: use the last dollar amount at the end of the line
+        const trimmedLine = line.trim();
+        const endOfLine = trimmedLine.slice(-15);
+        const amountMatch = endOfLine.match(/\$(\d+(?:,\d{3})*(?:\.\d{2})?)$/);
+
+        if (amountMatch) {
+          totalAmount = parseFloat(amountMatch[1].replace(/,/g, ''));
+        }
+      }
+
+      if (totalAmount !== null) {
+        currentTotalAmount += totalAmount;
+        console.log("  Line:", line.trim().substring(0, 80));
+        console.log("  Extracted TOTAL:", totalAmount, "-> Running total:", currentTotalAmount);
+      }
+    }
+
+    // Check if line contains equipment
+    if (currentPatient) {
+      // Debug logging for JEANNETTE KUEHN specifically
+      if (currentPatient.includes("JEANNETTE")) {
+        console.log(`  Checking line for JEANNETTE: "${line}"`);
+        // Show first 50 chars with character codes for quote debugging
+        const preview = line.substring(0, 50);
+        const charCodes = Array.from(preview).map((c, i) =>
+          `${c}(${c.charCodeAt(0)})`
+        ).join(' ');
+        console.log(`    Char codes: ${charCodes}`);
+      }
+
+      // Skip lines that are clearly addresses or locations (but not equipment with dates)
+      const hasEquipmentKeyword = equipmentKeywords.some(kw => line.includes(kw));
+
+      const isLocation = /^(Henderson|Las Vegas|LV|NV|\d+\s+[A-Z][a-z]+)/i.test(line) && !hasEquipmentKeyword;
+      const hasLocationWords = /(Henderson|Las Vegas|NV \d|Unit|Ofc|Bldg|Apt)/i.test(line) && !hasEquipmentKeyword;
+
+      if (isLocation || hasLocationWords) {
+        continue; // Skip location lines
+      }
+
+      // Also check common equipment patterns (after dates)
+      // Note: Check for dimensions like 15", 18" etc (handle both straight and curly quotes)
+      const startsWithEquipment = /^(Half|Full|FE|APP|Low|High|3-IN-1|5L|15["\u201C\u201D]|18["\u201C\u201D]|E-Tank|Overbed|Front|Shower|Transfer|Hoyer|Suction|Nebulizer|\d+["\u201C\u201D]|STD)/i.test(line);
+
+      // Check if line has date followed by equipment
+      const dateWithEquipment = /^\d+\/\d+\/\d+\s+/.test(line) && hasEquipmentKeyword;
+
+      if (hasEquipmentKeyword || startsWithEquipment || dateWithEquipment) {
+        console.log("  Processing potential equipment line:", line);
+
+        // For lines with multiple pieces of info, extract just equipment names
+        // Common pattern: "MAR   Equipment Name   1" or "Date   Equipment Name   Qty"
+        let equipment = line;
+
+        // If line starts with MAR, remove it
+        equipment = equipment.replace(/^MAR\s+/i, '');
+
+        // Remove dates at start or in middle
+        equipment = equipment.replace(/^\d+\/\d+\/\d+\s+/, '');
+        equipment = equipment.replace(/\s+\d+\/\d+\/\d+.*$/g, '');
+
+        // Remove prices and QTY/RATE/TOTAL columns
+        // Pattern: "equipment   qty   rate   total" -> keep just "equipment"
+        equipment = equipment.replace(/\s+\d+\s+\$[\d,\.]+.*$/g, ''); // Remove "qty $rate ..."
+        equipment = equipment.replace(/\s+\$[\d,\.]+.*$/g, ''); // Remove "$amount ..."
+
+        // Remove pickup notes
+        equipment = equipment.replace(/\s*\(PU[^)]*\)/gi, '');
+
+        // Remove SWAP, MISSING, Purchase, Gratis, etc.
+        equipment = equipment.replace(/\s*(SWAP:?|MISSING|Purchase|Gratis|addtl\s+amb|sb\s+\d+\/\d+|gratis).*$/gi, '');
+
+        // Remove trailing quantity (single, double or triple digit number at end)
+        equipment = equipment.replace(/\s+\d{1,3}\s*$/g, '');
+
+        // Remove trailing single capital letters (location markers like R, GH)
+        equipment = equipment.replace(/\s+[RGH]+\s*$/g, '');
+
+        equipment = equipment.trim();
+
+        // Only add if it looks like valid equipment
+        const notLocation = !/(Henderson|Las Vegas|NV \d|Unit|Ofc|Bldg|Apt|Ave|Rd|St|Blvd|Circle|Way|Pkwy)/i.test(equipment);
+        const notMAR = equipment !== "MAR";
+        const notEmpty = equipment.length > 3;
+        const notJustNumbers = !/^\d+$/.test(equipment);
+        const notDailyRate = equipment !== "Daily Rate";
+
+        if (notLocation && notMAR && notEmpty && notJustNumbers && notDailyRate && !currentEquipments.includes(equipment)) {
+          currentEquipments.push(equipment);
+          console.log("  ✓ Added equipment:", equipment);
+        } else {
+          const reasons = [];
+          if (!notLocation) reasons.push("is location");
+          if (!notMAR) reasons.push("is MAR");
+          if (!notEmpty) reasons.push("too short");
+          if (!notJustNumbers) reasons.push("just numbers");
+          if (!notDailyRate) reasons.push("is Daily Rate");
+          if (currentEquipments.includes(equipment)) reasons.push("duplicate");
+          console.log("  ✗ Skipped:", equipment, "- Reason:", reasons.join(", "));
+        }
+      }
+    }
+  }
+
+  // Don't forget the last patient
+  if (currentPatient && currentEquipments.length > 0) {
+    extractedPatients.push({
+      name: currentPatient,
+      equipments: [...currentEquipments],
+      amt_invoice: currentTotalAmount || 0
+    });
+    console.log("Saved final patient:", currentPatient, "with", currentEquipments.length, "equipment items, total:", currentTotalAmount);
+  }
+
+  console.log("Total patients extracted:", extractedPatients.length);
+  return extractedPatients;
+}
+
+// =============================================================
+// DATA: Will be populated from PDF upload and parent component
+// =============================================================
+let patients = [];
+
+// List of available patient codes - will be populated from parent component
+let patientCodes = [];
+
+// Listen for patient data from parent React component
+window.addEventListener('message', (event) => {
+  // Security: In production, verify event.origin
+  if (event.data && event.data.type === 'PATIENT_DATA') {
+    patientCodes = event.data.patientCodes || [];
+    console.log('Received patient codes from parent:', patientCodes.length);
+
+    // Re-render table if we already have extracted patients
+    if (patients.length > 0) {
+      renderTable();
+    }
+  }
+});
+
+// =============================================================
+// DOM references
+// =============================================================
+const tbody = document.getElementById("patient-tbody");
+const progressPill = document.getElementById("progress-pill");
+const submitBtn = document.getElementById("submit-btn");
+const resetBtn = document.getElementById("reset-btn");
+const resultPanel = document.getElementById("result-panel");
+
+// =============================================================
+// Build a single table row for a patient
+// =============================================================
+function buildRow(patient, idx) {
+  const tr = document.createElement("tr");
+
+  // Patient Cd column (dropdown)
+  const tdCode = document.createElement("td");
+  const select = document.createElement("select");
+  select.dataset.idx = idx;
+  const blank = document.createElement("option");
+  blank.value = "";
+  blank.textContent = "— select —";
+  select.appendChild(blank);
+  patientCodes.forEach(patientCode => {
+    const opt = document.createElement("option");
+    // Handle both old format (string) and new format (object with code and name)
+    if (typeof patientCode === 'string') {
+      opt.value = patientCode;
+      opt.textContent = patientCode;
+    } else {
+      opt.value = patientCode.code;
+      opt.textContent = `${patientCode.code} ${patientCode.name}`;
+    }
+    select.appendChild(opt);
+  });
+  select.addEventListener("change", updateProgress);
+  tdCode.appendChild(select);
+  tr.appendChild(tdCode);
+
+  // Patient Name column
+  const tdName = document.createElement("td");
+  tdName.className = "name";
+  tdName.textContent = patient.name;
+  tr.appendChild(tdName);
+
+  // Equipments column
+  const tdEquip = document.createElement("td");
+  const chipWrap = document.createElement("div");
+  chipWrap.className = "chip-wrap";
+  patient.equipments.forEach(eq => {
+    const chip = document.createElement("span");
+    chip.className = "chip";
+    chip.textContent = eq;
+    chipWrap.appendChild(chip);
+  });
+  tdEquip.appendChild(chipWrap);
+  tr.appendChild(tdEquip);
+
+  // Invoice Amount column
+  const tdAmount = document.createElement("td");
+  tdAmount.style.textAlign = "right";
+  tdAmount.style.fontWeight = "500";
+  tdAmount.textContent = patient.amt_invoice ? `$${patient.amt_invoice.toFixed(2)}` : '$0.00';
+  tr.appendChild(tdAmount);
+
+  return tr;
+}
+
+// Render all rows (initial render will be empty until PDF is uploaded)
+function renderTable() {
+  tbody.innerHTML = "";
+  patients.forEach((p, i) => tbody.appendChild(buildRow(p, i)));
+  updateProgress();
+  updateGrandTotal();
+}
+
+// Update grand total
+function updateGrandTotal() {
+  const grandTotalCell = document.getElementById("grand-total");
+  const total = patients.reduce((sum, p) => sum + (p.amt_invoice || 0), 0);
+  grandTotalCell.textContent = `$${total.toFixed(2)}`;
+}
+
+renderTable();
+
+// =============================================================
+// Progress indicator
+// =============================================================
+function updateProgress() {
+  const selects = tbody.querySelectorAll("select");
+  let filled = 0;
+  selects.forEach(s => { if (s.value) filled++; });
+
+  if (patients.length === 0) {
+    progressPill.textContent = "No data - Please upload PDF";
+    progressPill.classList.remove("complete");
+  } else {
+    progressPill.textContent = filled + " of " + patients.length + " mapped";
+    progressPill.classList.toggle("complete", filled === patients.length);
+  }
+}
+
+// =============================================================
+// Reset button
+// =============================================================
+resetBtn.addEventListener("click", () => {
+  tbody.querySelectorAll("select").forEach(s => { s.value = ""; });
+  resultPanel.style.display = "none";
+  updateProgress();
+});
+
+// =============================================================
+// Submit button — validates and renders the final mapping
+// =============================================================
+submitBtn.addEventListener("click", () => {
+  const selects = tbody.querySelectorAll("select");
+  const mapping = [];
+  const usedCodes = {};
+  let duplicate = null;
+  let missing = 0;
+
+  selects.forEach((s, i) => {
+    const code = s.value;
+    if (!code) { missing++; return; }
+    if (usedCodes[code]) { duplicate = code; }
+    usedCodes[code] = true;
+    mapping.push({
+      code: code,
+      name: patients[i].name,
+      equipments: patients[i].equipments,
+      amt_invoice: patients[i].amt_invoice || 0
+    });
+  });
+
+  resultPanel.style.display = "block";
+
+  if (missing > 0) {
+    resultPanel.innerHTML =
+      '<div class="result-warning">⚠ ' + missing +
+      ' patient(s) still need a code assigned.</div>';
+    return;
+  }
+  if (duplicate) {
+    resultPanel.innerHTML =
+      '<div class="result-danger">⚠ Code ' + duplicate +
+      ' is assigned to more than one patient.</div>';
+    return;
+  }
+
+  // Build summary table
+  const totalInvoiceAmount = mapping.reduce((sum, m) => sum + (m.amt_invoice || 0), 0);
+
+  let html = '<div class="result-success">✓ Submitted — ' +
+    mapping.length + ' patients mapped | Total: $' + totalInvoiceAmount.toFixed(2) + '</div>';
+  html += '<table style="width:100%; border-collapse:collapse; font-size:13px;">';
+  html += '<thead><tr style="border-bottom:0.5px solid rgba(0,0,0,0.15);">' +
+          '<th style="text-align:left; padding:6px 8px; color:#666; font-weight:500;">Patient Cd</th>' +
+          '<th style="text-align:left; padding:6px 8px; color:#666; font-weight:500;">Patient Name</th>' +
+          '<th style="text-align:left; padding:6px 8px; color:#666; font-weight:500;">Equipments</th>' +
+          '<th style="text-align:right; padding:6px 8px; color:#666; font-weight:500;">Invoice Amt</th>' +
+          '</tr></thead><tbody>';
+  mapping.forEach(m => {
+    html += '<tr style="border-bottom:0.5px solid rgba(0,0,0,0.1);">';
+    html += '<td class="code-cell" style="padding:8px; vertical-align:top;">' + m.code + '</td>';
+    html += '<td style="padding:8px; vertical-align:top; font-weight:500;">' + m.name + '</td>';
+    html += '<td style="padding:8px; vertical-align:top; color:#666;">' + m.equipments.join("; ") + '</td>';
+    html += '<td style="padding:8px; vertical-align:top; text-align:right; font-weight:500;">$' + (m.amt_invoice || 0).toFixed(2) + '</td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+
+  // Also log the result object to the console for programmatic use
+  console.log("Submitted mapping:", mapping);
+
+  resultPanel.innerHTML = html;
+});
+
+// Initial render
+updateProgress();
+</script>
+
+</body>
+</html>

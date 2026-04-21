@@ -1,10 +1,49 @@
 import moment from "moment";
+import React from "react";
+import { Warning } from "@material-ui/icons";
+import { Tooltip } from "@material-ui/core";
 
 class RoutesheetHandler {
-  static columns() {
+  static columns(main, thresholdHours = 48) {
     return [
       { width: 92, name: "actions", header: "Actions" },
-      { defaultFlex: 1, minWidth: 200, name: "patientCd", header: "Client" },
+      {
+        defaultFlex: 1,
+        minWidth: 200,
+        name: "patientCd",
+        header: "Client",
+        render: ({ data }) => {
+          // Check if we should show alert icon
+          const shouldShowAlert =
+            data.status === "Review" &&
+            data.dosStart &&
+            moment().diff(moment(data.dosStart), "hours") > thresholdHours;
+
+          const hoursSince = data.dosStart
+            ? moment().diff(moment(data.dosStart), "hours")
+            : 0;
+
+          return (
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              {shouldShowAlert && (
+                <Tooltip
+                  title={`Pending for ${hoursSince} hours (threshold: ${thresholdHours}h)`}
+                  placement="top"
+                >
+                  <Warning
+                    style={{
+                      color: "#ff9800",
+                      fontSize: "20px",
+                      cursor: "pointer",
+                    }}
+                  />
+                </Tooltip>
+              )}
+              <span>{data.patientCd || "-"}</span>
+            </div>
+          );
+        },
+      },
 
       {
         defaultFlex: 1,
