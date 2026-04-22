@@ -12,6 +12,11 @@ import {
   Typography,
   Divider,
   Box,
+  IconButton,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemSecondaryAction,
 } from "@material-ui/core";
 import { DEFAULT_ITEM } from "utils/constants";
 import { makeStyles } from "@material-ui/core";
@@ -32,7 +37,7 @@ import { getCountiesByState } from "utils/usCounties";
 import BenefitPeriodCalculator from "utils/BenefitPeriodCalculator";
 import ModalFooter from "components/Modal/ModalFooter/ModalFooter";
 import CardHeader from "components/Card/CardHeader";
-import { Clear } from "@material-ui/icons";
+import { Clear, Delete, Add, Edit } from "@material-ui/icons";
 
 let categoryList = [];
 let uoms = [];
@@ -140,6 +145,14 @@ function PatientForm(props) {
   const [counties, setCounties] = useState([]);
   const [patientIdentity, setPatientIdentity] = useState("");
   const [patientIdentityError, setPatientIdentityError] = useState("");
+
+  // DME State
+  const [dmeList, setDmeList] = useState([]);
+  const [newDmeEquipment, setNewDmeEquipment] = useState("");
+  const [editingDmeIndex, setEditingDmeIndex] = useState(null);
+  const [dmeLastDate, setDmeLastDate] = useState(null);
+  const [dmeEndContract, setDmeEndContract] = useState(null);
+
   const { isOpen } = props;
 
   useEffect(() => {
@@ -425,6 +438,20 @@ function PatientForm(props) {
         name: "newHospiceDod",
         cols: 6,
       },
+      // DME SECTION
+      {
+        id: "dmeHeader",
+        component: "sectionheader",
+        label: "DME Information",
+        cols: 12,
+      },
+      {
+        id: "dmeSection",
+        component: "dme",
+        label: "DME Equipment",
+        name: "dme",
+        cols: 12,
+      },
     ];
     setComponents(general);
 
@@ -514,6 +541,21 @@ function PatientForm(props) {
         };
       }
 
+      // Load DME data
+      if (props.item.dme && Array.isArray(props.item.dme)) {
+        setDmeList(props.item.dme);
+      } else {
+        setDmeList([]);
+      }
+
+      if (props.item.dme_last_dt) {
+        setDmeLastDate(props.item.dme_last_dt);
+      }
+
+      if (props.item.dme_end_contract) {
+        setDmeEndContract(props.item.dme_end_contract);
+      }
+
       setPatientIdentity(fm.patientCd);
       setGeneralForm(fm);
     }
@@ -545,6 +587,41 @@ function PatientForm(props) {
     }
     return src.numberOfBenefits;
   };
+  // DME Handlers
+  const handleAddDmeEquipment = () => {
+    if (newDmeEquipment.trim()) {
+      if (editingDmeIndex !== null) {
+        // Update existing equipment
+        const updatedList = [...dmeList];
+        updatedList[editingDmeIndex] = newDmeEquipment.trim();
+        setDmeList(updatedList);
+        setEditingDmeIndex(null);
+      } else {
+        // Add new equipment
+        setDmeList([...dmeList, newDmeEquipment.trim()]);
+      }
+      setNewDmeEquipment("");
+    }
+  };
+
+  const handleEditDmeEquipment = (index) => {
+    setNewDmeEquipment(dmeList[index]);
+    setEditingDmeIndex(index);
+  };
+
+  const handleDeleteDmeEquipment = (index) => {
+    const updatedList = dmeList.filter((_, i) => i !== index);
+    setDmeList(updatedList);
+  };
+
+  const handleDmeLastDateChange = (value) => {
+    setDmeLastDate(value ? moment(new Date(value)).format("YYYY-MM-DD") : null);
+  };
+
+  const handleDmeEndContractChange = (value) => {
+    setDmeEndContract(value ? moment(new Date(value)).format("YYYY-MM-DD") : null);
+  };
+
   const validateFormHandler = () => {
     const tempList = [...components];
     console.log("[tempList]", tempList, generalForm);
@@ -638,6 +715,12 @@ function PatientForm(props) {
       generalForm.patientCd = patientIdentity;
       generalForm.is_eligible_cap =
         checkCapEligibility() === "YES" ? true : false;
+
+      // Add DME data to the form
+      generalForm.dme = dmeList;
+      generalForm.dme_last_dt = dmeLastDate;
+      generalForm.dme_end_contract = dmeEndContract;
+
       props.createPatientHandler(generalForm, props.mode);
     }
   };
@@ -1104,6 +1187,128 @@ function PatientForm(props) {
                             errorMsg={item.isError ? item.errorMsg : ""}
                             value={generalForm[item.name]}
                           />
+                        </React.Fragment>
+                      ) : item.component === "dme" ? (
+                        <React.Fragment>
+                          <Box
+                            style={{
+                              padding: "16px",
+                              backgroundColor: "#fafafa",
+                              borderRadius: "8px",
+                              border: "1px solid #e0e0e0",
+                            }}
+                          >
+                            {/* DME Last Date and End Contract */}
+                            <Grid container spacing={2} style={{ marginBottom: 16 }}>
+                              <Grid item xs={12} md={6}>
+                                <CustomDatePicker
+                                  label="DME Last Invoice Date"
+                                  name="dme_last_dt"
+                                  value={dmeLastDate}
+                                  onChange={handleDmeLastDateChange}
+                                  noDefault={true}
+                                  disabled={props.mode === "view"}
+                                />
+                              </Grid>
+                              <Grid item xs={12} md={6}>
+                                <CustomDatePicker
+                                  label="DME End Contract Date"
+                                  name="dme_end_contract"
+                                  value={dmeEndContract}
+                                  onChange={handleDmeEndContractChange}
+                                  noDefault={true}
+                                  disabled={props.mode === "view"}
+                                />
+                              </Grid>
+                            </Grid>
+
+                            {/* Add/Edit Equipment Input */}
+                            {props.mode !== "view" && (
+                              <Grid container spacing={2} style={{ marginBottom: 16 }}>
+                                <Grid item xs={12} md={9}>
+                                  <CustomTextField
+                                    label={editingDmeIndex !== null ? "Edit Equipment" : "Add New Equipment"}
+                                    placeholder="Enter equipment name"
+                                    name="newDmeEquipment"
+                                    value={newDmeEquipment}
+                                    onChange={(e) => setNewDmeEquipment(e.target.value)}
+                                    onKeyPress={(e) => {
+                                      if (e.key === "Enter") {
+                                        e.preventDefault();
+                                        handleAddDmeEquipment();
+                                      }
+                                    }}
+                                  />
+                                </Grid>
+                                <Grid item xs={12} md={3}>
+                                  <Button
+                                    variant="contained"
+                                    color="primary"
+                                    onClick={handleAddDmeEquipment}
+                                    startIcon={editingDmeIndex !== null ? <Edit /> : <Add />}
+                                    fullWidth
+                                    style={{ marginTop: 8 }}
+                                  >
+                                    {editingDmeIndex !== null ? "Update" : "Add"}
+                                  </Button>
+                                  {editingDmeIndex !== null && (
+                                    <Button
+                                      variant="outlined"
+                                      onClick={() => {
+                                        setEditingDmeIndex(null);
+                                        setNewDmeEquipment("");
+                                      }}
+                                      fullWidth
+                                      style={{ marginTop: 8 }}
+                                    >
+                                      Cancel
+                                    </Button>
+                                  )}
+                                </Grid>
+                              </Grid>
+                            )}
+
+                            {/* DME Equipment List */}
+                            <Typography variant="subtitle2" style={{ marginBottom: 8, fontWeight: 600 }}>
+                              Equipment List ({dmeList.length})
+                            </Typography>
+                            {dmeList.length === 0 ? (
+                              <Typography variant="body2" color="textSecondary" style={{ padding: 16, textAlign: "center" }}>
+                                No equipment added yet
+                              </Typography>
+                            ) : (
+                              <List style={{ backgroundColor: "white", borderRadius: 4 }}>
+                                {dmeList.map((equipment, index) => (
+                                  <ListItem key={index} divider={index < dmeList.length - 1}>
+                                    <ListItemText
+                                      primary={equipment}
+                                      primaryTypographyProps={{ style: { fontWeight: 500 } }}
+                                    />
+                                    {props.mode !== "view" && (
+                                      <ListItemSecondaryAction>
+                                        <IconButton
+                                          edge="end"
+                                          aria-label="edit"
+                                          onClick={() => handleEditDmeEquipment(index)}
+                                          style={{ marginRight: 8 }}
+                                        >
+                                          <Edit />
+                                        </IconButton>
+                                        <IconButton
+                                          edge="end"
+                                          aria-label="delete"
+                                          onClick={() => handleDeleteDmeEquipment(index)}
+                                          color="secondary"
+                                        >
+                                          <Delete />
+                                        </IconButton>
+                                      </ListItemSecondaryAction>
+                                    )}
+                                  </ListItem>
+                                ))}
+                              </List>
+                            )}
+                          </Box>
                         </React.Fragment>
                       ) : null}
                     </Grid>

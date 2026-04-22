@@ -511,6 +511,12 @@ function handleSubmitInvoice() {
       })
       .filter(eq => eq.length > 0);
 
+    // Remove duplicates (case-insensitive)
+    const uniqueEquipmentItems = equipmentItems.filter((item, index, self) => {
+      const normalizedItem = item.trim().toLowerCase();
+      return index === self.findIndex(e => e.trim().toLowerCase() === normalizedItem);
+    });
+
     // Calculate total
     const totalAmount = patient.rows.reduce((sum, row) => {
       if (row.total) {
@@ -522,7 +528,7 @@ function handleSubmitInvoice() {
     invoiceItems.push({
       patientCd: patientCd,
       patientName: patientName,
-      equipments: equipmentItems,
+      equipments: uniqueEquipmentItems,
       invoice_amt: totalAmount
     });
   });
