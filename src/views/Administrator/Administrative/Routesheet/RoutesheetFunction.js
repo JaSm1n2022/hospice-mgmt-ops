@@ -794,6 +794,7 @@ function RoutesheetFunction(props) {
                       <FilterTable
                         filterRecordHandler={filterRecordHandler}
                         filterByDateHandler={filterByDateHandler}
+                        dateRangeSelection="thisWeek"
                       />
                     </GridItem>
                     <GridItem md={2} sm={4} xs={12}>

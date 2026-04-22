@@ -20,24 +20,21 @@ DATE_TYPE_SELECTION.forEach((c) => {
 const FilterTable = (props) => {
   const [keywordValue, setKeywordValue] = useState("");
   const [dateSelected, setDateSelected] = useState(
-    dateOptions.find((d) => d.value === "thisMonth")
+    dateOptions.find((d) => d.value === (props.dateRangeSelection || "thisMonth"))
   );
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [isDateCustom, setIsDateCustom] = useState(false);
 
   useEffect(() => {
-    const dates = Helper.formatDateRangeByCriteriaV2(
-      props.dateRangeSelection || "thisMonth"
+    const dateRangeValue = props.dateRangeSelection || "thisMonth";
+    const dates = Helper.formatDateRangeByCriteriaV2(dateRangeValue);
+    setDateSelected(
+      dateOptions.find((d) => d.value === dateRangeValue)
     );
-    if (props.dateRangeSelection) {
-      setDateSelected(
-        dateOptions.find((d) => d.value === props.dateRangeSelection)
-      );
-    }
     setDateFrom(dates.from);
     setDateTo(dates.to);
-  }, []);
+  }, [props.dateRangeSelection]);
 
   const inputHandler = ({ target }) => {
     switch (target.name) {
