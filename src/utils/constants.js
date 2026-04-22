@@ -182,6 +182,7 @@ export const CLIENT_SERVICES = [
     isClientRequired: true,
     permission: ["Case Manager", "Registered Nurse", "Director of Nurse"],
   },
+
   {
     code: "ATD",
     name: "Attendance",
@@ -1612,11 +1613,19 @@ export const EMPLOYEE_SERVICE_TYPE = [
   },
   {
     id: 21,
-    name: "Reassessment",
-    label: "Reassessment",
-    value: "Reassessment",
+    name: "Reassessment Visit",
+    label: "Reassessment Visit",
+    value: "Reassessment Visit",
     category: "serviceType",
     code: "REA",
+  },
+  {
+    id: 22,
+    name: "Recertification Visit",
+    label: "Recertification Visit",
+    value: "Recertification Visit",
+    category: "serviceType",
+    code: "RC",
   },
   {
     id: 80,

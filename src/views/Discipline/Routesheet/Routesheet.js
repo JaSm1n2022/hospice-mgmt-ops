@@ -593,7 +593,7 @@ function Routesheet(props) {
       isValid = false;
     }
     if (!isSigned) {
-      setSignatureError({ isError: true, message: "Signature is required." });
+      setSignatureError({ isError: true, message: "Client signature is required." });
       console.log("[IS INVALID SIGNATURE]");
       isValid = false;
     }
@@ -1591,11 +1591,11 @@ function Routesheet(props) {
                               <Gesture />
                             </CardIcon>
 
-                            <h4 className={classes.cardIconTitle}>Signature</h4>
+                            <h4 className={classes.cardIconTitle}>Client Signature</h4>
                           </div>
                         </div>
                         {signaturePreview && (
-                          <Tooltip title="Clear Signature">
+                          <Tooltip title="Clear Client Signature">
                             <ClearOutlined
                               style={{ color: "red", cursor: "pointer" }}
                               onClick={clearSignatureHandler}
@@ -1698,7 +1698,7 @@ function Routesheet(props) {
             <Close className={classes2.modalClose} />
           </Button>
           <div align="center">
-            <h4 className={classes2.modalTitle}>Add Your Signature</h4>
+            <h4 className={classes2.modalTitle}>Add Client Signature</h4>
           </div>
         </DialogTitle>
         <DialogContent id="signature-modal-content">

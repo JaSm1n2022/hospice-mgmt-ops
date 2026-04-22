@@ -33,6 +33,7 @@ import trainingReducer from "./training";
 import certificationReducer from "./certification";
 import incomeReducer from "./income";
 import potentialAdmissionReducer from "./potentialAdmission";
+import dmeInvoiceReducer from "./dmeInvoice";
 export default combineReducers({
   invoice: invoiceReducer,
   product: productReducer,
@@ -68,4 +69,5 @@ export default combineReducers({
   training: trainingReducer,
   certification: certificationReducer,
   income: incomeReducer,
+  dmeInvoice: dmeInvoiceReducer,
 });

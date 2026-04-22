@@ -24,6 +24,7 @@ import profileSaga from "./profileSaga";
 import proofSaga from "./proofSaga";
 import overheadSaga from "./overheadSaga";
 import dmeSaga from "./dmeSaga";
+import dmeInvoiceSaga from "./dmeInvoiceSaga";
 import contractSaga from "./contractSaga";
 import payrollSaga from "./payrollSaga";
 import categorySaga from "./categorySaga";
@@ -62,6 +63,7 @@ export function* rootSaga() {
     proofSaga(),
     overheadSaga(),
     dmeSaga(),
+    dmeInvoiceSaga(),
     contractSaga(),
     payrollSaga(),
     categorySaga(),

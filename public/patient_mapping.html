@@ -92,29 +92,10 @@ window.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'PATIENT_DATA') {
     const allPatients = event.data.patientCodes || [];
 
-    // Filter patients: Active OR Inactive with EOC within 60 days
-    const today = new Date();
-    const sixtyDaysAgo = new Date(today);
-    sixtyDaysAgo.setDate(today.getDate() - 60);
+    // Use all patients without filtering
+    patientCodesList = allPatients;
 
-    patientCodesList = allPatients.filter(patient => {
-      const patientData = patient.fullData || patient;
-
-      // Include if patient is active
-      if (patientData.status === 'Active' || patientData.status === 'active') {
-        return true;
-      }
-
-      // Include if patient is inactive but EOC is within 60 days
-      if (patientData.eoc_date || patientData.eocDate) {
-        const eocDate = new Date(patientData.eoc_date || patientData.eocDate);
-        return eocDate >= sixtyDaysAgo;
-      }
-
-      return false;
-    });
-
-    console.log('✓ Received and filtered', patientCodesList.length, 'eligible patients');
+    console.log('✓ Received', patientCodesList.length, 'patients');
 
     // Re-render if we already have extracted data
     if (globalPatients.length > 0) {
@@ -437,10 +418,119 @@ function renderDMEInvoice(container, patients) {
     }, 0);
   }, 0);
 
+  // Grand Total row
   const totalRow = document.createElement('div');
-  totalRow.style.cssText = 'margin-top: 1rem; text-align: right; font-size: 16px; font-weight: 600;';
-  totalRow.innerHTML = `Grand Total: $${grandTotal.toFixed(2)}`;
+  totalRow.style.cssText = 'margin-top: 1rem; text-align: right;';
+  totalRow.innerHTML = `
+    <div style="font-size: 16px; font-weight: 600;">Grand Total: $${grandTotal.toFixed(2)}</div>
+  `;
   container.appendChild(totalRow);
+
+  // Submit button on next line
+  const submitRow = document.createElement('div');
+  submitRow.style.cssText = 'margin-top: 1rem; text-align: right;';
+  submitRow.innerHTML = `
+    <button id="submit-dme-invoice" style="padding: 10px 24px; background: #0c447c; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer;">
+      Submit Invoice
+    </button>
+  `;
+  container.appendChild(submitRow);
+
+  // Add submit button event listener
+  setTimeout(() => {
+    const submitBtn = document.getElementById('submit-dme-invoice');
+    if (submitBtn) {
+      submitBtn.addEventListener('click', handleSubmitInvoice);
+    }
+  }, 0);
+}
+
+function handleSubmitInvoice() {
+  // Validate that all patients have selected codes
+  const table = document.querySelector('#output table tbody');
+  const rows = table.querySelectorAll('tr');
+  const invoiceItems = [];
+  let hasError = false;
+
+  rows.forEach((row, idx) => {
+    const select = row.querySelector('select');
+    const patientCd = select ? select.value : '';
+
+    if (!patientCd) {
+      hasError = true;
+      select.style.border = '2px solid #791f1f';
+      return;
+    } else {
+      select.style.border = '1px solid #ccc';
+    }
+
+    const patient = globalPatients[idx];
+    if (!patient) return;
+
+    const patientName = patient.patientName ||
+                       (patient.rows.length > 0 ? patient.rows[0].patient_name : '');
+
+    // Collect equipment
+    const equipmentItems = patient.rows
+      .map(row => row.equipment)
+      .filter(eq => eq && eq.trim().length > 0 && eq.trim() !== 'Daily Rate')
+      .map(eq => {
+        let cleaned = eq;
+        cleaned = cleaned.replace(/\(PU[^)]*\)/gi, '').trim();
+        if (cleaned.toLowerCase().includes('e-tank') && cleaned.includes(',')) {
+          cleaned = cleaned
+            .replace(/E-Tank,Cart,Reg/gi, 'E-tank Cart Reg')
+            .replace(/E-Tank,\s*Cart,\s*Reg/gi, 'E-tank Cart Reg');
+        }
+        return cleaned;
+      })
+      .filter(eq => eq.length > 0);
+
+    // Calculate total
+    const totalAmount = patient.rows.reduce((sum, row) => {
+      if (row.total) {
+        return sum + (parseFloat(row.total.replace(/[$,]/g, '')) || 0);
+      }
+      return sum;
+    }, 0);
+
+    invoiceItems.push({
+      patientCd: patientCd,
+      patientName: patientName,
+      equipments: equipmentItems,
+      invoice_amt: totalAmount
+    });
+  });
+
+  if (hasError) {
+    alert('Please select a patient code for all patients before submitting.');
+    return;
+  }
+
+  // Ask for invoice date
+  const invoiceDate = prompt('Enter Invoice Date (YYYY-MM-DD):');
+
+  if (!invoiceDate) {
+    return; // User cancelled
+  }
+
+  // Validate date format
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  if (!dateRegex.test(invoiceDate)) {
+    alert('Invalid date format. Please use YYYY-MM-DD format.');
+    return;
+  }
+
+  // Send data back to parent component
+  window.parent.postMessage({
+    type: 'SUBMIT_DME_INVOICE',
+    data: {
+      invoice_dt: invoiceDate,
+      items: invoiceItems
+    }
+  }, '*');
+
+  console.log('✓ Submitted DME Invoice:', { invoice_dt: invoiceDate, items: invoiceItems });
 }
 
 // ────────────────────────────────────────────────────────────────

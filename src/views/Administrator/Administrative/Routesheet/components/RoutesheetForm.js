@@ -12,7 +12,17 @@ import {
   TextareaAutosize,
   Tooltip,
   Typography,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Radio,
+  RadioGroup,
+  FormControlLabel,
+  Slide,
 } from "@material-ui/core";
+import { Close } from "@material-ui/icons";
 import { DEFAULT_ITEM } from "utils/constants";
 import CardBody from "components/Card/CardBody";
 import { makeStyles } from "@material-ui/core";
@@ -49,6 +59,10 @@ import {
 
 let categoryList = [];
 let uoms = [];
+
+const Transition = React.forwardRef(function Transition(props, ref) {
+  return <Slide direction="down" ref={ref} {...props} />;
+});
 
 const COMMENT_OPTIONS = [
   { value: "", label: "-- Select a Comment --" },
@@ -192,6 +206,11 @@ function RoutesheetForm(props) {
     isError: false,
     message: "",
   });
+  const [signatureModal, setSignatureModal] = useState(false);
+  const [signatureMode, setSignatureMode] = useState("draw"); // "draw" or "type"
+  const [typedName, setTypedName] = useState("");
+  const [selectedFont, setSelectedFont] = useState("Dancing Script");
+  const [signaturePreview, setSignaturePreview] = useState(null);
   const { isOpen } = props;
 
   useEffect(() => {
@@ -274,6 +293,7 @@ function RoutesheetForm(props) {
       const timer = setTimeout(() => {
         if (sigCanvas.current) {
           sigCanvas.current.fromDataURL(props.item.signature_based);
+          setSignaturePreview(props.item.signature_based);
           isSigned = true; // Mark as signed
           setIsRefresh(!isRefresh); // Trigger refresh to update UI
         }
@@ -296,15 +316,21 @@ function RoutesheetForm(props) {
   };
 
   const autoCompleteGeneralHander = (item) => {
+    console.log("[autoCompleteGeneralHander] Item selected:", item);
     if (item.category === "service") {
+      console.log("[autoCompleteGeneralHander] Service selected:", item);
+      console.log("[autoCompleteGeneralHander] Current employee:", employee);
+      console.log("[autoCompleteGeneralHander] Current patient:", patient);
       setClientService(item);
       setServiceError({ isError: false, message: "" });
       setContractRateHandler(patient?.name, item);
       setOtherServiceError({ isError: false, message: "" });
     } else if (item.category === "user") {
+      console.log("[autoCompleteGeneralHander] Employee selected:", item);
       setEmployee(item);
       setEmployeeError({ isError: false, message: "" });
     } else if (item.category === "patient") {
+      console.log("[autoCompleteGeneralHander] Patient selected:", item);
       setPatient(item);
       setClientError({ isError: false, message: "" });
     }
@@ -371,21 +397,35 @@ function RoutesheetForm(props) {
   };
 
   const setContractRateHandler = (patientCd, service, emp) => {
+    console.log("[setContractRateHandler] Called with:", { patientCd, service, emp });
+    console.log("[setContractRateHandler] Current employee state:", employee);
+    console.log("[setContractRateHandler] props.contractList:", props.contractList);
+
     const em = employee?.id ? employee : emp;
+    console.log("[setContractRateHandler] Selected employee (em):", em);
+
+    if (!em || !em.id) {
+      console.log("[setContractRateHandler] ERROR: No valid employee found. em:", em);
+      console.log("[setContractRateHandler] Cannot proceed without employee ID");
+      return;
+    }
+
     let m = props.contractList.find(
       (c) =>
         c.serviceType?.toLowerCase() === service?.name?.toLowerCase() &&
         c.patientCd === patientCd &&
-        c.employeeId === emp.id
+        c.employeeId === em.id
     );
+    console.log("[setContractRateHandler] Contract with patient:", m);
     if (!m) {
       m = props.contractList.find(
         (c) =>
           c.serviceType?.toLowerCase() === service?.name?.toLowerCase() &&
-          c.employeeId === emp.id
+          c.employeeId === em.id
       );
+      console.log("[setContractRateHandler] Contract without patient filter:", m);
     }
-    console.log("[CONTRACT WITH PATIENT]", m);
+    console.log("[setContractRateHandler] Final contract:", m);
     currentContract = m;
     setContractRate(m?.serviceRate || 0);
     if (m?.isMileageRate) {
@@ -405,7 +445,45 @@ function RoutesheetForm(props) {
   const clearSignatureHandler = () => {
     isSigned = false;
     sigCanvas.current?.clear();
+    setSignaturePreview(null);
+    setTypedName("");
+    setSignatureMode("draw");
     setIsRefresh(!isRefresh);
+  };
+
+  const handleSignatureConfirm = () => {
+    if (signatureMode === "draw") {
+      const signImg = sigCanvas.current?.getCanvas().toDataURL("image/png");
+      setSignaturePreview(signImg);
+      isSigned = true;
+    } else if (signatureMode === "type" && typedName.trim()) {
+      // Create canvas with typed signature
+      const canvas = document.createElement("canvas");
+      canvas.width = 500;
+      canvas.height = 100;
+      const ctx = canvas.getContext("2d");
+
+      // Set background
+      ctx.fillStyle = "white";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Set text style
+      ctx.fillStyle = "green";
+      ctx.font = `48px '${selectedFont}', cursive`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(typedName, canvas.width / 2, canvas.height / 2);
+
+      const signImg = canvas.toDataURL("image/png");
+      setSignaturePreview(signImg);
+      isSigned = true;
+    }
+    setSignatureModal(false);
+    setSignatureError({ isError: false, message: "" });
+  };
+
+  const handleSignatureModalOpen = () => {
+    setSignatureModal(true);
   };
 
   const dateInputHandler = (value, name) => {
@@ -436,7 +514,8 @@ function RoutesheetForm(props) {
   };
 
   const validateFormHandler = () => {
-    const signImg = sigCanvas.current?.getCanvas().toDataURL("image/png");
+    const signImg =
+      signaturePreview || sigCanvas.current?.getCanvas().toDataURL("image/png");
     console.log(
       "[VALIDATE]",
       employee,
@@ -469,7 +548,7 @@ function RoutesheetForm(props) {
     }
 
     if (!isSigned) {
-      setSignatureError({ isError: true, message: "Signature is required." });
+      setSignatureError({ isError: true, message: "Client signature is required." });
       isValid = false;
     }
 
@@ -599,7 +678,7 @@ function RoutesheetForm(props) {
   return (
     <Modal
       open={isOpen}
-      onClose={true}
+      onClose={() => {}}
       aria-labelledby="routesheet"
       aria-describedby="routesheetmodal"
     >
@@ -948,56 +1027,58 @@ function RoutesheetForm(props) {
                               fontWeight: 400,
                             }}
                           >
-                            Signature
+                            Client Signature
                           </Typography>
                         </div>
                       </div>
                       <CardBody style={{ paddingTop: "30px" }}>
-                        <div
-                          style={{
-                            border: "2px dashed #ddd",
-                            borderRadius: "4px",
-                            padding: "10px",
-                            background: "#fafafa",
-                          }}
-                        >
-                          <ReactSignatureCanvas
-                            penColor="green"
-                            onBegin={(e) => onBeginHandler(e)}
-                            ref={(ref) => {
-                              sigCanvas.current = ref;
-                            }}
-                            canvasProps={{
-                              height: 80,
-                              width: "100%",
-                              style: {
-                                width: "100%",
-                                height: "80px",
-                                background: "white",
-                                borderRadius: "4px",
-                              },
-                              className: "sigCanvas",
-                            }}
-                          />
-                        </div>
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            marginTop: "10px",
-                          }}
-                        >
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            color="secondary"
-                            onClick={clearSignatureHandler}
-                            startIcon={<ClearOutlined />}
-                          >
-                            Clear
-                          </Button>
-                        </div>
+                        {!signaturePreview ? (
+                          <div style={{ textAlign: "center", padding: "20px" }}>
+                            <Button
+                              variant="contained"
+                              color="primary"
+                              onClick={handleSignatureModalOpen}
+                              startIcon={<Gesture />}
+                            >
+                              Sign Here
+                            </Button>
+                          </div>
+                        ) : (
+                          <div>
+                            <div style={{ textAlign: "center", padding: "10px" }}>
+                              <img
+                                src={signaturePreview}
+                                alt="Signature"
+                                style={{
+                                  maxWidth: "100%",
+                                  height: "auto",
+                                  border: "1px solid #ddd",
+                                  borderRadius: "4px",
+                                }}
+                              />
+                            </div>
+                            <div
+                              style={{
+                                display: "flex",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                marginTop: "10px",
+                              }}
+                            >
+                              <Tooltip title="Clear Client Signature">
+                                <Button
+                                  variant="outlined"
+                                  size="small"
+                                  color="secondary"
+                                  onClick={clearSignatureHandler}
+                                  startIcon={<ClearOutlined />}
+                                >
+                                  Clear
+                                </Button>
+                              </Tooltip>
+                            </div>
+                          </div>
+                        )}
                         {signatureError.isError && (
                           <SnackbarContent
                             message={signatureError.message}
@@ -1158,6 +1239,227 @@ function RoutesheetForm(props) {
             </CardBody>
           </Card>
         </Grid>
+
+        {/* Signature Modal */}
+        <Dialog
+          open={signatureModal}
+          TransitionComponent={Transition}
+          keepMounted
+          onClose={() => setSignatureModal(false)}
+          scroll="paper"
+          maxWidth="md"
+          fullWidth
+          aria-labelledby="signature-modal-title"
+          aria-describedby="signature-modal-description"
+        >
+        <DialogTitle id="signature-modal-title" disableTypography>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <Typography variant="h6">Add Client Signature</Typography>
+            <Button
+              onClick={() => setSignatureModal(false)}
+              color="default"
+              size="small"
+            >
+              <Close />
+            </Button>
+          </div>
+        </DialogTitle>
+        <DialogContent>
+          {/* Radio buttons for Draw/Type selection */}
+          <div style={{ marginBottom: "20px", textAlign: "center" }}>
+            <RadioGroup
+              row
+              value={signatureMode}
+              onChange={(e) => setSignatureMode(e.target.value)}
+              style={{ justifyContent: "center" }}
+            >
+              <FormControlLabel
+                value="draw"
+                control={<Radio color="primary" />}
+                label="Draw Signature"
+              />
+              <FormControlLabel
+                value="type"
+                control={<Radio color="primary" />}
+                label="Type Signature"
+              />
+            </RadioGroup>
+          </div>
+
+          {/* Draw Mode */}
+          {signatureMode === "draw" && (
+            <div>
+              <div
+                style={{
+                  marginBottom: "10px",
+                  textAlign: "center",
+                  color: "#666",
+                }}
+              >
+                <Typography variant="body2">
+                  Draw your signature below using your mouse or finger
+                </Typography>
+              </div>
+              <div
+                style={{
+                  border: "2px solid #00acc1",
+                  borderRadius: "8px",
+                  padding: "15px",
+                  backgroundColor: "#f9f9f9",
+                }}
+              >
+                <ReactSignatureCanvas
+                  penColor="green"
+                  onBegin={(e) => onBeginHandler(e)}
+                  ref={(ref) => {
+                    sigCanvas.current = ref;
+                  }}
+                  canvasProps={{
+                    height: window.innerWidth <= 768 ? 300 : 200,
+                    className: "sigCanvas",
+                    style: {
+                      width: "100%",
+                      border: "1px dashed #ccc",
+                      backgroundColor: "white",
+                      borderRadius: "4px",
+                    },
+                  }}
+                />
+              </div>
+              <div style={{ marginTop: "10px", textAlign: "center" }}>
+                <Button
+                  color="secondary"
+                  onClick={() => sigCanvas.current?.clear()}
+                >
+                  Clear Canvas
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Type Mode */}
+          {signatureMode === "type" && (
+            <div>
+              <div
+                style={{
+                  marginBottom: "20px",
+                  textAlign: "center",
+                  color: "#666",
+                }}
+              >
+                <Typography variant="body2">
+                  Type your name and select a signature style
+                </Typography>
+              </div>
+              <TextField
+                fullWidth
+                label="Type your name"
+                variant="outlined"
+                value={typedName}
+                onChange={(e) => setTypedName(e.target.value)}
+                style={{ marginBottom: "20px" }}
+              />
+
+              <div style={{ marginBottom: "10px" }}>
+                <Typography
+                  variant="subtitle2"
+                  style={{ marginBottom: "10px" }}
+                >
+                  Select signature style:
+                </Typography>
+                <RadioGroup
+                  value={selectedFont}
+                  onChange={(e) => setSelectedFont(e.target.value)}
+                >
+                  <FormControlLabel
+                    value="Dancing Script"
+                    control={<Radio color="primary" />}
+                    label={
+                      <span
+                        style={{
+                          fontFamily: "'Dancing Script', cursive",
+                          fontSize: "24px",
+                        }}
+                      >
+                        {typedName || "Dancing Script"}
+                      </span>
+                    }
+                  />
+                  <FormControlLabel
+                    value="Great Vibes"
+                    control={<Radio color="primary" />}
+                    label={
+                      <span
+                        style={{
+                          fontFamily: "'Great Vibes', cursive",
+                          fontSize: "24px",
+                        }}
+                      >
+                        {typedName || "Great Vibes"}
+                      </span>
+                    }
+                  />
+                  <FormControlLabel
+                    value="Pacifico"
+                    control={<Radio color="primary" />}
+                    label={
+                      <span
+                        style={{
+                          fontFamily: "'Pacifico', cursive",
+                          fontSize: "24px",
+                        }}
+                      >
+                        {typedName || "Pacifico"}
+                      </span>
+                    }
+                  />
+                  <FormControlLabel
+                    value="Satisfy"
+                    control={<Radio color="primary" />}
+                    label={
+                      <span
+                        style={{
+                          fontFamily: "'Satisfy', cursive",
+                          fontSize: "24px",
+                        }}
+                      >
+                        {typedName || "Satisfy"}
+                      </span>
+                    }
+                  />
+                  <FormControlLabel
+                    value="Allura"
+                    control={<Radio color="primary" />}
+                    label={
+                      <span
+                        style={{
+                          fontFamily: "'Allura', cursive",
+                          fontSize: "24px",
+                        }}
+                      >
+                        {typedName || "Allura"}
+                      </span>
+                    }
+                  />
+                </RadioGroup>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSignatureModal(false)} color="default">
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSignatureConfirm}
+            color="primary"
+            variant="contained"
+            disabled={signatureMode === "type" && !typedName.trim()}
+          >
+            Confirm Signature
+          </Button>
+        </DialogActions>
+      </Dialog>
       </div>
     </Modal>
   );

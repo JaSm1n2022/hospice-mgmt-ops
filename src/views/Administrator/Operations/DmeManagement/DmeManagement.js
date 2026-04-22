@@ -12,6 +12,8 @@ import CardBody from "components/Card/CardBody.js";
 // Redux actions and selectors
 import { attemptToFetchPatient } from "store/actions/patientAction";
 import { patientListStateSelector } from "store/selectors/patientSelector";
+import { attemptToCreateDmeInvoice } from "store/actions/dmeInvoiceAction";
+import { dmeInvoiceCreateStateSelector } from "store/selectors/dmeInvoiceSelector";
 
 // Context
 import { SupaContext } from "../../../../App";
@@ -45,6 +47,9 @@ function DmeManagement() {
   // Fetch patient list from Redux
   const patientListState = useSelector(patientListStateSelector);
   const patientList = patientListState?.data || [];
+
+  // Get DME invoice create state to monitor submit status
+  const dmeInvoiceCreateState = useSelector(dmeInvoiceCreateStateSelector);
 
   useEffect(() => {
     // Fetch patients when component mounts and companyId is available
@@ -92,6 +97,31 @@ function DmeManagement() {
       };
     }
   }, [patientList]);
+
+  useEffect(() => {
+    // Listen for submit message from iframe
+    const handleMessage = (event) => {
+      if (event.data && event.data.type === 'SUBMIT_DME_INVOICE') {
+        console.log('Received DME Invoice submit:', event.data);
+
+        const { invoice_dt, items } = event.data.data;
+
+        // Dispatch action to create DME invoice
+        dispatch(attemptToCreateDmeInvoice({
+          invoice_dt,
+          items,
+          companyId,
+          userProfile: context.userProfile,
+        }));
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, [dispatch, companyId, context.userProfile]);
 
   return (
     <GridContainer>
