@@ -547,6 +547,12 @@ function Routesheet(props) {
 
   const handleSignatureConfirm = () => {
     if (signatureMode === "draw") {
+      // Check if signature canvas is empty
+      if (sigCanvas.current?.isEmpty()) {
+        setSignatureError({ isError: true, message: "Please draw your signature before confirming." });
+        return;
+      }
+
       const signImg = sigCanvas.current?.getCanvas().toDataURL("image/png");
       setSignaturePreview(signImg);
       isSigned = true;
@@ -571,6 +577,9 @@ function Routesheet(props) {
       const signImg = canvas.toDataURL("image/png");
       setSignaturePreview(signImg);
       isSigned = true;
+    } else if (signatureMode === "type" && !typedName.trim()) {
+      setSignatureError({ isError: true, message: "Please type your name before confirming." });
+      return;
     }
     setSignatureModal(false);
     setSignatureError({ isError: false, message: "" });
@@ -1704,6 +1713,18 @@ function Routesheet(props) {
         <DialogContent id="signature-modal-content">
           <Card>
             <CardBody>
+              {/* Error Message Display */}
+              {signatureError.isError && (
+                <div style={{ marginBottom: "20px" }}>
+                  <SnackbarContent
+                    message={signatureError.message}
+                    color="rose"
+                    close
+                    icon={AddAlertOutlined}
+                  />
+                </div>
+              )}
+
               {/* Radio buttons for Draw/Type selection */}
               <div style={{ marginBottom: "20px", textAlign: "center" }}>
                 <RadioGroup
