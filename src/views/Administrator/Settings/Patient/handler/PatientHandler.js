@@ -7,7 +7,7 @@ import { Warning } from "@material-ui/icons";
 class PatientHandler {
   static columns(main) {
     return [
-      { width: 92, name: "actions", header: "Actions", visible: main },
+      { width: 180, name: "actions", header: "Actions", visible: main },
       {
         width: 60,
         name: "alert",
@@ -15,12 +15,19 @@ class PatientHandler {
         render: ({ data }) => {
           // Show alert icon if patient has EOC (non-death) but no post-discharge days
           const hasEoc = data.eoc;
-          const hasPostDischargeDays = data.new_hospice_care_day && parseInt(data.new_hospice_care_day, 10) > 0;
+          const hasPostDischargeDays =
+            data.new_hospice_care_day &&
+            parseInt(data.new_hospice_care_day, 10) > 0;
           const eocDischarge = data.eoc_discharge;
-          const isDeathDischarge = eocDischarge === "Death Discharge" ||
-                                   (eocDischarge && eocDischarge.toLowerCase().includes("death"));
+          const isDeathDischarge =
+            eocDischarge === "Death Discharge" ||
+            (eocDischarge && eocDischarge.toLowerCase().includes("death"));
 
-          const shouldShowAlert = hasEoc && !hasPostDischargeDays && eocDischarge && !isDeathDischarge;
+          const shouldShowAlert =
+            hasEoc &&
+            !hasPostDischargeDays &&
+            eocDischarge &&
+            !isDeathDischarge;
 
           if (!shouldShowAlert) return null;
 
