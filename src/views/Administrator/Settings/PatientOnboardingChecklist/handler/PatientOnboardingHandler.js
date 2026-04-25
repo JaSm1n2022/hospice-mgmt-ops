@@ -219,11 +219,29 @@ class PatientOnboardingHandler {
     });
   }
 
-  static calculateGroupStatus(checklistData, groupItems) {
-    // Only count mandatory items
-    const mandatoryItems = groupItems.filter(
-      (item) => item.mandatory !== false
-    );
+  static calculateGroupStatus(checklistData, groupItems, groupKey) {
+    // Special handling for bereavement section
+    const isBereavementGroup = groupKey === 'bereavement';
+    const bereavementApplicable = isBereavementGroup && checklistData?.isBereavementApplicable;
+
+    // Filter items based on bereavement applicability
+    const mandatoryItems = groupItems.filter((item) => {
+      if (item.mandatory === false) {
+        return false;
+      }
+
+      // For bereavement conditional items
+      if (isBereavementGroup && item.conditional) {
+        // If bereavement is not applicable (N), don't count conditional items
+        if (bereavementApplicable === 'N') {
+          return false;
+        }
+        // If bereavement is applicable (Y), count conditional items
+        return true;
+      }
+
+      return true;
+    });
 
     if (!checklistData) {
       return {
@@ -244,6 +262,11 @@ class PatientOnboardingHandler {
 
       // Skip non-mandatory items from completion calculation
       if (item.mandatory === false) {
+        return;
+      }
+
+      // Skip conditional bereavement items if bereavement is not applicable
+      if (isBereavementGroup && item.conditional && bereavementApplicable === 'N') {
         return;
       }
 
@@ -279,12 +302,21 @@ class PatientOnboardingHandler {
           incompleteItems.push(itemLabel);
         }
       } else if (item.type === "select") {
-        // For select fields (Y/N/NA), only "Y" and "NA" are considered complete
-        // "N" (No) is NOT counted as complete - it's a missing item
-        if (itemData && (itemData === "Y" || itemData === "NA")) {
-          completed++;
+        // Special case for "Is Bereavement Applicable" - Y, N, and NA are all valid/complete
+        if (isBereavementGroup && item.key === "isBereavementApplicable") {
+          if (itemData && (itemData === "Y" || itemData === "N" || itemData === "NA")) {
+            completed++;
+          } else {
+            incompleteItems.push(itemLabel);
+          }
         } else {
-          incompleteItems.push(itemLabel);
+          // For other select fields (Y/N/NA), only "Y" and "NA" are considered complete
+          // "N" (No) is NOT counted as complete - it's a missing item
+          if (itemData && (itemData === "Y" || itemData === "NA")) {
+            completed++;
+          } else {
+            incompleteItems.push(itemLabel);
+          }
         }
       } else if (item.type === "selectWithDate") {
         // For selectWithDate fields, complete if:
@@ -371,6 +403,7 @@ class PatientOnboardingHandler {
       dischargeDocumentation: "Discharge Documentation",
 
       // Bereavement
+      isBereavementApplicable: "Is Bereavement Applicable",
       recordOfDeath: "Record of Death",
       drugDisposalRefusalForm: "Drug Disposal/Refusal Form",
       sympathyCard: "Sympathy Card",

@@ -228,6 +228,7 @@ function ChecklistModal({
 
   // Bereavement group
   const [bereavement, setBereavement] = useState({
+    isBereavementApplicable: "",
     recordOfDeath: "",
     drugDisposalRefusalForm: "",
     sympathyCard: "",
@@ -357,6 +358,7 @@ function ChecklistModal({
       });
       setDischarge(item.discharge || { date: "", reason: "", documentation: { checked: false } });
       setBereavement(item.bereavement || {
+        isBereavementApplicable: "",
         recordOfDeath: "",
         drugDisposalRefusalForm: "",
         sympathyCard: "",
@@ -424,6 +426,7 @@ function ChecklistModal({
     });
     setDischarge({ date: "", reason: "", documentation: { checked: false } });
     setBereavement({
+      isBereavementApplicable: "",
       recordOfDeath: "",
       drugDisposalRefusalForm: "",
       sympathyCard: "",
@@ -1108,10 +1111,24 @@ function ChecklistModal({
             </AccordionSummary>
             <AccordionDetails>
               <div className={classes.sectionContent}>
-                {renderYNNASelect("Record of Death", bereavement.recordOfDeath, bereavement, setBereavement, "recordOfDeath")}
-                {renderYNNASelect("Drug Disposal/Refusal Form", bereavement.drugDisposalRefusalForm, bereavement, setBereavement, "drugDisposalRefusalForm")}
-                {renderYNNASelect("Sympathy Card", bereavement.sympathyCard, bereavement, setBereavement, "sympathyCard")}
-                {renderYNNASelect("Letters of Bereavement", bereavement.lettersOfBereavement, bereavement, setBereavement, "lettersOfBereavement")}
+                {renderYNNASelect("Is Bereavement Applicable", bereavement.isBereavementApplicable, bereavement, setBereavement, "isBereavementApplicable")}
+
+                {/* Conditional fields - only show if bereavement is applicable (Y) */}
+                {bereavement.isBereavementApplicable === "Y" && (
+                  <>
+                    {renderYNNASelect("Record of Death", bereavement.recordOfDeath, bereavement, setBereavement, "recordOfDeath")}
+                    {renderYNNASelect("Drug Disposal/Refusal Form", bereavement.drugDisposalRefusalForm, bereavement, setBereavement, "drugDisposalRefusalForm")}
+                    {renderYNNASelect("Sympathy Card", bereavement.sympathyCard, bereavement, setBereavement, "sympathyCard")}
+                    {renderYNNASelect("Letters of Bereavement", bereavement.lettersOfBereavement, bereavement, setBereavement, "lettersOfBereavement")}
+                  </>
+                )}
+
+                {/* Show message when bereavement is not applicable */}
+                {bereavement.isBereavementApplicable === "N" && (
+                  <Typography variant="body2" style={{ color: "#666", fontStyle: "italic", marginTop: 10 }}>
+                    Bereavement items are not applicable for this patient.
+                  </Typography>
+                )}
               </div>
             </AccordionDetails>
           </Accordion>

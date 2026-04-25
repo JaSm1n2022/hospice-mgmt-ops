@@ -65,26 +65,26 @@ const Transition = React.forwardRef(function Transition(props, ref) {
 });
 
 const COMMENT_OPTIONS = [
-  { value: "", label: "-- Select a Comment --" },
-  { value: "Refused Visit", label: "Refused Visit" },
-  { value: "No One Answering", label: "No One Answering" },
-  { value: "Patient Hospitalized", label: "Patient Hospitalized" },
-  { value: "Patient Unavailable / Not Home", label: "Patient Unavailable / Not Home" },
-  { value: "Visit Rescheduled", label: "Visit Rescheduled" },
-  { value: "Patient Deceased", label: "Patient Deceased" },
-  { value: "Patient on Vacation / Out of Town", label: "Patient on Vacation / Out of Town" },
-  { value: "Caregiver Cancelled", label: "Caregiver Cancelled" },
-  { value: "Weather / Road Conditions", label: "Weather / Road Conditions" },
-  { value: "Wrong Address / Unable to Locate Patient", label: "Wrong Address / Unable to Locate Patient" },
-  { value: "Patient Transferred to Facility", label: "Patient Transferred to Facility" },
-  { value: "Visit Completed – No Issues", label: "Visit Completed – No Issues" },
-  { value: "HUV1", label: "HUV1" },
-  { value: "HUV2", label: "HUV2" },
-  { value: "Hope Admission", label: "Hope Admission" },
-  { value: "SFV1", label: "SFV1" },
-  { value: "SFV2", label: "SFV2" },
-  { value: "SFV Admission", label: "SFV Admission" },
-  { value: "Other", label: "Other" },
+  { value: "", label: "-- Select a Comment --", name: "-- Select a Comment --", description: "-- Select a Comment --" },
+  { value: "Refused Visit", label: "Refused Visit", name: "Refused Visit", description: "Refused Visit" },
+  { value: "No One Answering", label: "No One Answering", name: "No One Answering", description: "No One Answering" },
+  { value: "Patient Hospitalized", label: "Patient Hospitalized", name: "Patient Hospitalized", description: "Patient Hospitalized" },
+  { value: "Patient Unavailable / Not Home", label: "Patient Unavailable / Not Home", name: "Patient Unavailable / Not Home", description: "Patient Unavailable / Not Home" },
+  { value: "Visit Rescheduled", label: "Visit Rescheduled", name: "Visit Rescheduled", description: "Visit Rescheduled" },
+  { value: "Patient Deceased", label: "Patient Deceased", name: "Patient Deceased", description: "Patient Deceased" },
+  { value: "Patient on Vacation / Out of Town", label: "Patient on Vacation / Out of Town", name: "Patient on Vacation / Out of Town", description: "Patient on Vacation / Out of Town" },
+  { value: "Caregiver Cancelled", label: "Caregiver Cancelled", name: "Caregiver Cancelled", description: "Caregiver Cancelled" },
+  { value: "Weather / Road Conditions", label: "Weather / Road Conditions", name: "Weather / Road Conditions", description: "Weather / Road Conditions" },
+  { value: "Wrong Address / Unable to Locate Patient", label: "Wrong Address / Unable to Locate Patient", name: "Wrong Address / Unable to Locate Patient", description: "Wrong Address / Unable to Locate Patient" },
+  { value: "Patient Transferred to Facility", label: "Patient Transferred to Facility", name: "Patient Transferred to Facility", description: "Patient Transferred to Facility" },
+  { value: "Visit Completed – No Issues", label: "Visit Completed – No Issues", name: "Visit Completed – No Issues", description: "Visit Completed – No Issues" },
+  { value: "HUV1", label: "HUV1", name: "HUV1", description: "HUV1" },
+  { value: "HUV2", label: "HUV2", name: "HUV2", description: "HUV2" },
+  { value: "Hope Admission", label: "Hope Admission", name: "Hope Admission", description: "Hope Admission" },
+  { value: "SFV1", label: "SFV1", name: "SFV1", description: "SFV1" },
+  { value: "SFV2", label: "SFV2", name: "SFV2", description: "SFV2" },
+  { value: "SFV Admission", label: "SFV Admission", name: "SFV Admission", description: "SFV Admission" },
+  { value: "Other", label: "Other", name: "Other", description: "Other" },
 ];
 QUANTITY_UOM.forEach((item, index) => {
   uoms.push({
@@ -1161,20 +1161,22 @@ function RoutesheetForm(props) {
                             type="number"
                           />
                           <div style={{ paddingTop: 10 }}>
-                            <CustomSelect
-                              name="comments"
-                              placeholder="-- Select a Comment --"
-                              label="Comments (Optional)"
-                              onChange={(e) => {
-                                setComments(e.target.value);
-                                setOtherCommentsError({ isError: false, message: "" });
-                                if (e.target.value !== "Other") {
-                                  setOtherComments("");
-                                }
-                              }}
-                              value={comments}
-                              options={COMMENT_OPTIONS}
-                            />
+                            <div style={{ color: "#000" }}>
+                              <CustomSelect
+                                name="comments"
+                                placeholder="-- Select a Comment --"
+                                label="Comments (Optional)"
+                                onChange={(e) => {
+                                  setComments(e.target.value);
+                                  setOtherCommentsError({ isError: false, message: "" });
+                                  if (e.target.value !== "Other") {
+                                    setOtherComments("");
+                                  }
+                                }}
+                                value={comments}
+                                options={COMMENT_OPTIONS}
+                              />
+                            </div>
                           </div>
                           {comments === "Other" && (
                             <div style={{ paddingTop: 10 }}>

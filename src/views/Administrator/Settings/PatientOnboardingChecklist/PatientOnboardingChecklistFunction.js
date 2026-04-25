@@ -165,10 +165,11 @@ const CHECKLIST_STRUCTURE = {
   },
   bereavement: {
     items: [
-      { key: "recordOfDeath", type: "select", mandatory: true },
-      { key: "drugDisposalRefusalForm", type: "select", mandatory: true },
-      { key: "sympathyCard", type: "select", mandatory: true },
-      { key: "lettersOfBereavement", type: "select", mandatory: true },
+      { key: "isBereavementApplicable", type: "select", mandatory: true },
+      { key: "recordOfDeath", type: "select", mandatory: true, conditional: true },
+      { key: "drugDisposalRefusalForm", type: "select", mandatory: true, conditional: true },
+      { key: "sympathyCard", type: "select", mandatory: true, conditional: true },
+      { key: "lettersOfBereavement", type: "select", mandatory: true, conditional: true },
     ],
   },
   compliance: {
@@ -488,55 +489,68 @@ function PatientOnboardingChecklistFunction(props) {
       // Calculate group statuses
       const admissionStatus = PatientOnboardingHandler.calculateGroupStatus(
         checklist.admission,
-        CHECKLIST_STRUCTURE.admission.items
+        CHECKLIST_STRUCTURE.admission.items,
+        'admission'
       );
       const assessmentStatus = PatientOnboardingHandler.calculateGroupStatus(
         checklist.assessment,
-        CHECKLIST_STRUCTURE.assessment.items
+        CHECKLIST_STRUCTURE.assessment.items,
+        'assessment'
       );
       const treatmentOrderStatus = PatientOnboardingHandler.calculateGroupStatus(
         checklist.treatmentOrder,
-        CHECKLIST_STRUCTURE.treatmentOrder.items
+        CHECKLIST_STRUCTURE.treatmentOrder.items,
+        'treatmentOrder'
       );
       const physicianStatus = PatientOnboardingHandler.calculateGroupStatus(
         checklist.physician,
-        CHECKLIST_STRUCTURE.physician.items
+        CHECKLIST_STRUCTURE.physician.items,
+        'physician'
       );
       const idgNotesStatus = PatientOnboardingHandler.calculateGroupStatus(
         checklist.idgNotes,
-        CHECKLIST_STRUCTURE.idgNotes.items
+        CHECKLIST_STRUCTURE.idgNotes.items,
+        'idgNotes'
       );
       const skilledNursingNotesStatus = PatientOnboardingHandler.calculateGroupStatus(
         checklist.skilledNursingNotes,
-        CHECKLIST_STRUCTURE.skilledNursingNotes.items
+        CHECKLIST_STRUCTURE.skilledNursingNotes.items,
+        'skilledNursingNotes'
       );
       const haNotesStatus = PatientOnboardingHandler.calculateGroupStatus(
         checklist.haNotes,
-        CHECKLIST_STRUCTURE.haNotes.items
+        CHECKLIST_STRUCTURE.haNotes.items,
+        'haNotes'
       );
       const volunteerNotesStatus = PatientOnboardingHandler.calculateGroupStatus(
         checklist.volunteerNotes,
-        CHECKLIST_STRUCTURE.volunteerNotes.items
+        CHECKLIST_STRUCTURE.volunteerNotes.items,
+        'volunteerNotes'
       );
       const miscellaneousStatus = PatientOnboardingHandler.calculateGroupStatus(
         checklist.miscellaneous,
-        CHECKLIST_STRUCTURE.miscellaneous.items
+        CHECKLIST_STRUCTURE.miscellaneous.items,
+        'miscellaneous'
       );
       const dischargeStatus = PatientOnboardingHandler.calculateGroupStatus(
         checklist.discharge,
-        CHECKLIST_STRUCTURE.discharge.items
+        CHECKLIST_STRUCTURE.discharge.items,
+        'discharge'
       );
       const bereavementStatus = PatientOnboardingHandler.calculateGroupStatus(
         checklist.bereavement,
-        CHECKLIST_STRUCTURE.bereavement.items
+        CHECKLIST_STRUCTURE.bereavement.items,
+        'bereavement'
       );
       const complianceStatus = PatientOnboardingHandler.calculateGroupStatus(
         checklist.compliance,
-        CHECKLIST_STRUCTURE.compliance.items
+        CHECKLIST_STRUCTURE.compliance.items,
+        'compliance'
       );
       const pocStatus = PatientOnboardingHandler.calculateGroupStatus(
         checklist.poc,
-        CHECKLIST_STRUCTURE.poc.items
+        CHECKLIST_STRUCTURE.poc.items,
+        'poc'
       );
 
       // Calculate overall progress
