@@ -585,15 +585,79 @@ function PayrollFunction(props) {
     );
     console.log("[Unique Employee]", uniqueEmployee);
     const data = [];
+
     uniqueEmployee.forEach((u) => {
       const employeeData = selectedData.filter((s) => s.employeeName === u);
+
+      // Helper function to check if service type is IDT-related
+      const isIDTServiceType = (serviceType) => {
+        if (!serviceType) return false;
+        return serviceType.toUpperCase().includes("IDT");
+      };
+
+      // Separate Regular Visits, IDT services, and Other services
+      const regularVisits = employeeData.filter((ed) => ed.serviceType === "Regular Visit");
+      const idtServices = employeeData.filter((ed) => isIDTServiceType(ed.serviceType));
+      const otherServices = employeeData.filter(
+        (ed) => ed.serviceType !== "Regular Visit" && !isIDTServiceType(ed.serviceType)
+      );
+
+      // Group Regular Visits by Patient + Month of DOS + Service Rate + Pay Amount
+      const groupedRegular = {};
+      regularVisits.forEach((row) => {
+        if (row.dos && Array.isArray(row.dos)) {
+          row.dos.forEach((dosDate) => {
+            const month = dosDate.substring(0, 7); // "YYYY-MM"
+            const serviceRate = row.serviceRate || 0;
+            const payAmount = row.payAmount || 0;
+            const key = `${row.patientCd || row.patientId || 'Unknown'}|${month}|${serviceRate}|${payAmount}`;
+
+            if (!groupedRegular[key]) {
+              groupedRegular[key] = {
+                ...row,
+                dosList: [],
+                visitCount: 0,
+              };
+            }
+            groupedRegular[key].dosList.push(dosDate);
+            groupedRegular[key].visitCount++;
+          });
+        }
+      });
+
+      // Convert grouped Regular Visits to array with formatted DOS and recalculated totalRate
+      const regularVisitDetails = Object.values(groupedRegular).map((g) => ({
+        ...g,
+        dos: g.dosList.sort(), // Sort DOS dates chronologically
+        noOfService: g.visitCount,
+        totalRate: g.visitCount * (g.payAmount || g.serviceRate || 0),
+        payAmount: g.visitCount * (g.payAmount || g.serviceRate || 0),
+        serviceType: "Regular Visit", // Remove visit count from service type
+        comments: g.visitCount > 1 ? "" : (g.comments || ""), // Clear comments if multiple DOS
+      }));
+
+      // Process IDT services - append duration to comments
+      const idtDetails = idtServices.map((row) => ({
+        ...row,
+        comments: row.duration
+          ? row.comments
+            ? `${row.comments} | Duration: ${row.duration}`
+            : `Duration: ${row.duration}`
+          : row.comments || "",
+      }));
+
+      // Combine all processed details
+      const processedDetails = [...regularVisitDetails, ...idtDetails, ...otherServices];
+
+      // Calculate totals
       let totalRate = 0.0;
       let totalDeduction = 0.0;
       let totalPayment = 0.0;
       let startPeriod = "";
       let payday = "";
       let endPeriod = "";
-      employeeData.forEach((ed) => {
+
+      processedDetails.forEach((ed) => {
         if (ed.totalRate) {
           totalRate += parseFloat(ed.totalRate, 2);
         }
@@ -607,6 +671,7 @@ function PayrollFunction(props) {
         endPeriod = ed.end_period;
         payday = ed.payDate;
       });
+
       const jsonObj = {
         employee: {
           name: u,
@@ -616,7 +681,7 @@ function PayrollFunction(props) {
           start_period: startPeriod,
           end_period: endPeriod,
           payDate: payday,
-          details: employeeData,
+          details: processedDetails,
         },
       };
       data.push(jsonObj);
