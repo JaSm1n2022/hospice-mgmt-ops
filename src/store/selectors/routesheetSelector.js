@@ -18,3 +18,7 @@ export const routesheetDeleteStateSelector = createSelector(
   getRoutesheetReducer,
   (data) => data.routesheetDelete
 );
+export const routesheetSubmitPayrollStateSelector = createSelector(
+  getRoutesheetReducer,
+  (data) => data.routesheetSubmitPayroll
+);

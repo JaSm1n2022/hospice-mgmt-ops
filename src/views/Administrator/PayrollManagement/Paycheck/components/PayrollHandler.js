@@ -84,6 +84,12 @@ class PayrollHandler {
       {
         defaultFlex: 1,
         minWidth: 120,
+        name: "duration",
+        header: "Duration",
+      },
+      {
+        defaultFlex: 1,
+        minWidth: 120,
         name: "totalRate",
         header: "Total Rate",
       },

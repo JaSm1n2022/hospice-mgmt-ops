@@ -18,11 +18,12 @@ import { CircularProgress, Grid } from "@material-ui/core";
 import AddIcon from "@material-ui/icons/Add";
 
 import HospiceTable from "components/Table/HospiceTable";
-import { ImportExport, Warning } from "@material-ui/icons";
+import { ImportExport, Warning, MoneyOutlined } from "@material-ui/icons";
 import Helper from "utils/helper";
 import * as FileSaver from "file-saver";
 import SearchCustomTextField from "components/TextField/SearchCustomTextField";
 import RoutesheetForm from "./components/RoutesheetForm";
+import PayrollDueDateModal from "./components/PayrollDueDateModal";
 import { Select, MenuItem, FormControl, InputLabel } from "@material-ui/core";
 
 import TOAST from "modules/toastManager";
@@ -33,6 +34,7 @@ import { routesheetListStateSelector } from "store/selectors/routesheetSelector"
 import { routesheetCreateStateSelector } from "store/selectors/routesheetSelector";
 import { routesheetUpdateStateSelector } from "store/selectors/routesheetSelector";
 import { routesheetDeleteStateSelector } from "store/selectors/routesheetSelector";
+import { routesheetSubmitPayrollStateSelector } from "store/selectors/routesheetSelector";
 import { attemptToFetchRoutesheet } from "store/actions/routesheetAction";
 import { resetFetchRoutesheetState } from "store/actions/routesheetAction";
 import { attemptToCreateRoutesheet } from "store/actions/routesheetAction";
@@ -41,6 +43,8 @@ import { attemptToUpdateRoutesheet } from "store/actions/routesheetAction";
 import { resetUpdateRoutesheetState } from "store/actions/routesheetAction";
 import { attemptToDeleteRoutesheet } from "store/actions/routesheetAction";
 import { resetDeleteRoutesheetState } from "store/actions/routesheetAction";
+import { attemptToSubmitRoutesheetToPayroll } from "store/actions/routesheetAction";
+import { resetSubmitRoutesheetToPayrollState } from "store/actions/routesheetAction";
 import SignatureBased from "./components/SignatureBased";
 import { attemptToFetchEmployee } from "store/actions/employeeAction";
 import { resetFetchEmployeeState } from "store/actions/employeeAction";
@@ -138,6 +142,8 @@ function RoutesheetFunction(props) {
   const [thresholdHours, setThresholdHours] = useState(48); // Default 48 hours
   const [statusFilter, setStatusFilter] = useState("All"); // Default "All"
   const [thresholdReportLoading, setThresholdReportLoading] = useState(false);
+  const [isPayrollDueDateModal, setIsPayrollDueDateModal] = useState(false);
+  const [isSubmitPayrollCollection, setIsSubmitPayrollCollection] = useState(true);
 
   const createFormHandler = (data, mode) => {
     setItem(data);
@@ -186,12 +192,21 @@ function RoutesheetFunction(props) {
       props.resetDeleteRoutesheet();
       setIsDeleteRoutesheetCollection(true);
     }
+    if (
+      !isSubmitPayrollCollection &&
+      props.submitPayrollState &&
+      props.submitPayrollState.status === ACTION_STATUSES.SUCCEED
+    ) {
+      props.resetSubmitPayroll();
+      setIsSubmitPayrollCollection(true);
+    }
   }, [
     isRoutesheetCollection,
 
     isCreateRoutesheetCollection,
     isUpdateRoutesheetCollection,
     isDeleteRoutesheetCollection,
+    isSubmitPayrollCollection,
   ]);
   useEffect(() => {
     console.log("list routesheet", props.main);
@@ -373,6 +388,29 @@ function RoutesheetFunction(props) {
     });
   }
 
+  if (
+    isSubmitPayrollCollection &&
+    props.submitPayrollState &&
+    props.submitPayrollState.status === ACTION_STATUSES.SUCCEED
+  ) {
+    setIsSubmitPayrollCollection(false);
+    // Clear selections and refresh data
+    const updatedSource = dataSource.map((item) => ({
+      ...item,
+      isChecked: false,
+    }));
+    setDataSource(updatedSource);
+    originalSource = [...updatedSource];
+    setIsAddGroupButtons(false);
+
+    // Refresh from server
+    props.listRoutesheet({
+      companyId: context.userProfile.companyId,
+      from: dateFrom,
+      to: dateTo,
+    });
+  }
+
   const filterRecordHandler = (keyword) => {
     console.log("[Keyword]", keyword);
     if (!keyword) {
@@ -422,6 +460,41 @@ function RoutesheetFunction(props) {
     setTimeout(() => {
       setNotification(false);
     }, 4000);
+  };
+
+  const handlePayrollSubmission = () => {
+    const selectedRows = dataSource.filter((r) => r.isChecked);
+
+    if (selectedRows.length === 0) {
+      showNotification("Please select at least one routesheet row.", "warning");
+      return;
+    }
+
+    // Validate status
+    const invalidRows = selectedRows.filter((r) => r.status !== "With Visit Notes");
+    if (invalidRows.length > 0) {
+      showNotification(
+        "Payroll submission is only allowed for routesheets with status 'With Visit Notes'. Please review your selection.",
+        "danger"
+      );
+      return;
+    }
+
+    // Open modal to get payroll due date
+    setIsPayrollDueDateModal(true);
+  };
+
+  const handlePayrollDueDateConfirm = (payrollDueDate) => {
+    const selectedRows = dataSource.filter((r) => r.isChecked);
+
+    // Dispatch the saga action
+    props.submitRoutesheetToPayroll({
+      selectedRoutesheets: selectedRows,
+      payrollDueDate: payrollDueDate,
+      currentUser: context.userProfile,
+    });
+
+    setIsPayrollDueDateModal(false);
   };
 
   const bulkStatusUpdateHandler = async (newStatus) => {
@@ -888,22 +961,6 @@ function RoutesheetFunction(props) {
                               </Button>
 
                               <Button
-                                onClick={() => bulkStatusUpdateHandler("Payroll Submission")}
-                                disabled={bulkStatusLoading}
-                                variant="contained"
-                                style={{
-                                  backgroundColor: bulkStatusLoading ? "#ccc" : "#ff9800",
-                                  color: "white",
-                                  fontSize: "12px",
-                                  fontWeight: 500,
-                                  height: "36px",
-                                  textTransform: "none",
-                                }}
-                              >
-                                Payroll Submission
-                              </Button>
-
-                              <Button
                                 onClick={() => bulkStatusUpdateHandler("Payroll Paid")}
                                 disabled={bulkStatusLoading}
                                 variant="contained"
@@ -917,6 +974,23 @@ function RoutesheetFunction(props) {
                                 }}
                               >
                                 Payroll Paid
+                              </Button>
+
+                              <Button
+                                onClick={handlePayrollSubmission}
+                                disabled={bulkStatusLoading}
+                                variant="contained"
+                                style={{
+                                  backgroundColor: bulkStatusLoading ? "#ccc" : "#00796b",
+                                  color: "white",
+                                  fontSize: "12px",
+                                  fontWeight: 500,
+                                  height: "36px",
+                                  textTransform: "none",
+                                }}
+                              >
+                                <MoneyOutlined style={{ marginRight: "5px", fontSize: "18px" }} />
+                                Submit to Payroll
                               </Button>
 
                               <Button
@@ -1003,6 +1077,11 @@ function RoutesheetFunction(props) {
           closeFormModalHandler={closeFormModalHandler}
         />
       )}
+      <PayrollDueDateModal
+        isOpen={isPayrollDueDateModal}
+        onClose={() => setIsPayrollDueDateModal(false)}
+        onConfirm={handlePayrollDueDateConfirm}
+      />
       <Snackbar
         place="tc"
         color={notificationColor}
@@ -1021,6 +1100,7 @@ const mapStateToProps = (store) => ({
   createRouteSheetState: routesheetCreateStateSelector(store),
   updateRouteSheetState: routesheetUpdateStateSelector(store),
   deleteRouteSheetState: routesheetDeleteStateSelector(store),
+  submitPayrollState: routesheetSubmitPayrollStateSelector(store),
   profileState: profileListStateSelector(store),
   employees: employeeListStateSelector(store),
   patients: patientListStateSelector(store),
@@ -1041,6 +1121,8 @@ const mapDispatchToProps = (dispatch) => ({
   resetUpdateRoutesheet: () => dispatch(resetUpdateRoutesheetState()),
   deleteRoutesheet: (data) => dispatch(attemptToDeleteRoutesheet(data)),
   resetDeleteRoutesheet: () => dispatch(resetDeleteRoutesheetState()),
+  submitRoutesheetToPayroll: (data) => dispatch(attemptToSubmitRoutesheetToPayroll(data)),
+  resetSubmitPayroll: () => dispatch(resetSubmitRoutesheetToPayrollState()),
   listPatients: (data) => dispatch(attemptToFetchPatient(data)),
   resetListPatients: () => dispatch(resetFetchPatientState()),
 });

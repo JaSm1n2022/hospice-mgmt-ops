@@ -24,6 +24,11 @@ const initialState = (): RoutesheetState => ({
     status: null,
     error: null,
   },
+  routesheetSubmitPayroll: {
+    data: {},
+    status: null,
+    error: null,
+  },
 });
 
 const ATTEMPT_TO_FETCH_ROUTESHEET = (state: RoutesheetState) => ({
@@ -167,6 +172,43 @@ const RESET_DELETE_ROUTESHEET_STATE = (state: RoutesheetState) => ({
   routesheetDelete: initialState().routesheetDelete,
 });
 
+/*
+Submit to Payroll
+ */
+const ATTEMPT_TO_SUBMIT_ROUTESHEET_TO_PAYROLL = (state: RoutesheetState) => ({
+  ...state,
+  routesheetSubmitPayroll: {
+    status: ACTION_STATUSES.PENDING,
+    data: {},
+    error: null,
+  },
+});
+
+const SET_SUBMIT_ROUTESHEET_TO_PAYROLL_SUCCEED = (
+  state: RoutesheetState,
+  action: BaseAction
+) => ({
+  ...state,
+  routesheetSubmitPayroll: {
+    data: action.payload,
+    status: ACTION_STATUSES.SUCCEED,
+    error: null,
+  },
+});
+
+const SET_SUBMIT_ROUTESHEET_TO_PAYROLL_FAILURE = (state: RoutesheetState) => ({
+  ...state,
+  routesheetSubmitPayroll: {
+    ...state.routesheetSubmitPayroll,
+    status: ACTION_STATUSES.FAILED,
+  },
+});
+
+const RESET_SUBMIT_ROUTESHEET_TO_PAYROLL_STATE = (state: RoutesheetState) => ({
+  ...state,
+  routesheetSubmitPayroll: initialState().routesheetSubmitPayroll,
+});
+
 const reducer = (
   state: RoutesheetState = initialState(),
   action: BaseAction
@@ -207,6 +249,15 @@ const reducer = (
       return SET_DELETE_ROUTESHEET_FAILURE(state);
     case ROUTESHEET_ACTIONS.RESET_DELETE_ROUTESHEET_STATE:
       return RESET_DELETE_ROUTESHEET_STATE(state);
+
+    case ROUTESHEET_ACTIONS.ATTEMPT_TO_SUBMIT_ROUTESHEET_TO_PAYROLL:
+      return ATTEMPT_TO_SUBMIT_ROUTESHEET_TO_PAYROLL(state);
+    case ROUTESHEET_ACTIONS.SET_SUBMIT_ROUTESHEET_TO_PAYROLL_SUCCEED:
+      return SET_SUBMIT_ROUTESHEET_TO_PAYROLL_SUCCEED(state, action);
+    case ROUTESHEET_ACTIONS.SET_SUBMIT_ROUTESHEET_TO_PAYROLL_FAILURE:
+      return SET_SUBMIT_ROUTESHEET_TO_PAYROLL_FAILURE(state);
+    case ROUTESHEET_ACTIONS.RESET_SUBMIT_ROUTESHEET_TO_PAYROLL_STATE:
+      return RESET_SUBMIT_ROUTESHEET_TO_PAYROLL_STATE(state);
     default:
       return state;
   }

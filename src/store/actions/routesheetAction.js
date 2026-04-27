@@ -33,6 +33,15 @@ export const ROUTESHEET_ACTIONS = {
     "dashboard/@HOSPICE/SET_DELETE_ROUTESHEET_FAILURE",
   RESET_DELETE_ROUTESHEET_STATE:
     "dashboard/@HOSPICE/RESET_DELETE_ROUTESHEET_STATE",
+
+  ATTEMPT_TO_SUBMIT_ROUTESHEET_TO_PAYROLL:
+    "dashboard/@HOSPICE/ATTEMPT_TO_SUBMIT_ROUTESHEET_TO_PAYROLL",
+  SET_SUBMIT_ROUTESHEET_TO_PAYROLL_SUCCEED:
+    "dashboard/@HOSPICE/SET_SUBMIT_ROUTESHEET_TO_PAYROLL_SUCCEED",
+  SET_SUBMIT_ROUTESHEET_TO_PAYROLL_FAILURE:
+    "dashboard/@HOSPICE/SET_SUBMIT_ROUTESHEET_TO_PAYROLL_FAILURE",
+  RESET_SUBMIT_ROUTESHEET_TO_PAYROLL_STATE:
+    "dashboard/@HOSPICE/RESET_SUBMIT_ROUTESHEET_TO_PAYROLL_STATE",
 };
 //FETCH ROUTESHEET
 export const attemptToFetchRoutesheet = (data: Object): BaseAction => ({
@@ -104,4 +113,22 @@ export const setDeleteRoutesheetFailure = (payload: Object): BaseAction => ({
 });
 export const resetDeleteRoutesheetState = (): BaseAction => ({
   type: ROUTESHEET_ACTIONS.RESET_DELETE_ROUTESHEET_STATE,
+});
+
+//SUBMIT ROUTESHEET TO PAYROLL
+export const attemptToSubmitRoutesheetToPayroll = (data: Object): BaseAction => ({
+  type: ROUTESHEET_ACTIONS.ATTEMPT_TO_SUBMIT_ROUTESHEET_TO_PAYROLL,
+  payload: data,
+});
+export const setSubmitRoutesheetToPayrollSucceed = (payload: Object): BaseAction => ({
+  type: ROUTESHEET_ACTIONS.SET_SUBMIT_ROUTESHEET_TO_PAYROLL_SUCCEED,
+  payload,
+});
+
+export const setSubmitRoutesheetToPayrollFailure = (payload: Object): BaseAction => ({
+  type: ROUTESHEET_ACTIONS.SET_SUBMIT_ROUTESHEET_TO_PAYROLL_FAILURE,
+  payload,
+});
+export const resetSubmitRoutesheetToPayrollState = (): BaseAction => ({
+  type: ROUTESHEET_ACTIONS.RESET_SUBMIT_ROUTESHEET_TO_PAYROLL_STATE,
 });
