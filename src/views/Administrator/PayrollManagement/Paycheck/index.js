@@ -630,8 +630,8 @@ function PayrollFunction(props) {
         ...g,
         dos: g.dosList.sort(), // Sort DOS dates chronologically
         noOfService: g.visitCount,
-        totalRate: g.visitCount * (g.payAmount || g.serviceRate || 0),
-        payAmount: g.visitCount * (g.payAmount || g.serviceRate || 0),
+        totalRate: g.visitCount * (g.serviceRate || 0), // Calculate: no. of services * rate
+        payAmount: g.visitCount * (g.serviceRate || 0), // Calculate: no. of services * rate
         serviceType: "Regular Visit", // Remove visit count from service type
         comments: g.visitCount > 1 ? "" : (g.comments || ""), // Clear comments if multiple DOS
       }));
