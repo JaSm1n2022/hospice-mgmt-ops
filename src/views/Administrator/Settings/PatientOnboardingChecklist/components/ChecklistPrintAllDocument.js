@@ -291,6 +291,7 @@ const ITEM_LABELS = {
   id: "ID",
   dme: "DME",
   transportation: "Transportation",
+  isBereavementApplicable: "Is Bereavement Applicable",
   recordOfDeath: "Record of Death",
   drugDisposalRefusalForm: "Drug Disposal/Refusal Form",
   sympathyCard: "Sympathy Card",
@@ -397,11 +398,23 @@ const collectPatientAlerts = (patient) => {
 
   // Check Bereavement items
   if (patient.bereavement) {
-    ["recordOfDeath", "drugDisposalRefusalForm", "sympathyCard", "lettersOfBereavement"].forEach((key) => {
-      if (!patient.bereavement[key] || (patient.bereavement[key] !== "Y" && patient.bereavement[key] !== "NA")) {
-        incompleteItems.push(`Bereavement: ${ITEM_LABELS[key]}`);
-      }
-    });
+    // First check if bereavement is applicable
+    const bereavementApplicable = patient.bereavement.isBereavementApplicable;
+
+    // Check "Is Bereavement Applicable" field
+    if (!bereavementApplicable || (bereavementApplicable !== "Y" && bereavementApplicable !== "N" && bereavementApplicable !== "NA")) {
+      incompleteItems.push(`Bereavement: ${ITEM_LABELS.isBereavementApplicable || "Is Bereavement Applicable"}`);
+    }
+
+    // Only check other bereavement items if bereavement is applicable (Y or NA)
+    // If bereavement is not applicable (N), skip checking other items (no alerts)
+    if (bereavementApplicable === "Y" || bereavementApplicable === "NA") {
+      ["recordOfDeath", "drugDisposalRefusalForm", "sympathyCard", "lettersOfBereavement"].forEach((key) => {
+        if (!patient.bereavement[key] || (patient.bereavement[key] !== "Y" && patient.bereavement[key] !== "NA")) {
+          incompleteItems.push(`Bereavement: ${ITEM_LABELS[key]}`);
+        }
+      });
+    }
   }
 
   // Check Compliance items
