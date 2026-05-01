@@ -105,7 +105,7 @@ function QAChart(props) {
 
   // Date range for calculation
   const START_DATE = moment("2025-06-01");
-  const END_DATE = moment("2026-02-28");
+  const END_DATE = moment("2026-04-30");
 
   useEffect(() => {
     if (context.userProfile?.companyId) {
@@ -165,23 +165,71 @@ function QAChart(props) {
   const calculateQAData = () => {
     // Define the months from June 2025 to February 2026
     const months = [
-      { label: "Jun 2025", start: moment("2025-06-01"), end: moment("2025-06-30") },
-      { label: "Jul 2025", start: moment("2025-07-01"), end: moment("2025-07-31") },
-      { label: "Aug 2025", start: moment("2025-08-01"), end: moment("2025-08-31") },
-      { label: "Sep 2025", start: moment("2025-09-01"), end: moment("2025-09-30") },
-      { label: "Oct 2025", start: moment("2025-10-01"), end: moment("2025-10-31") },
-      { label: "Nov 2025", start: moment("2025-11-01"), end: moment("2025-11-30") },
-      { label: "Dec 2025", start: moment("2025-12-01"), end: moment("2025-12-31") },
-      { label: "Jan 2026", start: moment("2026-01-01"), end: moment("2026-01-31") },
-      { label: "Feb 2026", start: moment("2026-02-01"), end: moment("2026-02-28") },
+      {
+        label: "Jun 2025",
+        start: moment("2025-06-01"),
+        end: moment("2025-06-30"),
+      },
+      {
+        label: "Jul 2025",
+        start: moment("2025-07-01"),
+        end: moment("2025-07-31"),
+      },
+      {
+        label: "Aug 2025",
+        start: moment("2025-08-01"),
+        end: moment("2025-08-31"),
+      },
+      {
+        label: "Sep 2025",
+        start: moment("2025-09-01"),
+        end: moment("2025-09-30"),
+      },
+      {
+        label: "Oct 2025",
+        start: moment("2025-10-01"),
+        end: moment("2025-10-31"),
+      },
+      {
+        label: "Nov 2025",
+        start: moment("2025-11-01"),
+        end: moment("2025-11-30"),
+      },
+      {
+        label: "Dec 2025",
+        start: moment("2025-12-01"),
+        end: moment("2025-12-31"),
+      },
+      {
+        label: "Jan 2026",
+        start: moment("2026-01-01"),
+        end: moment("2026-01-31"),
+      },
+      {
+        label: "Feb 2026",
+        start: moment("2026-02-01"),
+        end: moment("2026-02-28"),
+      },
+      {
+        label: "March 2026",
+        start: moment("2026-03-01"),
+        end: moment("2026-03-31"),
+      },
+      {
+        label: "April 2026",
+        start: moment("2026-04-01"),
+        end: moment("2026-04-30"),
+      },
     ];
 
     // Filter patients whose SOC is within the date range
     const filteredPatients = patientList.filter((patient) => {
       if (!patient.soc) return false;
       const socDate = moment(patient.soc);
-      return socDate.isSameOrAfter(START_DATE, "day") &&
-             socDate.isSameOrBefore(END_DATE, "day");
+      return (
+        socDate.isSameOrAfter(START_DATE, "day") &&
+        socDate.isSameOrBefore(END_DATE, "day")
+      );
     });
 
     // Build patient rows with weeks for each month
@@ -191,7 +239,10 @@ function QAChart(props) {
 
       const row = {
         patientCd: patient.patientCd || "N/A",
-        patientName: patient.name || `${patient.fn || ""} ${patient.ln || ""}`.trim() || "Unknown",
+        patientName:
+          patient.name ||
+          `${patient.fn || ""} ${patient.ln || ""}`.trim() ||
+          "Unknown",
         socDate: socDate.format("MM/DD/YYYY"),
         socDateSort: socDate.valueOf(), // Keep timestamp for sorting
         eocDate: eocDate ? moment(eocDate).format("MM/DD/YYYY") : "—",
@@ -201,7 +252,12 @@ function QAChart(props) {
 
       // Calculate weeks for each month
       months.forEach((month) => {
-        const weeks = calculateWeeksForMonth(patient.soc, eocDate, month.start, month.end);
+        const weeks = calculateWeeksForMonth(
+          patient.soc,
+          eocDate,
+          month.start,
+          month.end
+        );
         row.monthWeeks[month.label] = weeks;
         row.totalWeeks += weeks;
       });
@@ -232,9 +288,10 @@ function QAChart(props) {
 
       // Add each month's weeks
       chartData.months.forEach((month) => {
-        row[month.label] = patient.monthWeeks[month.label] > 0
-          ? patient.monthWeeks[month.label].toFixed(2)
-          : "—";
+        row[month.label] =
+          patient.monthWeeks[month.label] > 0
+            ? patient.monthWeeks[month.label].toFixed(2)
+            : "—";
       });
 
       row["Total Weeks"] = patient.totalWeeks;
@@ -258,20 +315,25 @@ function QAChart(props) {
             </p>
           </CardHeader>
           <CardBody>
-            {isProcessDone && chartData.patientRows && chartData.patientRows.length > 0 && (
-              <div style={{ marginBottom: "15px" }}>
-                <Button color="success" onClick={exportToExcel}>
-                  <GetApp /> Export to Excel
-                </Button>
-              </div>
-            )}
+            {isProcessDone &&
+              chartData.patientRows &&
+              chartData.patientRows.length > 0 && (
+                <div style={{ marginBottom: "15px" }}>
+                  <Button color="success" onClick={exportToExcel}>
+                    <GetApp /> Export to Excel
+                  </Button>
+                </div>
+              )}
             {!isProcessDone ? (
               <div style={{ textAlign: "center", padding: "20px" }}>
                 <CircularProgress />
                 <Typography>Loading patient data...</Typography>
               </div>
             ) : (
-              <TableContainer component={Paper} className={classes.tableContainer}>
+              <TableContainer
+                component={Paper}
+                className={classes.tableContainer}
+              >
                 <Table stickyHeader>
                   <TableHead>
                     <TableRow className={classes.tableHeader}>
@@ -283,14 +345,19 @@ function QAChart(props) {
                           {month.label}
                         </TableCell>
                       ))}
-                      <TableCell align="center"><strong>Total</strong></TableCell>
+                      <TableCell align="center">
+                        <strong>Total</strong>
+                      </TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {!chartData.patientRows || chartData.patientRows.length === 0 ? (
+                    {!chartData.patientRows ||
+                    chartData.patientRows.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={13} align="center">
-                          <Typography>No patients found in the specified date range</Typography>
+                          <Typography>
+                            No patients found in the specified date range
+                          </Typography>
                         </TableCell>
                       </TableRow>
                     ) : (

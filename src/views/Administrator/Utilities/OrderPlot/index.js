@@ -45,6 +45,8 @@ import { profileListStateSelector } from "store/selectors/profileSelector";
 import { SupaContext } from "App";
 import { el } from "date-fns/locale";
 import { PRODUCT_CATEGORIES } from "utils/constants";
+import SupplyMatrix from "../components/SupplyMatrix";
+import Button from "components/CustomButtons/Button.js";
 
 const productCategories = [...PRODUCT_CATEGORIES];
 
@@ -218,6 +220,7 @@ const OrderPlot = (props) => {
   const [plotView, setPlotView] = useState(undefined);
   const [isRefresh, setIsRefresh] = useState(false);
   const [product, setProduct] = useState(DEFAULT_ITEM);
+  const [showMatrix, setShowMatrix] = useState(false);
   useEffect(() => {
     isDistributionListDone = false;
     isPatientListDone = false;
@@ -1195,7 +1198,24 @@ const OrderPlot = (props) => {
                     options={productCategories || [DEFAULT_ITEM]}
                   />
                 </GridItem>
-                {plotView && (
+                <GridItem xs={12} sm={12} md={12}>
+                  <div style={{ marginTop: 16, marginBottom: 8 }}>
+                    <Button
+                      color={showMatrix ? "default" : "primary"}
+                      onClick={() => setShowMatrix(false)}
+                      style={{ marginRight: 8 }}
+                    >
+                      Plot View
+                    </Button>
+                    <Button
+                      color={showMatrix ? "primary" : "default"}
+                      onClick={() => setShowMatrix(true)}
+                    >
+                      Matrix
+                    </Button>
+                  </div>
+                </GridItem>
+                {!showMatrix && plotView && (
                   <SupplyPlot
                     title={plotView.toUpperCase()}
                     patientPlot={patientSupplyPlot[plotView]}
@@ -1203,6 +1223,17 @@ const OrderPlot = (props) => {
                     unusedSummary={unusedPlotSummary[plotView]}
                     summary={plotSummary[plotView]}
                   />
+                )}
+                {showMatrix && (
+                  <GridItem xs={12} sm={12} md={12}>
+                    <SupplyMatrix
+                      patientList={patientList}
+                      distributionList={distributionList}
+                      productList={productList}
+                      dateFrom={dateFrom}
+                      dateTo={dateTo}
+                    />
+                  </GridItem>
                 )}
               </GridContainer>
             </CardBody>
