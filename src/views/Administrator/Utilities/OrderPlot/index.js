@@ -678,7 +678,8 @@ const OrderPlot = (props) => {
       let orders = 0;
       const stock = sel[0].currentStock;
       sel.forEach((e) => {
-        orders += parseInt(e.order || 0);
+        // Use newThreshold if available, otherwise fall back to order/threshold
+        orders += parseInt(e.newThreshold || e.order || 0);
       });
 
       if (orders > 0) {
@@ -687,24 +688,15 @@ const OrderPlot = (props) => {
           estimatedSupplyGrandTotal[source],
           source
         );
-        const forOrder = parseInt(orders) - parseInt(stock);
-        let cartonCnt = Math.ceil(forOrder / (sel[0].cartonItemQty || 1));
-        cartonCnt = forOrder <= 0 ? 0 : cartonCnt <= 0 ? 1 : cartonCnt;
-        estimatedSupplyGrandTotal[source] =
-          parseFloat(estimatedSupplyGrandTotal[source]) +
-          parseInt(cartonCnt * sel[0].cartonItemQty || 1) *
-            sel[0].price_per_pcs;
 
+        // Don't calculate carton/amt here - let SupplyPlot component handle it
+        // Just store the base order count
         plotSummary[source].push({
           ...sel[0],
           stock,
           total: orders,
-          carton: cartonCnt,
-          amt:
-            cartonCnt > 0
-              ? parseInt(cartonCnt * sel[0].cartonItemQty || 1) *
-                sel[0].price_per_pcs
-              : 0,
+          carton: 0, // Will be calculated in SupplyPlot
+          amt: 0,    // Will be calculated in SupplyPlot
         });
       }
     });

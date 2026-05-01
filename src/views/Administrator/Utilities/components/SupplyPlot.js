@@ -212,6 +212,48 @@ const SupplyPlot = (props) => {
   const [isRefresh, setIsRefresh] = useState(false);
   const [estimatedGrandTotal, setEstimatedGrandTotal] = useState(0.0);
   const [suppliesFrequency, setSuppliesFrequency] = useState("2weeks");
+
+  const recalculateSummary = (plotData, summaryData, frequency = null) => {
+    const currentFrequency = frequency || suppliesFrequency;
+    const frequencyMultiplier = currentFrequency === "1month" ? 2 : 1;
+    let estimate = 0.0;
+
+    console.log("[recalculateSummary] Frequency:", currentFrequency, "Multiplier:", frequencyMultiplier);
+
+    summaryData.forEach((s) => {
+      // Recalculate total from patientPlot newThreshold values
+      let newTotal = 0;
+      const patientsWithProduct = plotData.filter(p => p.productId === s.productId);
+      patientsWithProduct.forEach(p => {
+        newTotal += parseInt(p.newThreshold || 0);
+      });
+      s.total = newTotal;
+
+      const adjustedTotal = s.total * frequencyMultiplier;
+      const forOrder = parseInt(adjustedTotal) - parseInt(s.stock);
+      let cartonCnt = Math.ceil(forOrder / (s.cartonItemQty || 1));
+      cartonCnt = forOrder <= 0 ? 0 : cartonCnt <= 0 ? 1 : cartonCnt;
+
+      console.log("[recalculateSummary]", {
+        product: s.product,
+        total: s.total,
+        adjustedTotal,
+        stock: s.stock,
+        forOrder,
+        cartonItemQty: s.cartonItemQty,
+        cartonCnt,
+        price_per_pcs: s.price_per_pcs
+      });
+
+      s.carton = cartonCnt;
+      s.amt = parseInt(cartonCnt * (s.cartonItemQty || 1)) * (s.price_per_pcs || 0);
+      estimate = parseFloat(estimate) + parseFloat(s.amt);
+    });
+
+    setEstimatedGrandTotal(estimate);
+    setIsRefresh(!isRefresh);
+  };
+
   useEffect(() => {
     const tempPlot = [];
     console.log(
@@ -228,53 +270,30 @@ const SupplyPlot = (props) => {
       tempSummary.push({ ...p });
     });
 
-    setPatientPlot([...(props.patientPlot || [])]);
-    setSummary([...(props.summary || [])]);
-    setEstimatedGrandTotal(props.estimatedGrandTotal);
-    setOriginalEstimatedAmt(props.estimatedGrandTotal);
-    setOriginalPatientPlot(tempPlot);
-    setOriginalSummary(tempSummary);
+    // Recalculate summary with current frequency on initial load
+    recalculateSummary(tempPlot, tempSummary, suppliesFrequency);
+
+    setPatientPlot(tempPlot);
+    setSummary(tempSummary);
+    setOriginalPatientPlot(tempPlot.map(p => ({ ...p })));
+    setOriginalSummary(tempSummary.map(p => ({ ...p })));
   }, [props]);
 
   const resetPlotHandler = () => {
-    const tempPlot = [];
-    [...originalPatientPlot].forEach((p) => {
-      tempPlot.push({ ...p });
-    });
-    const tempSummary = [];
-    [...originalSummary].forEach((p) => {
-      tempSummary.push({ ...p });
-    });
+    const tempPlot = originalPatientPlot.map(p => ({ ...p }));
+    const tempSummary = originalSummary.map(p => ({ ...p }));
     setPatientPlot(tempPlot);
     setSummary(tempSummary);
     recalculateSummary(tempPlot, tempSummary);
-  };
-
-  const recalculateSummary = (plotData, summaryData) => {
-    const frequencyMultiplier = suppliesFrequency === "1month" ? 2 : 1;
-    let estimate = 0.0;
-
-    summaryData.forEach((s) => {
-      const adjustedTotal = s.total * frequencyMultiplier;
-      const forOrder = parseInt(adjustedTotal) - parseInt(s.stock);
-      let cartonCnt = Math.ceil(forOrder / (s.cartonItemQty || 1));
-      cartonCnt = forOrder <= 0 ? 0 : cartonCnt <= 0 ? 1 : cartonCnt;
-      s.carton = cartonCnt;
-      s.amt = parseInt(cartonCnt) * s.unitPrice;
-      estimate = parseFloat(estimate) + parseFloat(s.amt);
-    });
-
-    setEstimatedGrandTotal(estimate);
-    setIsRefresh(!isRefresh);
   };
 
   const handleFrequencyChange = (event) => {
     const newFrequency = event.target.value;
     setSuppliesFrequency(newFrequency);
 
-    // Recalculate summary with new frequency
-    const tempSummary = [...summary];
-    recalculateSummary(patientPlot, tempSummary);
+    // Recalculate summary with new frequency - deep copy to ensure re-render
+    const tempSummary = summary.map(s => ({ ...s }));
+    recalculateSummary(patientPlot, tempSummary, newFrequency);
     setSummary(tempSummary);
   };
   const inputSourceHandler = (e, source) => {
@@ -284,50 +303,18 @@ const SupplyPlot = (props) => {
       (u) => u.uuid.toString() === source.uuid.toString()
     );
 
-    const tempSummary = [...summary].find(
-      (s) => s.productId === source.productId
-    );
-    const val = !e.target.value ? 0 : parseInt(e.target.value);
-    const patientPlotByProduct = tempPatientPlot.filter(
-      (t) => t.itemNbr !== source.itemNbr && t.productId === source.productId
-    );
-
-    const summaryOfOthers = [...summary].filter(
-      (t) => t.productId !== source.productId
-    );
-
-    console.log("[source1]", patientPlotByProduct, summaryOfOthers);
-    let newAmount = 0;
-    summaryOfOthers.forEach((p) => {
-      newAmount = parseFloat(newAmount) + parseFloat(p.amt);
-    });
-
-    let newTotalOrder = parseInt(val);
-    if (patientPlotByProduct && patientPlotByProduct.length) {
-      patientPlotByProduct.forEach((p) => {
-        newTotalOrder = parseInt(newTotalOrder) + parseInt(p.newThreshold);
-      });
-    }
-    console.log("[source2]", newTotalOrder);
-    tempSummary.total = newTotalOrder;
-
-    // Apply frequency multiplier for carton calculation
-    const frequencyMultiplier = suppliesFrequency === "1month" ? 2 : 1;
-    const adjustedTotal = newTotalOrder * frequencyMultiplier;
-    const forOrder = parseInt(adjustedTotal) - parseInt(tempSummary.stock);
-    let cartonCnt = Math.ceil(forOrder / (tempSummary.cartonItemQty || 1));
-    cartonCnt = forOrder <= 0 ? 0 : cartonCnt <= 0 ? 1 : cartonCnt;
-    tempSummary.carton = cartonCnt;
-
-    tempSummary.amt = parseInt(cartonCnt) * tempSummary.unitPrice;
-    newAmount = parseFloat(tempSummary.amt) + parseFloat(newAmount);
-
-    // const temp = [...summary];
-
+    // Update the newThreshold value
     currentItem.newThreshold = e.target.value;
     console.log("[Source 1]", currentItem);
+
+    // Deep copy summary
+    const updatedSummary = summary.map(s => ({ ...s }));
+
+    // Recalculate summary with updated patient plot
+    recalculateSummary(tempPatientPlot, updatedSummary);
+
     setPatientPlot(tempPatientPlot);
-    setEstimatedGrandTotal(newAmount);
+    setSummary(updatedSummary);
 
     /*
     console.log("[source]", source, summary);
