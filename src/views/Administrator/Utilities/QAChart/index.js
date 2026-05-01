@@ -95,6 +95,9 @@ const styles = {
 
 const useStyles = makeStyles(styles);
 
+// QA Rate constant - $40 per week
+const QA_RATE = 40;
+
 function QAChart(props) {
   const classes = useStyles();
   const context = useContext(SupaContext);
@@ -121,7 +124,12 @@ function QAChart(props) {
       props.patients.status === ACTION_STATUSES.SUCCEED
     ) {
       props.resetListPatients();
-      setPatientList(props.patients.data || []);
+      console.log("[PATIENT LIST]", props.patients.data);
+      setPatientList(
+        (props.patients.data || []).filter(
+          (p) => !p.patientCd?.trim().startsWith("TEST-P")
+        )
+      );
       setIsPatientCollection(true);
     }
   }, [isPatientCollection, props.patients]);
@@ -298,6 +306,36 @@ function QAChart(props) {
 
       return row;
     });
+
+    // Calculate totals for each month
+    const monthlyTotals = {};
+    let grandTotalWeeks = 0;
+
+    chartData.months.forEach((month) => {
+      let monthTotal = 0;
+      chartData.patientRows.forEach((patient) => {
+        monthTotal += patient.monthWeeks[month.label] || 0;
+      });
+      monthlyTotals[month.label] = monthTotal;
+      grandTotalWeeks += monthTotal;
+    });
+
+    // Add total amount row
+    const totalAmountRow = {
+      Patient: "TOTAL AMOUNT",
+      SOC: "",
+      EOC: "",
+    };
+
+    chartData.months.forEach((month) => {
+      const totalAmount = monthlyTotals[month.label] * QA_RATE;
+      totalAmountRow[month.label] = `$${totalAmount.toFixed(2)}`;
+    });
+
+    totalAmountRow["Total Weeks"] = `$${(grandTotalWeeks * QA_RATE).toFixed(2)}`;
+
+    // Add the total row to the export data
+    excelData.push(totalAmountRow);
 
     handleExport(excelData, "QA_Chart_Patient_Weeks");
   };
