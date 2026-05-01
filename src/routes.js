@@ -71,6 +71,7 @@ import Services from "views/Administrator/Reports/Services";
 import Utilities from "views/Administrator/Reports/Utilities";
 import Payroll from "views/Administrator/Reports/Payroll";
 import Marketing from "views/Administrator/Reports/Marketing";
+import MonthlySalary from "views/Administrator/Reports/MonthlySalary";
 import Paycheck from "views/Administrator/PayrollManagement/Paycheck";
 import Payday from "views/Administrator/PayrollManagement/Payday";
 import OrderPlot from "views/Administrator/Utilities/OrderPlot";
@@ -533,6 +534,15 @@ var dashRoutes = [
         mini: "YTD",
         rtlMini: "ع",
         component: Payroll,
+        layout: "/admin",
+      },
+      {
+        path: "/monthlySalaryReport",
+        name: "Monthly Salary",
+        rtlName: "عالتسعير",
+        mini: "YTD",
+        rtlMini: "ع",
+        component: MonthlySalary,
         layout: "/admin",
       },
       {
