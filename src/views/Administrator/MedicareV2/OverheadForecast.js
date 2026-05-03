@@ -237,6 +237,16 @@ const OverheadForecastPDF = ({ data, currentMonthLabel }) => {
             </View>
           ))}
 
+        {/* Medicare Sequestration Adjustment */}
+        <View style={pdfStyles.subsectionRow}>
+          <Text style={pdfStyles.label}>
+            Medicare Sequestration Adjustment ({data.medicareSeqAdjPercentage}%)
+          </Text>
+          <Text style={[pdfStyles.value, { color: "#d32f2f" }]}>
+            -${data.medicareSeqAdj.toFixed(2)}
+          </Text>
+        </View>
+
         {/* Expenses Section */}
         <View style={pdfStyles.sectionRow}>
           <Text style={pdfStyles.label}>EXPENSES</Text>
@@ -724,6 +734,10 @@ function OverheadForecast(props) {
     const projectedADC = totalDaysForADC / daysInMonth;
     const projectedRevenue = totalRevenue;
 
+    // 2. Medicare Sequestration Adjustment (as percentage of revenue)
+    const medicareSeqAdjPercentage = getOverheadValue("MEDICARE_SEQ_ADJ", overheadTableData);
+    const medicareSeqAdj = projectedRevenue * (medicareSeqAdjPercentage / 100);
+
     // 3. Salaries & Wages
     const salariesData = calculateSalariesWages(activeEmployees, contractList);
     const salariesWages = salariesData.total;
@@ -856,7 +870,8 @@ function OverheadForecast(props) {
       npEvaluation +
       totalFixedExpenses +
       billingFees +
-      marketing;
+      marketing +
+      medicareSeqAdj; // Medicare Sequestration Adjustment reduces revenue (increases expenses)
 
     // Net Income
     const netIncome = projectedRevenue - totalExpenses;
@@ -865,6 +880,8 @@ function OverheadForecast(props) {
       projectedADC,
       projectedRevenue,
       revenueDetails,
+      medicareSeqAdj,
+      medicareSeqAdjPercentage,
       salariesWages,
       salariesDetails,
       contractedServices,
@@ -1232,6 +1249,16 @@ function OverheadForecast(props) {
                             </TableCell>
                           </TableRow>
                         ))}
+
+                      {/* Medicare Sequestration Adjustment */}
+                      <TableRow className={classes.subsectionHeader}>
+                        <TableCell>
+                          Medicare Sequestration Adjustment ({forecastData.medicareSeqAdjPercentage}%)
+                        </TableCell>
+                        <TableCell style={{ textAlign: "right", color: "#d32f2f" }}>
+                          -${forecastData.medicareSeqAdj.toFixed(2)}
+                        </TableCell>
+                      </TableRow>
 
                       {/* Expenses Header */}
                       <TableRow className={classes.sectionHeader}>
