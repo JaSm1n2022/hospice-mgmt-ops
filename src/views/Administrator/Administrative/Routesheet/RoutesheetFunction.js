@@ -272,6 +272,11 @@ function RoutesheetFunction(props) {
     }
   }, [thresholdHours]);
 
+  // Apply filters when status filter changes
+  useEffect(() => {
+    filterRecordHandler(keywordValue);
+  }, [statusFilter]);
+
   if (
     isRoutesheetCollection &&
     props.routesheet &&
@@ -413,19 +418,25 @@ function RoutesheetFunction(props) {
 
   const filterRecordHandler = (keyword) => {
     console.log("[Keyword]", keyword);
-    if (!keyword) {
-      setDataSource([...originalSource]);
-    } else {
-      const temp = [...originalSource];
+    let filtered = [...originalSource];
 
-      let found = temp.filter(
+    // Apply keyword filter
+    if (keyword) {
+      filtered = filtered.filter(
         (data) =>
           data.requestor &&
           data.requestor.toLowerCase().indexOf(keyword.toLowerCase()) !== -1
       );
-
-      setDataSource(found);
     }
+
+    // Apply status filter
+    if (statusFilter && statusFilter !== "All") {
+      filtered = filtered.filter(
+        (data) => data.status === statusFilter
+      );
+    }
+
+    setDataSource(filtered);
   };
 
   const onCheckboxSelectionHandler = (data, isAll, itemIsChecked) => {
@@ -863,14 +874,35 @@ function RoutesheetFunction(props) {
                 </CardHeader>
                 <CardBody>
                   <GridContainer style={{ paddingLeft: 20 }}>
-                    <GridItem md={10} sm={8} xs={12}>
+                    <GridItem md={8} sm={6} xs={12}>
                       <FilterTable
                         filterRecordHandler={filterRecordHandler}
                         filterByDateHandler={filterByDateHandler}
                         dateRangeSelection="thisWeek"
                       />
                     </GridItem>
-                    <GridItem md={2} sm={4} xs={12}>
+                    <GridItem md={2} sm={3} xs={12}>
+                      <FormControl
+                        fullWidth
+                        variant="outlined"
+                        size="small"
+                        style={{ marginTop: 8 }}
+                      >
+                        <InputLabel>Status Filter</InputLabel>
+                        <Select
+                          value={statusFilter}
+                          onChange={(e) => setStatusFilter(e.target.value)}
+                          label="Status Filter"
+                        >
+                          <MenuItem value="All">All</MenuItem>
+                          <MenuItem value="Review">Review</MenuItem>
+                          <MenuItem value="With Visit Notes">With Visit Notes</MenuItem>
+                          <MenuItem value="Approved">Approved</MenuItem>
+                          <MenuItem value="Payroll Paid">Payroll Paid</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </GridItem>
+                    <GridItem md={2} sm={3} xs={12}>
                       <FormControl
                         fullWidth
                         variant="outlined"
