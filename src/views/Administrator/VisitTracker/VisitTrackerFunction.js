@@ -400,6 +400,7 @@ export default function VisitTrackerFunction() {
             patientName: assignment.patientName || patientId,
             expected: [],
             actual: [],
+            totalEstimatedPayment: 0,
           });
         }
 
@@ -417,6 +418,7 @@ export default function VisitTrackerFunction() {
             patientName: routesheet.patientName || patientId,
             expected: [],
             actual: [],
+            totalEstimatedPayment: 0,
           });
         }
 
@@ -438,15 +440,20 @@ export default function VisitTrackerFunction() {
           duration = end.diff(start, 'minutes') / 60; // Convert to hours
         }
 
+        const estimatedPayment = routesheet.estimatedPayment || routesheet.approvedPayment || 0;
+
         patientData.actual.push({
           dos: dosDate,
           dayLabel: getDayLabel(dosDate),
           timeIn: timeInValue,
           timeOut: timeOutValue,
           duration: duration,
-          estimatedPayment: routesheet.estimatedPayment || routesheet.approvedPayment || 0,
+          estimatedPayment: estimatedPayment,
           patientName: routesheet.patientName || patientId,
         });
+
+        // Add to patient's total estimated payment
+        patientData.totalEstimatedPayment += parseFloat(estimatedPayment);
       });
 
       // Calculate statistics
@@ -648,6 +655,9 @@ export default function VisitTrackerFunction() {
                           {empData.stats.warnings} warnings
                         </span>
                       )}
+                      <span className={`${classes.badge}`} style={{ backgroundColor: "#e0e0e0", color: "#333", fontWeight: "bold" }}>
+                        Grand Total: ${empData.stats.totalEstimatedPayment.toFixed(2)}
+                      </span>
                     </div>
                   </div>
                 </AccordionSummary>
@@ -720,7 +730,7 @@ export default function VisitTrackerFunction() {
                             <div className={classes.panelHeader} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                               <span>Actual Visit</span>
                               <span style={{ fontSize: "13px", fontWeight: "normal" }}>
-                                Total: ${empData.stats.totalEstimatedPayment.toFixed(2)}
+                                Total: ${patient.totalEstimatedPayment.toFixed(2)}
                               </span>
                             </div>
                             <table className={classes.table}>
