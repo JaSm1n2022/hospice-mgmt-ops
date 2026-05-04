@@ -31,7 +31,7 @@ import {
   PDFDownloadLink,
 } from "@react-pdf/renderer";
 
-import { ACTION_STATUSES } from "utils/constants";
+import { ACTION_STATUSES, getOverheadValue } from "utils/constants";
 import {
   attemptToFetchEmployee,
   resetFetchEmployeeState,
@@ -52,6 +52,11 @@ import {
   resetFetchContractState,
 } from "store/actions/contractAction";
 import { contractListStateSelector } from "store/selectors/contractSelector";
+import {
+  attemptToFetchOverhead,
+  resetFetchOverheadState,
+} from "store/actions/overheadAction";
+import { overheadListStateSelector } from "store/selectors/overheadSelector";
 import { SupaContext } from "App";
 
 const styles = {
@@ -332,10 +337,12 @@ let employeeList = [];
 let patientList = [];
 let assignmentList = [];
 let contractList = [];
+let overheadTableData = null;
 let isEmployeeListDone = false;
 let isPatientListDone = false;
 let isAssignmentListDone = false;
 let isContractListDone = false;
+let isOverheadListDone = false;
 
 function EmployeePayrollForecast(props) {
   const classes = useStyles();
@@ -350,6 +357,7 @@ function EmployeePayrollForecast(props) {
   const [isPatientCollection, setIsPatientCollection] = useState(true);
   const [isAssignmentCollection, setIsAssignmentCollection] = useState(true);
   const [isContractCollection, setIsContractCollection] = useState(true);
+  const [isOverheadCollection, setIsOverheadCollection] = useState(true);
 
   const currentMonthLabel = moment().format("MMMM YYYY");
 
@@ -359,10 +367,14 @@ function EmployeePayrollForecast(props) {
     isPatientListDone = false;
     isAssignmentListDone = false;
     isContractListDone = false;
+    isOverheadListDone = false;
 
-    // Trigger initial employee fetch
+    // Trigger initial fetches
     if (context.userProfile?.companyId) {
       props.listEmployees({
+        companyId: context.userProfile.companyId,
+      });
+      props.listOverhead({
         companyId: context.userProfile.companyId,
       });
     }
@@ -372,6 +384,7 @@ function EmployeePayrollForecast(props) {
       props.resetListPatients();
       props.resetListAssignments();
       props.resetListContracts();
+      props.resetListOverhead();
     };
   }, []);
 
@@ -431,7 +444,7 @@ function EmployeePayrollForecast(props) {
     }
   }
 
-  // Gate: contracts arrive → calculate forecast
+  // Gate: contracts arrive → ready for calculation
   if (
     isContractCollection &&
     props.contracts?.status === ACTION_STATUSES.SUCCEED
@@ -442,13 +455,26 @@ function EmployeePayrollForecast(props) {
     setIsContractCollection(false);
   }
 
+  // Gate: overhead data arrive (loads independently)
+  if (
+    isOverheadCollection &&
+    props.overhead?.status === ACTION_STATUSES.SUCCEED
+  ) {
+    const fetchedData = props.overhead.data || [];
+    overheadTableData = fetchedData.length > 0 ? fetchedData[0] : null;
+    isOverheadListDone = true;
+    props.resetListOverhead();
+    setIsOverheadCollection(false);
+  }
+
   // Calculate once all datasets are ready
   useEffect(() => {
     if (
       isEmployeeListDone &&
       isPatientListDone &&
       isAssignmentListDone &&
-      isContractListDone
+      isContractListDone &&
+      isOverheadListDone
     ) {
       const result = calculatePayrollForecast();
       setForecastData(result);
@@ -459,6 +485,7 @@ function EmployeePayrollForecast(props) {
     isPatientCollection,
     isAssignmentCollection,
     isContractCollection,
+    isOverheadCollection,
   ]);
 
   const calculatePayrollForecast = () => {
@@ -714,6 +741,54 @@ function EmployeePayrollForecast(props) {
         });
       }
     });
+
+    // --- Add TBD On-Call Employee (computed from overhead forecast) ---
+    // Calculate On-Call Phone cost similar to OverheadForecast
+    let weekdayCount = 0;
+    let weekendCount = 0;
+    const daysIterator = currentMonthStart.clone();
+    while (daysIterator.isSameOrBefore(currentMonthEnd, "day")) {
+      const dayOfWeek = daysIterator.day(); // 0=Sunday, 6=Saturday
+      if (dayOfWeek === 0 || dayOfWeek === 6) {
+        weekendCount++;
+      } else {
+        weekdayCount++;
+      }
+      daysIterator.add(1, "day");
+    }
+
+    // Calculate on-call hours and cost
+    const numberOfWeeks = weekdayCount / 5;
+    const onCallWeekdayHours =
+      numberOfWeeks * getOverheadValue("ONCALL_WEEKDAY_HOURS", overheadTableData);
+    const onCallWeekdayCost =
+      onCallWeekdayHours * getOverheadValue("ONCALL_WEEKDAY_RATE", overheadTableData);
+
+    const numberOfWeekends = weekendCount / 2;
+    const onCallWeekendHours =
+      numberOfWeekends * getOverheadValue("ONCALL_WEEKEND_HOURS", overheadTableData);
+    const onCallWeekendCost =
+      onCallWeekendHours * getOverheadValue("ONCALL_WEEKEND_RATE", overheadTableData);
+
+    const onCallTotalCost = onCallWeekdayCost + onCallWeekendCost;
+
+    // Add TBD On-Call employee
+    if (onCallTotalCost > 0) {
+      results.push({
+        employeeName: "TBD",
+        employeeId: "computed-oncall",
+        employeePosition: "On-Call",
+        isSalaried: true,
+        salaryAmount: onCallTotalCost,
+        totalPayroll: onCallTotalCost,
+        regularExpenses: 0,
+        regularDetails: [],
+        socExpenses: 0,
+        socDetails: [],
+        fixedExpenses: 0,
+        fixedDetails: [],
+      });
+    }
 
     // Sort by total payroll descending
     return results.sort((a, b) => b.totalPayroll - a.totalPayroll);
@@ -985,6 +1060,7 @@ const mapStateToProps = (state) => ({
   patients: patientListStateSelector(state),
   assignments: assignmentListStateSelector(state),
   contracts: contractListStateSelector(state),
+  overhead: overheadListStateSelector(state),
 });
 
 const mapDispatchToProps = (dispatch) => ({
@@ -996,6 +1072,8 @@ const mapDispatchToProps = (dispatch) => ({
   resetListAssignments: () => dispatch(resetFetchAssignmentState()),
   listContracts: (data) => dispatch(attemptToFetchContract(data)),
   resetListContracts: () => dispatch(resetFetchContractState()),
+  listOverhead: (data) => dispatch(attemptToFetchOverhead(data)),
+  resetListOverhead: () => dispatch(resetFetchOverheadState()),
 });
 
 export default connect(
