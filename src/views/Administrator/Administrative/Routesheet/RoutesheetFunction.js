@@ -418,6 +418,12 @@ function RoutesheetFunction(props) {
 
   const filterRecordHandler = (keyword) => {
     console.log("[Keyword]", keyword);
+
+    // Guard against undefined originalSource
+    if (!originalSource || !Array.isArray(originalSource)) {
+      return;
+    }
+
     let filtered = [...originalSource];
 
     // Apply keyword filter
