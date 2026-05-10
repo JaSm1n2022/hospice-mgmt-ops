@@ -13,6 +13,7 @@ import AdminNavbar from "components/Navbars/AdminNavbar.js";
 import Footer from "components/Footer/Footer.js";
 import Sidebar from "components/Sidebar/Sidebar.js";
 import FixedPlugin from "components/FixedPlugin/FixedPlugin.js";
+import DisciplineSystemModal from "components/Modal/DisciplineSystemModal.js";
 
 import mainRoutes from "routes.js";
 import disciplineRoutes from "disciplineRoutes.js";
@@ -20,6 +21,9 @@ import disciplineRoutes from "disciplineRoutes.js";
 import styles from "assets/jss/material-dashboard-pro-react/layouts/adminStyle.js";
 import { profileListStateSelector } from "store/selectors/profileSelector";
 import { connect } from "react-redux";
+import { supabaseClient } from "config/SupabaseClient";
+
+const storageUtil = require("utils/storageUtil");
 
 var ps;
 let routes = disciplineRoutes;
@@ -40,6 +44,10 @@ function Dashboard(props) {
   const [logo, setLogo] = React.useState(
     require("assets/img/logo-h.svg").default
   );
+
+  // Always show system modal for discipline users
+  const [showSystemModal, setShowSystemModal] = React.useState(true);
+
   // styles
   const classes = useStyles();
   const mainPanelClasses =
@@ -148,8 +156,17 @@ function Dashboard(props) {
     }
   };
 
+  const handleSystemModalContinue = () => {
+    // Redirect to new system
+    window.location.href = "https://myroutecare.netlify.app";
+  };
+
   return (
     <div className={classes.wrapper}>
+      <DisciplineSystemModal
+        isOpen={showSystemModal}
+        onContinue={handleSystemModalContinue}
+      />
       <Sidebar
         routes={routes}
         logoText={"Hospice Mgmt"}
