@@ -387,13 +387,13 @@ function PayrollFunction(props) {
         patientCd: param.patient?.patientCd || "",
         serviceType: param.serviceType?.value,
         serviceCd: param.serviceType?.code,
-        paymentType: param.paymentType.value,
+        paymentType: (param.paymentType.value || "").trim(),
         serviceRate: param.serviceRate,
         totalRate: param.totalRate,
         noOfService: param.noOfService,
         deduction: param.deduction,
         comments: param.comments || "",
-        paymentInfo: param.paymentInfo || "TBD",
+        paymentInfo: (param.paymentInfo || "TBD").trim(),
         payAmount: param.payAmount,
         start_period: payload.general?.start_period,
         end_period: payload.general?.end_period,
@@ -717,7 +717,7 @@ function PayrollFunction(props) {
           (s) => s.employeeName === u && s.payDate === p
         );
         const uniquePaymentInfo = Array.from(
-          new Set(paymentInfos.map((p) => p.paymentInfo))
+          new Set(paymentInfos.map((p) => (p.paymentInfo || "").trim()))
         );
         console.log("Flow 2]", p, uniquePaymentInfo);
         let totalAmount = 0.0;
@@ -725,7 +725,7 @@ function PayrollFunction(props) {
         uniquePaymentInfo.forEach((i) => {
           const singleData = selectedData.filter(
             (s) =>
-              s.employeeName === u && s.payDate === p && s.paymentInfo === i
+              s.employeeName === u && s.payDate === p && (s.paymentInfo || "").trim() === i
           );
           singleData.forEach((d) => {
             totalAmount += parseFloat(d.totalRate);
@@ -734,7 +734,7 @@ function PayrollFunction(props) {
             payDate: p,
             employee: `${u} (${position?.alias || "-"})`,
             amount: parseFloat(totalAmount, 2),
-            paymentType: singleData[0].paymentType,
+            paymentType: (singleData[0].paymentType || "").trim(),
             paymentInfo: i,
           };
           newPdfData.push(jsonObj);

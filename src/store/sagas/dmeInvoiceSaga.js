@@ -14,10 +14,23 @@ import { patientListStateSelector } from "../selectors/patientSelector";
 function* listDmeInvoice(filter) {
   try {
     console.log("[DME Invoice Filter]", filter.payload);
-    let { data, error, status } = yield supabaseClient
+
+    let query = supabaseClient
       .from("dme_invoices")
       .select()
       .eq("companyId", filter.payload.companyId);
+
+    // Add date range filter if provided
+    if (filter.payload.from && filter.payload.to) {
+      query = query
+        .gte("invoice_dt", filter.payload.from)
+        .lte("invoice_dt", filter.payload.to);
+    }
+
+    // Order by invoice date descending
+    query = query.order("invoice_dt", { ascending: false });
+
+    let { data, error, status } = yield query;
 
     if (error && status !== 406) {
       console.log(error.toString());
