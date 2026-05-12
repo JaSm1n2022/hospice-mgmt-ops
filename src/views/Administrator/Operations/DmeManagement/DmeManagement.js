@@ -65,8 +65,31 @@ function DmeManagement() {
     if (iframe && patientList.length > 0) {
       const sendPatientData = () => {
         try {
+          // Filter patients based on DME equipment and EOC status
+          const now = new Date();
+          const sixtyDaysAgo = new Date(now.getTime() - (60 * 24 * 60 * 60 * 1000));
+
+          const filteredPatients = patientList.filter(patient => {
+            // Exclude patients with no DME equipment
+            const hasDme = patient.dme && Array.isArray(patient.dme) && patient.dme.length > 0;
+            if (!hasDme) {
+              return false;
+            }
+
+            // Include patient if they don't have an EOC date (still active)
+            if (!patient.eoc_dt) {
+              return true;
+            }
+
+            // Parse EOC date
+            const eocDate = new Date(patient.eoc_dt);
+
+            // Exclude patients who have been EOC for more than 60 days
+            return eocDate >= sixtyDaysAgo;
+          });
+
           // Format patient data for the iframe
-          const patientCodes = patientList.map(patient => ({
+          const patientCodes = filteredPatients.map(patient => ({
             code: patient.patientCd,
             name: `${patient.first_name || ''} ${patient.last_name || ''}`.trim(),
             fullData: patient
@@ -78,7 +101,7 @@ function DmeManagement() {
             patientCodes: patientCodes
           }, '*');
 
-          console.log('✓ Sent', patientCodes.length, 'patients to iframe');
+          console.log('✓ Sent', patientCodes.length, 'patients to iframe (filtered from', patientList.length, 'total)');
         } catch (error) {
           console.error('Error sending patient data to iframe:', error);
         }

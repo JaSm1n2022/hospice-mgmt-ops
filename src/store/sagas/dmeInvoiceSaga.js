@@ -152,7 +152,7 @@ function* createDmeInvoice(rqst) {
     }
 
     yield put(setCreateDmeInvoiceSucceed({ success: true }));
-    TOAST.success("DME Invoice saved and patients updated successfully!");
+    TOAST.ok("DME Invoice saved and patients updated successfully!");
 
   } catch (error) {
     console.log(`[Create DME Invoice Catch]: ${error.toString()}`);
