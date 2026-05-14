@@ -68,6 +68,7 @@ import PaycheckDocument from "views/Administrator/Document/PaycheckDocument";
 import PayrollPaymentDocument from "views/Administrator/Document/PayrollPaymentDocument";
 import PayrollReceivedDocument from "views/Administrator/Document/PayrollReceivedDocument";
 import PatientPayrollPaymentDocument from "views/Administrator/Document/PatientPayrollDocument";
+import ServicesReportDocument from "views/Administrator/Document/ServicesReportDocument";
 import { EMPLOYEE_POSITION } from "utils/constants";
 import { attemptToFetchProduct } from "store/actions/productAction";
 import { resetFetchProductState } from "store/actions/productAction";
@@ -81,6 +82,7 @@ import { transactionCreateStateSelector } from "store/selectors/transactionSelec
 import { SupaContext } from "App";
 import Snackbar from "components/Snackbar/Snackbar";
 import DuplicateBillingModal from "./components/DuplicateBillingModal";
+import { handleExport } from "utils/XlsxHelper";
 const styles = {
   cardCategoryWhite: {
     "&,& a,& a:hover,& a:focus": {
@@ -146,6 +148,8 @@ function PayrollFunction(props) {
   const [isPayrollReceivedDocument, setIsPayrollReceivedDocument] = useState(
     false
   );
+  const [isServicesReportDocument, setIsServicesReportDocument] = useState(false);
+  const [servicesReportData, setServicesReportData] = useState([]);
   const [printData, setPrintData] = useState({});
   const [columns, setColumns] = useState(PayrollHandler.columns());
   const [isDuplicateBillingModalOpen, setIsDuplicateBillingModalOpen] = useState(false);
@@ -563,12 +567,10 @@ function PayrollFunction(props) {
     const headers = customizeHeaders || columns;
     const excel = Helper.formatExcelReport(headers, excelData);
     console.log("headers", excel);
-    const fileType =
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
-    const fileExtension = ".xlsx";
     let fileName = `payroll_list_batch_${new Date().getTime()}`;
 
-    if (excelData && excelData.length) {
+    if (excel && excel.length) {
+      handleExport(excel, fileName);
     }
   };
   const closePrintModalHandler = () => {
@@ -576,6 +578,7 @@ function PayrollFunction(props) {
     setIsPaymentDocument(false);
     setIsPayrollReceivedDocument(false);
     setIsPatientPaymentDocument(false);
+    setIsServicesReportDocument(false);
   };
 
   const formatEmployeeReportHandler = () => {
@@ -804,9 +807,101 @@ function PayrollFunction(props) {
     setIsPayrollReceivedDocument(true);
     setAnchorEl(null);
   };
+
+  const servicesReportHandler = () => {
+    // Use current table data (filtered or all)
+    const currentData = dataSource;
+
+    if (!currentData || currentData.length === 0) {
+      TOAST.error("No data available for report");
+      return;
+    }
+
+    // Helper function to normalize service types
+    const normalizeServiceType = (serviceType) => {
+      if (!serviceType) return "Unknown";
+
+      const serviceUpper = serviceType.toUpperCase();
+
+      // Reassessment Visit grouping
+      // Includes: Reassessment, Reassessment Visit, Recertification Visit
+      // or anything containing Recertification or Reassessment
+      if (
+        serviceUpper === "REASSESSMENT" ||
+        serviceUpper === "REASSESSMENT VISIT" ||
+        serviceUpper === "RECERTIFICATION VISIT" ||
+        serviceUpper.includes("RECERTIFICATION") ||
+        serviceUpper.includes("REASSESSMENT")
+      ) {
+        return "Reassessment Visit";
+      }
+
+      // Regular Visit grouping
+      // Includes: Regular Visit, Follow Up Visit
+      if (
+        serviceUpper === "REGULAR VISIT" ||
+        serviceUpper === "FOLLOW UP VISIT"
+      ) {
+        return "Regular Visit";
+      }
+
+      // SOC/Assessment grouping
+      // Includes: SOC/Assessment and Evaluation Visit
+      if (
+        serviceUpper === "SOC/ASSESSMENT" ||
+        serviceUpper === "EVALUATION VISIT"
+      ) {
+        return "SOC/Assessment";
+      }
+
+      // Salaried grouping
+      // Includes: anything starting with "Fixed"
+      if (serviceUpper.startsWith("FIXED")) {
+        return "Salaried";
+      }
+
+      // Return original if no mapping matches
+      return serviceType;
+    };
+
+    // Group by service type and calculate totals
+    const groupedData = {};
+
+    currentData.forEach((record) => {
+      const originalServiceType = record.serviceType || "Unknown";
+      const normalizedServiceType = normalizeServiceType(originalServiceType);
+      const payAmount = parseFloat(record.payAmount || 0);
+
+      if (!groupedData[normalizedServiceType]) {
+        groupedData[normalizedServiceType] = {
+          serviceType: normalizedServiceType,
+          count: 0,
+          total: 0,
+        };
+      }
+
+      groupedData[normalizedServiceType].count += 1;
+      groupedData[normalizedServiceType].total += payAmount;
+    });
+
+    // Convert to array
+    const reportData = Object.values(groupedData);
+
+    // Generate date range string
+    const dateRangeStr = `${dateFrom || 'N/A'} to ${dateTo || 'N/A'}`;
+
+    setServicesReportData(reportData);
+    setIsServicesReportDocument(true);
+  };
   const exportToExcelHandler = () => {
     const excelData = dataSource.filter((r) => r.isChecked);
-    createExcelHandler(sortByEmployee(excelData));
+    const sortedData = sortByEmployee(excelData);
+    const excel = Helper.formatExcelReport(columns, sortedData);
+    let fileName = `payroll_list_batch_${new Date().getTime()}`;
+
+    if (excel && excel.length) {
+      handleExport(excel, fileName);
+    }
   };
 
   const filterByDateHandler = (dates) => {
@@ -1236,6 +1331,14 @@ function PayrollFunction(props) {
                       >
                         <Warning className={classes.icons} /> Duplicate Billing Report
                       </Button>
+                      <Button
+                        color="primary"
+                        className={classes.marginRight}
+                        onClick={servicesReportHandler}
+                        disabled={!dataSource || dataSource.length === 0}
+                      >
+                        <ImportExport className={classes.icons} /> Services Report
+                      </Button>
                       <div style={{ flex: "0 0 300px" }}>
                         <SearchCustomTextField
                           background={"white"}
@@ -1394,6 +1497,14 @@ function PayrollFunction(props) {
         <PayrollReceivedDocument
           isOpen={isPayrollReceivedDocument}
           printData={printData}
+          closePrintModalHandler={closePrintModalHandler}
+        />
+      )}
+      {isServicesReportDocument && (
+        <ServicesReportDocument
+          isOpen={isServicesReportDocument}
+          reportData={servicesReportData}
+          dateRange={`${dateFrom} to ${dateTo}`}
           closePrintModalHandler={closePrintModalHandler}
         />
       )}
