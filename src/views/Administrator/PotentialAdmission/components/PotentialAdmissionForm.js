@@ -383,8 +383,8 @@ function PotentialAdmissionForm(props) {
       {
         id: "patientCd",
         component: "textfield",
-        placeholder: "Patient Code *",
-        label: "Patient Code *",
+        placeholder: "Client Code *",
+        label: "Client Code *",
         name: "patientCd",
         cols: 4,
       },
@@ -608,7 +608,7 @@ function PotentialAdmissionForm(props) {
         const fnField = tempList.find((t) => t.name === "firstName");
         if (fnField) {
           fnField.isError = true;
-          fnField.errorMsg = "First Name or Patient Code is required.";
+          fnField.errorMsg = "First Name or Client Code is required.";
         }
       }
 
@@ -617,7 +617,7 @@ function PotentialAdmissionForm(props) {
         const lnField = tempList.find((t) => t.name === "lastName");
         if (lnField) {
           lnField.isError = true;
-          lnField.errorMsg = "Last Name or Patient Code is required.";
+          lnField.errorMsg = "Last Name or Client Code is required.";
         }
       }
     }
@@ -627,7 +627,7 @@ function PotentialAdmissionForm(props) {
       const patientCdField = tempList.find((t) => t.name === "patientCd");
       if (patientCdField) {
         patientCdField.isError = true;
-        patientCdField.errorMsg = "Patient Code is required.";
+        patientCdField.errorMsg = "Client Code is required.";
       }
     }
 

@@ -193,7 +193,7 @@ const DistributionCalendarPrintDocument = ({ distributions, startDate, endDate }
             Total Orders: {filteredDistributions.length}
           </Text>
           <Text style={styles.summaryRow}>
-            Unique Patients: {Object.keys(patientCounts).length}
+            Unique Clients: {Object.keys(patientCounts).length}
           </Text>
           <Text style={styles.summaryRow}>
             Report Period: {rangeStart.format("MM/DD/YYYY")} to {rangeEnd.format("MM/DD/YYYY")}
@@ -210,7 +210,7 @@ const DistributionCalendarPrintDocument = ({ distributions, startDate, endDate }
               {patientEntries.map((patientData, patientIndex) => (
                 <View key={patientIndex} style={styles.patientSection}>
                   <Text style={styles.patientHeader}>
-                    Patient: {patientData.patientCd}
+                    Client: {patientData.patientCd}
                   </Text>
 
                   <View style={styles.table}>

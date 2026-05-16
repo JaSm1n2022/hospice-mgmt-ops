@@ -93,7 +93,7 @@ const TemplatePrint = (props) => {
                         component="th"
                         scope="row"
                       >
-                        Patient Name : {general.patientName || ""}
+                        Client Name : {general.patientName || ""}
                       </TableCell>
                       <TableCell
                         className={classes.tableCell}
@@ -329,7 +329,7 @@ const TemplatePrint = (props) => {
                           component="th"
                           scope="row"
                         >
-                          Patient Name : {general.patientName || ""}
+                          Client Name : {general.patientName || ""}
                         </TableCell>
                         <TableCell
                           className={classes.tableCell}
@@ -610,7 +610,7 @@ const TemplatePrint = (props) => {
                       </TableCell>
                       <TableCell align="right" style={{ border: 0 }}>
                         <div>_________________________________________</div>
-                        <div>Name of Patient/Caregiver</div>
+                        <div>Name of Client/Caregiver</div>
                       </TableCell>
                     </TableRow>
                     <TableRow style={{ border: 0 }}>

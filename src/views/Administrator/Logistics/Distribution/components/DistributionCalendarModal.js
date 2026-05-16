@@ -305,7 +305,7 @@ const DistributionCalendarModal = ({ isOpen, onClose, distributions }) => {
         <Document>
           <Page size="A4" style={pdfStyles.page}>
             <View style={pdfStyles.header}>
-              <Text style={pdfStyles.title}>Patient Order Details</Text>
+              <Text style={pdfStyles.title}>Client Order Details</Text>
               <Text style={pdfStyles.subtitle}>Medical/Incontinence Category</Text>
               <Text style={pdfStyles.generated}>
                 Generated: {moment().format("MM/DD/YYYY hh:mm A")}
@@ -549,7 +549,7 @@ const DistributionCalendarModal = ({ isOpen, onClose, distributions }) => {
       >
         <DialogTitle>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span>Patient Order Details</span>
+            <span>Client Order Details</span>
             <Button
               variant="contained"
               color="primary"

@@ -294,7 +294,7 @@ const PrintOrdersPdfDocument = ({
                 <View style={styles.infoRow}>
                   <View style={{ width: "50%" }}>
                     <Text style={styles.infoLabel}>
-                      Patient Name: {patientName}
+                      Client Name: {patientName}
                     </Text>
                   </View>
                   <View style={{ width: "50%", alignItems: "flex-end" }}>
@@ -355,7 +355,7 @@ const PrintOrdersPdfDocument = ({
                 <View style={styles.signatureBlock}>
                   <View style={styles.signatureLine} />
                   <Text style={styles.signatureLabel}>
-                    Name of Patient/Caregiver
+                    Name of Client/Caregiver
                   </Text>
                   <View style={styles.signatureLine} />
                   <Text style={styles.signatureLabel}>Signature</Text>
@@ -387,7 +387,7 @@ const PrintOrdersPdfDocument = ({
                 <View style={styles.infoRow}>
                   <View style={{ width: "50%" }}>
                     <Text style={styles.infoLabel}>
-                      Patient Name: {patientName}
+                      Client Name: {patientName}
                     </Text>
                   </View>
                   <View style={{ width: "50%", alignItems: "flex-end" }}>
@@ -464,7 +464,7 @@ const PrintOrdersPdfDocument = ({
                 <View style={styles.signatureBlock}>
                   <View style={styles.signatureLine} />
                   <Text style={styles.signatureLabel}>
-                    Name of Patient/Caregiver
+                    Name of Client/Caregiver
                   </Text>
                   <View style={styles.signatureLine} />
                   <Text style={styles.signatureLabel}>Signature</Text>

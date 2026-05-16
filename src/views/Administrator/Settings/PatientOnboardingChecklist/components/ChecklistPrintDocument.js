@@ -261,7 +261,7 @@ const ITEM_LABELS = {
   poaAdvanceDirective: "POA/Advance Directive",
   billOfRights: "Bill of Rights",
   telehealthConsent: "Telehealth Consent",
-  patientNotification: "Patient Notification",
+  patientNotification: "Client Notification",
   nursing: "Nursing",
   spiritual: "Spiritual",
   psychosocial: "Psychosocial",
@@ -816,9 +816,9 @@ const ChecklistPrintDocument = ({ patientData }) => {
     <Document>
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
-          <Text style={styles.title}>Patient Onboarding Checklist</Text>
+          <Text style={styles.title}>Client Onboarding Checklist</Text>
           <Text style={styles.patientCd}>
-            Patient: {patientData?.patientCd || "N/A"}
+            Client: {patientData?.patientCd || "N/A"}
           </Text>
           <Text style={styles.generatedText}>
             Generated: {moment().format("MM/DD/YYYY hh:mm A")}

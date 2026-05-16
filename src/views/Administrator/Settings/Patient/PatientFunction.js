@@ -339,7 +339,7 @@ function PatientFunction(props) {
     props.createPatientState.status === ACTION_STATUSES.SUCCEED
   ) {
     setIsCreatePatientCollection(false);
-    showNotification("tc", "success", "Patient successfully created.");
+    showNotification("tc", "success", "Client successfully created.");
     props.listPatients({ companyId: context.userProfile?.companyId });
   }
   if (
@@ -347,7 +347,7 @@ function PatientFunction(props) {
     props.updatePatientState &&
     props.updatePatientState.status === ACTION_STATUSES.SUCCEED
   ) {
-    showNotification("tc", "success", "Patient successfully updated.");
+    showNotification("tc", "success", "Client successfully updated.");
     setIsUpdatePatientCollection(false);
     props.listPatients({ companyId: context.userProfile?.companyId });
   }
@@ -361,7 +361,7 @@ function PatientFunction(props) {
     props.deletePatientState &&
     props.deletePatientState.status === ACTION_STATUSES.SUCCEED
   ) {
-    showNotification("tc", "success", "Patient successfully deleted.");
+    showNotification("tc", "success", "Client successfully deleted.");
     setIsDeletePatientCollection(false);
 
     props.listPatients({ companyId: context.userProfile?.companyId });
@@ -435,7 +435,7 @@ function PatientFunction(props) {
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Patient Information - ${patient.patientCd}</title>
+        <title>Client Information - ${patient.patientCd}</title>
         <style>
           @media print {
             @page { margin: 0.5in; }
@@ -593,8 +593,8 @@ function PatientFunction(props) {
 
         <div class="header">
           ${logoBase64 ? `<img src="${logoBase64}" alt="Company Logo" />` : ''}
-          <h1>Patient Information Report</h1>
-          <div class="patient-code">Patient Code: <strong>${patient.patientCd || 'N/A'}</strong></div>
+          <h1>Client Information Report</h1>
+          <div class="patient-code">Client Code: <strong>${patient.patientCd || 'N/A'}</strong></div>
           <div class="patient-code">
             Status:
             <span class="status-badge ${patient.status === 'Active' ? 'status-active' : 'status-inactive'}">
@@ -605,7 +605,7 @@ function PatientFunction(props) {
 
         <!-- Patient Profile -->
         <div class="section">
-          <div class="section-title">Patient Profile</div>
+          <div class="section-title">Client Profile</div>
           <div class="info-grid">
             <div class="info-item">
               <div class="info-label">Last Name</div>
@@ -808,7 +808,7 @@ function PatientFunction(props) {
             <Card>
               <CardHeader color="rose">
                 <Grid container justifyContent="space-between">
-                  <h4 className={classes.cardTitleWhite}>Patient</h4>
+                  <h4 className={classes.cardTitleWhite}>Client</h4>
                 </Grid>
               </CardHeader>
               <CardBody>
@@ -820,7 +820,7 @@ function PatientFunction(props) {
                         className={classes.marginRight}
                         onClick={() => createFormHandler()}
                       >
-                        <AddIcon className={classes.icons} /> Add Patient
+                        <AddIcon className={classes.icons} /> Add Client
                       </Button>
 
                       <Button

@@ -129,7 +129,7 @@ function PrintAssessmentTrendsModal({ isOpen, onClose, patientsData, logoBase64 
 
           <div className={classes.stats}>
             <div className={classes.statRow}>
-              <span className={classes.statLabel}>Total Patients:</span>
+              <span className={classes.statLabel}>Total Clients:</span>
               <span className={classes.statValue}>{totalPatients}</span>
             </div>
             <div className={classes.statRow}>

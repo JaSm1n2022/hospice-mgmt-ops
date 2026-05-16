@@ -55,7 +55,7 @@ function PrintModal({ isOpen, onClose, patientData }) {
     <Modal open={isOpen} onClose={onClose}>
       <div style={modalStyle} className={classes.paper}>
         <div className={classes.header}>
-          <h3 style={{ margin: 0 }}>Print Patient Onboarding Checklist</h3>
+          <h3 style={{ margin: 0 }}>Print Client Onboarding Checklist</h3>
           <Clear className={classes.closeButton} onClick={onClose} />
         </div>
         <div className={classes.pdfContainer}>

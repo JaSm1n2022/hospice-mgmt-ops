@@ -385,7 +385,7 @@ function Dashboard(props) {
                   <CardIcon color="warning">
                     <PeopleAltOutlined />
                   </CardIcon>
-                  <p className={classes.cardCategory}>Assigned Patients</p>
+                  <p className={classes.cardCategory}>Assigned Clients</p>
                   <h3 className={classes.cardTitle}>
                     {assignmentList?.length}
                   </h3>
@@ -605,7 +605,7 @@ function Dashboard(props) {
                     </div>
                     <Table
                       hover
-                      tableHead={["Patient", "Frequency", "Days", "Time"]}
+                      tableHead={["Client", "Frequency", "Days", "Time"]}
                       tableData={
                         Array.isArray(visitData) && visitData?.length
                           ? visitData

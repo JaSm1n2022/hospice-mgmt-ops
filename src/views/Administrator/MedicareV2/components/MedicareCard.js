@@ -196,7 +196,7 @@ const MedicareCard = ({ data }) => {
                 )}
               </Box>
               <Box display="flex" alignItems="center" gap={1}>
-                <Tooltip title="Print Patient Summary" arrow>
+                <Tooltip title="Print Client Summary" arrow>
                   <IconButton size="small" style={{ color: "white" }} onClick={handlePrintClick}>
                     <Print />
                   </IconButton>

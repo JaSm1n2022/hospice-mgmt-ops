@@ -250,7 +250,7 @@ const PotentialAdmissionBatchPrintDocument = ({ admissionsData }) => {
       <View key={admissionData.id || index} wrap={false}>
         <View style={styles.patientSection}>
           <Text style={styles.patientHeader}>
-            Patient {index + 1}: {admissionData?.patientCd || "N/A"}
+            Client {index + 1}: {admissionData?.patientCd || "N/A"}
           </Text>
           <View style={styles.fieldRow}>
             <Text style={styles.fieldLabel}>
@@ -269,7 +269,7 @@ const PotentialAdmissionBatchPrintDocument = ({ admissionsData }) => {
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Basic Information</Text>
-            {renderField("Patient Code", admissionData.patientCd)}
+            {renderField("Client Code", admissionData.patientCd)}
             {renderField("Referral", admissionData.referral)}
             {renderDateField("Eligibility Date", admissionData.eligibility_dt)}
             {renderField("Age", admissionData.age)}
@@ -374,7 +374,7 @@ const PotentialAdmissionBatchPrintDocument = ({ admissionsData }) => {
         <View style={styles.header}>
           <Text style={styles.title}>Potential Admissions Report</Text>
           <Text style={styles.subtitle}>
-            Total Patients: {admissionsData?.length || 0}
+            Total Clients: {admissionsData?.length || 0}
           </Text>
           <Text style={styles.generated}>
             Generated: {moment().format("MM/DD/YYYY hh:mm A")}
@@ -386,7 +386,7 @@ const PotentialAdmissionBatchPrintDocument = ({ admissionsData }) => {
             <Text style={styles.summaryTitle}>Summary Statistics</Text>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>
-                Total Patients: {summary.total}
+                Total Clients: {summary.total}
               </Text>
             </View>
 

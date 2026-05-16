@@ -1777,7 +1777,7 @@ const Distribution = (props) => {
           <Grid container spacing={3} style={{ marginTop: 8 }}>
             <Grid item xs={12}>
               <TextField
-                label="Patient Name"
+                label="Client Name"
                 type="text"
                 value={printOrdersPatientName}
                 onChange={(e) => setPrintOrdersPatientName(e.target.value)}
@@ -1865,7 +1865,7 @@ const Distribution = (props) => {
           <Grid container spacing={3} style={{ marginTop: 8 }}>
             <Grid item xs={12}>
               <TextField
-                label="Patient Name"
+                label="Client Name"
                 type="text"
                 value={pdfDialogData.patientName}
                 onChange={(e) =>

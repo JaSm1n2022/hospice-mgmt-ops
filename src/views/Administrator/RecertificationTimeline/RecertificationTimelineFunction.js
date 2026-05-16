@@ -152,7 +152,7 @@ function RecertificationTimelineFunction(props) {
                   <Grid item xs={12} sm={4} md={3}>
                     <TextField
                       fullWidth
-                      label="Search Patient ID"
+                      label="Search Client ID"
                       variant="outlined"
                       size="small"
                       value={patientIdFilter}

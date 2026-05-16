@@ -349,8 +349,8 @@ const general = [
   {
     id: "patient",
     component: "singlecomplete",
-    placeholder: "Patient *",
-    label: "Patient *",
+    placeholder: "Client *",
+    label: "Client *",
     name: "patient",
     isMandatory: true,
     errorMsg: PATIENT_ERROR_MSG,
@@ -1174,15 +1174,15 @@ function TransportationForm(props) {
                 </Grid>
                 <Grid item xs={12} md={12} sm={12}>
                   <Typography variant="body">
-                    Patient Information and needs during transfer
+                    Client Information and needs during transfer
                   </Typography>
                 </Grid>
                 <Grid item xs={12} md={12} sm={12}>
                   <Grid container direction="row" spacing={2}>
                     <Grid item xs={12} md={3} sm={12}>
                       <CustomTextField
-                        label="Patient Weight"
-                        placeholder="Patient Weight"
+                        label="Client Weight"
+                        placeholder="Client Weight"
                         name="weight"
                         value={patientData.weight}
                         onChange={patientDataInputHandler}
@@ -1190,8 +1190,8 @@ function TransportationForm(props) {
                     </Grid>
                     <Grid item xs={12} md={3} sm={12}>
                       <CustomTextField
-                        label="Patient Height"
-                        placeholder="Patient Height"
+                        label="Client Height"
+                        placeholder="Client Height"
                         name="height"
                         value={patientData.height}
                         onChange={patientDataInputHandler}

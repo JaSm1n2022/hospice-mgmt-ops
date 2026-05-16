@@ -375,7 +375,7 @@ const AssessmentTrendsDocument = ({ patientsData, logoBase64 }) => {
 
         {/* Summary Statistics */}
         <View style={{ marginBottom: 15, padding: 10, backgroundColor: "#f5f5f5" }}>
-          <Text style={styles.summaryText}>Total Patients: {totalPatients}</Text>
+          <Text style={styles.summaryText}>Total Clients: {totalPatients}</Text>
           <Text style={styles.summaryText}>Total Deaths: {totalDeaths}</Text>
           <Text style={styles.summaryText}>
             Total Alerts: <Text style={styles.alertText}>{totalAlerts}</Text>
@@ -406,7 +406,7 @@ const AssessmentTrendsDocument = ({ patientsData, logoBase64 }) => {
         <View style={styles.legendContainer}>
           <View style={styles.legendItem}>
             <View style={[styles.legendBox, { backgroundColor: "#e91e63" }]} />
-            <Text style={styles.legendText}>Patient Count</Text>
+            <Text style={styles.legendText}>Client Count</Text>
           </View>
         </View>
 
@@ -417,11 +417,11 @@ const AssessmentTrendsDocument = ({ patientsData, logoBase64 }) => {
           {/* Table Header */}
           <View style={styles.tableHeader}>
             <Text style={[styles.columnHeader, styles.col1]}>Assessment</Text>
-            <Text style={[styles.columnHeader, styles.col2]}>Patients</Text>
+            <Text style={[styles.columnHeader, styles.col2]}>Clients</Text>
             <Text style={[styles.columnHeader, styles.col3]}>Active</Text>
             <Text style={[styles.columnHeader, styles.col4]}>Deaths</Text>
             <Text style={[styles.columnHeader, styles.col5]}>Mortality %</Text>
-            <Text style={[styles.columnHeader, styles.col6]}>Alerts (Patient Codes)</Text>
+            <Text style={[styles.columnHeader, styles.col6]}>Alerts (Client Codes)</Text>
           </View>
 
           {/* Table Rows */}

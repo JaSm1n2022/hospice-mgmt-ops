@@ -238,8 +238,8 @@ const RecertificationCalendarModal = ({ isOpen, onClose, patients }) => {
       certType = "Regular Recertification";
     }
 
-    const message = `Patient: ${resource.patientName || resource.patientCd}
-Patient ID: ${resource.patientCd}
+    const message = `Client: ${resource.patientName || resource.patientCd}
+Client ID: ${resource.patientCd}
 Current Benefit Period: ${resource.currentBP}
 Certifying For: BP ${resource.certifyingForBP}
 Type: ${certType}

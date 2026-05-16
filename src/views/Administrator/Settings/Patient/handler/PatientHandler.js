@@ -13,7 +13,7 @@ class PatientHandler {
         name: "alert",
         header: "Alert",
         render: ({ data }) => {
-          // Show alert icon if patient has EOC (non-death) but no post-discharge days
+          // Show alert icon if client has EOC (non-death) but no post-discharge days
           const hasEoc = data.eoc;
           const hasPostDischargeDays =
             data.new_hospice_care_day &&
@@ -33,7 +33,7 @@ class PatientHandler {
 
           return (
             <Tooltip
-              title="⚠️ Patient discharged (non-death). Please review the Post-Discharge (EOC) number of care days. Verify eligibility and update the patient's post-discharge total days in the patient profile."
+              title="⚠️ Client discharged (non-death). Please review the Post-Discharge (EOC) number of care days. Verify eligibility and update the client's post-discharge total days in the client profile."
               arrow
             >
               <IconButton size="small" style={{ color: "#c62828" }}>
@@ -47,7 +47,7 @@ class PatientHandler {
         defaultFlex: 1,
         minWidth: 200,
         name: "patientCd",
-        header: "Patient",
+        header: "Client",
       },
       {
         defaultFlex: 1,
@@ -132,7 +132,7 @@ class PatientHandler {
     ];
   }
   static mapData(items) {
-    // Compute current benefits for all patients using the reusable calculator
+    // Compute current benefits for all clients using the reusable calculator
     return BenefitPeriodCalculator.batchCalculateCurrentBenefits(items);
   }
 }

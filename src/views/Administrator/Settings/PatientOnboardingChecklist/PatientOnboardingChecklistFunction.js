@@ -812,7 +812,7 @@ function PatientOnboardingChecklistFunction(props) {
                         </Select>
                       </FormControl>
                       <TextField
-                        label="Search by Patient Code"
+                        label="Search by Client Code"
                         variant="outlined"
                         size="small"
                         fullWidth

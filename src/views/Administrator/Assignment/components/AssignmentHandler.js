@@ -13,7 +13,7 @@ class AssignmentHandler {
         width: 100,
         visible: isCreate ? false : true,
         name: "patientCd",
-        header: "Patient",
+        header: "Client",
       },
       {
         defaultFlex: 1,

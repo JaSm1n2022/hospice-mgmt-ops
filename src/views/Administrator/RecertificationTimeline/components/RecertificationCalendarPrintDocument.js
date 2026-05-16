@@ -253,7 +253,7 @@ const RecertificationCalendarPrintDocument = ({ patients, startDate, endDate }) 
             Recertification Calendar Summary
           </Text>
           <Text style={styles.subtitle}>
-            All Active Patients - F2F Starting from 3rd Benefit Period
+            All Active Clients - F2F Starting from 3rd Benefit Period
           </Text>
           <Text style={styles.generated}>
             Generated: {moment().format("MM/DD/YYYY hh:mm A")}
@@ -263,7 +263,7 @@ const RecertificationCalendarPrintDocument = ({ patients, startDate, endDate }) 
         <View style={styles.summarySection}>
           <Text style={styles.summaryTitle}>Summary Statistics</Text>
           <Text style={styles.summaryRow}>
-            Total Patients: {patients.length}
+            Total Clients: {patients.length}
           </Text>
           <Text style={styles.summaryRow}>
             Total Recertification Events (Selected Range): {totalEvents}

@@ -706,7 +706,7 @@ function ChecklistModal({
       <div style={modalStyle} className={classes.paper}>
         <div className={classes.header}>
           <h3 style={{ margin: 0 }}>
-            {mode === "edit" ? "Edit" : "Add"} Patient Onboarding Checklist
+            {mode === "edit" ? "Edit" : "Add"} Client Onboarding Checklist
           </h3>
           <Clear style={{ cursor: "pointer" }} onClick={onClose} />
         </div>
@@ -715,8 +715,8 @@ function ChecklistModal({
           {/* Patient Selection */}
           <div style={{ marginBottom: "20px" }}>
             <CustomSingleAutoComplete
-              placeholder="Select Patient"
-              label="Select Patient"
+              placeholder="Select Client"
+              label="Select Client"
               searchList={patientList || []}
               options={patientList || []}
               value={selectedPatient}

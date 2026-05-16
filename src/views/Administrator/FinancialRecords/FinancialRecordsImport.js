@@ -300,7 +300,7 @@ const FinancialRecordsImport = () => {
                     <table className={classes.table}>
                       <thead>
                         <tr>
-                          <th>Select Patient</th>
+                          <th>Select Client</th>
                           <th>Patient (from Excel)</th>
                           <th>Payer</th>
                           <th>Period</th>

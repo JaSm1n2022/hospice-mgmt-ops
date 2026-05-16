@@ -72,7 +72,7 @@ export default function InvoiceExtractorModal(props) {
             ref={iframeRef}
             src="/patient_mapping.html"
             className={classes.iframe}
-            title="Patient Equipment Mapping"
+            title="Client Equipment Mapping"
           />
         </CardBody>
       </Card>

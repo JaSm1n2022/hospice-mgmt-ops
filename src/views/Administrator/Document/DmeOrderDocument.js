@@ -392,7 +392,7 @@ function DmeOrderDocument(props) {
                   </View>
                   <View style={styles.viewStyle}>
                     <View style={styles.titleText}>
-                      <Text>Patient Name : </Text>
+                      <Text>Client Name : </Text>
                     </View>
                     <View style={styles.leftLineText}>
                       <Text>{printData?.patient?.code}</Text>

@@ -9,7 +9,7 @@ class DistributionHandler {
         defaultFlex: 1,
         minWidth: 220,
         name: "patientCd",
-        header: "Patient",
+        header: "Client",
       },
       {
         defaultFlex: 1,

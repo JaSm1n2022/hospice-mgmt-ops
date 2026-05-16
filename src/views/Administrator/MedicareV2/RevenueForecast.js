@@ -682,11 +682,11 @@ function RevenueForecast(props) {
                         variant="outlined"
                         className={classes.selectField}
                       >
-                        <InputLabel>Select Patient</InputLabel>
+                        <InputLabel>Select Client</InputLabel>
                         <Select
                           value={selectedPatient}
                           onChange={handlePatientChange}
-                          label="Select Patient"
+                          label="Select Client"
                         >
                           <MenuItem value="">
                             <em>All Patients (Total)</em>

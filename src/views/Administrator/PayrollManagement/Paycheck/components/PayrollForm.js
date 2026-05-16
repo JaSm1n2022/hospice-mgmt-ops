@@ -730,8 +730,8 @@ function PayrollForm(props) {
                           style={{ paddingBottom: 2 }}
                         >
                           <CustomSingleAutoComplete
-                            label="Patients"
-                            placeholder="Patients"
+                            label="Clients"
+                            placeholder="Clients"
                             name="patient"
                             options={[...patients]}
                             value={item["patient"] || DEFAULT_ITEM}

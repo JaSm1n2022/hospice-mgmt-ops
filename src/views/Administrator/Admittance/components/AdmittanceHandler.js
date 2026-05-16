@@ -5,7 +5,7 @@ class AdmittanceHandler {
     return [
       { width: 92, name: "actions", header: "Actions", visible: main },
 
-      { defaultFlex: 1, minWidth: 200, name: "patientCd", header: "Patient" },
+      { defaultFlex: 1, minWidth: 200, name: "patientCd", header: "Client" },
       { defaultFlex: 1, minWidth: 200, name: "referral", header: "Referral" },
       {
         defaultFlex: 1,

@@ -452,13 +452,13 @@ function HospiceIncomeFunction(props) {
                     <Grid container spacing={3}>
                       <Grid item xs={12} md={6}>
                         <FormControl fullWidth className={classes.formField}>
-                          <InputLabel>Patient</InputLabel>
+                          <InputLabel>Client</InputLabel>
                           <Select
                             value={formData.patientCd}
                             onChange={handleFormChange("patientCd")}
                           >
                             <MenuItem value="">
-                              <em>Select Patient</em>
+                              <em>Select Client</em>
                             </MenuItem>
                             {patientList.map((patient, idx) => (
                               <MenuItem key={idx} value={patient.patientCd}>
@@ -634,8 +634,8 @@ function HospiceIncomeFunction(props) {
                             <Table>
                               <TableHead>
                                 <TableRow>
-                                  <TableCell>Select Patient</TableCell>
-                                  <TableCell>Patient (from Excel)</TableCell>
+                                  <TableCell>Select Client</TableCell>
+                                  <TableCell>Client (from Excel)</TableCell>
                                   <TableCell>Payer</TableCell>
                                   <TableCell>Period</TableCell>
                                   <TableCell>Date Billed</TableCell>
@@ -748,7 +748,7 @@ function HospiceIncomeFunction(props) {
                       <Grid item xs={12} md={4}>
                         <TextField
                           fullWidth
-                          label="Search Patient"
+                          label="Search Client"
                           placeholder="Type patient ID..."
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}

@@ -78,9 +78,9 @@ const SimpleTestDocument = ({ patientsData }) => {
     <Document>
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
-          <Text style={styles.title}>Patient Onboarding Checklist Summary</Text>
+          <Text style={styles.title}>Client Onboarding Checklist Summary</Text>
           <Text style={styles.subtitle}>
-            Total Patients: {patientsData?.length || 0}
+            Total Clients: {patientsData?.length || 0}
           </Text>
           <Text style={styles.subtitle}>
             Generated: {moment().format("MM/DD/YYYY hh:mm A")}
@@ -303,7 +303,7 @@ function PrintAllModal({ isOpen, onClose, patientsData }) {
     >
       <div style={modalStyle} className={classes.paper}>
         <div className={classes.header}>
-          <h3 style={{ margin: 0 }}>Print All Patient Onboarding Checklists</h3>
+          <h3 style={{ margin: 0 }}>Print All Client Onboarding Checklists</h3>
           <Clear className={classes.closeButton} onClick={onClose} />
         </div>
         <div className={classes.content}>

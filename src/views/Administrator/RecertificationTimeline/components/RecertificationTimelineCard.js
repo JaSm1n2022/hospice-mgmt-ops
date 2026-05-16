@@ -161,7 +161,7 @@ const RecertificationTimelineCard = ({ data }) => {
         <div className={classes.dataRow}>
           <span className={classes.label}>
             <Person className={classes.icon} />
-            Patient ID:
+            Client ID:
           </span>
           <span className={classes.value}>{data.patientCd}</span>
         </div>

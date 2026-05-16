@@ -164,8 +164,8 @@ const general = [
   {
     id: "patient",
     component: "singlecomplete",
-    placeholder: "Patient *",
-    label: "Patient *",
+    placeholder: "Client *",
+    label: "Client *",
     name: "patient",
     isMandatory: true,
     errorMsg: PATIENT_ERROR_MSG,

@@ -481,7 +481,7 @@ function TransportationOrderDocument(props) {
                   </View>
                   <View style={styles.viewStyle}>
                     <View style={styles.titleText}>
-                      <Text>Patient Name : </Text>
+                      <Text>Client Name : </Text>
                     </View>
                     <View style={styles.leftLineText}>
                       <Text>{printData?.patientCd}</Text>
@@ -670,17 +670,17 @@ function TransportationOrderDocument(props) {
                   </View>
                   {/* PATIENT INFO */}
                   <View style={styles.leftSectionHeader2}>
-                    <Text>{`Patient Information and needs during transfer:`}</Text>
+                    <Text>{`Client Information and needs during transfer:`}</Text>
                   </View>
                   <View style={styles.viewStyle}>
                     <View style={styles.infoTitleText}>
-                      <Text>Patient's Height : </Text>
+                      <Text>Client's Height : </Text>
                     </View>
                     <View style={styles.infoLeftLineText}>
                       <Text>{printData.patient?.height}</Text>
                     </View>
                     <View style={styles.infoTitleText2}>
-                      <Text>Patient's Weight : </Text>
+                      <Text>Client's Weight : </Text>
                     </View>
                     <View style={styles.infoLeftLineText2}>
                       <Text>{printData.patient?.weight}</Text>

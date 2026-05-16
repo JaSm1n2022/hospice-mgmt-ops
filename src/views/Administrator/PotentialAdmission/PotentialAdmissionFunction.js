@@ -560,7 +560,7 @@ function PotentialAdmissionFunction(props) {
                     <Grid item xs={12} sm={6} md={4}>
                       <TextField
                         fullWidth
-                        label="Search Patient Code / Referral"
+                        label="Search Client Code / Referral"
                         variant="outlined"
                         size="small"
                         value={keywordValue}

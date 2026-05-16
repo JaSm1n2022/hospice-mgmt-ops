@@ -91,7 +91,7 @@ function PrintAlertViewModal({ isOpen, onClose, patientsData }) {
     >
       <div style={modalStyle} className={classes.paper}>
         <div className={classes.header}>
-          <h3 style={{ margin: 0 }}>Alert View - Selected Patients</h3>
+          <h3 style={{ margin: 0 }}>Alert View - Selected Clients</h3>
           <Clear className={classes.closeButton} onClick={onClose} />
         </div>
         <div className={classes.content}>

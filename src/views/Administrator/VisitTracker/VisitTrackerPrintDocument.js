@@ -215,7 +215,7 @@ const VisitTrackerPrintDocument = ({ employeeData, startDate, endDate, logoBase6
               </View>
             </View>
 
-            {/* Patient Sections */}
+            {/* Client Sections */}
             {empData.patients.map((patient, patIndex) => (
               <View key={`patient-${patIndex}`} style={styles.patientSection}>
                 <Text style={styles.patientName}>{patient.patientName}</Text>

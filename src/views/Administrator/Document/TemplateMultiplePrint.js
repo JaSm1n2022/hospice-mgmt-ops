@@ -159,7 +159,7 @@ const TemplateMultiplePrint = (props) => {
                           align="left"
                         >
                           <div style={{ display: "inline-flex", gap: 4 }}>
-                            <Typography>Patient Name :</Typography>
+                            <Typography>Client Name :</Typography>
                             <TextField
                               variant="standard"
                               inputProps={{
@@ -280,7 +280,7 @@ const TemplateMultiplePrint = (props) => {
                                 <div>
                                   _________________________________________
                                 </div>
-                                <div>Name of Patient/Caregiver</div>
+                                <div>Name of Client/Caregiver</div>
                               </TableCell>
                             </TableRow>
                             <TableRow
@@ -332,7 +332,7 @@ const TemplateMultiplePrint = (props) => {
                         {/* Left side: Select */}
                         <div style={{ flex: "0 0 50%" }} align="left">
                           <div style={{ display: "inline-flex", gap: 4 }}>
-                            <Typography>Patient Name :</Typography>
+                            <Typography>Client Name :</Typography>
                             <Typography>
                               {item.general?.patientName ||
                                 item.general?.patient.name}
@@ -447,7 +447,7 @@ const TemplateMultiplePrint = (props) => {
                                 <div>
                                   _________________________________________
                                 </div>
-                                <div>Name of Patient/Caregiver</div>
+                                <div>Name of Client/Caregiver</div>
                               </TableCell>
                             </TableRow>
                             <TableRow

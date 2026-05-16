@@ -185,7 +185,7 @@ function Dashboard(props) {
                   <CardIcon color="info">
                     <AccountCircle />
                   </CardIcon>
-                  <p className={classes.cardCategory}>Patients</p>
+                  <p className={classes.cardCategory}>Clients</p>
                   <h3 className={classes.cardTitle}>
                     {patientCnt} <small>Active</small>
                   </h3>

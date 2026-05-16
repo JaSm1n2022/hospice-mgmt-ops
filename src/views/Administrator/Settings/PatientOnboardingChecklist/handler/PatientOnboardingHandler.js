@@ -14,7 +14,7 @@ class PatientOnboardingHandler {
         defaultFlex: 1,
         minWidth: 300,
         name: "patientCd",
-        header: "Patient Code",
+        header: "Client Code",
       },
       {
         defaultFlex: 1,
@@ -356,7 +356,7 @@ class PatientOnboardingHandler {
       poaAdvanceDirective: "POA/Advance Directive",
       billOfRights: "Bill of Rights",
       telehealthConsent: "Telehealth Consent",
-      patientNotification: "Patient Notification",
+      patientNotification: "Client Notification",
 
       // Assessment
       nursing: "Nursing",

@@ -183,8 +183,8 @@ function DistributionForm(props) {
     {
       id: "patient",
       component: "singlecomplete",
-      placeholder: "Patient Name",
-      label: "Patient Name",
+      placeholder: "Client Name",
+      label: "Client Name",
       name: "patient",
       options: [...props.patientList],
       disabled:
@@ -226,8 +226,8 @@ function DistributionForm(props) {
     {
       id: "caregiver",
       component: "textfield",
-      placeholder: "Patient Caregiver",
-      label: "Patient Caregiver",
+      placeholder: "Client Caregiver",
+      label: "Client Caregiver",
       name: "caregiver",
       disabled:
         (props.mode && props.mode === "view") || !generalForm.selectedCategory
@@ -384,7 +384,7 @@ function DistributionForm(props) {
       return;
     }
     if (!generalForm.patientCd) {
-      TOAST.error("Patient Name is required");
+      TOAST.error("Client Name is required");
       return;
     }
     if (!generalForm.requestorName) {

@@ -175,7 +175,7 @@ function PatientForm(props) {
       {
         id: "profileHeader",
         component: "sectionheader",
-        label: "Patient Profile",
+        label: "Client Profile",
         cols: 12,
       },
       {
@@ -723,7 +723,7 @@ function PatientForm(props) {
 
     if (!patientIdentity) {
       isValid = false;
-      setPatientIdentityError("Patient Code is required. Use Suggested id.");
+      setPatientIdentityError("Client Code is required. Use Suggested id.");
     } else {
       setPatientIdentityError("");
     }
@@ -863,11 +863,11 @@ function PatientForm(props) {
   };
   const titleHandler = () => {
     if (props.mode === "view") {
-      return "View Patient";
+      return "View Client";
     } else if (props.mode === "edit") {
-      return "Edit Patient";
+      return "Edit Client";
     } else {
-      return "Create Patient";
+      return "Create Client";
     }
   };
   console.log("[general form]", generalForm);
@@ -1337,7 +1337,7 @@ function PatientForm(props) {
                 <Grid direction="row" container spacing={2}>
                   <Grid item xs={12}>
                     <Typography variant="body">
-                      Suggested Patient ID : {createPatientIdHandler()}
+                      Suggested Client ID : {createPatientIdHandler()}
                     </Typography>
                   </Grid>
                   <Grid item xs={12} style={{ paddingTop: 8 }}>

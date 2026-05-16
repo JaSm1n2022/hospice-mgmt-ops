@@ -87,9 +87,9 @@ export default function RegisterPage() {
           logistics administrators.
         </p>
 
-        <h4>No Patient Information Stored</h4>
+        <h4>No Client Information Stored</h4>
         <p>
-          This system does not store or process any patient-specific
+          This system does not store or process any client-specific
           information, including but not limited to full names, dates of birth
           (DOB), social security numbers, medical records, or protected health
           information (PHI). It is strictly for non-clinical, administrative

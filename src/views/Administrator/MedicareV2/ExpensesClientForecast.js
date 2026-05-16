@@ -257,11 +257,11 @@ const ExpensesForecastPDF = ({ data, currentMonthLabel }) => {
         <Text style={pdfStyles.header}>
           {currentMonthLabel} — Expenses Client Forecast
         </Text>
-        <Text style={pdfStyles.subHeader}>Census: {data.length} patients</Text>
+        <Text style={pdfStyles.subHeader}>Census: {data.length} clients</Text>
         <Text style={pdfStyles.note}>
           Note: Forecast visits and expenses are calculated based on Days of
-          Care. For active patients, Days of Care equals the full month. For
-          discharged patients (with EOC), Days of Care is from SOC (or month
+          Care. For active clients, Days of Care equals the full month. For
+          discharged clients (with EOC), Days of Care is from SOC (or month
           start) to EOC date.
         </Text>
 
@@ -995,7 +995,7 @@ function ExpensesClientForecast(props) {
                       {currentMonthLabel} — Expenses Client Forecast
                     </h4>
                     <p className={classes.cardCategoryWhite}>
-                      Census: {forecastData.length} patients
+                      Census: {forecastData.length} clients
                     </p>
                   </div>
                   <div>

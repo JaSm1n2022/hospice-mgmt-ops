@@ -124,7 +124,7 @@ const PotentialAdmissionPrintDocument = ({ admissionData }) => {
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
           <Text style={styles.title}>Potential Admission Summary</Text>
-          <Text style={styles.subtitle}>Patient Code: {safeString(admissionData.patientCd)}</Text>
+          <Text style={styles.subtitle}>Client Code: {safeString(admissionData.patientCd)}</Text>
           <Text style={styles.subtitle}>Admission Decision: {getAdmissionDecisionLabel(admissionData.admission_decision)}</Text>
           {admissionData.admission_decision === "Admit to Hospice" && admissionData.admission_dt && (
             <Text style={styles.subtitle}>Admission Date: {safeDate(admissionData.admission_dt)}</Text>
@@ -135,7 +135,7 @@ const PotentialAdmissionPrintDocument = ({ admissionData }) => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Basic Information</Text>
           <View style={styles.fieldRow}>
-            <Text style={styles.fieldLabel}>Patient Code: {safeString(admissionData.patientCd)}</Text>
+            <Text style={styles.fieldLabel}>Client Code: {safeString(admissionData.patientCd)}</Text>
           </View>
           <View style={styles.fieldRow}>
             <Text style={styles.fieldLabel}>Referral: {safeString(admissionData.referral)}</Text>

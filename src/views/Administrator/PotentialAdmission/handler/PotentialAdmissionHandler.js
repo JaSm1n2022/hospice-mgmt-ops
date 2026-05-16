@@ -9,7 +9,7 @@ class PotentialAdmissionHandler {
         defaultFlex: 1,
         minWidth: 300,
         name: "patientCd",
-        header: "Patient Code",
+        header: "Client Code",
         render: ({ value, data }) => {
           let icon = null;
 

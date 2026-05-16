@@ -133,7 +133,7 @@ var dashRoutes = [
       },
       {
         path: "/patient",
-        name: "Patient",
+        name: "Client",
         rtlName: "عالتسعير",
         mini: "S",
         rtlMini: "ع",
@@ -160,9 +160,9 @@ var dashRoutes = [
       },
       {
         path: "/patient-onboarding-checklist",
-        name: "Patient Onboarding Checklist",
+        name: "Client Onboarding Checklist",
         rtlName: "عالتسعير",
-        mini: "POC",
+        mini: "COC",
         rtlMini: "ع",
         component: PatientOnboardingChecklist,
         layout: "/admin",
@@ -393,7 +393,7 @@ var dashRoutes = [
       },
       {
         path: "/patientDistribution",
-        name: "Direct Patient Care Cost",
+        name: "Direct Client Care Cost",
         rtlName: "عالتسعير",
         mini: "PM",
         rtlMini: "ع",
@@ -625,7 +625,7 @@ var dashRoutes = [
   },
   {
     collapse: true,
-    name: "Patient Timeline",
+    name: "Client Timeline",
     rtlName: "الرسوم البيانية",
     icon: Timeline,
     state: "timelineCollapse",

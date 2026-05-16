@@ -92,7 +92,7 @@ function PrintPatientModal({ isOpen, onClose, patientData }) {
     >
       <div style={modalStyle} className={classes.paper}>
         <div className={classes.header}>
-          <h3 style={{ margin: 0 }}>Print Patient Summary</h3>
+          <h3 style={{ margin: 0 }}>Print Client Summary</h3>
           <Clear className={classes.closeButton} onClick={onClose} />
         </div>
         <div className={classes.content}>
@@ -107,10 +107,10 @@ function PrintPatientModal({ isOpen, onClose, patientData }) {
                 {patientData.clientName || "N/A"}
               </p>
               <p className={classes.info}>
-                Patient # {patientData.patientCd || "N/A"}
+                Client # {patientData.patientCd || "N/A"}
               </p>
               <p style={{ fontSize: "0.9em", color: "#999", marginBottom: 20 }}>
-                Includes all patient Medicare cap details, benefits, and FY breakdown.
+                Includes all client Medicare cap details, benefits, and FY breakdown.
               </p>
               <PDFDownloadLink
                 document={<PatientSummaryDocument patientData={patientData} />}
@@ -130,7 +130,7 @@ function PrintPatientModal({ isOpen, onClose, patientData }) {
                   ) : (
                     <>
                       <GetApp />
-                      Download Patient Summary PDF
+                      Download Client Summary PDF
                     </>
                   );
                 }}

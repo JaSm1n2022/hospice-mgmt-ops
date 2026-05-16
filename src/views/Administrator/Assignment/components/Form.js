@@ -378,8 +378,8 @@ function IDGForm(props) {
             <GridContainer>
               <GridItem xs={12} md={6}>
                 <CustomSingleAutoComplete
-                  placeholder="Select Patient"
-                  label="Select Patient"
+                  placeholder="Select Client"
+                  label="Select Client"
                   searchList={patientList || []}
                   options={patientList || []}
                   value={selectedPatient}

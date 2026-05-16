@@ -274,7 +274,7 @@ const RoutesheetPrintDocument = ({ groupedData, logoBase64 }) => {
               {/* Table Header */}
               <View style={styles.tableHeaderRow} fixed>
                 <View style={[styles.tableCol, styles.tableColPatient, { justifyContent: "center", alignItems: "center" }]}>
-                  <Text style={styles.headerText}>Patient</Text>
+                  <Text style={styles.headerText}>Client</Text>
                 </View>
                 <View style={[styles.tableCol, styles.tableColService, { justifyContent: "center", alignItems: "center" }]}>
                   <Text style={styles.headerText}>Service</Text>
