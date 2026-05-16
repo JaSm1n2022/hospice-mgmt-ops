@@ -295,6 +295,9 @@ function PatientFunction(props) {
       new_hospice_care_day: parseInt(payload.newHospiceCareDays || 0, 10),
       admitted_benefits_period: parseInt(payload.numberOfBenefits || 0, 10),
       assessment: payload.assessment?.value || payload.assessment || null,
+      dme: payload.dme || [],
+      dme_last_dt: payload.dme_last_dt || null,
+      dme_end_dt: payload.dme_end_dt || null,
       companyId: context.userProfile?.companyId,
       updatedUser: {
         name: context.userProfile?.name,

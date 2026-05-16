@@ -151,7 +151,7 @@ function PatientForm(props) {
   const [newDmeEquipment, setNewDmeEquipment] = useState("");
   const [editingDmeIndex, setEditingDmeIndex] = useState(null);
   const [dmeLastDate, setDmeLastDate] = useState(null);
-  const [dmeEndContract, setDmeEndContract] = useState(null);
+  const [dmeEndDt, setDmeEndDt] = useState(null);
 
   const { isOpen } = props;
 
@@ -549,11 +549,13 @@ function PatientForm(props) {
       }
 
       if (props.item.dme_last_dt) {
-        setDmeLastDate(props.item.dme_last_dt);
+        // Parse date without timezone conversion
+        setDmeLastDate(moment(props.item.dme_last_dt, "YYYY-MM-DD").format("YYYY-MM-DD"));
       }
 
-      if (props.item.dme_end_contract) {
-        setDmeEndContract(props.item.dme_end_contract);
+      if (props.item.dme_end_dt) {
+        // Parse date without timezone conversion
+        setDmeEndDt(moment(props.item.dme_end_dt, "YYYY-MM-DD").format("YYYY-MM-DD"));
       }
 
       setPatientIdentity(fm.patientCd);
@@ -615,11 +617,27 @@ function PatientForm(props) {
   };
 
   const handleDmeLastDateChange = (value) => {
-    setDmeLastDate(value ? moment(new Date(value)).format("YYYY-MM-DD") : null);
+    if (!value) {
+      setDmeLastDate(null);
+      return;
+    }
+    // Extract local date parts to avoid timezone issues
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, '0');
+    const day = String(value.getDate()).padStart(2, '0');
+    setDmeLastDate(`${year}-${month}-${day}`);
   };
 
-  const handleDmeEndContractChange = (value) => {
-    setDmeEndContract(value ? moment(new Date(value)).format("YYYY-MM-DD") : null);
+  const handleDmeEndDtChange = (value) => {
+    if (!value) {
+      setDmeEndDt(null);
+      return;
+    }
+    // Extract local date parts to avoid timezone issues
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, '0');
+    const day = String(value.getDate()).padStart(2, '0');
+    setDmeEndDt(`${year}-${month}-${day}`);
   };
 
   const validateFormHandler = () => {
@@ -719,7 +737,7 @@ function PatientForm(props) {
       // Add DME data to the form
       generalForm.dme = dmeList;
       generalForm.dme_last_dt = dmeLastDate;
-      generalForm.dme_end_contract = dmeEndContract;
+      generalForm.dme_end_dt = dmeEndDt;
 
       props.createPatientHandler(generalForm, props.mode);
     }
@@ -1204,7 +1222,7 @@ function PatientForm(props) {
                                 <CustomDatePicker
                                   label="DME Last Invoice Date"
                                   name="dme_last_dt"
-                                  value={dmeLastDate}
+                                  value={dmeLastDate ? new Date(dmeLastDate + 'T12:00:00') : null}
                                   onChange={handleDmeLastDateChange}
                                   noDefault={true}
                                   disabled={props.mode === "view"}
@@ -1212,10 +1230,10 @@ function PatientForm(props) {
                               </Grid>
                               <Grid item xs={12} md={6}>
                                 <CustomDatePicker
-                                  label="DME End Contract Date"
-                                  name="dme_end_contract"
-                                  value={dmeEndContract}
-                                  onChange={handleDmeEndContractChange}
+                                  label="DME End Date"
+                                  name="dme_end_dt"
+                                  value={dmeEndDt ? new Date(dmeEndDt + 'T12:00:00') : null}
+                                  onChange={handleDmeEndDtChange}
                                   noDefault={true}
                                   disabled={props.mode === "view"}
                                 />
