@@ -412,8 +412,8 @@ function EmployeePayrollForecast(props) {
     props.patients?.status === ACTION_STATUSES.SUCCEED
   ) {
     patientList = props.patients.data || [];
-    // Exclude test patients (patientCd starting with TEST-PATIE)
-    patientList = patientList.filter(p => !p.patientCd?.startsWith("TEST-PATIE"));
+    // Exclude test patients (patientCd starting with TEST-PA)
+    patientList = patientList.filter(p => !p.patientCd?.startsWith("TEST-PA"));
     isPatientListDone = true;
     props.resetListPatients();
     setIsPatientCollection(false);

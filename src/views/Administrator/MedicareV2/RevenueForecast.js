@@ -383,8 +383,8 @@ function RevenueForecast(props) {
     let source = props.patients.data;
     if (source && source.length) {
       source = MedicareHandler.mapData(source);
-      // Exclude test patients (patientCd starting with TEST-PATIE)
-      source = source.filter(p => !p.patientCd?.startsWith("TEST-PATIE"));
+      // Exclude test patients (patientCd starting with TEST-PA)
+      source = source.filter(p => !p.patientCd?.startsWith("TEST-PA"));
     }
 
     originalSource = [...source];
