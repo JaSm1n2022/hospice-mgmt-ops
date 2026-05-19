@@ -95,13 +95,16 @@ window.addEventListener('message', (event) => {
     // Use all patients without filtering
     patientCodesList = allPatients;
 
-    console.log('✓ Received', patientCodesList.length, 'patients');
-
     // Re-render if we already have extracted data
     if (globalPatients.length > 0) {
       renderCurrentView();
     }
   }
+});
+
+// Request patient data when iframe loads
+window.addEventListener('load', () => {
+  window.parent.postMessage({ type: 'REQUEST_PATIENT_DATA' }, '*');
 });
 
 document.getElementById('pdf-upload').addEventListener('change', async (e) => {

@@ -45,7 +45,12 @@ import AddIcon from "@material-ui/icons/Add";
 import UploadIcon from "@material-ui/icons/CloudUpload";
 
 import HospiceTable from "components/Table/HospiceTable";
-import { AddAlert, ArrowDownward, ImportExport, Warning } from "@material-ui/icons";
+import {
+  AddAlert,
+  ArrowDownward,
+  ImportExport,
+  Warning,
+} from "@material-ui/icons";
 import Helper from "utils/helper";
 import * as FileSaver from "file-saver";
 import SearchCustomTextField from "components/TextField/SearchCustomTextField";
@@ -148,11 +153,16 @@ function PayrollFunction(props) {
   const [isPayrollReceivedDocument, setIsPayrollReceivedDocument] = useState(
     false
   );
-  const [isServicesReportDocument, setIsServicesReportDocument] = useState(false);
+  const [isServicesReportDocument, setIsServicesReportDocument] = useState(
+    false
+  );
   const [servicesReportData, setServicesReportData] = useState([]);
   const [printData, setPrintData] = useState({});
   const [columns, setColumns] = useState(PayrollHandler.columns());
-  const [isDuplicateBillingModalOpen, setIsDuplicateBillingModalOpen] = useState(false);
+  const [
+    isDuplicateBillingModalOpen,
+    setIsDuplicateBillingModalOpen,
+  ] = useState(false);
   const [logoBase64, setLogoBase64] = useState(null);
   const [isPayrollsCollection, setIsPayrollsCollection] = useState(true);
   const [isCreatePayrollCollection, setIsCreatePayrollCollection] = useState(
@@ -174,7 +184,9 @@ function PayrollFunction(props) {
   const [payDateFrom, setPayDateFrom] = useState("");
   const [payDateTo, setPayDateTo] = useState("");
   const [isDOSFilter, setIsDOSFilter] = useState(false);
-  const [activeFilterLabel, setActiveFilterLabel] = useState("Filter By Pay Date");
+  const [activeFilterLabel, setActiveFilterLabel] = useState(
+    "Filter By Pay Date"
+  );
   const [isDatePickerModalOpen, setIsDatePickerModalOpen] = useState(false);
   const [uploadType, setUploadType] = useState(""); // "distribution" or "transaction"
   const [selectedUploadDate, setSelectedUploadDate] = useState("");
@@ -253,7 +265,8 @@ function PayrollFunction(props) {
       // Load logo for PDF generation
       const loadLogo = async () => {
         try {
-          const logoUrl = "https://acwocotrngkeaxtzdzfz.supabase.co/storage/v1/object/public/images/headerdoc.png";
+          const logoUrl =
+            "https://acwocotrngkeaxtzdzfz.supabase.co/storage/v1/object/public/images/headerdoc.png";
           const logo = await Helper.getImageBase64(logoUrl);
           setLogoBase64(logo);
         } catch (error) {
@@ -315,7 +328,11 @@ function PayrollFunction(props) {
     if (isDOSFilter && selectedMonth && selectedYear) {
       source = source.filter((record) => {
         // Check if dos exists and is an array
-        if (!record.dos || !Array.isArray(record.dos) || record.dos.length === 0) {
+        if (
+          !record.dos ||
+          !Array.isArray(record.dos) ||
+          record.dos.length === 0
+        ) {
           return false;
         }
 
@@ -325,7 +342,10 @@ function PayrollFunction(props) {
           const dosMonth = date.month() + 1; // moment months are 0-indexed
           const dosYear = date.year();
 
-          return dosMonth === parseInt(selectedMonth) && dosYear === parseInt(selectedYear);
+          return (
+            dosMonth === parseInt(selectedMonth) &&
+            dosYear === parseInt(selectedYear)
+          );
         });
       });
     }
@@ -599,10 +619,16 @@ function PayrollFunction(props) {
       };
 
       // Separate Regular Visits, IDT services, and Other services
-      const regularVisits = employeeData.filter((ed) => ed.serviceType === "Regular Visit");
-      const idtServices = employeeData.filter((ed) => isIDTServiceType(ed.serviceType));
+      const regularVisits = employeeData.filter(
+        (ed) => ed.serviceType === "Regular Visit"
+      );
+      const idtServices = employeeData.filter((ed) =>
+        isIDTServiceType(ed.serviceType)
+      );
       const otherServices = employeeData.filter(
-        (ed) => ed.serviceType !== "Regular Visit" && !isIDTServiceType(ed.serviceType)
+        (ed) =>
+          ed.serviceType !== "Regular Visit" &&
+          !isIDTServiceType(ed.serviceType)
       );
 
       // Group Regular Visits by Patient + Month of DOS + Service Rate + Pay Amount
@@ -613,7 +639,9 @@ function PayrollFunction(props) {
             const month = dosDate.substring(0, 7); // "YYYY-MM"
             const serviceRate = row.serviceRate || 0;
             const payAmount = row.payAmount || 0;
-            const key = `${row.patientCd || row.patientId || 'Unknown'}|${month}|${serviceRate}|${payAmount}`;
+            const key = `${
+              row.patientCd || row.patientId || "Unknown"
+            }|${month}|${serviceRate}|${payAmount}`;
 
             if (!groupedRegular[key]) {
               groupedRegular[key] = {
@@ -636,7 +664,7 @@ function PayrollFunction(props) {
         totalRate: g.visitCount * (g.serviceRate || 0), // Calculate: no. of services * rate
         payAmount: g.visitCount * (g.serviceRate || 0), // Calculate: no. of services * rate
         serviceType: "Regular Visit", // Remove visit count from service type
-        comments: g.visitCount > 1 ? "" : (g.comments || ""), // Clear comments if multiple DOS
+        comments: g.visitCount > 1 ? "" : g.comments || "", // Clear comments if multiple DOS
       }));
 
       // Process IDT services - append duration to comments
@@ -650,7 +678,11 @@ function PayrollFunction(props) {
       }));
 
       // Combine all processed details
-      const processedDetails = [...regularVisitDetails, ...idtDetails, ...otherServices];
+      const processedDetails = [
+        ...regularVisitDetails,
+        ...idtDetails,
+        ...otherServices,
+      ];
 
       // Calculate totals
       let totalRate = 0.0;
@@ -728,7 +760,9 @@ function PayrollFunction(props) {
         uniquePaymentInfo.forEach((i) => {
           const singleData = selectedData.filter(
             (s) =>
-              s.employeeName === u && s.payDate === p && (s.paymentInfo || "").trim() === i
+              s.employeeName === u &&
+              s.payDate === p &&
+              (s.paymentInfo || "").trim() === i
           );
           singleData.forEach((d) => {
             totalAmount += parseFloat(d.totalRate);
@@ -888,7 +922,7 @@ function PayrollFunction(props) {
     const reportData = Object.values(groupedData);
 
     // Generate date range string
-    const dateRangeStr = `${dateFrom || 'N/A'} to ${dateTo || 'N/A'}`;
+    const dateRangeStr = `${dateFrom || "N/A"} to ${dateTo || "N/A"}`;
 
     setServicesReportData(reportData);
     setIsServicesReportDocument(true);
@@ -950,7 +984,9 @@ function PayrollFunction(props) {
     setIsDOSFilter(true);
 
     // Get month name for label
-    const monthName = moment().month(parseInt(selectedMonth) - 1).format("MMMM");
+    const monthName = moment()
+      .month(parseInt(selectedMonth) - 1)
+      .format("MMMM");
     setActiveFilterLabel(`Filter By DOS (${monthName} ${selectedYear})`);
 
     // Call API with calculated date range
@@ -968,7 +1004,9 @@ function PayrollFunction(props) {
 
     // Reload with current pay date filter if exists, otherwise this month
     if (payDateFrom && payDateTo) {
-      setActiveFilterLabel(`Filter By Pay Date (${payDateFrom} to ${payDateTo})`);
+      setActiveFilterLabel(
+        `Filter By Pay Date (${payDateFrom} to ${payDateTo})`
+      );
       props.listPayrolls({
         from: payDateFrom,
         to: payDateTo,
@@ -1017,12 +1055,21 @@ function PayrollFunction(props) {
         const currentCategory = payrollProductList.find(
           (f) => f.subCategory === dd.employeeTitle
         );
-        console.log("[Current Category]", currentCategory);
+        console.log(
+          "[Current Category]",
+          d,
+          currentCategory,
+          payrollProductList
+        );
         const isTransaction = dd.isTransaction || false;
         payrollIds.push(dd.id);
         const obj = {
-          created_dt: selectedUploadDate ? `${selectedUploadDate}T17:00:00.000Z` : new Date(),
-          ordered_at: selectedUploadDate ? `${selectedUploadDate}T17:00:00.000Z` : new Date(),
+          created_dt: selectedUploadDate
+            ? `${selectedUploadDate}T17:00:00.000Z`
+            : new Date(),
+          ordered_at: selectedUploadDate
+            ? `${selectedUploadDate}T17:00:00.000Z`
+            : new Date(),
           order_number: `${dd.employeeName} ${dd.paymentInfo}`,
           description: currentCategory?.description,
           category: currentCategory.category,
@@ -1116,7 +1163,9 @@ function PayrollFunction(props) {
         const isDistributed = dd.isDistributed || false;
         payrollIds.push(dd.id);
         const obj = {
-          created_at: selectedUploadDate ? `${selectedUploadDate}T17:00:00.000Z` : new Date(),
+          created_at: selectedUploadDate
+            ? `${selectedUploadDate}T17:00:00.000Z`
+            : new Date(),
 
           description: currentCategory?.description,
           short_description: currentCategory?.short_description,
@@ -1129,7 +1178,9 @@ function PayrollFunction(props) {
           estimated_total_amt: dd.totalRate,
           order_status: "Delivered",
           order_qty: 1,
-          order_at: selectedUploadDate ? `${selectedUploadDate}T17:00:00.000Z` : new Date(),
+          order_at: selectedUploadDate
+            ? `${selectedUploadDate}T17:00:00.000Z`
+            : new Date(),
           comments: dd.dos?.length
             ? `${dd.dos.toString()}${dd.comments ? `/${dd.comments}` : ""}`
             : dd.comments,
@@ -1243,7 +1294,13 @@ function PayrollFunction(props) {
               <CardBody>
                 <GridContainer style={{ paddingLeft: 20 }}>
                   <GridItem md={6} sm={12} xs={12}>
-                    <div style={{ display: "flex", alignItems: "flex-end", gap: "5px" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "flex-end",
+                        gap: "5px",
+                      }}
+                    >
                       <FilterTable
                         filterRecordHandler={filterRecordHandler}
                         filterByDateHandler={filterByDateHandler}
@@ -1252,14 +1309,27 @@ function PayrollFunction(props) {
                       <Button
                         color="primary"
                         onClick={filterByPayDateHandler}
-                        style={{ height: "36px", marginBottom: "10px", whiteSpace: "nowrap", marginLeft: "5px" }}
+                        style={{
+                          height: "36px",
+                          marginBottom: "10px",
+                          whiteSpace: "nowrap",
+                          marginLeft: "5px",
+                        }}
                       >
                         Filter By Pay Date
                       </Button>
                     </div>
                   </GridItem>
                   <GridItem md={6} sm={12} xs={12}>
-                    <div style={{ display: "flex", alignItems: "flex-end", gap: "10px", justifyContent: "flex-end", paddingBottom: "10px" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "flex-end",
+                        gap: "10px",
+                        justifyContent: "flex-end",
+                        paddingBottom: "10px",
+                      }}
+                    >
                       <FormControl style={{ minWidth: 120 }}>
                         <InputLabel>Month</InputLabel>
                         <Select
@@ -1292,7 +1362,11 @@ function PayrollFunction(props) {
                           <option value=""></option>
                           {Array.from({ length: 10 }, (_, i) => {
                             const year = new Date().getFullYear() - i;
-                            return <option key={year} value={year}>{year}</option>;
+                            return (
+                              <option key={year} value={year}>
+                                {year}
+                              </option>
+                            );
                           })}
                         </Select>
                       </FormControl>
@@ -1315,7 +1389,14 @@ function PayrollFunction(props) {
                 </GridContainer>
                 <GridContainer style={{ paddingLeft: 14 }}>
                   <GridItem md={12} sm={12} xs={12}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        marginBottom: "10px",
+                      }}
+                    >
                       <Button
                         color="info"
                         className={classes.marginRight}
@@ -1329,7 +1410,8 @@ function PayrollFunction(props) {
                         onClick={() => setIsDuplicateBillingModalOpen(true)}
                         disabled={!dataSource || dataSource.length === 0}
                       >
-                        <Warning className={classes.icons} /> Duplicate Billing Report
+                        <Warning className={classes.icons} /> Duplicate Billing
+                        Report
                       </Button>
                       <Button
                         color="primary"
@@ -1337,7 +1419,8 @@ function PayrollFunction(props) {
                         onClick={servicesReportHandler}
                         disabled={!dataSource || dataSource.length === 0}
                       >
-                        <ImportExport className={classes.icons} /> Services Report
+                        <ImportExport className={classes.icons} /> Services
+                        Report
                       </Button>
                       <div style={{ flex: "0 0 300px" }}>
                         <SearchCustomTextField
@@ -1355,7 +1438,10 @@ function PayrollFunction(props) {
 
                     {/* Active Filter Label */}
                     <div style={{ marginBottom: "10px", paddingLeft: "5px" }}>
-                      <Typography variant="body2" style={{ color: "#667eea", fontWeight: 500 }}>
+                      <Typography
+                        variant="body2"
+                        style={{ color: "#667eea", fontWeight: 500 }}
+                      >
                         Active Filter: {activeFilterLabel}
                       </Typography>
                     </div>
@@ -1367,26 +1453,32 @@ function PayrollFunction(props) {
                           onClick={() => exportToExcelHandler()}
                           className={classes.marginRight}
                         >
-                          <UploadIcon className={classes.icons} /> Export Excel ({dataSource.filter((r) => r.isChecked).length})
+                          <UploadIcon className={classes.icons} /> Export Excel
+                          ({dataSource.filter((r) => r.isChecked).length})
                         </Button>
 
                         <Button
                           color="success"
                           onClick={() => {
                             setUploadType("transaction");
-                            setSelectedUploadDate(moment().format("YYYY-MM-DD"));
+                            setSelectedUploadDate(
+                              moment().format("YYYY-MM-DD")
+                            );
                             setIsDatePickerModalOpen(true);
                           }}
                           className={classes.marginRight}
                         >
                           <UploadIcon className={classes.icons} /> Upload to
-                          Transaction ({dataSource.filter((r) => r.isChecked).length})
+                          Transaction (
+                          {dataSource.filter((r) => r.isChecked).length})
                         </Button>
                         <Button
                           color="success"
                           onClick={() => {
                             setUploadType("distribution");
-                            setSelectedUploadDate(moment().format("YYYY-MM-DD"));
+                            setSelectedUploadDate(
+                              moment().format("YYYY-MM-DD")
+                            );
                             setIsDatePickerModalOpen(true);
                           }}
                           variant="outlined"
@@ -1405,7 +1497,8 @@ function PayrollFunction(props) {
                           startIcon={<ImportExport />}
                         >
                           {" "}
-                          Upload to Distribution ({dataSource.filter((r) => r.isChecked).length}){" "}
+                          Upload to Distribution (
+                          {dataSource.filter((r) => r.isChecked).length}){" "}
                         </Button>
 
                         <Button
@@ -1523,7 +1616,11 @@ function PayrollFunction(props) {
         </DialogTitle>
         <DialogContent>
           <TextField
-            label={uploadType === "transaction" ? "Transaction Date" : "Distribution Date"}
+            label={
+              uploadType === "transaction"
+                ? "Transaction Date"
+                : "Distribution Date"
+            }
             type="date"
             value={selectedUploadDate}
             onChange={(e) => setSelectedUploadDate(e.target.value)}

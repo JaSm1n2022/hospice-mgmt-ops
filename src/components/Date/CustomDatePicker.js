@@ -89,6 +89,16 @@ export default function CustomDatePicker({
           KeyboardButtonProps={{
             "aria-label": "change date",
           }}
+          PopoverProps={{
+            style: {
+              zIndex: 300000, // Higher than ReactModal's 200000
+            },
+          }}
+          DialogProps={{
+            style: {
+              zIndex: 300000, // Higher than ReactModal's 200000
+            },
+          }}
           InputProps={{
             style: {
               fontSize: 14,

@@ -71,11 +71,11 @@ function DmeManagement() {
 
   // Redux state
   const patientListState = useSelector(patientListStateSelector);
-  const patientList = patientListState?.data || [];
   const dmeInvoiceListState = useSelector(dmeInvoiceListStateSelector);
   const dmeInvoiceCreateState = useSelector(dmeInvoiceCreateStateSelector);
 
   // Local state
+  const [patientList, setPatientList] = useState([]);
   const [dataSource, setDataSource] = useState([]);
   const [originalSource, setOriginalSource] = useState([]);
   const [columns, setColumns] = useState([]);
@@ -109,6 +109,13 @@ function DmeManagement() {
     }
   }, [dispatch, companyId]);
 
+  // Update patient list when Redux state changes
+  useEffect(() => {
+    if (patientListState?.data && Array.isArray(patientListState.data)) {
+      setPatientList(patientListState.data);
+    }
+  }, [patientListState]);
+
   // Map invoice data when it changes
   useEffect(() => {
     if (dmeInvoiceListState?.data && Array.isArray(dmeInvoiceListState.data)) {
@@ -132,9 +139,13 @@ function DmeManagement() {
 
   // Send patient data to iframe when modal is open
   useEffect(() => {
-    if (isExtractorModalOpen && iframeRef.current && patientList.length > 0) {
+    if (isExtractorModalOpen && iframeRef.current) {
       const sendPatientData = () => {
         try {
+          if (patientList.length === 0) {
+            return;
+          }
+
           // Filter patients based on DME equipment and EOC status
           const now = new Date();
           const sixtyDaysAgo = new Date(now.getTime() - (60 * 24 * 60 * 60 * 1000));
@@ -171,8 +182,6 @@ function DmeManagement() {
               type: 'PATIENT_DATA',
               patientCodes: patientCodes
             }, '*');
-
-            console.log('✓ Sent', patientCodes.length, 'patients to iframe (filtered from', patientList.length, 'total)');
           }
         } catch (error) {
           console.error('Error sending patient data to iframe:', error);
@@ -186,15 +195,20 @@ function DmeManagement() {
       // Also try sending immediately in case iframe is already loaded
       setTimeout(sendPatientData, 500);
 
+      // Additional retry attempts to ensure data is sent
+      setTimeout(sendPatientData, 1000);
+      setTimeout(sendPatientData, 2000);
+
       return () => {
         iframe.removeEventListener('load', sendPatientData);
       };
     }
   }, [isExtractorModalOpen, patientList]);
 
-  // Listen for submit message from iframe
+  // Listen for messages from iframe
   useEffect(() => {
     const handleMessage = (event) => {
+      // Handle submit invoice
       if (event.data && event.data.type === 'SUBMIT_DME_INVOICE') {
         console.log('Received DME Invoice submit:', event.data);
 
@@ -208,6 +222,38 @@ function DmeManagement() {
           userProfile: context.userProfile,
         }));
       }
+
+      // Handle request for patient data
+      if (event.data && event.data.type === 'REQUEST_PATIENT_DATA') {
+        if (patientList.length === 0) {
+          return;
+        }
+
+        // Filter and send patient data
+        const now = new Date();
+        const sixtyDaysAgo = new Date(now.getTime() - (60 * 24 * 60 * 60 * 1000));
+
+        const filteredPatients = patientList.filter(patient => {
+          const hasDme = patient.dme && Array.isArray(patient.dme) && patient.dme.length > 0;
+          if (!hasDme) return false;
+          if (!patient.eoc_dt) return true;
+          const eocDate = new Date(patient.eoc_dt);
+          return eocDate >= sixtyDaysAgo;
+        });
+
+        const patientCodes = filteredPatients.map(patient => ({
+          code: patient.patientCd,
+          name: `${patient.first_name || ''} ${patient.last_name || ''}`.trim(),
+          fullData: patient
+        }));
+
+        if (iframeRef.current?.contentWindow) {
+          iframeRef.current.contentWindow.postMessage({
+            type: 'PATIENT_DATA',
+            patientCodes: patientCodes
+          }, '*');
+        }
+      }
     };
 
     window.addEventListener('message', handleMessage);
@@ -215,7 +261,7 @@ function DmeManagement() {
     return () => {
       window.removeEventListener('message', handleMessage);
     };
-  }, [dispatch, companyId, context.userProfile]);
+  }, [dispatch, companyId, context.userProfile, patientList]);
 
   // Handlers
   const handleOpenExtractor = () => {

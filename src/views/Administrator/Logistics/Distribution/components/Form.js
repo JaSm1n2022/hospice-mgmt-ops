@@ -175,10 +175,7 @@ function DistributionForm(props) {
       placeholder: "Requested Date",
       label: "Requested Date",
       name: "orderDt",
-      disabled:
-        (props.mode && props.mode === "view") || !generalForm.selectedCategory
-          ? true
-          : false,
+      disabled: props.mode && props.mode === "view" ? true : false,
     },
     {
       id: "patient",
