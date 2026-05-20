@@ -2,12 +2,14 @@ import React, { useState, useEffect, useRef, useContext } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { makeStyles } from "@material-ui/core/styles";
 import moment from "moment";
+import { v4 as uuidv4 } from "uuid";
 
 // Material UI
-import { Button, Tooltip } from "@material-ui/core";
+import { Button, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from "@material-ui/core";
 import AddIcon from "@material-ui/icons/Add";
 import DescriptionIcon from "@material-ui/icons/Description";
 import GetAppIcon from "@material-ui/icons/GetApp";
+import LocalShippingIcon from "@material-ui/icons/LocalShipping";
 
 // Core components
 import GridContainer from "components/Grid/GridContainer.js";
@@ -21,6 +23,8 @@ import FilterTable from "components/Table/FilterTable.js";
 // Custom components
 import InvoiceExtractorModal from "./components/InvoiceExtractorModal";
 import DmeInvoiceHandler from "./handler/DmeInvoiceHandler";
+import CustomDatePicker from "components/Date/CustomDatePicker";
+import CustomSingleAutoComplete from "components/AutoComplete/CustomSingleAutoComplete";
 
 // Redux actions and selectors
 import { attemptToFetchPatient } from "store/actions/patientAction";
@@ -33,9 +37,17 @@ import {
   dmeInvoiceCreateStateSelector,
   dmeInvoiceListStateSelector
 } from "store/selectors/dmeInvoiceSelector";
+import { attemptToFetchVendor } from "store/actions/vendorAction";
+import { vendorListStateSelector } from "store/selectors/vendorSelector";
+import { attemptToCreateDistribution, resetCreateDistributionState } from "store/actions/distributionAction";
+import { distributionCreateStateSelector } from "store/selectors/distributionSelector";
+import { attemptToFetchProduct } from "store/actions/productAction";
+import { productListStateSelector } from "store/selectors/productSelector";
 
 // Utilities
 import { handleExport } from "utils/XlsxHelper";
+import nanoid8 from "utils/nanoid8";
+import TOAST from "modules/toastManager";
 
 // Context
 import { SupaContext } from "../../../../App";
@@ -73,14 +85,22 @@ function DmeManagement() {
   const patientListState = useSelector(patientListStateSelector);
   const dmeInvoiceListState = useSelector(dmeInvoiceListStateSelector);
   const dmeInvoiceCreateState = useSelector(dmeInvoiceCreateStateSelector);
+  const vendorListState = useSelector(vendorListStateSelector);
+  const distributionCreateState = useSelector(distributionCreateStateSelector);
+  const productListState = useSelector(productListStateSelector);
 
   // Local state
   const [patientList, setPatientList] = useState([]);
+  const [vendorList, setVendorList] = useState([]);
+  const [productList, setProductList] = useState([]);
   const [dataSource, setDataSource] = useState([]);
   const [originalSource, setOriginalSource] = useState([]);
   const [columns, setColumns] = useState([]);
   const [isExtractorModalOpen, setIsExtractorModalOpen] = useState(false);
   const [isAddGroupButtons, setIsAddGroupButtons] = useState(false);
+  const [isDistributionModalOpen, setIsDistributionModalOpen] = useState(false);
+  const [distributionDate, setDistributionDate] = useState(new Date());
+  const [selectedVendor, setSelectedVendor] = useState(null);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
@@ -93,6 +113,8 @@ function DmeManagement() {
   useEffect(() => {
     if (companyId) {
       dispatch(attemptToFetchPatient({ companyId }));
+      dispatch(attemptToFetchVendor({ companyId }));
+      dispatch(attemptToFetchProduct({ companyId }));
 
       // Fetch invoices for the current month by default
       const today = new Date();
@@ -116,6 +138,24 @@ function DmeManagement() {
     }
   }, [patientListState]);
 
+  // Update vendor list when Redux state changes
+  useEffect(() => {
+    if (vendorListState?.data && Array.isArray(vendorListState.data)) {
+      // Filter only DME vendors
+      const dmeVendors = vendorListState.data.filter(vendor =>
+        vendor.categoryType === 'DME' || vendor.category_type === 'DME'
+      );
+      setVendorList(dmeVendors);
+    }
+  }, [vendorListState]);
+
+  // Update product list when Redux state changes
+  useEffect(() => {
+    if (productListState?.data && Array.isArray(productListState.data)) {
+      setProductList(productListState.data);
+    }
+  }, [productListState]);
+
   // Map invoice data when it changes
   useEffect(() => {
     if (dmeInvoiceListState?.data && Array.isArray(dmeInvoiceListState.data)) {
@@ -136,6 +176,35 @@ function DmeManagement() {
       }
     }
   }, [dmeInvoiceCreateState, dispatch, companyId, dateFrom, dateTo]);
+
+  // Handle distribution creation success
+  useEffect(() => {
+    console.log('Distribution Create State:', distributionCreateState);
+
+    if (distributionCreateState?.status === "SUCCEED") {
+      console.log('Distribution created successfully!');
+      TOAST.success("Distribution created successfully!");
+
+      // Close modal and reset form
+      setIsDistributionModalOpen(false);
+      setSelectedVendor(null);
+      setDistributionDate(new Date());
+
+      // Refresh invoice data
+      if (companyId && dateFrom && dateTo) {
+        dispatch(attemptToFetchDmeInvoice({ companyId, from: dateFrom, to: dateTo }));
+      }
+
+      // Reset distribution state
+      dispatch(resetCreateDistributionState());
+    } else if (distributionCreateState?.status === "FAILED") {
+      console.log('Distribution creation failed:', distributionCreateState?.error);
+      TOAST.error("Failed to create distribution. Please try again.");
+
+      // Reset distribution state
+      dispatch(resetCreateDistributionState());
+    }
+  }, [distributionCreateState, dispatch, companyId, dateFrom, dateTo]);
 
   // Send patient data to iframe when modal is open
   useEffect(() => {
@@ -308,6 +377,109 @@ function DmeManagement() {
     }
   };
 
+  const handleOpenDistributionModal = () => {
+    setIsDistributionModalOpen(true);
+  };
+
+  const handleCloseDistributionModal = () => {
+    setIsDistributionModalOpen(false);
+    setSelectedVendor(null);
+    setDistributionDate(new Date());
+  };
+
+  const handleVendorSelect = (vendor) => {
+    setSelectedVendor(vendor);
+  };
+
+  const handleVendorChange = (e) => {
+    if (!e.target.value) {
+      setSelectedVendor(null);
+    }
+  };
+
+  const handleDistributionDateChange = (date) => {
+    setDistributionDate(date);
+  };
+
+  const handleCreateDistribution = () => {
+    if (!selectedVendor) {
+      TOAST.error("Please select a vendor");
+      return;
+    }
+
+    const selectedInvoices = dataSource.filter((r) => r.isChecked);
+    if (selectedInvoices.length === 0) {
+      TOAST.error("Please select at least one invoice");
+      return;
+    }
+
+    // Find product by vendor name
+    const vendorProduct = productList.find(product =>
+      product.vendor && product.vendor.toLowerCase() === selectedVendor.name.toLowerCase()
+    );
+
+    if (!vendorProduct) {
+      TOAST.error(`No product found for vendor: ${selectedVendor.name}`);
+      return;
+    }
+
+    // Prepare distribution payload based on selected invoices
+    const groupId = uuidv4();
+    const distributionPayload = [];
+
+    selectedInvoices.forEach((invoice) => {
+      // Parse and clean the invoice amount (remove $ and commas)
+      const cleanAmount = invoice.invoice_amt
+        ? parseFloat(invoice.invoice_amt.toString().replace(/[$,]/g, ''))
+        : 0;
+
+      // Find patient ID from patientCd
+      const patient = patientList.find(p => p.patientCd === invoice.patientCd);
+      const patientId = patient ? patient.id : null;
+
+      const params = {
+        created_at: new Date(),
+        description: `${selectedVendor.name} Invoice`,
+        short_description: `${selectedVendor.name} Invoice`,
+        productId: vendorProduct.id,
+        price_per_pcs: cleanAmount.toFixed(2),
+        category: "DME",
+        subCategory: "Invoice",
+        category_id: 2,
+        subCategory_id: 95,
+        estimated_total_amt: cleanAmount.toFixed(2),
+        order_qty: "1",
+        order_at: moment(distributionDate).format("YYYY-MM-DD HH:mm"),
+        comments: `DME Invoice - ${selectedVendor.name}`,
+        patientCd: invoice.patientCd,
+        delivery_location: "Home-HOME",
+        requestor: context.userProfile?.name,
+        requestor_id: context.userProfile?.employeeId,
+        requestor_position: context.userProfile?.position || "Staff",
+        patient_id: patientId,
+        stock_status: null,
+        group_id: groupId,
+        unit_uom: "Pcs",
+        companyId: companyId,
+        createdUser: {
+          name: context.userProfile?.name,
+          userId: context.userProfile?.id,
+          date: new Date(),
+        },
+        updatedUser: {
+          name: context.userProfile?.name,
+          userId: context.userProfile?.id,
+          date: new Date(),
+        },
+      };
+
+      distributionPayload.push(params);
+    });
+
+    console.log("Distribution Payload:", distributionPayload);
+    dispatch(attemptToCreateDistribution(distributionPayload));
+  };
+
   const filterRecordHandler = (keyword) => {
     let temp = [...originalSource];
 
@@ -376,16 +548,29 @@ function DmeManagement() {
               </Button>
 
               {isAddGroupButtons && (
-                <Tooltip title="Export selected invoices to Excel">
-                  <Button
-                    variant="contained"
-                    color="default"
-                    startIcon={<GetAppIcon />}
-                    onClick={exportToExcelHandler}
-                  >
-                    Export to Excel
-                  </Button>
-                </Tooltip>
+                <>
+                  <Tooltip title="Export selected invoices to Excel">
+                    <Button
+                      variant="contained"
+                      color="default"
+                      startIcon={<GetAppIcon />}
+                      onClick={exportToExcelHandler}
+                    >
+                      Export to Excel
+                    </Button>
+                  </Tooltip>
+
+                  <Tooltip title="Create distribution for selected invoices">
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      startIcon={<LocalShippingIcon />}
+                      onClick={handleOpenDistributionModal}
+                    >
+                      Create Distribution
+                    </Button>
+                  </Tooltip>
+                </>
               )}
             </div>
 
@@ -412,6 +597,55 @@ function DmeManagement() {
         iframeRef={iframeRef}
         patientList={patientList}
       />
+
+      {/* Create Distribution Modal */}
+      <Dialog
+        open={isDistributionModalOpen}
+        onClose={handleCloseDistributionModal}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Create Distribution</DialogTitle>
+        <DialogContent>
+          <div style={{ marginTop: 16, marginBottom: 16 }}>
+            <CustomDatePicker
+              label="Distribution Date"
+              name="distributionDate"
+              value={distributionDate}
+              onChange={handleDistributionDateChange}
+            />
+          </div>
+          <div style={{ marginTop: 16 }}>
+            <CustomSingleAutoComplete
+              label="Select Vendor (DME)"
+              placeholder="Select Vendor"
+              name="vendor"
+              value={selectedVendor}
+              options={vendorList.map((vendor, index) => ({
+                ...vendor,
+                id: vendor.id || index,
+                label: vendor.name,
+                value: vendor.name,
+                categoryType: 'vendor'
+              }))}
+              onSelectHandler={handleVendorSelect}
+              onChangeHandler={handleVendorChange}
+            />
+          </div>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDistributionModal} color="default">
+            Cancel
+          </Button>
+          <Button
+            onClick={handleCreateDistribution}
+            color="primary"
+            variant="contained"
+          >
+            Create Distribution
+          </Button>
+        </DialogActions>
+      </Dialog>
     </GridContainer>
   );
 }
