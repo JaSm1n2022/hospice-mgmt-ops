@@ -362,13 +362,13 @@ const ChecklistAlertDocument = ({ patientsData }) => {
       <Page size="A4" style={styles.page}>
         <View style={styles.mainHeader}>
           <Text style={styles.mainTitle}>
-            Patient Onboarding Checklist - Alert View
+            Client Onboarding Checklist - Alert View
           </Text>
           <Text style={styles.generatedText}>
             Generated: {moment().format("MM/DD/YYYY hh:mm A")}
           </Text>
           <Text style={styles.generatedText}>
-            Total Patients: {patientsData?.length || 0}
+            Total Clients: {patientsData?.length || 0}
           </Text>
         </View>
 

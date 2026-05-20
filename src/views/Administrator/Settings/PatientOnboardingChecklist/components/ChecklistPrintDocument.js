@@ -777,39 +777,60 @@ const ChecklistPrintDocument = ({ patientData }) => {
   };
 
   const renderPoc = () => {
-    const data = patientData.poc;
-    if (!data || !Array.isArray(data) || data.length === 0) return null;
+    try {
+      const data = patientData.poc;
+      if (!data || !Array.isArray(data) || data.length === 0) return null;
 
-    return (
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{GROUP_LABELS.poc}</Text>
-        {data.map((entry, index) => (
-          <View style={styles.pocEntry} key={index}>
-            <Text style={styles.pocBullet}>•</Text>
-            <Text style={styles.pocText}>
-              {entry.staff} - {entry.frequency}
-            </Text>
-          </View>
-        ))}
-      </View>
-    );
+      // Limit to prevent infinite rendering
+      const limitedData = data.slice(0, 50);
+
+      return (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{GROUP_LABELS.poc}</Text>
+          {limitedData.map((entry, index) => {
+            if (!entry || typeof entry !== 'object') return null;
+            return (
+              <View style={styles.pocEntry} key={index}>
+                <Text style={styles.pocBullet}>•</Text>
+                <Text style={styles.pocText}>
+                  {entry.staff || 'N/A'} - {entry.frequency || 'N/A'}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+      );
+    } catch (error) {
+      console.error('Error rendering POC:', error);
+      return null;
+    }
   };
 
   const renderGeneralRemarks = () => {
-    const data = patientData.remarks;
-    if (!data || !Array.isArray(data) || data.length === 0) return null;
+    try {
+      const data = patientData.remarks;
+      if (!data || !Array.isArray(data) || data.length === 0) return null;
 
-    return (
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{GROUP_LABELS.generalRemarks}</Text>
-        {data.map((remark, index) => (
-          <View style={styles.remarkEntry} key={index}>
-            <Text style={styles.remarkBullet}>•</Text>
-            <Text style={styles.remarkText}>{remark || "N/A"}</Text>
-          </View>
-        ))}
-      </View>
-    );
+      // Limit to prevent infinite rendering
+      const limitedData = data.slice(0, 50);
+
+      return (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{GROUP_LABELS.generalRemarks}</Text>
+          {limitedData.map((remark, index) => (
+            <View style={styles.remarkEntry} key={index}>
+              <Text style={styles.remarkBullet}>•</Text>
+              <Text style={styles.remarkText}>
+                {typeof remark === 'string' ? remark : 'N/A'}
+              </Text>
+            </View>
+          ))}
+        </View>
+      );
+    } catch (error) {
+      console.error('Error rendering remarks:', error);
+      return null;
+    }
   };
 
   return (

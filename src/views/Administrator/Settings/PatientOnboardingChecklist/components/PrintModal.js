@@ -46,6 +46,15 @@ const useStyles = makeStyles((theme) => ({
 function PrintModal({ isOpen, onClose, patientData }) {
   const classes = useStyles();
   const [modalStyle] = React.useState(getModalStyle);
+  const [error, setError] = React.useState(null);
+
+  React.useEffect(() => {
+    if (isOpen && patientData) {
+      console.log('Opening print modal for patient:', patientData.patientCd);
+      console.log('Patient data:', JSON.stringify(patientData, null, 2));
+      setError(null);
+    }
+  }, [isOpen, patientData]);
 
   if (!patientData) {
     return null;
@@ -59,9 +68,16 @@ function PrintModal({ isOpen, onClose, patientData }) {
           <Clear className={classes.closeButton} onClick={onClose} />
         </div>
         <div className={classes.pdfContainer}>
-          <PDFViewer width="100%" height="100%">
-            <ChecklistPrintDocument patientData={patientData} />
-          </PDFViewer>
+          {error ? (
+            <div style={{ padding: 20, color: 'red' }}>
+              <p>Error generating PDF: {error.message}</p>
+              <p>Check console for details</p>
+            </div>
+          ) : (
+            <PDFViewer width="100%" height="100%">
+              <ChecklistPrintDocument patientData={patientData} />
+            </PDFViewer>
+          )}
         </div>
       </div>
     </Modal>

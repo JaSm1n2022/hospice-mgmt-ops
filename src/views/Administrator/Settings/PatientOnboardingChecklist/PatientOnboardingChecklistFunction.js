@@ -726,10 +726,10 @@ function PatientOnboardingChecklistFunction(props) {
                 <Grid container justifyContent="space-between">
                   <div>
                     <h4 className={classes.cardTitleWhite}>
-                      Patient Onboarding Checklist
+                      Client Onboarding Checklist
                     </h4>
                     <p className={classes.cardCategoryWhite}>
-                      Patient onboarding documentation and compliance tracking
+                      Client onboarding documentation and compliance tracking
                     </p>
                   </div>
                 </Grid>

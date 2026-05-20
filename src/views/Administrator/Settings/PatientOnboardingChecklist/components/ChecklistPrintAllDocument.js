@@ -707,18 +707,21 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
   };
 
   const renderPatient = (patient, index) => {
-    return (
-      <View
-        key={patient.id || index}
-        style={styles.patientSection}
-        break={index > 0}
-      >
-        <View style={styles.patientHeader}>
-          <Text style={styles.patientCd}>{patient.patientCd || "N/A"}</Text>
-        </View>
+    try {
+      console.log(`Rendering patient ${index + 1}:`, patient.patientCd);
 
-        {/* Alert Section */}
-        {renderAlertSection(patient)}
+      return (
+        <View
+          key={patient.id || index}
+          style={styles.patientSection}
+          break={index > 0}
+        >
+          <View style={styles.patientHeader}>
+            <Text style={styles.patientCd}>{patient.patientCd || "N/A"}</Text>
+          </View>
+
+          {/* Alert Section */}
+          {renderAlertSection(patient)}
 
         {/* Admission */}
         {patient.admission && (
@@ -950,14 +953,17 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
         {patient.poc && Array.isArray(patient.poc) && patient.poc.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{GROUP_LABELS.poc}</Text>
-            {patient.poc.map((entry, idx) => (
-              <View style={styles.pocEntry} key={idx}>
-                <Text style={styles.pocBullet}>•</Text>
-                <Text style={styles.pocText}>
-                  {entry.staff} - {entry.frequency}
-                </Text>
-              </View>
-            ))}
+            {patient.poc.slice(0, 50).map((entry, idx) => {
+              if (!entry || typeof entry !== 'object') return null;
+              return (
+                <View style={styles.pocEntry} key={idx}>
+                  <Text style={styles.pocBullet}>•</Text>
+                  <Text style={styles.pocText}>
+                    {entry.staff || 'N/A'} - {entry.frequency || 'N/A'}
+                  </Text>
+                </View>
+              );
+            })}
           </View>
         )}
 
@@ -969,16 +975,31 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
               <Text style={styles.sectionTitle}>
                 {GROUP_LABELS.generalRemarks}
               </Text>
-              {patient.remarks.map((remark, idx) => (
+              {patient.remarks.slice(0, 50).map((remark, idx) => (
                 <View style={styles.remarkEntry} key={idx}>
                   <Text style={styles.remarkBullet}>•</Text>
-                  <Text style={styles.remarkText}>{remark || "N/A"}</Text>
+                  <Text style={styles.remarkText}>
+                    {typeof remark === 'string' ? remark : 'N/A'}
+                  </Text>
                 </View>
               ))}
             </View>
           )}
-      </View>
-    );
+        </View>
+      );
+    } catch (error) {
+      console.error(`Error rendering patient ${patient.patientCd}:`, error);
+      return (
+        <View key={patient.id || index} style={styles.patientSection}>
+          <View style={styles.patientHeader}>
+            <Text style={styles.patientCd}>{patient.patientCd || "N/A"}</Text>
+          </View>
+          <Text style={{ color: 'red', padding: 10 }}>
+            Error rendering this patient's checklist. Please check data.
+          </Text>
+        </View>
+      );
+    }
   };
 
   return (
