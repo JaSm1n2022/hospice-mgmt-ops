@@ -546,6 +546,7 @@ const PatientSupplies = (props) => {
         msw: 0,
         chaplain: 0,
         lpn: 0,
+        np: 0,
       };
 
       const dme = supplies.filter((supply) =>
@@ -577,6 +578,11 @@ const PatientSupplies = (props) => {
         (supply) =>
           supply.category?.toLowerCase() === "payroll" &&
           supply.subCategory.toLowerCase() === "lpn"
+      );
+      const np = supplies.filter(
+        (supply) =>
+          supply.category?.toLowerCase() === "payroll" &&
+          supply.subCategory.toLowerCase() === "nurse practitioner"
       );
       const pharmacy = supplies.filter(
         (supply) => "pharmacy" === supply.category?.toLowerCase()
@@ -632,6 +638,13 @@ const PatientSupplies = (props) => {
           ).toFixed(2);
         });
       }
+      if (np && np.length) {
+        np.forEach((item) => {
+          seriesList.np = parseFloat(
+            parseFloat(seriesList.np) + parseFloat(item.estimated_total_amt)
+          ).toFixed(2);
+        });
+      }
       if (pharmacy && pharmacy.length) {
         console.log("[Pharmacy]", pharmacy);
         pharmacy.forEach((item) => {
@@ -669,6 +682,7 @@ const PatientSupplies = (props) => {
         parseFloat(seriesList.cna) > 0 ||
         parseFloat(seriesList.chaplain) > 0 ||
         parseFloat(seriesList.lpn) > 0 ||
+        parseFloat(seriesList.np) > 0 ||
         parseFloat(seriesList.msw) > 0
       ) {
         patientDashboard.push({
@@ -705,6 +719,7 @@ const PatientSupplies = (props) => {
             parseFloat(seriesList.msw),
             parseFloat(seriesList.chaplain),
             parseFloat(seriesList.lpn),
+            parseFloat(seriesList.np),
           ],
         });
       }

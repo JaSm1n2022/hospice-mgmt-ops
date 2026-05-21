@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pharmacy Invoice Extractor</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      padding: 30px;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+      font-size: 24px;
+    }
+
+    .upload-section {
+      margin-bottom: 30px;
+      padding: 20px;
+      border: 2px dashed #ddd;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .upload-button {
+      display: inline-block;
+      padding: 12px 30px;
+      background: #e91e63;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.3s;
+    }
+
+    .upload-button:hover {
+      background: #c2185b;
+    }
+
+    .upload-button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    #file-input {
+      display: none;
+    }
+
+    .status {
+      margin: 20px 0;
+      padding: 15px;
+      border-radius: 4px;
+      display: none;
+    }
+
+    .status.info {
+      background: #e3f2fd;
+      color: #1976d2;
+      border-left: 4px solid #1976d2;
+    }
+
+    .status.success {
+      background: #e8f5e9;
+      color: #388e3c;
+      border-left: 4px solid #388e3c;
+    }
+
+    .status.error {
+      background: #ffebee;
+      color: #d32f2f;
+      border-left: 4px solid #d32f2f;
+    }
+
+    .results {
+      margin-top: 30px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+
+    th {
+      background: #f5f5f5;
+      font-weight: 600;
+      color: #333;
+    }
+
+    tr:hover {
+      background: #fafafa;
+    }
+
+    .submit-button {
+      margin-top: 20px;
+      padding: 12px 40px;
+      background: #4caf50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.3s;
+    }
+
+    .submit-button:hover {
+      background: #45a049;
+    }
+
+    .submit-button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .summary-section {
+      background: #f9f9f9;
+      padding: 20px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+    }
+
+    .summary-section h3 {
+      margin-bottom: 15px;
+      color: #333;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+    }
+
+    .summary-item {
+      padding: 15px;
+      background: white;
+      border-radius: 4px;
+      border-left: 4px solid #e91e63;
+    }
+
+    .summary-item label {
+      display: block;
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 5px;
+    }
+
+    .summary-item value {
+      display: block;
+      font-size: 18px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .alert {
+      background: #fff3cd;
+      color: #856404;
+      padding: 12px;
+      border-radius: 4px;
+      border-left: 4px solid #ffc107;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>986 Long Term Care Pharmacy - Invoice Extractor</h1>
+
+    <div class="upload-section">
+      <input type="file" id="file-input" accept="application/pdf" />
+      <button class="upload-button" onclick="document.getElementById('file-input').click()">
+        Select Invoice PDF
+      </button>
+      <p style="margin-top: 10px; color: #666;">Upload monthly pharmacy invoice from 986 Long Term Care Pharmacy</p>
+    </div>
+
+    <div id="status" class="status"></div>
+
+    <div id="results" class="results" style="display: none;">
+      <div class="summary-section" id="summary">
+        <!-- Summary will be inserted here -->
+      </div>
+
+      <h3>Extracted Prescriptions by Client</h3>
+      <div id="table-container"></div>
+
+      <button class="submit-button" id="submit-btn" onclick="submitToParent()">
+        Save to Database
+      </button>
+    </div>
+  </div>
+
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.worker.min.js';
+
+    let extractedData = [];
+    let patientCodesList = [];
+    let invoiceDate = null;
+
+    // Regular expressions based on pharmacy.md specifications
+    const RX_LINE_RE = /^(\d{2}\/\d{2}\/\d{4})\s+Rx\s+(\d+)[\s-]+(.+?)\s+(\d+)\s+(\d+\.\d{2})\s+(\d+\.\d{2})\s+(\d+\.\d{2})$/;
+    const SUBTOTAL_RE = /^(.+?)\(\s*\)\s*:\s*Sub-Total\s*:\s*(\d+\.\d{2})$/;
+    const GRAND_TOTAL_RE = /Please\s+Pay\s+-->\s*\$?\s*(\d+[\d,]*\.\d{2})/;
+
+    // Listen for patient data from parent React component
+    window.addEventListener('message', (event) => {
+      if (event.data && event.data.type === 'PATIENT_DATA') {
+        const allPatients = event.data.patientCodes || [];
+        patientCodesList = allPatients;
+        console.log('Received patient codes:', patientCodesList.length);
+      }
+    });
+
+    // Request patient data when iframe loads
+    window.addEventListener('load', () => {
+      window.parent.postMessage({ type: 'REQUEST_PATIENT_DATA' }, '*');
+    });
+
+    document.getElementById('file-input').addEventListener('change', async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      showStatus('info', 'Processing PDF...');
+
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+        let fullText = '';
+
+        // Extract text from all pages
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items.map(item => item.str).join(' ');
+          fullText += pageText + '\n';
+        }
+
+        console.log('Extracted text length:', fullText.length);
+
+        // Parse the extracted text
+        parsePharmacyInvoice(fullText);
+
+      } catch (error) {
+        console.error('Error processing PDF:', error);
+        showStatus('error', 'Failed to process PDF: ' + error.message);
+      }
+    });
+
+    function parsePharmacyInvoice(text) {
+      const lines = text.split('\n');
+      const patients = {};
+      let currentPatient = null;
+      let grandTotal = 0;
+
+      // Extract invoice date (look for date patterns)
+      const dateMatch = text.match(/Invoice Date[:\s]+(\d{2}\/\d{2}\/\d{4})/i);
+      if (dateMatch) {
+        invoiceDate = dateMatch[1];
+      } else {
+        // Default to current date if not found
+        const today = new Date();
+        invoiceDate = `${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getDate().toString().padStart(2, '0')}/${today.getFullYear()}`;
+      }
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+
+        // Skip empty lines
+        if (!line) continue;
+
+        // Check for patient subtotal line
+        const subtotalMatch = line.match(SUBTOTAL_RE);
+        if (subtotalMatch) {
+          const patientName = subtotalMatch[1].trim();
+          const subtotal = parseFloat(subtotalMatch[2]);
+
+          if (currentPatient && currentPatient.name === patientName) {
+            currentPatient.subtotal = subtotal;
+
+            // Calculate computed total
+            const computed = currentPatient.items.reduce((sum, item) => sum + item.total, 0);
+            currentPatient.computedTotal = computed;
+            currentPatient.matches = Math.abs(computed - subtotal) < 0.01;
+
+            if (!currentPatient.matches) {
+              console.warn(`⚠️ Mismatch for ${patientName}: computed=${computed.toFixed(2)}, subtotal=${subtotal.toFixed(2)}`);
+            }
+          }
+          continue;
+        }
+
+        // Check for Rx line
+        const rxMatch = line.match(RX_LINE_RE);
+        if (rxMatch) {
+          const [_, rxDate, rxNum, description, qty, price, tax, total] = rxMatch;
+
+          // Extract patient name from previous lines or context
+          // For now, use the most recent patient context
+          if (!currentPatient) {
+            // Try to find patient name before this Rx
+            for (let j = i - 1; j >= Math.max(0, i - 10); j--) {
+              const prevLine = lines[j].trim();
+              if (prevLine.match(/^[A-Z]+,\s*[A-Z]+/)) {
+                const patientName = prevLine.split('(')[0].trim();
+                if (!patients[patientName]) {
+                  patients[patientName] = {
+                    name: patientName,
+                    items: [],
+                    subtotal: 0,
+                    computedTotal: 0,
+                    matches: true
+                  };
+                }
+                currentPatient = patients[patientName];
+                break;
+              }
+            }
+          }
+
+          if (currentPatient) {
+            currentPatient.items.push({
+              rxDate,
+              rxNumber: rxNum,
+              description: description.trim(),
+              qty,
+              price: parseFloat(price),
+              tax: parseFloat(tax),
+              total: parseFloat(total)
+            });
+          }
+        }
+
+        // Check if this line starts a new patient section
+        if (line.match(/^[A-Z]+,\s*[A-Z]+.*\(/)) {
+          const patientName = line.split('(')[0].trim();
+          if (!patients[patientName]) {
+            patients[patientName] = {
+              name: patientName,
+              items: [],
+              subtotal: 0,
+              computedTotal: 0,
+              matches: true
+            };
+          }
+          currentPatient = patients[patientName];
+        }
+      }
+
+      // Extract grand total
+      const grandTotalMatch = text.match(GRAND_TOTAL_RE);
+      if (grandTotalMatch) {
+        grandTotal = parseFloat(grandTotalMatch[1].replace(/,/g, ''));
+      }
+
+      // Calculate sum of all patient subtotals
+      const sumOfSubtotals = Object.values(patients).reduce((sum, p) => sum + p.subtotal, 0);
+      const grandTotalMatches = Math.abs(sumOfSubtotals - grandTotal) < 0.01;
+
+      if (!grandTotalMatches) {
+        console.warn(`⚠️ Grand total mismatch: sum=${sumOfSubtotals.toFixed(2)}, invoice=${grandTotal.toFixed(2)}`);
+      }
+
+      // Display results
+      displayResults(patients, grandTotal, sumOfSubtotals, grandTotalMatches);
+    }
+
+    function displayResults(patients, grandTotal, sumOfSubtotals, grandTotalMatches) {
+      const patientList = Object.values(patients);
+
+      if (patientList.length === 0) {
+        showStatus('error', 'No prescription data found in the PDF. Please check the invoice format.');
+        return;
+      }
+
+      extractedData = patientList;
+
+      // Show summary
+      const totalRx = patientList.reduce((sum, p) => sum + p.items.length, 0);
+      const mismatchCount = patientList.filter(p => !p.matches).length;
+
+      const summaryHTML = `
+        <h3>Invoice Summary</h3>
+        <div class="summary-grid">
+          <div class="summary-item">
+            <label>Invoice Date</label>
+            <value>${invoiceDate || 'N/A'}</value>
+          </div>
+          <div class="summary-item">
+            <label>Total Clients</label>
+            <value>${patientList.length}</value>
+          </div>
+          <div class="summary-item">
+            <label>Total Prescriptions</label>
+            <value>${totalRx}</value>
+          </div>
+          <div class="summary-item">
+            <label>Grand Total</label>
+            <value>$${grandTotal.toFixed(2)}</value>
+          </div>
+        </div>
+        ${mismatchCount > 0 ? `<div class="alert">⚠️ ${mismatchCount} client(s) have subtotal mismatches!</div>` : ''}
+        ${!grandTotalMatches ? `<div class="alert">⚠️ Grand total mismatch: Sum=$${sumOfSubtotals.toFixed(2)}, Invoice=$${grandTotal.toFixed(2)}</div>` : ''}
+      `;
+
+      document.getElementById('summary').innerHTML = summaryHTML;
+
+      // Build table
+      let tableHTML = '<table><thead><tr>';
+      tableHTML += '<th>Client Name</th>';
+      tableHTML += '<th>Client Code</th>';
+      tableHTML += '<th>Rx Count</th>';
+      tableHTML += '<th>Subtotal</th>';
+      tableHTML += '<th>Computed</th>';
+      tableHTML += '<th>Match</th>';
+      tableHTML += '</tr></thead><tbody>';
+
+      patientList.forEach((patient, index) => {
+        const match = patient.matches ? '✓' : '⚠️';
+        const rowStyle = patient.matches ? '' : 'background: #fff3cd;';
+
+        tableHTML += `<tr style="${rowStyle}">`;
+        tableHTML += `<td>${patient.name}</td>`;
+        tableHTML += `<td><select id="patient-${index}" onchange="updatePatientCode(${index}, this.value)">`;
+        tableHTML += `<option value="">-- Select Client --</option>`;
+
+        // Add patient code options
+        patientCodesList.forEach(p => {
+          tableHTML += `<option value="${p.code}">${p.code} - ${p.name}</option>`;
+        });
+
+        tableHTML += `</select></td>`;
+        tableHTML += `<td>${patient.items.length}</td>`;
+        tableHTML += `<td>$${patient.subtotal.toFixed(2)}</td>`;
+        tableHTML += `<td>$${patient.computedTotal.toFixed(2)}</td>`;
+        tableHTML += `<td>${match}</td>`;
+        tableHTML += '</tr>';
+      });
+
+      tableHTML += '</tbody></table>';
+      document.getElementById('table-container').innerHTML = tableHTML;
+      document.getElementById('results').style.display = 'block';
+
+      showStatus('success', `Successfully extracted ${totalRx} prescriptions for ${patientList.length} client(s)`);
+    }
+
+    function updatePatientCode(index, patientCode) {
+      if (extractedData[index]) {
+        extractedData[index].patientCode = patientCode;
+      }
+    }
+
+    function submitToParent() {
+      // Validate that all patients have codes assigned
+      const unassigned = extractedData.filter(p => !p.patientCode);
+      if (unassigned.length > 0) {
+        alert(`Please assign client codes to all ${unassigned.length} client(s) before submitting.`);
+        return;
+      }
+
+      // Prepare data for submission
+      const items = [];
+      extractedData.forEach(patient => {
+        patient.items.forEach(item => {
+          items.push({
+            patientCd: patient.patientCode,
+            patientName: patient.name,
+            rxNumber: item.rxNumber,
+            description: item.description,
+            qty: item.qty,
+            price: item.price.toFixed(2),
+            tax: item.tax.toFixed(2),
+            total: item.total.toFixed(2),
+            rxDate: item.rxDate
+          });
+        });
+      });
+
+      const payload = {
+        invoice_dt: invoiceDate,
+        items: items
+      };
+
+      // Send to parent
+      window.parent.postMessage({
+        type: 'SUBMIT_PHARMACY_INVOICE',
+        data: payload
+      }, '*');
+
+      showStatus('success', 'Invoice submitted successfully!');
+
+      // Disable submit button
+      document.getElementById('submit-btn').disabled = true;
+    }
+
+    function showStatus(type, message) {
+      const statusEl = document.getElementById('status');
+      statusEl.className = `status ${type}`;
+      statusEl.textContent = message;
+      statusEl.style.display = 'block';
+    }
+  </script>
+</body>
+</html>

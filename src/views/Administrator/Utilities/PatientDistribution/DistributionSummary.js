@@ -133,6 +133,7 @@ const DistributionSummary = (props) => {
     let msw = 0.0;
     let chaplain = 0.0;
     let lpn = 0.0;
+    let np = 0.0;
     let pharmacy = 0.0;
     if (props?.details.length) {
       console.log("[Props details]", props.details);
@@ -176,6 +177,7 @@ const DistributionSummary = (props) => {
           msw: d.series[6],
           chaplain: d.series[7],
           lpn: d.series[8],
+          np: d.series[9],
           grand: d.estimatedAmt,
         });
         medical += parseFloat(d.series[0], 2);
@@ -187,6 +189,7 @@ const DistributionSummary = (props) => {
         msw += parseFloat(d.series[6], 2);
         chaplain += parseFloat(d.series[7], 2);
         lpn += parseFloat(d.series[8], 2);
+        np += parseFloat(d.series[9], 2);
         grandTotal += d.estimatedAmt;
       });
 
@@ -207,6 +210,7 @@ const DistributionSummary = (props) => {
         msw: parseFloat(msw, 2),
         chaplain: parseFloat(chaplain, 2),
         lpn: parseFloat(lpn, 2),
+        np: parseFloat(np, 2),
         grand: grandTotal,
       });
 
@@ -253,11 +257,11 @@ const DistributionSummary = (props) => {
       setPharmacyChartData(prepareChartData('pharmacy'));
       setTransportationChartData(prepareChartData('transportation'));
 
-      // Clinician Chart (CNA + Nurse + LPN + MSW + Chaplain)
+      // Clinician Chart (CNA + Nurse + LPN + NP + MSW + Chaplain)
       const clinicianData = chartFilteredData
         .map((d) => ({
           patient: d.patient,
-          value: parseFloat(d.cna || 0) + parseFloat(d.nurse || 0) + parseFloat(d.lpn || 0) + parseFloat(d.msw || 0) + parseFloat(d.chaplain || 0),
+          value: parseFloat(d.cna || 0) + parseFloat(d.nurse || 0) + parseFloat(d.lpn || 0) + parseFloat(d.np || 0) + parseFloat(d.msw || 0) + parseFloat(d.chaplain || 0),
         }))
         .filter((d) => d.value > 0)
         .sort((a, b) => b.value - a.value);
@@ -403,6 +407,17 @@ const DistributionSummary = (props) => {
                         scope="row"
                       >
                         LPN
+                      </TableCell>
+                      <TableCell
+                        className={classes.tableCell}
+                        style={{
+                          height: "auto !important",
+                          border: "solid 1px black",
+                        }}
+                        component="th"
+                        scope="row"
+                      >
+                        NP
                       </TableCell>
 
                       <TableCell
@@ -557,6 +572,14 @@ const DistributionSummary = (props) => {
                               component="th"
                               scope="row"
                             >{`$${parseFloat(map.lpn || 0.0).toFixed(
+                              2
+                            )}`}</TableCell>
+                            <TableCell
+                              className={classes.tableCell}
+                              style={cellStyle}
+                              component="th"
+                              scope="row"
+                            >{`$${parseFloat(map.np || 0.0).toFixed(
                               2
                             )}`}</TableCell>
                             <TableCell
@@ -799,6 +822,7 @@ const DistributionSummary = (props) => {
                     { label: "CNA", value: totalRow.cna },
                     { label: "Nurse (RN)", value: totalRow.nurse },
                     { label: "LPN", value: totalRow.lpn },
+                    { label: "NP", value: totalRow.np },
                     { label: "MSW", value: totalRow.msw },
                     { label: "Chaplain", value: totalRow.chaplain },
                     { label: "On-Call Nursing", value: props.onCallNursing },
@@ -948,6 +972,7 @@ const DistributionSummary = (props) => {
                   const clinicalLabor = parseFloat(totalRow.cna || 0) +
                                        parseFloat(totalRow.nurse || 0) +
                                        parseFloat(totalRow.lpn || 0) +
+                                       parseFloat(totalRow.np || 0) +
                                        parseFloat(totalRow.msw || 0) +
                                        parseFloat(totalRow.chaplain || 0) +
                                        parseFloat(props.onCallNursing || 0);
@@ -1824,6 +1849,7 @@ const DistributionSummary = (props) => {
                         parseFloat(patient.cna || 0) +
                         parseFloat(patient.nurse || 0) +
                         parseFloat(patient.lpn || 0) +
+                        parseFloat(patient.np || 0) +
                         parseFloat(patient.msw || 0) +
                         parseFloat(patient.chaplain || 0);
                       return {

@@ -97,6 +97,7 @@ import BereavementTimeline from "views/Administrator/BereavementTimeline/Bereave
 import UpdateBenefits from "views/Administrator/Utilities/UpdateBenefits";
 import QAChart from "views/Administrator/Utilities/QAChart";
 import DmeManagement from "views/Administrator/Operations/DmeManagement/DmeManagement";
+import PharmacyManagement from "views/Administrator/Operations/PharmacyManagement/PharmacyManagement";
 var dashRoutes = [
   {
     path: "/dashboard",
@@ -262,6 +263,15 @@ var dashRoutes = [
         mini: "DM",
         rtlMini: "ع",
         component: DmeManagement,
+        layout: "/admin",
+      },
+      {
+        path: "/pharmacy-management",
+        name: "Pharmacy Management",
+        rtlName: "عالتسعير",
+        mini: "PM",
+        rtlMini: "ع",
+        component: PharmacyManagement,
         layout: "/admin",
       },
     ],

@@ -34,6 +34,7 @@ import certificationReducer from "./certification";
 import incomeReducer from "./income";
 import potentialAdmissionReducer from "./potentialAdmission";
 import dmeInvoiceReducer from "./dmeInvoice";
+import pharmacyInvoiceReducer from "./pharmacyInvoice";
 export default combineReducers({
   invoice: invoiceReducer,
   product: productReducer,
@@ -70,4 +71,5 @@ export default combineReducers({
   certification: certificationReducer,
   income: incomeReducer,
   dmeInvoice: dmeInvoiceReducer,
+  pharmacyInvoice: pharmacyInvoiceReducer,
 });
