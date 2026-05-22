@@ -730,7 +730,7 @@ function PatientForm(props) {
     if (!isValid) {
       setComponents(tempList);
     } else {
-      generalForm.patientCd = patientIdentity;
+      generalForm.patientCd = patientIdentity?.trim();
       generalForm.is_eligible_cap =
         checkCapEligibility() === "YES" ? true : false;
 

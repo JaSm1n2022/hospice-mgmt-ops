@@ -530,9 +530,36 @@ const PatientSupplies = (props) => {
       patient.category = "patient";
 
       const supplies = distributionList.filter(
-        (dist) => dist.patient_id === patient.id
+        (dist) =>
+          dist.patient_id === patient.id ||
+          dist.patientCd?.trim() === patient.patientCd?.trim()
       );
       console.log("[Supplies]", patient.id, supplies);
+
+      // Debug logging for patient MOSS-LYD
+      if (patient.patientCd && patient.patientCd.includes("MOSS-LYD")) {
+        console.log("🔍 DEBUG: Patient MOSS-LYD found:", patient.patientCd);
+        console.log("🔍 Total distributions for MOSS-LYD:", supplies.length);
+        console.log("🔍 All distributions:", supplies);
+
+        // Log CNA distributions specifically
+        const cnaDistributions = supplies.filter(
+          (supply) =>
+            supply.category?.toLowerCase() === "payroll" &&
+            supply.subCategory?.toLowerCase() === "certified nurse assistant"
+        );
+        console.log("🔍 CNA distributions count:", cnaDistributions.length);
+        console.log("🔍 CNA distributions with order_at dates:", cnaDistributions.map(d => ({
+          id: d.id,
+          order_at: d.order_at,
+          estimated_total_amt: d.estimated_total_amt,
+          patient_id: d.patient_id,
+          patientCd: d.patientCd,
+          category: d.category,
+          subCategory: d.subCategory,
+          description: d.description
+        })));
+      }
       supplies.forEach((supply) => {
         estimatedAmt += parseFloat(supply.estimated_total_amt);
       });
@@ -692,16 +719,16 @@ const PatientSupplies = (props) => {
             patient?.status?.toLowerCase() === "inactive"
               ? moment(patient.eoc_at || patient.eoc).format("YYYY-MM-DD")
               : "",
-          cna: assignmentList?.find((p) => p.patientCd === patient.patientCd)
-            ? assignmentList?.find((p) => p.patientCd === patient.patientCd)
+          cna: assignmentList?.find((p) => p.patientCd?.trim() === patient.patientCd?.trim())
+            ? assignmentList?.find((p) => p.patientCd?.trim() === patient.patientCd?.trim())
                 .cnaName
             : "",
-          rn: assignmentList?.find((p) => p.patientCd === patient.patientCd)
-            ? assignmentList?.find((p) => p.patientCd === patient.patientCd)
+          rn: assignmentList?.find((p) => p.patientCd?.trim() === patient.patientCd?.trim())
+            ? assignmentList?.find((p) => p.patientCd?.trim() === patient.patientCd?.trim())
                 .rnName
             : "",
-          lpn: assignmentList?.find((p) => p.patientCd === patient.patientCd)
-            ? assignmentList?.find((p) => p.patientCd === patient.patientCd)
+          lpn: assignmentList?.find((p) => p.patientCd?.trim() === patient.patientCd?.trim())
+            ? assignmentList?.find((p) => p.patientCd?.trim() === patient.patientCd?.trim())
                 .lpnName
             : "",
           name: patient.patientCd,
