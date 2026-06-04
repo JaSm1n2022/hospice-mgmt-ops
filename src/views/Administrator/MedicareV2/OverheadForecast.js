@@ -287,7 +287,7 @@ const OverheadForecastPDF = ({ data, currentMonthLabel }) => {
 
         {/* Payroll Taxes */}
         <View style={pdfStyles.subsectionRow}>
-          <Text style={pdfStyles.label}>Payroll Taxes (7.6%)</Text>
+          <Text style={pdfStyles.label}>Payroll Taxes ({data.payrollTaxRate}%)</Text>
           <Text style={pdfStyles.value}>${data.payrollTaxes.toFixed(2)}</Text>
         </View>
 
@@ -314,14 +314,14 @@ const OverheadForecastPDF = ({ data, currentMonthLabel }) => {
         {/* On-Call Phone */}
         <View style={pdfStyles.subsectionRow}>
           <Text style={pdfStyles.label}>
-            On-Call Phone ($3/hr weekdays & $4/hr weekend)
+            On-Call Phone (${data.onCallWeekdayRate}/hr weekdays & ${data.onCallWeekendRate}/hr weekend)
           </Text>
           <Text style={pdfStyles.value}>${data.onCallPhone.toFixed(2)}</Text>
         </View>
         <View style={pdfStyles.detailRow}>
           <Text style={pdfStyles.label}>
-            Weekdays: {data.onCallWeekdayCount} days ÷ 5 × 75 hrs ={" "}
-            {data.onCallWeekdayHours} hrs × $3/hr
+            Weekdays: {data.onCallWeekdayCount} days ÷ 5 × {data.onCallWeekdayHoursPerWeek} hrs ={" "}
+            {data.onCallWeekdayHours} hrs × ${data.onCallWeekdayRate}/hr
           </Text>
           <Text style={pdfStyles.value}>
             ${data.onCallWeekdayCost.toFixed(2)}
@@ -329,8 +329,8 @@ const OverheadForecastPDF = ({ data, currentMonthLabel }) => {
         </View>
         <View style={pdfStyles.detailRow}>
           <Text style={pdfStyles.label}>
-            Weekends: {data.onCallWeekendCount} days ÷ 2 × 48 hrs ={" "}
-            {data.onCallWeekendHours} hrs × $4/hr
+            Weekends: {data.onCallWeekendCount} days ÷ 2 × {data.onCallWeekendHoursPerWeekend} hrs ={" "}
+            {data.onCallWeekendHours} hrs × ${data.onCallWeekendRate}/hr
           </Text>
           <Text style={pdfStyles.value}>
             ${data.onCallWeekendCost.toFixed(2)}
@@ -424,7 +424,7 @@ const OverheadForecastPDF = ({ data, currentMonthLabel }) => {
         {/* Billing Fees */}
         <View style={pdfStyles.subsectionRow}>
           <Text style={pdfStyles.label}>
-            Billing Fees (Hospice MD @ 3% of revenue)
+            Billing Fees ({data.billingFeeRate}% of revenue)
           </Text>
           <Text style={pdfStyles.value}>${data.billingFees.toFixed(2)}</Text>
         </View>
@@ -757,8 +757,8 @@ function OverheadForecast(props) {
     const contractedDetails = contractedData.details;
 
     // 5. Payroll Taxes
-    const payrollTaxes =
-      salariesWages * getOverheadValue("PAYROLL_TAX_RATE", overheadTableData);
+    const payrollTaxRate = getOverheadValue("PAYROLL_TAX_RATE", overheadTableData);
+    const payrollTaxes = salariesWages * payrollTaxRate;
 
     // 6. Medical Supplies
     const medicalSupplies =
@@ -787,20 +787,16 @@ function OverheadForecast(props) {
     }
     // Weekdays: divide by 5 (days in a week) then multiply by ONCALL_WEEKDAY_HOURS
     const numberOfWeeks = weekdayCount / 5;
-    const onCallWeekdayHours =
-      numberOfWeeks *
-      getOverheadValue("ONCALL_WEEKDAY_HOURS", overheadTableData);
-    const onCallWeekdayCost =
-      onCallWeekdayHours *
-      getOverheadValue("ONCALL_WEEKDAY_RATE", overheadTableData);
+    const onCallWeekdayHoursPerWeek = getOverheadValue("ONCALL_WEEKDAY_HOURS", overheadTableData);
+    const onCallWeekdayRate = getOverheadValue("ONCALL_WEEKDAY_RATE", overheadTableData);
+    const onCallWeekdayHours = numberOfWeeks * onCallWeekdayHoursPerWeek;
+    const onCallWeekdayCost = onCallWeekdayHours * onCallWeekdayRate;
     // Weekends: divide by 2 (days in a weekend) then multiply by ONCALL_WEEKEND_HOURS
     const numberOfWeekends = weekendCount / 2;
-    const onCallWeekendHours =
-      numberOfWeekends *
-      getOverheadValue("ONCALL_WEEKEND_HOURS", overheadTableData);
-    const onCallWeekendCost =
-      onCallWeekendHours *
-      getOverheadValue("ONCALL_WEEKEND_RATE", overheadTableData);
+    const onCallWeekendHoursPerWeekend = getOverheadValue("ONCALL_WEEKEND_HOURS", overheadTableData);
+    const onCallWeekendRate = getOverheadValue("ONCALL_WEEKEND_RATE", overheadTableData);
+    const onCallWeekendHours = numberOfWeekends * onCallWeekendHoursPerWeekend;
+    const onCallWeekendCost = onCallWeekendHours * onCallWeekendRate;
     const onCallTotalHours = onCallWeekdayHours + onCallWeekendHours;
     const onCallPhone = onCallWeekdayCost + onCallWeekendCost;
 
@@ -844,9 +840,8 @@ function OverheadForecast(props) {
     );
 
     // 13. Billing Fees (percentage of revenue, with minimum)
-    const billingFeesCalc =
-      projectedRevenue *
-      getOverheadValue("BILLING_FEE_RATE", overheadTableData);
+    const billingFeeRate = getOverheadValue("BILLING_FEE_RATE", overheadTableData);
+    const billingFeesCalc = projectedRevenue * billingFeeRate;
     const billingFees = Math.max(
       billingFeesCalc,
       getOverheadValue("BILLING_FEE_MINIMUM", overheadTableData)
@@ -881,12 +876,13 @@ function OverheadForecast(props) {
       projectedRevenue,
       revenueDetails,
       medicareSeqAdj,
-      medicareSeqAdjPercentage,
+      medicareSeqAdjPercentage: parseFloat(medicareSeqAdjPercentage).toFixed(2),
       salariesWages,
       salariesDetails,
       contractedServices,
       contractedDetails,
       payrollTaxes,
+      payrollTaxRate: (payrollTaxRate * 100).toFixed(2), // Convert to percentage for display
       medicalSupplies,
       pharmacy,
       dme,
@@ -894,7 +890,11 @@ function OverheadForecast(props) {
       onCallWeekdayCount: weekdayCount,
       onCallWeekendCount: weekendCount,
       onCallWeekdayHours,
+      onCallWeekdayHoursPerWeek,
+      onCallWeekdayRate: parseFloat(onCallWeekdayRate).toFixed(2),
       onCallWeekendHours,
+      onCallWeekendHoursPerWeekend,
+      onCallWeekendRate: parseFloat(onCallWeekendRate).toFixed(2),
       onCallWeekdayCost,
       onCallWeekendCost,
       onCallTotalHours,
@@ -904,6 +904,7 @@ function OverheadForecast(props) {
       fixedExpenses,
       totalFixedExpenses,
       billingFees,
+      billingFeeRate: (billingFeeRate * 100).toFixed(2), // Convert to percentage for display
       marketing,
       socCount,
       totalExpenses,

@@ -90,7 +90,7 @@ const DEFAULT_CONSTANTS = [
     key: "PAYROLL_TAX_RATE",
     value: 0.076,
     label: "Payroll Tax Rate",
-    description: "Payroll tax percentage (7.6%)",
+    description: "Payroll tax percentage",
     category: "Payroll",
   },
   {
