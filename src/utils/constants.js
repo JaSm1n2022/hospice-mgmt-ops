@@ -779,6 +779,26 @@ export const EMPLOYEE_TYPE = [
     code: "perDiem",
   },
 ];
+export const EMPLOYEE_CLASSIFICATION = [
+  {
+    id: "directCare",
+    category: "classification",
+    name: "Direct Care",
+    label: "Direct Care",
+    value: "Direct Care",
+    code: "directCare",
+    description: "Employees providing direct patient care services",
+  },
+  {
+    id: "overhead",
+    category: "classification",
+    name: "Overhead",
+    label: "Overhead",
+    value: "Overhead",
+    code: "overhead",
+    description: "Administrative and support staff",
+  },
+];
 export const EMPLOYEE_POSITION = [
   {
     id: "caseManager",

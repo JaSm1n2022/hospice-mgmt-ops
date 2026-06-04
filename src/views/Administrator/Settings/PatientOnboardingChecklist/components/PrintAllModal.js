@@ -279,6 +279,29 @@ function PrintAllModal({ isOpen, onClose, patientsData }) {
   const classes = useStyles();
   const [modalStyle] = React.useState(getModalStyle);
   const [error, setError] = React.useState(null);
+  const [isGenerating, setIsGenerating] = React.useState(false);
+
+  // Reset error when modal opens
+  React.useEffect(() => {
+    if (isOpen) {
+      setError(null);
+      setIsGenerating(false);
+    }
+  }, [isOpen]);
+
+  // Timeout handler for long-running PDF generation
+  React.useEffect(() => {
+    if (!isGenerating) return;
+
+    const timeout = setTimeout(() => {
+      if (isGenerating) {
+        setError(new Error("PDF generation is taking too long. Please try selecting fewer patients."));
+        setIsGenerating(false);
+      }
+    }, 60000); // 60 second timeout
+
+    return () => clearTimeout(timeout);
+  }, [isGenerating]);
 
   if (!patientsData || patientsData.length === 0) {
     return null;
@@ -287,8 +310,8 @@ function PrintAllModal({ isOpen, onClose, patientsData }) {
   const fileName = `Patient_Onboarding_Checklists_${moment().format("YYYY-MM-DD_HHmmss")}.pdf`;
 
   // Limit to prevent freezing with large datasets
-  const limitedData = patientsData.slice(0, 50); // Max 50 patients per PDF
-  const isLimited = patientsData.length > 50;
+  const limitedData = patientsData.slice(0, 40); // Max 40 patients per PDF
+  const isLimited = patientsData.length > 40;
 
   console.log("PrintAllModal - Number of patients:", patientsData.length);
   console.log("PrintAllModal - Limited to:", limitedData.length);
@@ -316,8 +339,9 @@ function PrintAllModal({ isOpen, onClose, patientsData }) {
             <>
               <p className={classes.info}>
                 Ready to download {limitedData.length} patient checklist{limitedData.length !== 1 ? 's' : ''}
-                {isLimited && <span style={{ color: "orange", display: "block", fontSize: "0.9em" }}>
-                  (Limited to first 50 patients - total: {patientsData.length})
+                {isLimited && <span style={{ color: "orange", display: "block", fontSize: "0.9em", marginTop: "8px" }}>
+                  ⚠ Limited to first 40 patients to prevent performance issues.<br/>
+                  Total selected: {patientsData.length}. Please select fewer patients or print in batches.
                 </span>}
               </p>
               <PDFDownloadLink
@@ -326,9 +350,16 @@ function PrintAllModal({ isOpen, onClose, patientsData }) {
                 className={classes.downloadButton}
               >
                 {({ blob, url, loading, error: pdfError }) => {
+                  // Track generation state
+                  React.useEffect(() => {
+                    setIsGenerating(loading);
+                  }, [loading]);
+
                   if (pdfError) {
                     console.error("PDF Generation Error:", pdfError);
-                    setError(pdfError);
+                    if (!error) {
+                      setError(pdfError);
+                    }
                   }
                   return loading ? (
                     <>

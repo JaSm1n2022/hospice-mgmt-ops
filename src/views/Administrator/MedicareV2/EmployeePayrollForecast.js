@@ -505,6 +505,7 @@ function EmployeePayrollForecast(props) {
       const employeeName = employee.name || `${employee.fn || ""} ${employee.ln || ""}`.trim() || "Unknown";
       const employeeId = employee.id; // Use id for matching with assignments/contracts
       const employeePosition = employee.position || "";
+      const employeeClassification = employee.employeeClassification || "";
 
       // Check for salaried contract (ignore employeeType, only check contracts)
       const salaryContract = contractList.find(
@@ -687,15 +688,11 @@ function EmployeePayrollForecast(props) {
 
       // --- Fixed IDT Meeting Compensation ---
       // Not patient-associated, just check if employee has contract
-      // Qualifying roles: Registered Nurse, Case Manager, MSW, Chaplain
-      const position = employeePosition.toLowerCase();
-      const canDoIDT =
-        position.includes("registered nurse") ||
-        position.includes("rn") ||
-        position.includes("case manager") ||
-        position.includes("msw") ||
-        position.includes("social worker") ||
-        position.includes("chaplain");
+      // Only Direct Care employees are eligible for IDT meetings
+      const classification = typeof employeeClassification === 'string'
+        ? employeeClassification.toLowerCase()
+        : (employeeClassification?.value || employeeClassification?.name || "").toLowerCase();
+      const canDoIDT = classification.includes("direct care");
 
       if (canDoIDT) {
         // Find IDT Meeting via Person contract (not patient-specific)

@@ -444,7 +444,24 @@ const collectPatientAlerts = (patient) => {
   };
 };
 
-const ChecklistPrintAllDocument = ({ patientsData }) => {
+const ChecklistPrintAllDocument = React.memo(({ patientsData }) => {
+  // Safety check
+  if (!patientsData || !Array.isArray(patientsData)) {
+    console.error("ChecklistPrintAllDocument: Invalid patientsData", patientsData);
+    return (
+      <Document>
+        <Page size="A4" style={styles.page}>
+          <Text>Error: Invalid patient data</Text>
+        </Page>
+      </Document>
+    );
+  }
+
+  // Limit to prevent browser hanging
+  const safeData = patientsData.slice(0, 40);
+  if (patientsData.length > 40) {
+    console.warn(`Too many patients (${patientsData.length}). Limiting to 40.`);
+  }
   const renderBooleanItem = (itemKey, itemData) => {
     const isChecked = itemData && itemData.checked;
 
@@ -714,7 +731,6 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
         <View
           key={patient.id || index}
           style={styles.patientSection}
-          break={index > 0}
         >
           <View style={styles.patientHeader}>
             <Text style={styles.patientCd}>{patient.patientCd || "N/A"}</Text>
@@ -1004,6 +1020,7 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
 
   return (
     <Document>
+      {/* Cover Page */}
       <Page size="A4" style={styles.page}>
         <View style={styles.mainHeader}>
           <Text style={styles.mainTitle}>
@@ -1013,13 +1030,12 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
             Generated: {moment().format("MM/DD/YYYY hh:mm A")}
           </Text>
           <Text style={styles.generatedText}>
-            Total Clients: {patientsData?.length || 0}
+            Total Clients: {safeData.length || 0}
+            {patientsData.length > 40 && ` (Limited from ${patientsData.length})`}
           </Text>
         </View>
 
-        {patientsData && patientsData.length > 0 ? (
-          patientsData.map((patient, index) => renderPatient(patient, index))
-        ) : (
+        {safeData.length === 0 && (
           <Text>No patient data available</Text>
         )}
 
@@ -1030,8 +1046,15 @@ const ChecklistPrintAllDocument = ({ patientsData }) => {
           </Text>
         </View>
       </Page>
+
+      {/* Render each patient on its own page */}
+      {safeData.map((patient, index) => (
+        <Page key={patient.id || index} size="A4" style={styles.page}>
+          {renderPatient(patient, index)}
+        </Page>
+      ))}
     </Document>
   );
-};
+});
 
 export default ChecklistPrintAllDocument;

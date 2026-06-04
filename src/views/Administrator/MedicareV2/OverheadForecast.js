@@ -916,6 +916,16 @@ function OverheadForecast(props) {
     const details = [];
 
     activeEmployees.forEach((employee) => {
+      // Check employee type - only Full-Time and Part-Time go in Salaries & Wages
+      const employeeType = typeof employee.employeeType === 'string'
+        ? employee.employeeType.toLowerCase()
+        : (employee.employeeType?.value || employee.employeeType?.name || "").toLowerCase();
+
+      const isPerDiem = employeeType.includes("per diem") || employeeType.includes("perdiem");
+
+      // Skip Per Diem employees - they go in Contracted Services
+      if (isPerDiem) return;
+
       const salaryContract = contracts.find(
         (c) =>
           c.employeeId?.toString() === employee.id?.toString() &&
@@ -958,15 +968,30 @@ function OverheadForecast(props) {
     activeEmployees.forEach((employee) => {
       const employeeId = employee.id?.toString();
 
-      // Skip if has salary contract
+      // Check employee type
+      const employeeType = typeof employee.employeeType === 'string'
+        ? employee.employeeType.toLowerCase()
+        : (employee.employeeType?.value || employee.employeeType?.name || "").toLowerCase();
+
+      const isPerDiem = employeeType.includes("per diem") || employeeType.includes("perdiem");
+
+      // Skip Full-Time and Part-Time employees with salary contracts (they're in Salaries & Wages)
+      // But include Per Diem employees even if they have salary contracts
       const salaryContract = contracts.find(
         (c) =>
           c.employeeId?.toString() === employeeId &&
           c.serviceRateType?.toLowerCase()?.includes("salaried")
       );
-      if (salaryContract) return;
+
+      if (salaryContract && !isPerDiem) return;
 
       let employeeTotal = 0;
+
+      // For Per Diem employees with salary contracts, add their salary amount
+      if (isPerDiem && salaryContract) {
+        const amount = parseFloat(salaryContract.serviceRate || 0);
+        employeeTotal += amount;
+      }
 
       // 1. REGULAR VISITS
       const employeeAssignments = assignments.filter(
@@ -1069,14 +1094,12 @@ function OverheadForecast(props) {
       });
 
       // 3. IDT MEETINGS
-      // Check if employee can do IDT (based on position)
-      const canDoIDT =
-        employee.position?.toLowerCase()?.includes("nurse") ||
-        employee.position?.toLowerCase() === "case manager" ||
-        employee.position?.toLowerCase() === "social worker" ||
-        employee.position?.toLowerCase() === "msw" ||
-        employee.position?.toLowerCase() === "chaplain" ||
-        employee.position?.toLowerCase() === "director of nurse";
+      // Check if employee can do IDT (based on classification)
+      const employeeClassification = employee.employeeClassification || "";
+      const classification = typeof employeeClassification === 'string'
+        ? employeeClassification.toLowerCase()
+        : (employeeClassification?.value || employeeClassification?.name || "").toLowerCase();
+      const canDoIDT = classification.includes("direct care");
 
       if (canDoIDT) {
         // Find IDT Meeting via Person contract (not patient-specific)

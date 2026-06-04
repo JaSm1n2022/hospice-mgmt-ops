@@ -407,6 +407,7 @@ function PayrollFunction(props) {
         employeeName: payload.general?.employee?.name,
         employeeTitle: payload.general?.employee?.position,
         employeeType: payload.general?.employee?.employeeType,
+        employeeClassification: payload.general?.employee?.employeeClassification,
         patientId: param.patient?.id || undefined,
         patientCd: param.patient?.patientCd || "",
         serviceType: param.serviceType?.value,
@@ -855,7 +856,9 @@ function PayrollFunction(props) {
     const normalizeServiceType = (serviceType) => {
       if (!serviceType) return "Unknown";
 
-      const serviceUpper = serviceType.toUpperCase();
+      // Trim whitespace, replace multiple spaces with single space, and convert to uppercase for comparison
+      const serviceNormalized = serviceType.trim().replace(/\s+/g, ' ');
+      const serviceUpper = serviceNormalized.toUpperCase();
 
       // Reassessment Visit grouping
       // Includes: Reassessment, Reassessment Visit, Recertification Visit
@@ -894,8 +897,13 @@ function PayrollFunction(props) {
         return "Salaried";
       }
 
-      // Return original if no mapping matches
-      return serviceType;
+      // For all other service types, return a normalized version
+      // (trim whitespace, collapse multiple spaces, and convert to Title Case for consistency)
+      return serviceNormalized
+        .toLowerCase()
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
     };
 
     // Group by service type and calculate totals

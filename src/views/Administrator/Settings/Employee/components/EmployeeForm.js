@@ -21,6 +21,7 @@ import HeaderModal from "components/Modal/HeaderModal";
 
 import { useTheme } from "@material-ui/core";
 import { EMPLOYEE_TYPE } from "utils/constants";
+import { EMPLOYEE_CLASSIFICATION } from "utils/constants";
 import { EMPLOYEE_POSITION } from "utils/constants";
 import { EMPLOYEE_STATUS } from "utils/constants";
 
@@ -98,6 +99,17 @@ const general = [
     value: DEFAULT_ITEM,
     cols: 4,
     options: EMPLOYEE_TYPE,
+  },
+  {
+    id: "employeeClassification",
+    component: "singlecomplete",
+    placeholder: "Classification *",
+    label: "Classification *",
+    name: "employeeClassification",
+    //disabled: props.mode && props.mode === 'view' ? true : false,
+    value: DEFAULT_ITEM,
+    cols: 4,
+    options: EMPLOYEE_CLASSIFICATION,
   },
   /*
   {
@@ -210,6 +222,9 @@ function EmployeeForm(props) {
       generalFm.employeeType = EMPLOYEE_TYPE.find(
         (c) => c.value === generalFm.employeeType
       );
+      generalFm.employeeClassification = EMPLOYEE_CLASSIFICATION.find(
+        (c) => c.value === generalFm.employeeClassification
+      );
       generalFm.position = EMPLOYEE_POSITION.find(
         (c) => c.value === generalFm.position
       );
@@ -232,6 +247,16 @@ function EmployeeForm(props) {
         temp.errorMsg = `${temp.label} is required.`;
       }
       if (["ln"].includes(temp.name) && !generalForm[temp.name]) {
+        isValid = false;
+        temp.isError = true;
+        temp.errorMsg = `${temp.label} is required.`;
+      }
+      if (
+        (temp.name === "employeeClassification" &&
+          generalForm[temp.name] &&
+          !generalForm[temp.name].name) ||
+        (temp.name === "employeeClassification" && !generalForm[temp.name])
+      ) {
         isValid = false;
         temp.isError = true;
         temp.errorMsg = `${temp.label} is required.`;
@@ -278,6 +303,12 @@ function EmployeeForm(props) {
     console.log("[src autocomplete]", src, item);
     if (item.category === "employee") {
       src["employeeType"] = item;
+    } else if (item.category === "classification") {
+      src["employeeClassification"] = item;
+      const tempList = [...components];
+      const classObj = tempList.find((c) => c.name === "employeeClassification");
+      classObj.isError = false;
+      classObj.errorMsg = "";
     } else if (item.category === "position") {
       src["position"] = item;
       const tempList = [...components];
