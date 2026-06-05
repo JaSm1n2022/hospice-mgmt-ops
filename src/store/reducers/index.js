@@ -35,6 +35,7 @@ import incomeReducer from "./income";
 import potentialAdmissionReducer from "./potentialAdmission";
 import dmeInvoiceReducer from "./dmeInvoice";
 import pharmacyInvoiceReducer from "./pharmacyInvoice";
+import qaReducer from "./qa";
 export default combineReducers({
   invoice: invoiceReducer,
   product: productReducer,
@@ -72,4 +73,5 @@ export default combineReducers({
   income: incomeReducer,
   dmeInvoice: dmeInvoiceReducer,
   pharmacyInvoice: pharmacyInvoiceReducer,
+  qa: qaReducer,
 });

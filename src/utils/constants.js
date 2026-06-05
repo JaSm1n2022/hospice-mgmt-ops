@@ -1442,6 +1442,14 @@ export const EMPLOYEE_SERVICE_TYPE = [
     code: "FT",
   },
   {
+    id: 1022,
+    name: "Initial Visit",
+    label: "Initial Visit",
+    value: "Initial Visit",
+    category: "serviceType",
+    code: "IV",
+  },
+  {
     id: 102,
     name: "Part Time/Hr",
     label: "Part Time/Hr",
@@ -2459,5 +2467,83 @@ export const US_STATES = [
     value: "Wyoming",
     category: "state",
     code: "WY",
+  },
+];
+
+export const QA_TYPE = [
+  {
+    id: "assessment",
+    name: "Assessment",
+    label: "Assessment",
+    value: "Assessment",
+    code: "assessment",
+    category: "qaType",
+  },
+  {
+    id: "huv1",
+    name: "HUV1",
+    label: "HUV1",
+    value: "HUV1",
+    code: "huv1",
+    category: "qaType",
+  },
+  {
+    id: "huv2",
+    name: "HUV2",
+    label: "HUV2",
+    value: "HUV2",
+    code: "huv2",
+    category: "qaType",
+  },
+  {
+    id: "visits",
+    name: "Visits",
+    label: "Visits",
+    value: "Visits",
+    code: "visits",
+    category: "qaType",
+  },
+  {
+    id: "poc",
+    name: "POC",
+    label: "POC",
+    value: "POC",
+    code: "poc",
+    category: "qaType",
+  },
+  {
+    id: "idg",
+    name: "IDG",
+    label: "IDG",
+    value: "IDG",
+    code: "idg",
+    category: "qaType",
+  },
+];
+
+export const QA_STATUS = [
+  {
+    id: "pending",
+    name: "Pending",
+    label: "Pending",
+    value: "Pending",
+    code: "pending",
+    category: "qaStatus",
+  },
+  {
+    id: "review",
+    name: "Review",
+    label: "Review",
+    value: "Review",
+    code: "review",
+    category: "qaStatus",
+  },
+  {
+    id: "resolved",
+    name: "Resolved",
+    label: "Resolved",
+    value: "Resolved",
+    code: "resolved",
+    category: "qaStatus",
   },
 ];

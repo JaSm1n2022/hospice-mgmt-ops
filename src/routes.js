@@ -32,6 +32,7 @@ import Wizard from "views/Forms/Wizard.js";
 import IdtAssignment from "views/Administrator/Assignment/AssignmentMain.js";
 import VisitTracker from "views/Administrator/VisitTracker/VisitTrackerFunction.js";
 import Distribution from "views/Administrator/Logistics/Distribution/Distribution.js";
+import QAMonitoring from "views/Administrator/OperationsMgmt/QAMonitoring/index.js";
 // @material-ui/icons
 import Apps from "@material-ui/icons/Apps";
 import DashboardIcon from "@material-ui/icons/Dashboard";
@@ -272,6 +273,15 @@ var dashRoutes = [
         mini: "PM",
         rtlMini: "ع",
         component: PharmacyManagement,
+        layout: "/admin",
+      },
+      {
+        path: "/qa-monitoring",
+        name: "QA Monitoring",
+        rtlName: "مراقبة الجودة",
+        mini: "QA",
+        rtlMini: "ج",
+        component: QAMonitoring,
         layout: "/admin",
       },
     ],
