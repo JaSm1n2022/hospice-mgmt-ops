@@ -151,9 +151,8 @@ function QAMonitoring(props) {
       const patientData = Array.isArray(props.patientList.data) ? props.patientList.data : [];
       const patients = patientData.map((p) => ({
         ...p,
-        name: p.name || `${p.fn || ""} ${p.ln || ""}`.trim(),
-        label: p.name || `${p.fn || ""} ${p.ln || ""}`.trim(),
-        value: p.patientCd || p.id,
+        label: p.patientCd,
+        value: p.patientCd,
       }));
       setPatientList(patients);
       props.resetFetchPatient();

@@ -2519,6 +2519,14 @@ export const QA_TYPE = [
     code: "idg",
     category: "qaType",
   },
+  {
+    id: "lcd",
+    name: "LCD",
+    label: "LCD",
+    value: "LCD",
+    code: "lcd",
+    category: "qaType",
+  },
 ];
 
 export const QA_STATUS = [

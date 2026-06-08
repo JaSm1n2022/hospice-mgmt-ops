@@ -180,12 +180,10 @@ function QAForm(props) {
                 />
               </Grid>
               <Grid item xs={6}>
-                <CustomSingleAutoComplete
-                  placeholder="Reviewer"
-                  label="Reviewer"
-                  value={formData.reviewer || DEFAULT_ITEM}
-                  onSelectHandler={(item) => handleAutoCompleteChange(item, "reviewer")}
-                  options={employeeList}
+                <CustomDatePicker
+                  label="QA Source Date"
+                  value={formData.qaSourceDate}
+                  onChange={(value) => handleDateChange(value, "qaSourceDate")}
                   disabled={mode === "view"}
                 />
               </Grid>
@@ -198,10 +196,12 @@ function QAForm(props) {
                 />
               </Grid>
               <Grid item xs={6}>
-                <CustomDatePicker
-                  label="QA Source Date"
-                  value={formData.qaSourceDate}
-                  onChange={(value) => handleDateChange(value, "qaSourceDate")}
+                <CustomSingleAutoComplete
+                  placeholder="Reviewer"
+                  label="Reviewer"
+                  value={formData.reviewer || DEFAULT_ITEM}
+                  onSelectHandler={(item) => handleAutoCompleteChange(item, "reviewer")}
+                  options={employeeList}
                   disabled={mode === "view"}
                 />
               </Grid>
