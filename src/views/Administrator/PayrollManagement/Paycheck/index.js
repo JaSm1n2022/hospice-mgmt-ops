@@ -407,7 +407,6 @@ function PayrollFunction(props) {
         employeeName: payload.general?.employee?.name,
         employeeTitle: payload.general?.employee?.position,
         employeeType: payload.general?.employee?.employeeType,
-        employeeClassification: payload.general?.employee?.employeeClassification,
         patientId: param.patient?.id || undefined,
         patientCd: param.patient?.patientCd || "",
         serviceType: param.serviceType?.value,
