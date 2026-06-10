@@ -7,8 +7,10 @@ import CardHeader from "components/Card/CardHeader.js";
 import CardBody from "components/Card/CardBody.js";
 import Button from "components/CustomButtons/Button.js";
 import { connect } from "react-redux";
-import { CircularProgress } from "@material-ui/core";
+import { CircularProgress, IconButton } from "@material-ui/core";
 import AddIcon from "@material-ui/icons/Add";
+import EditIcon from "@material-ui/icons/Edit";
+import DeleteIcon from "@material-ui/icons/Delete";
 import HospiceTable from "components/Table/HospiceTable";
 import moment from "moment";
 import { SupaContext } from "App";
@@ -74,13 +76,43 @@ function QAMonitoring(props) {
 
   const columns = [
     {
+      name: "actions",
+      header: "Actions",
+      defaultFlex: 0.5,
+      minWidth: 100,
+      render: ({ data }) => (
+        <div style={{ display: "flex", gap: "8px" }}>
+          <IconButton
+            size="small"
+            color="primary"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleEdit(data);
+            }}
+          >
+            <EditIcon fontSize="small" />
+          </IconButton>
+          <IconButton
+            size="small"
+            color="secondary"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDelete(data);
+            }}
+          >
+            <DeleteIcon fontSize="small" />
+          </IconButton>
+        </div>
+      ),
+    },
+    {
       name: "qa_type",
       header: "QA Type",
       defaultFlex: 1,
       minWidth: 120,
     },
     {
-      name: "patient_name",
+      name: "patientCd",
       header: "Patient",
       defaultFlex: 1,
       minWidth: 120,
@@ -183,7 +215,7 @@ function QAMonitoring(props) {
   // Handle create response
   useEffect(() => {
     if (props.qaCreate.status === ACTION_STATUSES.SUCCEED) {
-      TOAST.success("QA record created successfully");
+      TOAST.ok("QA record created successfully");
       setIsFormOpen(false);
       props.resetCreateQA();
       props.fetchQA({ companyId: context.userProfile.companyId });
@@ -196,7 +228,7 @@ function QAMonitoring(props) {
   // Handle update response
   useEffect(() => {
     if (props.qaUpdate.status === ACTION_STATUSES.SUCCEED) {
-      TOAST.success("QA record updated successfully");
+      TOAST.ok("QA record updated successfully");
       setIsFormOpen(false);
       props.resetUpdateQA();
       props.fetchQA({ companyId: context.userProfile.companyId });
@@ -209,7 +241,7 @@ function QAMonitoring(props) {
   // Handle delete response
   useEffect(() => {
     if (props.qaDelete.status === ACTION_STATUSES.SUCCEED) {
-      TOAST.success("QA record deleted successfully");
+      TOAST.ok("QA record deleted successfully");
       props.resetDeleteQA();
       props.fetchQA({ companyId: context.userProfile.companyId });
     } else if (props.qaDelete.status === ACTION_STATUSES.FAILED) {
@@ -227,6 +259,12 @@ function QAMonitoring(props) {
   const handleRowDoubleClick = (rowProps) => {
     setFormMode("edit");
     setSelectedItem(rowProps.data);
+    setIsFormOpen(true);
+  };
+
+  const handleEdit = (rowData) => {
+    setFormMode("edit");
+    setSelectedItem(rowData);
     setIsFormOpen(true);
   };
 

@@ -89,7 +89,6 @@ function QAForm(props) {
   };
 
   const handleSubmit = () => {
-    const patientName = formData.patient?.name || `${formData.patient?.fn || ""} ${formData.patient?.ln || ""}`.trim();
     const disciplineName = formData.discipline?.name || `${formData.discipline?.fn || ""} ${formData.discipline?.ln || ""}`.trim();
     const reviewerName = formData.reviewer?.name || `${formData.reviewer?.fn || ""} ${formData.reviewer?.ln || ""}`.trim();
 
@@ -97,7 +96,6 @@ function QAForm(props) {
       qa_type: formData.qaType?.value || "",
       patientId: formData.patient?.id || null,
       patientCd: formData.patient?.patientCd || "",
-      patient_name: patientName,
       disciplineId: formData.discipline?.id || null,
       discipline_name: disciplineName,
       reviewerId: formData.reviewer?.id || null,
