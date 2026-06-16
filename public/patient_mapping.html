@@ -89,6 +89,7 @@ const COLUMNS = [
 
 // Listen for patient data from parent React component
 window.addEventListener('message', (event) => {
+  console.log('[EVENT DATA]',event.data);
   if (event.data && event.data.type === 'PATIENT_DATA') {
     const allPatients = event.data.patientCodes || [];
 

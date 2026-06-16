@@ -5,7 +5,15 @@ import moment from "moment";
 import { v4 as uuidv4 } from "uuid";
 
 // Material UI
-import { Button, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from "@material-ui/core";
+import {
+  Button,
+  Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+} from "@material-ui/core";
 import AddIcon from "@material-ui/icons/Add";
 import DescriptionIcon from "@material-ui/icons/Description";
 import GetAppIcon from "@material-ui/icons/GetApp";
@@ -31,15 +39,18 @@ import { attemptToFetchPatient } from "store/actions/patientAction";
 import { patientListStateSelector } from "store/selectors/patientSelector";
 import {
   attemptToCreateDmeInvoice,
-  attemptToFetchDmeInvoice
+  attemptToFetchDmeInvoice,
 } from "store/actions/dmeInvoiceAction";
 import {
   dmeInvoiceCreateStateSelector,
-  dmeInvoiceListStateSelector
+  dmeInvoiceListStateSelector,
 } from "store/selectors/dmeInvoiceSelector";
 import { attemptToFetchVendor } from "store/actions/vendorAction";
 import { vendorListStateSelector } from "store/selectors/vendorSelector";
-import { attemptToCreateDistribution, resetCreateDistributionState } from "store/actions/distributionAction";
+import {
+  attemptToCreateDistribution,
+  resetCreateDistributionState,
+} from "store/actions/distributionAction";
 import { distributionCreateStateSelector } from "store/selectors/distributionSelector";
 import { attemptToFetchProduct } from "store/actions/productAction";
 import { productListStateSelector } from "store/selectors/productSelector";
@@ -142,8 +153,9 @@ function DmeManagement() {
   useEffect(() => {
     if (vendorListState?.data && Array.isArray(vendorListState.data)) {
       // Filter only DME vendors
-      const dmeVendors = vendorListState.data.filter(vendor =>
-        vendor.categoryType === 'DME' || vendor.category_type === 'DME'
+      const dmeVendors = vendorListState.data.filter(
+        (vendor) =>
+          vendor.categoryType === "DME" || vendor.category_type === "DME"
       );
       setVendorList(dmeVendors);
     }
@@ -159,7 +171,10 @@ function DmeManagement() {
   // Map invoice data when it changes
   useEffect(() => {
     if (dmeInvoiceListState?.data && Array.isArray(dmeInvoiceListState.data)) {
-      const mapped = DmeInvoiceHandler.mapData(dmeInvoiceListState.data, patientList);
+      const mapped = DmeInvoiceHandler.mapData(
+        dmeInvoiceListState.data,
+        patientList
+      );
       setDataSource(mapped);
       setOriginalSource(mapped);
     }
@@ -172,17 +187,19 @@ function DmeManagement() {
       setIsExtractorModalOpen(false);
 
       if (companyId && dateFrom && dateTo) {
-        dispatch(attemptToFetchDmeInvoice({ companyId, from: dateFrom, to: dateTo }));
+        dispatch(
+          attemptToFetchDmeInvoice({ companyId, from: dateFrom, to: dateTo })
+        );
       }
     }
   }, [dmeInvoiceCreateState, dispatch, companyId, dateFrom, dateTo]);
 
   // Handle distribution creation success
   useEffect(() => {
-    console.log('Distribution Create State:', distributionCreateState);
+    console.log("Distribution Create State:", distributionCreateState);
 
     if (distributionCreateState?.status === "SUCCEED") {
-      console.log('Distribution created successfully!');
+      console.log("Distribution created successfully!");
       TOAST.success("Distribution created successfully!");
 
       // Close modal and reset form
@@ -192,13 +209,18 @@ function DmeManagement() {
 
       // Refresh invoice data
       if (companyId && dateFrom && dateTo) {
-        dispatch(attemptToFetchDmeInvoice({ companyId, from: dateFrom, to: dateTo }));
+        dispatch(
+          attemptToFetchDmeInvoice({ companyId, from: dateFrom, to: dateTo })
+        );
       }
 
       // Reset distribution state
       dispatch(resetCreateDistributionState());
     } else if (distributionCreateState?.status === "FAILED") {
-      console.log('Distribution creation failed:', distributionCreateState?.error);
+      console.log(
+        "Distribution creation failed:",
+        distributionCreateState?.error
+      );
       TOAST.error("Failed to create distribution. Please try again.");
 
       // Reset distribution state
@@ -217,11 +239,16 @@ function DmeManagement() {
 
           // Filter patients based on DME equipment and EOC status
           const now = new Date();
-          const sixtyDaysAgo = new Date(now.getTime() - (60 * 24 * 60 * 60 * 1000));
+          const sixtyDaysAgo = new Date(
+            now.getTime() - 60 * 24 * 60 * 60 * 1000
+          );
 
-          const filteredPatients = patientList.filter(patient => {
+          const filteredPatients = patientList.filter((patient) => {
             // Exclude patients with no DME equipment
-            const hasDme = patient.dme && Array.isArray(patient.dme) && patient.dme.length > 0;
+            const hasDme =
+              patient.dme &&
+              Array.isArray(patient.dme) &&
+              patient.dme.length > 0;
             if (!hasDme) {
               return false;
             }
@@ -239,27 +266,32 @@ function DmeManagement() {
           });
 
           // Format patient data for the iframe
-          const patientCodes = filteredPatients.map(patient => ({
+          const patientCodes = filteredPatients.map((patient) => ({
             code: patient.patientCd,
-            name: `${patient.first_name || ''} ${patient.last_name || ''}`.trim(),
-            fullData: patient
+            name: `${patient.first_name || ""} ${
+              patient.last_name || ""
+            }`.trim(),
+            fullData: patient,
           }));
 
           // Send data to iframe via postMessage
           if (iframeRef.current?.contentWindow) {
-            iframeRef.current.contentWindow.postMessage({
-              type: 'PATIENT_DATA',
-              patientCodes: patientCodes
-            }, '*');
+            iframeRef.current.contentWindow.postMessage(
+              {
+                type: "PATIENT_DATA",
+                patientCodes: patientCodes,
+              },
+              "*"
+            );
           }
         } catch (error) {
-          console.error('Error sending patient data to iframe:', error);
+          console.error("Error sending patient data to iframe:", error);
         }
       };
 
       // Wait for iframe to load
       const iframe = iframeRef.current;
-      iframe.addEventListener('load', sendPatientData);
+      iframe.addEventListener("load", sendPatientData);
 
       // Also try sending immediately in case iframe is already loaded
       setTimeout(sendPatientData, 500);
@@ -269,7 +301,7 @@ function DmeManagement() {
       setTimeout(sendPatientData, 2000);
 
       return () => {
-        iframe.removeEventListener('load', sendPatientData);
+        iframe.removeEventListener("load", sendPatientData);
       };
     }
   }, [isExtractorModalOpen, patientList]);
@@ -278,57 +310,62 @@ function DmeManagement() {
   useEffect(() => {
     const handleMessage = (event) => {
       // Handle submit invoice
-      if (event.data && event.data.type === 'SUBMIT_DME_INVOICE') {
-        console.log('Received DME Invoice submit:', event.data);
+      if (event.data && event.data.type === "SUBMIT_DME_INVOICE") {
+        console.log("Received DME Invoice submit:", event.data);
 
         const { invoice_dt, items } = event.data.data;
 
         // Dispatch action to create DME invoice
-        dispatch(attemptToCreateDmeInvoice({
-          invoice_dt,
-          items,
-          companyId,
-          userProfile: context.userProfile,
-        }));
+        dispatch(
+          attemptToCreateDmeInvoice({
+            invoice_dt,
+            items,
+            companyId,
+            userProfile: context.userProfile,
+          })
+        );
       }
 
       // Handle request for patient data
-      if (event.data && event.data.type === 'REQUEST_PATIENT_DATA') {
+      if (event.data && event.data.type === "REQUEST_PATIENT_DATA") {
         if (patientList.length === 0) {
           return;
         }
 
         // Filter and send patient data
         const now = new Date();
-        const sixtyDaysAgo = new Date(now.getTime() - (60 * 24 * 60 * 60 * 1000));
+        const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
 
-        const filteredPatients = patientList.filter(patient => {
-          const hasDme = patient.dme && Array.isArray(patient.dme) && patient.dme.length > 0;
-          if (!hasDme) return false;
-          if (!patient.eoc_dt) return true;
-          const eocDate = new Date(patient.eoc_dt);
+        const filteredPatients = patientList.filter((patient) => {
+          // const hasDme = patient.dme && Array.isArray(patient.dme) && patient.dme.length > 0;
+          // if (!hasDme) return false;
+          if (!patient.eoc) return true;
+          const eocDate = new Date(patient.eoc);
           return eocDate >= sixtyDaysAgo;
         });
 
-        const patientCodes = filteredPatients.map(patient => ({
+        const patientCodes = filteredPatients.map((patient) => ({
           code: patient.patientCd,
-          name: `${patient.first_name || ''} ${patient.last_name || ''}`.trim(),
-          fullData: patient
+          name: `${patient.first_name || ""} ${patient.last_name || ""}`.trim(),
+          fullData: patient,
         }));
 
         if (iframeRef.current?.contentWindow) {
-          iframeRef.current.contentWindow.postMessage({
-            type: 'PATIENT_DATA',
-            patientCodes: patientCodes
-          }, '*');
+          iframeRef.current.contentWindow.postMessage(
+            {
+              type: "PATIENT_DATA",
+              patientCodes: patientCodes,
+            },
+            "*"
+          );
         }
       }
     };
 
-    window.addEventListener('message', handleMessage);
+    window.addEventListener("message", handleMessage);
 
     return () => {
-      window.removeEventListener('message', handleMessage);
+      window.removeEventListener("message", handleMessage);
     };
   }, [dispatch, companyId, context.userProfile, patientList]);
 
@@ -414,8 +451,10 @@ function DmeManagement() {
     }
 
     // Find product by vendor name
-    const vendorProduct = productList.find(product =>
-      product.vendor && product.vendor.toLowerCase() === selectedVendor.name.toLowerCase()
+    const vendorProduct = productList.find(
+      (product) =>
+        product.vendor &&
+        product.vendor.toLowerCase() === selectedVendor.name.toLowerCase()
     );
 
     if (!vendorProduct) {
@@ -430,11 +469,13 @@ function DmeManagement() {
     selectedInvoices.forEach((invoice) => {
       // Parse and clean the invoice amount (remove $ and commas)
       const cleanAmount = invoice.invoice_amt
-        ? parseFloat(invoice.invoice_amt.toString().replace(/[$,]/g, ''))
+        ? parseFloat(invoice.invoice_amt.toString().replace(/[$,]/g, ""))
         : 0;
 
       // Find patient ID from patientCd
-      const patient = patientList.find(p => p.patientCd === invoice.patientCd);
+      const patient = patientList.find(
+        (p) => p.patientCd === invoice.patientCd
+      );
       const patientId = patient ? patient.id : null;
 
       const params = {
@@ -484,11 +525,16 @@ function DmeManagement() {
     let temp = [...originalSource];
 
     if (keyword) {
-      temp = temp.filter((data) =>
-        (data.patientCd && data.patientCd.toLowerCase().includes(keyword.toLowerCase())) ||
-        (data.patientName && data.patientName.toLowerCase().includes(keyword.toLowerCase())) ||
-        (data.equipments && data.equipments.toLowerCase().includes(keyword.toLowerCase())) ||
-        (data.createdBy && data.createdBy.toLowerCase().includes(keyword.toLowerCase()))
+      temp = temp.filter(
+        (data) =>
+          (data.patientCd &&
+            data.patientCd.toLowerCase().includes(keyword.toLowerCase())) ||
+          (data.patientName &&
+            data.patientName.toLowerCase().includes(keyword.toLowerCase())) ||
+          (data.equipments &&
+            data.equipments.toLowerCase().includes(keyword.toLowerCase())) ||
+          (data.createdBy &&
+            data.createdBy.toLowerCase().includes(keyword.toLowerCase()))
       );
     }
 
@@ -499,17 +545,19 @@ function DmeManagement() {
     if (dates.from && dates.to && companyId) {
       setDateFrom(dates.from);
       setDateTo(dates.to);
-      dispatch(attemptToFetchDmeInvoice({
-        companyId,
-        from: dates.from,
-        to: dates.to
-      }));
+      dispatch(
+        attemptToFetchDmeInvoice({
+          companyId,
+          from: dates.from,
+          to: dates.to,
+        })
+      );
     }
   };
 
   // Calculate grand total
   const grandTotal = dataSource.reduce((sum, item) => {
-    const amount = parseFloat(item.invoice_amt?.replace(/[$,]/g, '') || 0);
+    const amount = parseFloat(item.invoice_amt?.replace(/[$,]/g, "") || 0);
     return sum + amount;
   }, 0);
 
@@ -626,7 +674,7 @@ function DmeManagement() {
                 id: vendor.id || index,
                 label: vendor.name,
                 value: vendor.name,
-                categoryType: 'vendor'
+                categoryType: "vendor",
               }))}
               onSelectHandler={handleVendorSelect}
               onChangeHandler={handleVendorChange}

@@ -228,6 +228,16 @@ function QAChart(props) {
         start: moment("2026-04-01"),
         end: moment("2026-04-30"),
       },
+      {
+        label: "May 2026",
+        start: moment("2026-05-01"),
+        end: moment("2026-05-31"),
+      },
+      {
+        label: "Jun 2026",
+        start: moment("2026-06-01"),
+        end: moment("2026-06-30"),
+      },
     ];
 
     // Filter patients whose SOC is within the date range
@@ -332,7 +342,9 @@ function QAChart(props) {
       totalAmountRow[month.label] = `$${totalAmount.toFixed(2)}`;
     });
 
-    totalAmountRow["Total Weeks"] = `$${(grandTotalWeeks * QA_RATE).toFixed(2)}`;
+    totalAmountRow["Total Weeks"] = `$${(grandTotalWeeks * QA_RATE).toFixed(
+      2
+    )}`;
 
     // Add the total row to the export data
     excelData.push(totalAmountRow);
