@@ -115,6 +115,13 @@ const DEFAULT_CONSTANTS = [
     category: "Marketing",
   },
   {
+    key: "MARKET_TAX_PERC",
+    value: 0.0825,
+    label: "Marketing Tax Percentage",
+    description: "Tax percentage applied to marketing costs",
+    category: "Marketing",
+  },
+  {
     key: "TRANSPORTATION_PER_SOC",
     value: 165.0,
     label: "Transportation per SOC",
@@ -212,6 +219,20 @@ const DEFAULT_CONSTANTS = [
     label: "Other Overhead",
     description: "Miscellaneous overhead expenses",
     category: "General",
+  },
+  {
+    key: "EXPENSE_ADJ",
+    value: 0.10,
+    label: "Expense Overstatement Adjustment",
+    description: "Percentage adjustment for potential expense overstatement (10% default)",
+    category: "Adjustments",
+  },
+  {
+    key: "MEDICARE_SEQ_ADJ",
+    value: 2.0,
+    label: "Medicare Sequestration Adjustment",
+    description: "Medicare sequestration adjustment percentage",
+    category: "Revenue Adjustments",
   },
 ];
 

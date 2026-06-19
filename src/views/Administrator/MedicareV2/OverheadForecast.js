@@ -437,6 +437,14 @@ const OverheadForecastPDF = ({ data, currentMonthLabel }) => {
           <Text style={pdfStyles.value}>${data.marketing.toFixed(2)}</Text>
         </View>
 
+        {/* Marketing Tax Obligation */}
+        <View style={pdfStyles.subsectionRow}>
+          <Text style={pdfStyles.label}>
+            Marketing Tax Obligation ({data.marketTaxPerc}% reserve)
+          </Text>
+          <Text style={pdfStyles.value}>${data.marketingTaxObligation.toFixed(2)}</Text>
+        </View>
+
         {/* Total Expenses */}
         <View style={pdfStyles.totalRow}>
           <Text style={pdfStyles.label}>TOTAL EXPENSES</Text>
@@ -447,6 +455,22 @@ const OverheadForecastPDF = ({ data, currentMonthLabel }) => {
         <View style={pdfStyles.netIncomeRow}>
           <Text style={pdfStyles.label}>NET INCOME</Text>
           <Text style={pdfStyles.value}>${data.netIncome.toFixed(2)}</Text>
+        </View>
+
+        {/* Potential Expense Overstatement Adjustment */}
+        <View style={pdfStyles.subsectionRow}>
+          <Text style={pdfStyles.label}>
+            Potential Expense Overstatement Adjustment ({data.expenseAdjPerc}%)
+          </Text>
+          <Text style={[pdfStyles.value, { color: "#2e7d32" }]}>
+            ${data.potentialExpenseAdj.toFixed(2)}
+          </Text>
+        </View>
+
+        {/* Potential Adjusted Net Income */}
+        <View style={pdfStyles.netIncomeRow}>
+          <Text style={pdfStyles.label}>POTENTIAL ADJUSTED NET INCOME</Text>
+          <Text style={pdfStyles.value}>${data.potentialAdjustedNetIncome.toFixed(2)}</Text>
         </View>
       </Page>
     </Document>
@@ -851,6 +875,10 @@ function OverheadForecast(props) {
     const marketing =
       socCount * getOverheadValue("MARKETING_PER_SOC", overheadTableData);
 
+    // 15. Marketing Tax Obligation
+    const marketTaxPerc = getOverheadValue("MARKET_TAX_PERC", overheadTableData);
+    const marketingTaxObligation = marketing * marketTaxPerc;
+
     // Total Expenses
     const totalExpenses =
       salariesWages +
@@ -866,10 +894,18 @@ function OverheadForecast(props) {
       totalFixedExpenses +
       billingFees +
       marketing +
+      marketingTaxObligation +
       medicareSeqAdj; // Medicare Sequestration Adjustment reduces revenue (increases expenses)
 
     // Net Income
     const netIncome = projectedRevenue - totalExpenses;
+
+    // Potential Expense Overstatement Adjustment
+    const expenseAdjPerc = getOverheadValue("EXPENSE_ADJ", overheadTableData);
+    const potentialExpenseAdj = netIncome * expenseAdjPerc;
+
+    // Potential Adjusted Net Income
+    const potentialAdjustedNetIncome = netIncome + potentialExpenseAdj;
 
     return {
       projectedADC,
@@ -906,9 +942,14 @@ function OverheadForecast(props) {
       billingFees,
       billingFeeRate: (billingFeeRate * 100).toFixed(2), // Convert to percentage for display
       marketing,
+      marketingTaxObligation,
+      marketTaxPerc: (marketTaxPerc * 100).toFixed(2), // Convert to percentage for display
       socCount,
       totalExpenses,
       netIncome,
+      potentialExpenseAdj,
+      expenseAdjPerc: (expenseAdjPerc * 100).toFixed(2), // Convert to percentage for display
+      potentialAdjustedNetIncome,
     };
   };
 
@@ -1619,6 +1660,16 @@ function OverheadForecast(props) {
                         </TableCell>
                       </TableRow>
 
+                      {/* Marketing Tax Obligation */}
+                      <TableRow className={classes.subsectionHeader}>
+                        <TableCell>
+                          Marketing Tax Obligation ({forecastData.marketTaxPerc}% reserve)
+                        </TableCell>
+                        <TableCell style={{ textAlign: "right" }}>
+                          ${forecastData.marketingTaxObligation.toFixed(2)}
+                        </TableCell>
+                      </TableRow>
+
                       {/* Total Expenses */}
                       <TableRow className={classes.totalRow}>
                         <TableCell>TOTAL EXPENSES</TableCell>
@@ -1632,6 +1683,24 @@ function OverheadForecast(props) {
                         <TableCell>NET INCOME</TableCell>
                         <TableCell style={{ textAlign: "right" }}>
                           ${forecastData.netIncome.toFixed(2)}
+                        </TableCell>
+                      </TableRow>
+
+                      {/* Potential Expense Overstatement Adjustment */}
+                      <TableRow className={classes.subsectionHeader}>
+                        <TableCell>
+                          Potential Expense Overstatement Adjustment ({forecastData.expenseAdjPerc}%)
+                        </TableCell>
+                        <TableCell style={{ textAlign: "right", color: "#2e7d32" }}>
+                          ${forecastData.potentialExpenseAdj.toFixed(2)}
+                        </TableCell>
+                      </TableRow>
+
+                      {/* Potential Adjusted Net Income */}
+                      <TableRow className={classes.netIncomeRow}>
+                        <TableCell>POTENTIAL ADJUSTED NET INCOME</TableCell>
+                        <TableCell style={{ textAlign: "right" }}>
+                          ${forecastData.potentialAdjustedNetIncome.toFixed(2)}
                         </TableCell>
                       </TableRow>
                     </TableBody>
