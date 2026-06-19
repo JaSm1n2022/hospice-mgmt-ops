@@ -31,13 +31,17 @@ import {
   Box,
   Tooltip,
   TextField,
+  Typography,
 } from "@material-ui/core";
 import {
   Edit as EditIcon,
   Check as CheckIcon,
   CheckCircle as CheckCircleIcon,
   AddAlert,
+  Print as PrintIcon,
 } from "@material-ui/icons";
+import { pdf } from "@react-pdf/renderer";
+import BereavementPrintDocument from "./components/BereavementPrintDocument";
 import Snackbar from "components/Snackbar/Snackbar";
 import { attemptToFetchPatient } from "store/actions/patientAction";
 import { resetFetchPatientState } from "store/actions/patientAction";
@@ -144,6 +148,13 @@ function BereavementTimelineFunction(props) {
   const [tc, setTC] = useState(false);
   const [message, setMessage] = useState("");
   const [color, setColor] = useState("success");
+  const [dateRangeDialogOpen, setDateRangeDialogOpen] = useState(false);
+  const [startDate, setStartDate] = useState(
+    moment().format("YYYY-MM-DD")
+  );
+  const [endDate, setEndDate] = useState(
+    moment().add(3, "months").format("YYYY-MM-DD")
+  );
 
   const showNotification = (place, color, msg) => {
     setMessage(msg);
@@ -325,18 +336,71 @@ function BereavementTimelineFunction(props) {
     props.updatePatient(params);
   };
 
+  const handlePrintClick = () => {
+    setDateRangeDialogOpen(true);
+  };
+
+  const handleDateRangeCancel = () => {
+    setDateRangeDialogOpen(false);
+  };
+
+  const handlePrintSummary = async () => {
+    try {
+      setDateRangeDialogOpen(false);
+
+      // Use the currently filtered data
+      const filteredPatients = getFilteredData();
+
+      if (filteredPatients.length === 0) {
+        showNotification(
+          "tc",
+          "warning",
+          "No patients to print. Please adjust your filters."
+        );
+        return;
+      }
+
+      const doc = (
+        <BereavementPrintDocument
+          patients={filteredPatients}
+          startDate={startDate}
+          endDate={endDate}
+        />
+      );
+      const asPdf = pdf(doc);
+      const blob = await asPdf.toBlob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      showNotification(
+        "tc",
+        "danger",
+        "Failed to generate PDF. Please try again."
+      );
+    }
+  };
+
   const renderMilestoneCell = (milestone) => {
     const daysUntil = BereavementTimelineHandler.calculateDaysUntil(
       milestone.dueDate
     );
 
+    // Extract month number from milestone name (e.g., "Month 3" -> "3")
+    const monthMatch = milestone.name.match(/Month (\d+)/);
+    const monthNumber = monthMatch ? monthMatch[1] : "";
+
+    // Extract the description after the colon (e.g., "Month 3: Check-in Card" -> "Check-in Card")
+    const descriptionMatch = milestone.name.match(/Month \d+:\s*(.+)/);
+    const description = descriptionMatch ? descriptionMatch[1] : milestone.name;
+
     return (
       <TableCell className={`${classes.tableCell} ${classes.milestoneCell}`}>
         <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-          <div style={{ fontWeight: 500 }}>{milestone.name}</div>
+          <div style={{ fontWeight: 500 }}>{description}</div>
           <div style={{ fontSize: "0.75rem", color: "#666" }}>
             Due: {formatDate(milestone.dueDate)}
-            <br />({milestone.dueDateRange})
+            <br />({milestone.dueDateRange}) {monthNumber && `Month ${monthNumber}`}
           </div>
           <div
             style={{
@@ -419,7 +483,7 @@ function BereavementTimelineFunction(props) {
                   </p>
                 </CardHeader>
                 <CardBody>
-                  <Box mb={2} display="flex" justifyContent="space-between" alignItems="center">
+                  <Box mb={2} display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
                     <FormControl
                       variant="outlined"
                       size="small"
@@ -436,16 +500,27 @@ function BereavementTimelineFunction(props) {
                         <MenuItem value="no">No</MenuItem>
                       </Select>
                     </FormControl>
-                    <Box
-                      style={{
-                        padding: "8px 16px",
-                        backgroundColor: "#f5f5f5",
-                        borderRadius: "4px",
-                        fontWeight: 600,
-                        fontSize: "0.875rem",
-                      }}
-                    >
-                      Total Patients: {getFilteredData().length}
+                    <Box display="flex" gap={2} alignItems="center">
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        startIcon={<PrintIcon />}
+                        onClick={handlePrintClick}
+                        size="small"
+                      >
+                        Print Timeline
+                      </Button>
+                      <Box
+                        style={{
+                          padding: "8px 16px",
+                          backgroundColor: "#f5f5f5",
+                          borderRadius: "4px",
+                          fontWeight: 600,
+                          fontSize: "0.875rem",
+                        }}
+                      >
+                        Total Patients: {getFilteredData().length}
+                      </Box>
                     </Box>
                   </Box>
                   <TableContainer
@@ -724,6 +799,61 @@ function BereavementTimelineFunction(props) {
                 variant="contained"
               >
                 Save Changes
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          {/* Date Range Dialog for Print */}
+          <Dialog
+            open={dateRangeDialogOpen}
+            onClose={handleDateRangeCancel}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogTitle>Select Date Range for Report</DialogTitle>
+            <DialogContent>
+              <Box mt={2}>
+                <TextField
+                  label="Start Date"
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  fullWidth
+                  InputLabelProps={{
+                    shrink: true,
+                  }}
+                  margin="normal"
+                />
+                <TextField
+                  label="End Date"
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  fullWidth
+                  InputLabelProps={{
+                    shrink: true,
+                  }}
+                  margin="normal"
+                />
+                <Box mt={2} p={2} bgcolor="#f5f5f5" borderRadius={1}>
+                  <Typography variant="body2" color="textSecondary">
+                    The report will include milestones that fall within the selected date range
+                    for the currently filtered patients ({getFilteredData().length} patients).
+                  </Typography>
+                </Box>
+              </Box>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleDateRangeCancel} color="secondary">
+                Cancel
+              </Button>
+              <Button
+                onClick={handlePrintSummary}
+                color="primary"
+                variant="contained"
+                startIcon={<PrintIcon />}
+              >
+                Generate Report
               </Button>
             </DialogActions>
           </Dialog>
