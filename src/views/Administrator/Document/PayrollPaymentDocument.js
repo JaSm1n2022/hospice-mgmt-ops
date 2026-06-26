@@ -41,6 +41,9 @@ const styles = StyleSheet.create({
   page: {
     backgroundColor: "white",
     color: "black",
+    paddingTop: 20,
+    paddingBottom: 30,
+    paddingHorizontal: 20,
   },
   spaceHeader: {
     marginTop: 4,
@@ -49,15 +52,17 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   spaceHeaderMargin20: {
-    marginTop: 5,
-    marginBottom: 5,
+    marginTop: 15,
+    marginBottom: 15,
     flexDirection: "row",
     justifyContent: "center",
   },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "center",
-    fontSize: 14,
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#2c3e50",
   },
   sectionHeader2: {
     flexDirection: "row",
@@ -104,7 +109,49 @@ const styles = StyleSheet.create({
     flexDirection: "column",
     justifyContent: "space-evenly",
     alignItems: "flex-start",
-    paddingLeft: 20,
+    marginTop: 15,
+    border: "1px solid #3498db",
+  },
+  payPeriodBox: {
+    backgroundColor: "#ecf0f1",
+    padding: 12,
+    marginTop: 10,
+    marginBottom: 10,
+    borderLeft: "4px solid #3498db",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  payPeriodLabel: {
+    fontSize: 11,
+    color: "#7f8c8d",
+    marginRight: 10,
+  },
+  payPeriodValue: {
+    fontSize: 12,
+    color: "#2c3e50",
+    fontWeight: "bold",
+  },
+  grandTotalBox: {
+    backgroundColor: "#f8f9fa",
+    padding: 15,
+    marginTop: 10,
+    marginBottom: 15,
+    borderRadius: 5,
+    border: "2px solid #3498db",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  grandTotalLabel: {
+    fontSize: 13,
+    color: "#2c3e50",
+    fontWeight: "bold",
+  },
+  grandTotalValue: {
+    fontSize: 16,
+    color: "#27ae60",
+    fontWeight: "bold",
   },
   tableRow: {
     display: "flex",
@@ -182,15 +229,30 @@ const styles = StyleSheet.create({
   detailsHeader: {
     display: "flex",
     flexWrap: "wrap",
-    fontSize: 10,
-    backgroundColor: "gray",
-    color: "black",
+    fontSize: 9,
+    backgroundColor: "#3498db",
+    color: "white",
     textAlign: "center",
     paddingLeft: "10px",
-    borderRight: "1px solid #000",
-    // paddingBottom: '2px',
-    // paddingTop: '1px',
-    borderTop: "none", // '1px solid #000',
+    paddingRight: "10px",
+    paddingTop: "8px",
+    paddingBottom: "8px",
+    borderRight: "1px solid #2980b9",
+    fontWeight: "bold",
+  },
+  detailsHeaderLast: {
+    display: "flex",
+    flexWrap: "wrap",
+    fontSize: 9,
+    backgroundColor: "#3498db",
+    color: "white",
+    textAlign: "center",
+    paddingLeft: "10px",
+    paddingRight: "10px",
+    paddingTop: "8px",
+    paddingBottom: "8px",
+    fontWeight: "bold",
+    width: "100%",
   },
   detailsCell: {
     display: "flex",
@@ -199,33 +261,45 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     color: "black",
     textAlign: "center",
-    paddingLeft: "10px",
-    borderRight: "1px solid #000",
-    // paddingBottom: '2px',
-    // paddingTop: '1px',
+    paddingLeft: "8px",
+    paddingRight: "8px",
+    paddingTop: "6px",
+    paddingBottom: "6px",
+    borderRight: "1px solid #bdc3c7",
     borderTop: "none",
-
-    // paddingBottom: '2px',
-    // paddingTop: '1px',
-    borderBottom: "1px solid #000", // '1px solid #000',
+    borderBottom: "1px solid #ecf0f1",
   },
-  detailsCellCnt: {
+  detailsCellLast: {
     display: "flex",
     flexWrap: "wrap",
     fontSize: 8,
     backgroundColor: "white",
     color: "black",
     textAlign: "center",
-    paddingLeft: "10px",
-    borderLeft: "1px solid #000",
-    borderRight: "1px solid #000",
-    // paddingBottom: '2px',
-    // paddingTop: '1px',
+    paddingLeft: "8px",
+    paddingRight: "8px",
+    paddingTop: "6px",
+    paddingBottom: "6px",
     borderTop: "none",
-
-    // paddingBottom: '2px',
-    // paddingTop: '1px',
-    borderBottom: "1px solid #000", // '1px solid #000',
+    borderBottom: "1px solid #ecf0f1",
+    width: "100%",
+  },
+  detailsCellCnt: {
+    display: "flex",
+    flexWrap: "wrap",
+    fontSize: 8,
+    backgroundColor: "#ecf0f1",
+    color: "black",
+    textAlign: "center",
+    paddingLeft: "8px",
+    paddingRight: "8px",
+    paddingTop: "6px",
+    paddingBottom: "6px",
+    borderLeft: "1px solid #bdc3c7",
+    borderRight: "1px solid #bdc3c7",
+    borderTop: "none",
+    borderBottom: "1px solid #ecf0f1",
+    fontWeight: "bold",
   },
 });
 
@@ -293,42 +367,30 @@ export default function PayrollPaymentDocument(props) {
               <Document>
                 {/*render a single page*/}
                 <Page size="A4" style={styles.page} orientation="portrait" wrap>
-                  <View style={styles.spaceHeader} />
-                  <View style={{ justifyContent: "center" }}>
+                  <View style={{ justifyContent: "center", alignItems: "center" }}>
                     <Image
                       src={logo}
-                      style={{ height: "80px", width: "600px" }}
+                      style={{ height: "70px", width: "520px" }}
                     />
                   </View>
 
                   <View style={styles.spaceHeaderMargin20}>
-                    <Text>{`PAYROLL SUMMARY`}</Text>
+                    <Text style={styles.sectionHeader}>{`TOTAL PAYMENT SUMMARY`}</Text>
                   </View>
 
-                  <View style={styles.spaceHeaderMargin20}>
-                    <Text
-                      style={{
-                        ...styles.cellLeft,
-                        fontSize: 12,
-                        fontWeight: 500,
-                      }}
-                    >
-                      PAY PERIOD :{" "}
-                      {PAY_PERIOD.find(
-                        (p) => p.payDate.toString() === printData[0].payDate
-                      )
-                        ? PAY_PERIOD.find(
-                            (p) => p.payDate.toString() === printData[0].payDate
-                          ).payPeriod
-                        : "N/A"}
+                  <View style={styles.payPeriodBox}>
+                    <Text style={styles.payPeriodLabel}>PAY PERIOD:</Text>
+                    <Text style={styles.payPeriodValue}>
+                      {printData[0]?.payPeriod || "N/A"}
                     </Text>
                   </View>
-                  <View style={styles.spaceHeaderMargin20}>
-                    <Text style={{ color: "blue" }}>
-                      {" "}
-                      {`$${new Intl.NumberFormat("en-US", {}).format(
+
+                  <View style={styles.grandTotalBox}>
+                    <Text style={styles.grandTotalLabel}>GRAND TOTAL:</Text>
+                    <Text style={styles.grandTotalValue}>
+                      ${new Intl.NumberFormat("en-US", {}).format(
                         parseFloat(grandTotal).toFixed(2)
-                      )}`}
+                      )}
                     </Text>
                   </View>
                   <View style={{ ...styles.table }}>
@@ -408,7 +470,7 @@ export default function PayrollPaymentDocument(props) {
                             */}
                       <Text
                         style={{
-                          ...styles.detailsHeader,
+                          ...styles.detailsHeaderLast,
                           width: "80px",
                           padding: "5px 0",
                         }}
@@ -499,7 +561,7 @@ export default function PayrollPaymentDocument(props) {
                                     */}
                             <Text
                               style={{
-                                ...styles.detailsCell,
+                                ...styles.detailsCellLast,
                                 width: "80px",
                                 padding: "5px 0",
                               }}

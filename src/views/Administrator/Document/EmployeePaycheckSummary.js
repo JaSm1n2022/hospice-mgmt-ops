@@ -1,4 +1,4 @@
-import { makeStyles, Modal } from "@material-ui/core";
+import { makeStyles } from "@material-ui/core";
 import {
   Document,
   Page,
@@ -13,7 +13,7 @@ import ReactModal from "react-modal";
 import HeaderModal from "components/Modal/HeaderModal";
 import docStyles from "./document.module.css";
 import logo from "assets/img/headerdoc.png";
-import { PAY_PERIOD } from "utils/constants";
+
 function getModalStyle() {
   const top = 50;
   const left = 50;
@@ -25,17 +25,17 @@ function getModalStyle() {
     transform: `translate(-${top}%, -${left}%)`,
   };
 }
+
 const useStyles = makeStyles((theme) => ({
   paper: {
     position: "absolute",
     minWidth: 600,
-
     backgroundColor: "white",
     border: "2px solid #000",
-
     overflowX: "auto",
   },
 }));
+
 // Create styles
 const styles = StyleSheet.create({
   page: {
@@ -45,11 +45,9 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
     paddingHorizontal: 20,
   },
-  spaceHeader: {
-    marginTop: 10,
-  },
-  spaceHeaderTop20: {
-    marginTop: 4,
+  viewer: {
+    width: window.innerWidth,
+    height: window.innerHeight,
   },
   spaceHeaderMargin20: {
     marginTop: 15,
@@ -64,71 +62,31 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#2c3e50",
   },
-  sectionHeader2: {
+  employeeInfo: {
+    backgroundColor: "#ecf0f1",
+    padding: 12,
+    marginTop: 10,
+    marginBottom: 10,
+    borderLeft: "4px solid #3498db",
     flexDirection: "row",
-    justifyContent: "center",
-    fontSize: 10,
-  },
-  viewer: {
-    width: window.innerWidth,
-    height: window.innerHeight,
-  },
-  row1: {
-    display: "flex",
-    flexDirection: "row",
-    justifyContent: "space-between",
     flexWrap: "wrap",
-    fontSize: 8,
+    alignItems: "center",
+  },
+  employeeInfoItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginRight: 15,
+    marginBottom: 4,
+  },
+  employeeLabel: {
+    fontSize: 10,
+    color: "#7f8c8d",
+    marginRight: 5,
+  },
+  employeeValue: {
+    fontSize: 11,
+    color: "#2c3e50",
     fontWeight: "bold",
-  },
-  row: {
-    fontSize: 10,
-    display: "flex",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    flexWrap: "wrap",
-    borderBottom: "none",
-  },
-  smallText: {
-    display: "flex",
-    flexWrap: "wrap",
-    fontSize: 6,
-    padding: "5px 2px 0 0",
-    lineHeight: "1.4",
-  },
-  longText: {
-    fontSize: 9,
-    width: "540px",
-  },
-  title: {
-    fontSize: 12,
-  },
-  table: {
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "space-evenly",
-    alignItems: "flex-start",
-    marginTop: 15,
-    border: "1px solid #3498db",
-  },
-  tableRow: {
-    display: "flex",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    flexWrap: "wrap",
-  },
-  tableCell2x: {
-    width: "280px",
-    display: "flex",
-    flexWrap: "wrap",
-    fontSize: 9,
-    border: "1px solid #000",
-  },
-  tableCell: {
-    width: "140px",
-    display: "flex",
-    flexWrap: "wrap",
-    fontSize: 9,
   },
   summaryBox: {
     backgroundColor: "#f8f9fa",
@@ -170,51 +128,13 @@ const styles = StyleSheet.create({
     color: "#27ae60",
     fontWeight: "bold",
   },
-  cellLeft: {
+  table: {
     display: "flex",
-    flexWrap: "wrap",
-    paddingLeft: 0,
-  },
-  cellLeftGray: {
-    width: "280px",
-    display: "flex",
-    flexWrap: "wrap",
-    fontSize: 9,
-    borderRight: "1px solid #000",
-    backgroundColor: "lightgray",
-  },
-  cellRight: { width: "280px", display: "flex", flexWrap: "wrap", fontSize: 9 },
-  cellRightGray: { width: "280px" },
-  line1: {
-    x1: "10",
-    y1: "10",
-    x2: "200",
-    y2: "10",
-    strokeWidth: 1,
-    stroke: "black",
-  },
-  borderTop: { borderTop: "1px solid #000" },
-  form: {
-    minHeight: "80%",
-    maxHeight: "100%",
-    minWidth: "98%",
-    maxWidth: "100%",
-    background: "white",
-    position: "relative",
-    padding: "0 0 25.6px",
-  },
-  content: {
-    minHeight: "775",
-    maxHeight: "100%",
-    position: "absolute",
-    top: "57px",
-    right: "0",
-    bottom: "55px",
-    left: 0,
-    display: "block",
-    overflowY: "auto",
-    backgroundColor: "white",
-    padding: "15px",
+    flexDirection: "column",
+    justifyContent: "space-evenly",
+    alignItems: "flex-start",
+    marginTop: 15,
+    border: "1px solid #3498db",
   },
   detailsHeader: {
     display: "flex",
@@ -291,50 +211,66 @@ const styles = StyleSheet.create({
     borderBottom: "1px solid #ecf0f1",
     fontWeight: "bold",
   },
-  employeeInfo: {
-    backgroundColor: "#ecf0f1",
-    padding: 12,
-    marginTop: 10,
-    marginBottom: 10,
-    borderLeft: "4px solid #3498db",
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "center",
+  form: {
+    minHeight: "80%",
+    maxHeight: "100%",
+    minWidth: "98%",
+    maxWidth: "100%",
+    background: "white",
+    position: "relative",
+    padding: "0 0 25.6px",
   },
-  employeeInfoItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginRight: 15,
-    marginBottom: 4,
+  content: {
+    minHeight: "775",
+    maxHeight: "100%",
+    position: "absolute",
+    top: "57px",
+    right: "0",
+    bottom: "55px",
+    left: 0,
+    display: "block",
+    overflowY: "auto",
+    backgroundColor: "white",
+    padding: "15px",
   },
-  employeeLabel: {
+  row: {
     fontSize: 10,
-    color: "#7f8c8d",
-    marginRight: 5,
-  },
-  employeeValue: {
-    fontSize: 11,
-    color: "#2c3e50",
-    fontWeight: "bold",
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    flexWrap: "wrap",
+    borderBottom: "none",
   },
 });
 
+// Helper function to check if service type should be counted as a visit
+const isVisitServiceType = (serviceType) => {
+  if (!serviceType) return false;
+  const serviceUpper = serviceType.toUpperCase();
+  // Exclude IDT and Other service types from visit count
+  return !serviceUpper.includes("IDT") && !serviceUpper.includes("OTHER");
+};
+
 // Create Document Component
-export default function PaycheckDocument(props) {
+export default function EmployeePaycheckSummary(props) {
   const classes = useStyles();
   const [isOpen, setIsOpen] = useState(props.isOpen);
   const [printData, setPrintData] = useState(undefined);
   const [modalStyle] = useState(getModalStyle);
+
   useEffect(() => {
     setIsOpen(props.isOpen);
   }, [props.isOpen]);
+
   useEffect(() => {
     console.log("[Props]", props);
     setPrintData(props.printData);
   }, [props.printData]);
+
   const handleClose = () => {
     props.closePrintModalHandler();
   };
+
   return (
     <ReactModal
       style={{
@@ -370,18 +306,33 @@ export default function PaycheckDocument(props) {
     >
       <div className={docStyles.form}>
         <HeaderModal
-          title={"Paycheck Services Summary"}
+          title={"Employee Paycheck Summary"}
           onClose={handleClose}
         />
         <div className={docStyles.content}>
           {printData && printData ? (
             <PDFViewer style={styles.viewer}>
-              {/* Start of the document*/}
               <Document>
-                {/*render a single page*/}
                 {printData.map((m, indx) => {
+                  // Calculate total visits (exclude IDT and Other)
+                  const totalVisits = m.employee?.details?.reduce((sum, detail) => {
+                    if (isVisitServiceType(detail.serviceType)) {
+                      return sum + (detail.noOfService || 0);
+                    }
+                    return sum;
+                  }, 0) || 0;
+
+                  // Calculate total non-visits (IDT and Other only)
+                  const totalNonVisits = m.employee?.details?.reduce((sum, detail) => {
+                    if (!isVisitServiceType(detail.serviceType)) {
+                      return sum + (detail.noOfService || 0);
+                    }
+                    return sum;
+                  }, 0) || 0;
+
                   return (
                     <Page
+                      key={indx}
                       size="A4"
                       style={styles.page}
                       orientation="portrait"
@@ -400,7 +351,9 @@ export default function PaycheckDocument(props) {
                           />
                         </View>
                         <View style={styles.spaceHeaderMargin20}>
-                          <Text style={styles.sectionHeader}>{`PAYCHECK SUMMARY`}</Text>
+                          <Text style={styles.sectionHeader}>
+                            EMPLOYEE PAYCHECK SUMMARY
+                          </Text>
                         </View>
 
                         <View style={styles.employeeInfo}>
@@ -425,6 +378,22 @@ export default function PaycheckDocument(props) {
                         </View>
 
                         <View style={styles.summaryBox}>
+                          {totalVisits > 0 && (
+                            <View style={styles.summaryRow}>
+                              <Text style={styles.summaryLabel}>Total Visits:</Text>
+                              <Text style={styles.summaryValue}>
+                                {totalVisits}
+                              </Text>
+                            </View>
+                          )}
+                          {totalNonVisits > 0 && (
+                            <View style={styles.summaryRow}>
+                              <Text style={styles.summaryLabel}>Total Non-Visits:</Text>
+                              <Text style={styles.summaryValue}>
+                                {totalNonVisits}
+                              </Text>
+                            </View>
+                          )}
                           {parseFloat(m.employee.totalDeduction).toFixed(2) > 0 && (
                             <View style={styles.summaryRow}>
                               <Text style={styles.summaryLabel}>Service Paid:</Text>
@@ -454,11 +423,16 @@ export default function PaycheckDocument(props) {
                             </Text>
                           </View>
                         </View>
+
                         <View style={{ ...styles.table }}>
-                          {/*SERVICES*/}
                           <View
                             style={{
-                              ...styles.row1,
+                              display: "flex",
+                              flexDirection: "row",
+                              justifyContent: "space-between",
+                              flexWrap: "wrap",
+                              fontSize: 8,
+                              fontWeight: "bold",
                               textAlign: "center",
                               borderTop: "none",
                             }}
@@ -502,33 +476,21 @@ export default function PaycheckDocument(props) {
                             <Text
                               style={{
                                 ...styles.detailsHeader,
+                                width: "50px",
+                                padding: "5px 0",
+                              }}
+                            >
+                              VISITS
+                            </Text>
+                            <Text
+                              style={{
+                                ...styles.detailsHeader,
                                 width: "60px",
                                 padding: "5px 0",
                               }}
                             >
                               RATE
                             </Text>
-                            {/*
-                            <Text
-                              style={{
-                                ...styles.detailsHeader,
-                                width: "80px",
-                                padding: "5px 0",
-                              }}
-                            >
-                              TOTAL RATE
-                            </Text>
-                           
-                            <Text
-                              style={{
-                                ...styles.detailsHeader,
-                                width: "80px",
-                                padding: "5px 0",
-                              }}
-                            >
-                              DEDUCTION
-                            </Text>
-                            */}
                             <Text
                               style={{
                                 ...styles.detailsHeader,
@@ -541,7 +503,7 @@ export default function PaycheckDocument(props) {
                             <Text
                               style={{
                                 ...styles.detailsHeaderLast,
-                                width: "140px",
+                                width: "90px",
                                 padding: "5px 0",
                               }}
                             >
@@ -549,9 +511,13 @@ export default function PaycheckDocument(props) {
                             </Text>
                           </View>
                           {m.employee?.details?.length
-                            ? m.employee?.details.map((m2, indx) => {
+                            ? m.employee?.details.map((m2, detailIndx) => {
+                                const visitCount = isVisitServiceType(m2.serviceType)
+                                  ? m2.noOfService || 0
+                                  : 0;
+
                                 return (
-                                  <View>
+                                  <View key={detailIndx}>
                                     <View
                                       style={{
                                         ...styles.row,
@@ -566,7 +532,7 @@ export default function PaycheckDocument(props) {
                                           padding: "5px 0",
                                         }}
                                       >
-                                        {indx + 1}
+                                        {detailIndx + 1}
                                       </Text>
                                       <Text
                                         style={{
@@ -598,33 +564,21 @@ export default function PaycheckDocument(props) {
                                       <Text
                                         style={{
                                           ...styles.detailsCell,
+                                          width: "50px",
+                                          padding: "5px 0",
+                                        }}
+                                      >
+                                        {visitCount}
+                                      </Text>
+                                      <Text
+                                        style={{
+                                          ...styles.detailsCell,
                                           width: "60px",
                                           padding: "5px 0",
                                         }}
                                       >
                                         ${m2.serviceRate}
                                       </Text>
-                                      {/*
-                                    <Text
-                                      style={{
-                                        ...styles.detailsCell,
-                                        width: "80px",
-                                        padding: "5px 0",
-                                      }}
-                                    >
-                                      ${m2.totalRate}
-                                    </Text>
-                                    <Text
-                                      style={{
-                                        ...styles.detailsCell,
-                                        width: "80px",
-                                        padding: "5px 0",
-                                      }}
-                                    >
-                                    
-                                      ${m2.deduction}
-                                    </Text>
-                                    */}
                                       <Text
                                         style={{
                                           ...styles.detailsCell,
@@ -637,7 +591,7 @@ export default function PaycheckDocument(props) {
                                       <Text
                                         style={{
                                           ...styles.detailsCellLast,
-                                          width: "140px",
+                                          width: "90px",
                                           padding: "5px 0",
                                           height: "50px",
                                         }}

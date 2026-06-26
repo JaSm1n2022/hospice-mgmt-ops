@@ -70,6 +70,7 @@ import { resetFetchContractState } from "store/actions/contractAction";
 import FilterTable from "components/Table/FilterTable";
 import moment from "moment";
 import PaycheckDocument from "views/Administrator/Document/PaycheckDocument";
+import EmployeePaycheckSummary from "views/Administrator/Document/EmployeePaycheckSummary";
 import PayrollPaymentDocument from "views/Administrator/Document/PayrollPaymentDocument";
 import PayrollReceivedDocument from "views/Administrator/Document/PayrollReceivedDocument";
 import PatientPayrollPaymentDocument from "views/Administrator/Document/PatientPayrollDocument";
@@ -146,6 +147,7 @@ function PayrollFunction(props) {
   const [dateTo, setDateTo] = useState("");
   const [anchorEl, setAnchorEl] = useState(false);
   const [isPaycheckDocument, setIsPaycheckDocument] = useState(false);
+  const [isEmployeePaycheckSummary, setIsEmployeePaycheckSummary] = useState(false);
   const [isPaymentDocument, setIsPaymentDocument] = useState(false);
   const [isPatientPaymentDocument, setIsPatientPaymentDocument] = useState(
     false
@@ -158,6 +160,8 @@ function PayrollFunction(props) {
   );
   const [servicesReportData, setServicesReportData] = useState([]);
   const [printData, setPrintData] = useState({});
+  const [isPayPeriodModalOpen, setIsPayPeriodModalOpen] = useState(false);
+  const [payPeriod, setPayPeriod] = useState("");
   const [columns, setColumns] = useState(PayrollHandler.columns());
   const [
     isDuplicateBillingModalOpen,
@@ -595,6 +599,7 @@ function PayrollFunction(props) {
   };
   const closePrintModalHandler = () => {
     setIsPaycheckDocument(false);
+    setIsEmployeePaycheckSummary(false);
     setIsPaymentDocument(false);
     setIsPayrollReceivedDocument(false);
     setIsPatientPaymentDocument(false);
@@ -732,7 +737,20 @@ function PayrollFunction(props) {
     // createExcelHandler(newExcelData);
   };
 
+  const employeePaycheckSummaryHandler = () => {
+    setPrintData(formatEmployeeReportHandler());
+    setIsEmployeePaycheckSummary(true);
+    setAnchorEl(null);
+  };
+
   const paymentPdfHandler = () => {
+    // Open the pay period modal first
+    setPayPeriod("");
+    setIsPayPeriodModalOpen(true);
+    setAnchorEl(null);
+  };
+
+  const handlePayPeriodSubmit = () => {
     const selectedData = dataSource.filter((r) => r.isChecked);
     const uniqueEmployee = Array.from(
       new Set(selectedData.map((m) => m.employeeName))
@@ -767,20 +785,24 @@ function PayrollFunction(props) {
           singleData.forEach((d) => {
             totalAmount += parseFloat(d.totalRate);
           });
+          const paymentType = (singleData[0].paymentType || "").trim() || "DIRECT DEPOSIT";
+          const paymentInfo = paymentType === "DIRECT DEPOSIT" ? "ACH" : (i || "");
+
           const jsonObj = {
             payDate: p,
             employee: `${u} (${position?.alias || "-"})`,
             amount: parseFloat(totalAmount, 2),
-            paymentType: (singleData[0].paymentType || "").trim(),
-            paymentInfo: i,
+            paymentType: paymentType,
+            paymentInfo: paymentInfo,
+            payPeriod: payPeriod, // Add the pay period
           };
           newPdfData.push(jsonObj);
         });
       });
     });
     setPrintData(newPdfData);
+    setIsPayPeriodModalOpen(false);
     setIsPaymentDocument(true);
-    setAnchorEl(null);
   };
   const patientPaymentPdfHandler = () => {
     const selectedData = dataSource.filter((r) => r.isChecked);
@@ -1526,8 +1548,8 @@ function PayrollFunction(props) {
                           open={Boolean(anchorEl)}
                           onClose={closeChangeReportMenuHandler}
                         >
-                          <MenuItem onClick={() => customExportPdfHandler()}>
-                            Employee Paycheck Copy
+                          <MenuItem onClick={() => employeePaycheckSummaryHandler()}>
+                            Employee Paycheck Summary
                           </MenuItem>
                           <MenuItem onClick={() => patientPaymentPdfHandler()}>
                             Client Payment
@@ -1575,6 +1597,13 @@ function PayrollFunction(props) {
       {isPaycheckDocument && (
         <PaycheckDocument
           isOpen={isPaycheckDocument}
+          printData={printData}
+          closePrintModalHandler={closePrintModalHandler}
+        />
+      )}
+      {isEmployeePaycheckSummary && (
+        <EmployeePaycheckSummary
+          isOpen={isEmployeePaycheckSummary}
           printData={printData}
           closePrintModalHandler={closePrintModalHandler}
         />
@@ -1644,6 +1673,35 @@ function PayrollFunction(props) {
           </Button>
           <Button onClick={handleDatePickerConfirm} color="primary">
             Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Pay Period Modal for Total Payment */}
+      <Dialog
+        open={isPayPeriodModalOpen}
+        onClose={() => setIsPayPeriodModalOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Enter Pay Period</DialogTitle>
+        <DialogContent>
+          <TextField
+            label="Pay Period"
+            type="text"
+            value={payPeriod}
+            onChange={(e) => setPayPeriod(e.target.value)}
+            placeholder="e.g., 01/01/2024 - 01/15/2024"
+            fullWidth
+            style={{ marginTop: "10px" }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIsPayPeriodModalOpen(false)} color="default">
+            Cancel
+          </Button>
+          <Button onClick={handlePayPeriodSubmit} color="primary">
+            Submit
           </Button>
         </DialogActions>
       </Dialog>
