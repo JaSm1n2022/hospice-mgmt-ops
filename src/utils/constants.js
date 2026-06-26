@@ -2555,3 +2555,20 @@ export const QA_STATUS = [
     category: "qaStatus",
   },
 ];
+
+export const LCD_COMPLIANCE = [
+  {
+    id: "compliant",
+    name: "Compliant",
+    label: "Compliant",
+    value: true,
+    code: "compliant",
+  },
+  {
+    id: "not_compliant",
+    name: "Not Compliant",
+    label: "Not Compliant",
+    value: false,
+    code: "not_compliant",
+  },
+];

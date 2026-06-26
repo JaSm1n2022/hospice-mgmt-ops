@@ -174,6 +174,10 @@ const RecertificationCalendarPrintDocument = ({ patients, startDate, endDate }) 
             suggestedDaysBefore = 5;
           }
 
+          // Calculate days of care from SOC to current date
+          const socDate = patient.soc || patient.socDate;
+          const daysOfCare = socDate ? today.diff(moment(socDate), "days") : null;
+
           eventsByMonth[monthKey].events.push({
             date: dueDate.format("MM/DD/YYYY"),
             suggestedVisitDate: suggestedVisitDate ? suggestedVisitDate.format("MM/DD/YYYY") : null,
@@ -188,6 +192,7 @@ const RecertificationCalendarPrintDocument = ({ patients, startDate, endDate }) 
             daysUntil: dueDate.diff(today, "days"),
             isF2F: isF2F,
             isCert2: isCert2,
+            daysOfCare: daysOfCare,
           });
         }
       });
@@ -314,6 +319,11 @@ const RecertificationCalendarPrintDocument = ({ patients, startDate, endDate }) 
                         fontWeight: "bold"
                       }}>
                         Suggested Visit: {event.suggestedVisitDate} ({event.suggestedDaysBefore} days before due)
+                      </Text>
+                    )}
+                    {event.daysOfCare !== null && (
+                      <Text style={{ fontSize: 8, color: "#666", marginTop: 2 }}>
+                        No. of Days Care: {event.daysOfCare} days
                       </Text>
                     )}
                   </View>

@@ -12,7 +12,7 @@ import {
 import { makeStyles } from "@material-ui/core";
 import CustomDatePicker from "components/Date/CustomDatePicker";
 import HeaderModal from "components/Modal/HeaderModal";
-import { QA_TYPE, QA_STATUS, DEFAULT_ITEM } from "utils/constants";
+import { QA_TYPE, QA_STATUS, LCD_COMPLIANCE, DEFAULT_ITEM } from "utils/constants";
 import moment from "moment";
 
 function getModalStyle() {
@@ -52,8 +52,12 @@ function QAForm(props) {
       fm.discipline = employeeList.find((e) => e.id === fm.disciplineId) || DEFAULT_ITEM;
       fm.reviewer = employeeList.find((e) => e.id === fm.reviewerId) || DEFAULT_ITEM;
       fm.qaDate = fm.qa_date ? new Date(fm.qa_date) : new Date();
-      fm.qaSourceDate = fm.qa_source_dt ? new Date(fm.qa_source_dt) : null;
+      // Parse date-only fields without timezone conversion
+      fm.qaSourceDate = fm.qa_source_dt ? moment(fm.qa_source_dt, "YYYY-MM-DD").toDate() : null;
+      fm.completeDate = fm.completed_dt ? moment(fm.completed_dt, "YYYY-MM-DD").toDate() : null;
       fm.comments = fm.comments || "";
+      fm.lcdCompliance = LCD_COMPLIANCE.find((c) => c.value === fm.isLcdCompliance) || DEFAULT_ITEM;
+      fm.recertNumber = fm.recertNumber || "";
       setFormData(fm);
     } else {
       // Default to Pending status for new items
@@ -65,7 +69,10 @@ function QAForm(props) {
         status: QA_STATUS.find((s) => s.code === "pending") || DEFAULT_ITEM,
         qaDate: new Date(),
         qaSourceDate: null,
+        completeDate: null,
         comments: "",
+        lcdCompliance: DEFAULT_ITEM,
+        recertNumber: "",
       });
     }
   }, [item, mode, patientList, employeeList]);
@@ -103,8 +110,15 @@ function QAForm(props) {
       qa_date: formData.qaDate ? moment(formData.qaDate).format("YYYY-MM-DD HH:mm:ss") : null,
       qa_status: formData.status?.value || "Pending",
       qa_source_dt: formData.qaSourceDate ? moment(formData.qaSourceDate).format("YYYY-MM-DD") : null,
+      completed_dt: formData.completeDate ? moment(formData.completeDate).format("YYYY-MM-DD") : null,
       comments: formData.comments ? [formData.comments] : [],
+      recertNumber: formData.recertNumber || null,
     };
+
+    // Only include isLcdCompliance if a value is selected (not empty/DEFAULT_ITEM)
+    if (formData.lcdCompliance && formData.lcdCompliance.value !== undefined && formData.lcdCompliance !== DEFAULT_ITEM) {
+      payload.isLcdCompliance = formData.lcdCompliance.value;
+    }
 
     if (mode === "edit") {
       payload.id = item.id;
@@ -157,6 +171,19 @@ function QAForm(props) {
                   disabled={mode === "view"}
                 />
               </Grid>
+              {formData.qaType?.code === "recertification" && (
+                <Grid item xs={6}>
+                  <CustomTextField
+                    placeholder="Certification #"
+                    label="Certification #"
+                    name="recertNumber"
+                    value={formData.recertNumber || ""}
+                    onChange={handleTextChange}
+                    type="number"
+                    disabled={mode === "view"}
+                  />
+                </Grid>
+              )}
               <Grid item xs={6}>
                 <CustomSingleAutoComplete
                   placeholder="Patient *"
@@ -194,6 +221,14 @@ function QAForm(props) {
                 />
               </Grid>
               <Grid item xs={6}>
+                <CustomDatePicker
+                  label="Complete Date"
+                  value={formData.completeDate}
+                  onChange={(value) => handleDateChange(value, "completeDate")}
+                  disabled={mode === "view"}
+                />
+              </Grid>
+              <Grid item xs={6}>
                 <CustomSingleAutoComplete
                   placeholder="Reviewer"
                   label="Reviewer"
@@ -210,6 +245,16 @@ function QAForm(props) {
                   value={formData.status || DEFAULT_ITEM}
                   onSelectHandler={(item) => handleAutoCompleteChange(item, "status")}
                   options={QA_STATUS}
+                  disabled={mode === "view"}
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <CustomSingleAutoComplete
+                  placeholder="LCD Eligibility Compliance"
+                  label="LCD Eligibility Compliance"
+                  value={formData.lcdCompliance || DEFAULT_ITEM}
+                  onSelectHandler={(item) => handleAutoCompleteChange(item, "lcdCompliance")}
+                  options={LCD_COMPLIANCE}
                   disabled={mode === "view"}
                 />
               </Grid>

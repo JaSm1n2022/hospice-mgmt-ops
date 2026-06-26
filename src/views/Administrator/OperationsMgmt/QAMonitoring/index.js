@@ -7,15 +7,19 @@ import CardHeader from "components/Card/CardHeader.js";
 import CardBody from "components/Card/CardBody.js";
 import Button from "components/CustomButtons/Button.js";
 import { connect } from "react-redux";
-import { CircularProgress, IconButton } from "@material-ui/core";
+import { CircularProgress, IconButton, TextField, Box, Checkbox } from "@material-ui/core";
 import AddIcon from "@material-ui/icons/Add";
 import EditIcon from "@material-ui/icons/Edit";
 import DeleteIcon from "@material-ui/icons/Delete";
+import GetAppIcon from "@material-ui/icons/GetApp";
+import PrintIcon from "@material-ui/icons/Print";
 import HospiceTable from "components/Table/HospiceTable";
 import moment from "moment";
 import { SupaContext } from "App";
 import { ACTION_STATUSES } from "utils/constants";
 import TOAST from "modules/toastManager";
+import * as XLSX from "xlsx";
+import { pdf } from "@react-pdf/renderer";
 
 import { attemptToFetchQA, resetFetchQAState } from "store/actions/qaAction";
 import { attemptToCreateQA, resetCreateQAState } from "store/actions/qaAction";
@@ -30,6 +34,7 @@ import { attemptToFetchEmployee, resetFetchEmployeeState } from "store/actions/e
 import { employeeListStateSelector } from "store/selectors/employeeSelector";
 
 import QAForm from "./components/QAForm";
+import QAPrintDocument from "./components/QAPrintDocument";
 
 const styles = {
   cardCategoryWhite: {
@@ -70,11 +75,53 @@ function QAMonitoring(props) {
   const [formMode, setFormMode] = useState("create");
   const [selectedItem, setSelectedItem] = useState(null);
   const [dataSource, setDataSource] = useState([]);
+  const [filteredData, setFilteredData] = useState([]);
   const [patientList, setPatientList] = useState([]);
   const [employeeList, setEmployeeList] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  const [selectedRows, setSelectedRows] = useState([]);
+
+  const handleRowSelection = (id) => {
+    setSelectedRows((prev) => {
+      if (prev.includes(id)) {
+        return prev.filter((rowId) => rowId !== id);
+      } else {
+        return [...prev, id];
+      }
+    });
+  };
+
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedRows(filteredData.map((row) => row.id));
+    } else {
+      setSelectedRows([]);
+    }
+  };
 
   const columns = [
+    {
+      name: "checkbox",
+      header: () => (
+        <Checkbox
+          checked={selectedRows.length > 0 && selectedRows.length === filteredData.length}
+          indeterminate={selectedRows.length > 0 && selectedRows.length < filteredData.length}
+          onChange={handleSelectAll}
+          color="primary"
+        />
+      ),
+      defaultFlex: 0.3,
+      minWidth: 50,
+      render: ({ data }) => (
+        <Checkbox
+          checked={selectedRows.includes(data.id)}
+          onChange={() => handleRowSelection(data.id)}
+          color="primary"
+          onClick={(e) => e.stopPropagation()}
+        />
+      ),
+    },
     {
       name: "actions",
       header: "Actions",
@@ -149,6 +196,17 @@ function QAMonitoring(props) {
       defaultFlex: 1,
       minWidth: 150,
     },
+    {
+      name: "isLcdCompliance",
+      header: "LCD",
+      defaultFlex: 0.8,
+      minWidth: 100,
+      render: ({ value }) => {
+        if (value === true) return "Compliant";
+        if (value === false) return "Non-Compliant";
+        return "";
+      },
+    },
   ];
 
   // Fetch QA records
@@ -165,17 +223,38 @@ function QAMonitoring(props) {
     if (props.qaList.status === ACTION_STATUSES.SUCCEED) {
       const qaData = Array.isArray(props.qaList.data) ? props.qaList.data : [];
       setDataSource(qaData);
+      setFilteredData(qaData);
       setIsLoading(false);
       props.resetFetchQA();
     } else if (props.qaList.status === ACTION_STATUSES.FAILED) {
       TOAST.error("Failed to fetch QA records");
       setDataSource([]);
+      setFilteredData([]);
       setIsLoading(false);
       props.resetFetchQA();
     } else if (props.qaList.status === ACTION_STATUSES.PENDING) {
       setIsLoading(true);
     }
   }, [props.qaList]);
+
+  // Handle search filtering
+  useEffect(() => {
+    if (!searchText.trim()) {
+      setFilteredData(dataSource);
+      return;
+    }
+
+    const lowerSearch = searchText.toLowerCase();
+    const filtered = dataSource.filter((item) => {
+      const patientMatch = item.patientCd?.toLowerCase().includes(lowerSearch);
+      const reviewerMatch = item.reviewer_name?.toLowerCase().includes(lowerSearch);
+      const disciplineMatch = item.discipline_name?.toLowerCase().includes(lowerSearch);
+      return patientMatch || reviewerMatch || disciplineMatch;
+    });
+
+    setFilteredData(filtered);
+    setSelectedRows([]); // Clear selection when filtering
+  }, [searchText, dataSource]);
 
   // Handle patient list response
   useEffect(() => {
@@ -300,6 +379,52 @@ function QAMonitoring(props) {
     setSelectedItem(null);
   };
 
+  const handleExportExcel = () => {
+    const selectedData = filteredData.filter((row) => selectedRows.includes(row.id));
+
+    if (selectedData.length === 0) {
+      TOAST.error("Please select at least one record to export");
+      return;
+    }
+
+    const exportData = selectedData.map((item) => ({
+      "QA Type": item.qa_type || "",
+      "Patient": item.patientCd || "",
+      "Discipline": item.discipline_name || "",
+      "QA Date": item.qa_date ? moment(item.qa_date).format("MM/DD/YYYY") : "",
+      "Status": item.qa_status || "",
+      "Source Date": item.qa_source_dt ? moment(item.qa_source_dt).format("MM/DD/YYYY") : "",
+      "Complete Date": item.completed_dt ? moment(item.completed_dt).format("MM/DD/YYYY") : "",
+      "Reviewer": item.reviewer_name || "",
+      "LCD Compliance": item.isLcdCompliance === true ? "Compliant" : item.isLcdCompliance === false ? "Not Compliant" : "",
+      "Cert #": item.recertNumber || "",
+      "Comments": Array.isArray(item.comments) ? item.comments.join("; ") : item.comments || "",
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "QA Records");
+
+    const fileName = `QA_Records_${moment().format("YYYYMMDD_HHmmss")}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+
+    TOAST.ok(`Exported ${selectedData.length} record(s) to Excel`);
+  };
+
+  const handlePrintPDF = async () => {
+    try {
+      const doc = <QAPrintDocument qaRecords={filteredData} />;
+      const asPdf = pdf(doc);
+      const blob = await asPdf.toBlob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+      TOAST.ok("PDF generated successfully");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      TOAST.error("Failed to generate PDF. Please try again.");
+    }
+  };
+
   // Safety check: if data is loaded but still showing loading, hide it
   useEffect(() => {
     // Set loading to false after initial data fetch attempts complete
@@ -334,9 +459,39 @@ function QAMonitoring(props) {
               </div>
             </CardHeader>
             <CardBody>
+              <Box mb={2} display="flex" gap={2} alignItems="center" flexWrap="wrap">
+                <TextField
+                  label="Search (Patient, Reviewer, Discipline)"
+                  variant="outlined"
+                  size="small"
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  style={{ minWidth: 300, flex: 1 }}
+                />
+                <Box display="flex" gap={1}>
+                  {selectedRows.length > 0 && (
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      onClick={handleExportExcel}
+                      startIcon={<GetAppIcon />}
+                    >
+                      Export Excel ({selectedRows.length})
+                    </Button>
+                  )}
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handlePrintPDF}
+                    startIcon={<PrintIcon />}
+                  >
+                    Print PDF
+                  </Button>
+                </Box>
+              </Box>
               <HospiceTable
                 columns={columns}
-                dataSource={Array.isArray(dataSource) ? dataSource : []}
+                dataSource={Array.isArray(filteredData) ? filteredData : []}
                 loading={isLoading}
                 onRowDoubleClick={handleRowDoubleClick}
                 style={{ minHeight: 550 }}
