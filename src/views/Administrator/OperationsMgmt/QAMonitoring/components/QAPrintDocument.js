@@ -188,7 +188,17 @@ const QAPrintDocument = ({ qaRecords }) => {
                       {record.reviewer_name || ""}
                     </Text>
                     <Text style={[styles.tableCell, { flex: 0.7 }]}>
-                      {record.isLcdCompliance === true ? "Yes" : record.isLcdCompliance === false ? "No" : ""}
+                      {record.qa_type && (
+                        record.qa_type.toLowerCase().includes("visit") ||
+                        record.qa_type === "SC Assessment" ||
+                        record.qa_type === "MSW Assessment"
+                      )
+                        ? "N/A"
+                        : record.isLcdCompliance === true
+                          ? "Compliant"
+                          : record.isLcdCompliance === false
+                            ? "Non-Compliant"
+                            : ""}
                     </Text>
                     <Text style={[styles.tableCell, { flex: 0.5, ...styles.lastCell }]}>
                       {record.recertNumber || ""}

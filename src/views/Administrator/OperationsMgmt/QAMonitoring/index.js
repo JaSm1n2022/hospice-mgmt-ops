@@ -201,7 +201,15 @@ function QAMonitoring(props) {
       header: "LCD",
       defaultFlex: 0.8,
       minWidth: 100,
-      render: ({ value }) => {
+      render: ({ value, data }) => {
+        // Check if QA type contains "Visit" or is SC/MSW Assessment
+        const shouldShowNA = data.qa_type && (
+          data.qa_type.toLowerCase().includes("visit") ||
+          data.qa_type === "SC Assessment" ||
+          data.qa_type === "MSW Assessment"
+        );
+        if (shouldShowNA) return "N/A";
+
         if (value === true) return "Compliant";
         if (value === false) return "Non-Compliant";
         return "";
@@ -387,19 +395,35 @@ function QAMonitoring(props) {
       return;
     }
 
-    const exportData = selectedData.map((item) => ({
-      "QA Type": item.qa_type || "",
-      "Patient": item.patientCd || "",
-      "Discipline": item.discipline_name || "",
-      "QA Date": item.qa_date ? moment(item.qa_date).format("MM/DD/YYYY") : "",
-      "Status": item.qa_status || "",
-      "Source Date": item.qa_source_dt ? moment(item.qa_source_dt).format("MM/DD/YYYY") : "",
-      "Complete Date": item.completed_dt ? moment(item.completed_dt).format("MM/DD/YYYY") : "",
-      "Reviewer": item.reviewer_name || "",
-      "LCD Compliance": item.isLcdCompliance === true ? "Compliant" : item.isLcdCompliance === false ? "Not Compliant" : "",
-      "Cert #": item.recertNumber || "",
-      "Comments": Array.isArray(item.comments) ? item.comments.join("; ") : item.comments || "",
-    }));
+    const exportData = selectedData.map((item) => {
+      // Check if QA type contains "Visit" or is SC/MSW Assessment
+      const shouldShowNA = item.qa_type && (
+        item.qa_type.toLowerCase().includes("visit") ||
+        item.qa_type === "SC Assessment" ||
+        item.qa_type === "MSW Assessment"
+      );
+      const lcdCompliance = shouldShowNA
+        ? "N/A"
+        : item.isLcdCompliance === true
+          ? "Compliant"
+          : item.isLcdCompliance === false
+            ? "Not Compliant"
+            : "";
+
+      return {
+        "QA Type": item.qa_type || "",
+        "Patient": item.patientCd || "",
+        "Discipline": item.discipline_name || "",
+        "QA Date": item.qa_date ? moment(item.qa_date).format("MM/DD/YYYY") : "",
+        "Status": item.qa_status || "",
+        "Source Date": item.qa_source_dt ? moment(item.qa_source_dt).format("MM/DD/YYYY") : "",
+        "Complete Date": item.completed_dt ? moment(item.completed_dt).format("MM/DD/YYYY") : "",
+        "Reviewer": item.reviewer_name || "",
+        "LCD Compliance": lcdCompliance,
+        "Cert #": item.recertNumber || "",
+        "Comments": Array.isArray(item.comments) ? item.comments.join("; ") : item.comments || "",
+      };
+    });
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();

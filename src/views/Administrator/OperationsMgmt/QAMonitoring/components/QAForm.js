@@ -128,7 +128,12 @@ function QAForm(props) {
   };
 
   const isValid = () => {
-    return (
+    // Check if QA type contains "Recertification"
+    const isRecertificationType = formData.qaType?.value &&
+      formData.qaType.value.toLowerCase().includes("recertification");
+
+    // Base validation
+    const baseValid = (
       formData.qaType &&
       formData.qaType.value &&
       formData.patient &&
@@ -137,6 +142,13 @@ function QAForm(props) {
       formData.discipline.id &&
       formData.qaDate
     );
+
+    // If it's a recertification type, also require recertNumber
+    if (isRecertificationType) {
+      return baseValid && formData.recertNumber && String(formData.recertNumber).trim() !== "";
+    }
+
+    return baseValid;
   };
 
   const titleHandler = () => {
@@ -171,16 +183,17 @@ function QAForm(props) {
                   disabled={mode === "view"}
                 />
               </Grid>
-              {formData.qaType?.code === "recertification" && (
+              {formData.qaType?.value && formData.qaType.value.toLowerCase().includes("recertification") && (
                 <Grid item xs={6}>
                   <CustomTextField
-                    placeholder="Certification #"
-                    label="Certification #"
+                    placeholder="Certification # *"
+                    label="Certification # *"
                     name="recertNumber"
                     value={formData.recertNumber || ""}
                     onChange={handleTextChange}
                     type="number"
                     disabled={mode === "view"}
+                    required={true}
                   />
                 </Grid>
               )}
@@ -226,6 +239,7 @@ function QAForm(props) {
                   value={formData.completeDate}
                   onChange={(value) => handleDateChange(value, "completeDate")}
                   disabled={mode === "view"}
+                  noDefault={true}
                 />
               </Grid>
               <Grid item xs={6}>
