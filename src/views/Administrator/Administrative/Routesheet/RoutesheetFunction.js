@@ -847,12 +847,22 @@ function RoutesheetFunction(props) {
       try {
         const { data: assignments, error } = await supabaseClient
           .from("assignments")
-          .select("patientCd, disciplineName, disciplineId, frequencyVisit, visitType")
+          .select("patientCd, disciplineName, disciplineId, frequencyVisit, visitType, disciplines")
           .eq("companyId", context.userProfile.companyId);
 
         if (!error && assignments) {
-          // Create a map keyed by patientCd-disciplineName for quick lookup
+          console.log("Total assignments fetched:", assignments.length);
+
           assignments.forEach((assignment) => {
+            // Skip if disciplines field explicitly indicates admission nurse or non-regular visit
+            const disciplines = (assignment.disciplines || "").toLowerCase();
+
+            // Skip only if explicitly admission nurse (but include if disciplines is empty/null)
+            if (disciplines.includes("admission") && !disciplines.includes("registered nurse")) {
+              console.log("Skipping admission nurse:", assignment.disciplineName, assignment.disciplines);
+              return;
+            }
+
             // Trim patientCd and disciplineName to ensure clean matching
             const patientCd = (assignment.patientCd || "").trim();
             const disciplineName = (assignment.disciplineName || "").trim();
@@ -862,9 +872,22 @@ function RoutesheetFunction(props) {
               ? `${assignment.frequencyVisit}/${assignment.visitType}`
               : "-";
 
-            assignmentsMap[key1] = freqDisplay;
-            assignmentsMap[key2] = freqDisplay;
+            // Skip 0/Month frequencies (likely admission nurses)
+            if (freqDisplay === "0/Month") {
+              console.log("Skipping 0/Month:", assignment.disciplineName, assignment.patientCd);
+              return;
+            }
+
+            // Only set if not already set, or if this has a valid frequency (prefer non-zero)
+            if (!assignmentsMap[key1] || freqDisplay !== "-") {
+              assignmentsMap[key1] = freqDisplay;
+            }
+            if (!assignmentsMap[key2] || freqDisplay !== "-") {
+              assignmentsMap[key2] = freqDisplay;
+            }
           });
+
+          console.log("Assignments map size:", Object.keys(assignmentsMap).length);
         }
       } catch (error) {
         console.error("Error fetching assignments:", error);
@@ -895,21 +918,6 @@ function RoutesheetFunction(props) {
         if (isActive === false) {
           return; // Skip this record
         }
-
-        // Group by patient for summary view (do this BEFORE frequency check)
-        // Summary should show ALL active disciplines, even without frequency
-        if (!groupedByPatient[clientCd]) {
-          groupedByPatient[clientCd] = {};
-        }
-
-        if (!groupedByPatient[clientCd][dateKey]) {
-          groupedByPatient[clientCd][dateKey] = [];
-        }
-
-        groupedByPatient[clientCd][dateKey].push({
-          position,
-          disciplineName,
-        });
 
         // Check if there's a frequency assignment for this patient-discipline combination
         const key1 = `${clientCd}-${disciplineName}`;
@@ -969,6 +977,33 @@ function RoutesheetFunction(props) {
         if (!groupedByDiscipline[disciplineName].clientFrequency[clientCd]) {
           groupedByDiscipline[disciplineName].clientFrequency[clientCd] = frequency;
         }
+      });
+
+      // Build patient summary from the grouped discipline data (after frequency filtering)
+      Object.keys(groupedByDiscipline).forEach((disciplineName) => {
+        const disciplineInfo = groupedByDiscipline[disciplineName];
+        const position = disciplineInfo.position;
+
+        // Iterate through each client visited by this discipline
+        Object.keys(disciplineInfo.clientVisits).forEach((clientCd) => {
+          const clientVisits = disciplineInfo.clientVisits[clientCd];
+
+          // Iterate through each date this client was visited
+          Object.keys(clientVisits).forEach((dateKey) => {
+            if (!groupedByPatient[clientCd]) {
+              groupedByPatient[clientCd] = {};
+            }
+
+            if (!groupedByPatient[clientCd][dateKey]) {
+              groupedByPatient[clientCd][dateKey] = [];
+            }
+
+            groupedByPatient[clientCd][dateKey].push({
+              position,
+              disciplineName,
+            });
+          });
+        });
       });
 
       // Debug logging
