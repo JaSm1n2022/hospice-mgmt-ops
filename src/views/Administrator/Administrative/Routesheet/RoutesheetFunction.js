@@ -833,8 +833,9 @@ function RoutesheetFunction(props) {
           // Create a map of active employees
           employees.forEach((emp) => {
             const isActive = emp.status && emp.status.toLowerCase() === "active";
+            const empName = (emp.name || "").trim();
             activeEmployeesMap[emp.id] = isActive;
-            activeEmployeesMap[emp.name] = isActive;
+            activeEmployeesMap[empName] = isActive;
           });
         }
       } catch (error) {
@@ -852,8 +853,11 @@ function RoutesheetFunction(props) {
         if (!error && assignments) {
           // Create a map keyed by patientCd-disciplineName for quick lookup
           assignments.forEach((assignment) => {
-            const key1 = `${assignment.patientCd}-${assignment.disciplineName}`;
-            const key2 = `${assignment.patientCd}-${assignment.disciplineId}`;
+            // Trim patientCd and disciplineName to ensure clean matching
+            const patientCd = (assignment.patientCd || "").trim();
+            const disciplineName = (assignment.disciplineName || "").trim();
+            const key1 = `${patientCd}-${disciplineName}`;
+            const key2 = `${patientCd}-${assignment.disciplineId}`;
             const freqDisplay = assignment.frequencyVisit && assignment.visitType
               ? `${assignment.frequencyVisit}/${assignment.visitType}`
               : "-";
@@ -879,9 +883,10 @@ function RoutesheetFunction(props) {
       };
 
       weekData.forEach((row) => {
-        const clientCd = row.patientCd || "Unknown Client";
-        const position = row.requestorTitle || "";
-        const disciplineName = row.requestor || "Unknown Employee";
+        // Trim all string fields to avoid matching issues with leading/trailing spaces
+        const clientCd = (row.patientCd || "Unknown Client").trim();
+        const position = (row.requestorTitle || "").trim();
+        const disciplineName = (row.requestor || "Unknown Employee").trim();
         const timeIn = row.timeIn ? moment(row.timeIn).format("HH:mm") : "";
         const dateKey = moment(row.timeIn).format("YYYY-MM-DD");
 
@@ -891,14 +896,29 @@ function RoutesheetFunction(props) {
           return; // Skip this record
         }
 
+        // Group by patient for summary view (do this BEFORE frequency check)
+        // Summary should show ALL active disciplines, even without frequency
+        if (!groupedByPatient[clientCd]) {
+          groupedByPatient[clientCd] = {};
+        }
+
+        if (!groupedByPatient[clientCd][dateKey]) {
+          groupedByPatient[clientCd][dateKey] = [];
+        }
+
+        groupedByPatient[clientCd][dateKey].push({
+          position,
+          disciplineName,
+        });
+
         // Check if there's a frequency assignment for this patient-discipline combination
         const key1 = `${clientCd}-${disciplineName}`;
         const key2 = `${clientCd}-${row.requestorId}`;
         const frequency = assignmentsMap[key1] || assignmentsMap[key2];
 
-        // Skip if no frequency assignment exists
+        // Skip if no frequency assignment exists (only for discipline-grouped pages)
         if (!frequency || frequency === "-") {
-          return; // Skip this record - no frequency assignment
+          return; // Skip this record - no frequency assignment for discipline pages
         }
 
         // Count disciplines for summary
@@ -945,28 +965,10 @@ function RoutesheetFunction(props) {
           };
         }
 
-        // Look up frequency from assignments (only set once per client-discipline combination)
+        // Store frequency (already validated above)
         if (!groupedByDiscipline[disciplineName].clientFrequency[clientCd]) {
-          // Try both patientCd-disciplineName and patientCd-disciplineId as keys
-          const key1 = `${clientCd}-${disciplineName}`;
-          const key2 = `${clientCd}-${row.requestorId}`;
-          groupedByDiscipline[disciplineName].clientFrequency[clientCd] =
-            assignmentsMap[key1] || assignmentsMap[key2] || "-";
+          groupedByDiscipline[disciplineName].clientFrequency[clientCd] = frequency;
         }
-
-        // Group by patient for summary view
-        if (!groupedByPatient[clientCd]) {
-          groupedByPatient[clientCd] = {};
-        }
-
-        if (!groupedByPatient[clientCd][dateKey]) {
-          groupedByPatient[clientCd][dateKey] = [];
-        }
-
-        groupedByPatient[clientCd][dateKey].push({
-          position,
-          disciplineName,
-        });
       });
 
       // Debug logging

@@ -374,17 +374,17 @@ const DisciplineWorkMatrixDocument = ({ disciplineData, patientData, weekStart, 
                   {patientCd}
                 </Text>
                 {weekDays.map((day, dayIdx) => {
-                  // Find FIRST occurrence of visits that match this day of the week
+                  // Find ALL visits that match this day of the week
                   const targetDayOfWeek = day.day(); // 0-6 (Sunday-Saturday)
-                  let visits = [];
+                  const allVisits = [];
 
-                  // Search through all patient visits to find FIRST occurrence on the same day of week
+                  // Search through all patient visits to find ALL occurrences on the same day of week
                   const sortedDateKeys = Object.keys(patientVisits).sort();
                   for (const dateKey of sortedDateKeys) {
                     const visitDate = moment(dateKey);
                     if (visitDate.day() === targetDayOfWeek) {
-                      visits = patientVisits[dateKey];
-                      break; // Use first occurrence only
+                      // Collect ALL visits from this day
+                      allVisits.push(...patientVisits[dateKey]);
                     }
                   }
 
@@ -392,7 +392,7 @@ const DisciplineWorkMatrixDocument = ({ disciplineData, patientData, weekStart, 
                   const uniqueVisits = [];
                   const seenDisciplines = new Set();
 
-                  visits.forEach((visit) => {
+                  allVisits.forEach((visit) => {
                     if (!seenDisciplines.has(visit.disciplineName)) {
                       seenDisciplines.add(visit.disciplineName);
                       uniqueVisits.push(visit);
