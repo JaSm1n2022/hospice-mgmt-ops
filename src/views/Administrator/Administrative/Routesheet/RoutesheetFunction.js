@@ -60,6 +60,7 @@ import Snackbar from "components/Snackbar/Snackbar";
 import AddAlert from "@material-ui/icons/AddAlert";
 import { pdf } from "@react-pdf/renderer";
 import RoutesheetPrintDocument from "./components/RoutesheetPrintDocument";
+import DisciplineWorkMatrixDocument from "./components/DisciplineWorkMatrixDocument";
 import PrintIcon from "@material-ui/icons/Print";
 
 const styles = {
@@ -144,6 +145,7 @@ function RoutesheetFunction(props) {
   const [thresholdReportLoading, setThresholdReportLoading] = useState(false);
   const [isPayrollDueDateModal, setIsPayrollDueDateModal] = useState(false);
   const [isSubmitPayrollCollection, setIsSubmitPayrollCollection] = useState(true);
+  const [workMatrixLoading, setWorkMatrixLoading] = useState(false);
 
   const createFormHandler = (data, mode) => {
     setItem(data);
@@ -776,6 +778,240 @@ function RoutesheetFunction(props) {
     }
   };
 
+  const generateWorkMatrixHandler = async () => {
+    try {
+      setWorkMatrixLoading(true);
+
+      // Get filtered data from current table view - use exactly what's filtered
+      const filteredRows = dataSource.filter((row) => {
+        // Filter by "Regular Visit" service type
+        return row.service && row.service.toLowerCase().includes("regular visit");
+      });
+
+      if (filteredRows.length === 0) {
+        showNotification(
+          "No Regular Visit records found in the current view",
+          "warning"
+        );
+        return;
+      }
+
+      // Get all unique dates and determine date range
+      const allDates = [];
+      filteredRows.forEach((row) => {
+        const date = moment(row.timeIn);
+        if (date.isValid()) {
+          allDates.push(date);
+        }
+      });
+
+      if (allDates.length === 0) {
+        showNotification("No valid dates found in the filtered data", "warning");
+        return;
+      }
+
+      // Get min and max dates from actual data
+      const minDate = moment.min(allDates);
+      const maxDate = moment.max(allDates);
+
+      // Don't create week boundaries - use actual date range
+      const weekStart = minDate.clone().startOf("day");
+      const weekEnd = maxDate.clone().endOf("day");
+
+      // Use all filtered Regular Visit data
+      const weekData = filteredRows;
+
+      // Fetch employee data to check status (active/inactive)
+      let activeEmployeesMap = {};
+      try {
+        const { data: employees, error: empError } = await supabaseClient
+          .from("employees")
+          .select("id, name, status")
+          .eq("companyId", context.userProfile.companyId);
+
+        if (!empError && employees) {
+          // Create a map of active employees
+          employees.forEach((emp) => {
+            const isActive = emp.status && emp.status.toLowerCase() === "active";
+            activeEmployeesMap[emp.id] = isActive;
+            activeEmployeesMap[emp.name] = isActive;
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching employees:", error);
+      }
+
+      // Fetch assignments to get frequency data
+      let assignmentsMap = {};
+      try {
+        const { data: assignments, error } = await supabaseClient
+          .from("assignments")
+          .select("patientCd, disciplineName, disciplineId, frequencyVisit, visitType")
+          .eq("companyId", context.userProfile.companyId);
+
+        if (!error && assignments) {
+          // Create a map keyed by patientCd-disciplineName for quick lookup
+          assignments.forEach((assignment) => {
+            const key1 = `${assignment.patientCd}-${assignment.disciplineName}`;
+            const key2 = `${assignment.patientCd}-${assignment.disciplineId}`;
+            const freqDisplay = assignment.frequencyVisit && assignment.visitType
+              ? `${assignment.frequencyVisit}/${assignment.visitType}`
+              : "-";
+
+            assignmentsMap[key1] = freqDisplay;
+            assignmentsMap[key2] = freqDisplay;
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching assignments:", error);
+      }
+
+      // Group by discipline (for original view)
+      const groupedByDiscipline = {};
+
+      // Group by patient (for summary view)
+      const groupedByPatient = {};
+      const disciplineCounts = {
+        nurse: 0,
+        cna: 0,
+        msw: 0,
+        sc: 0,
+      };
+
+      weekData.forEach((row) => {
+        const clientCd = row.patientCd || "Unknown Client";
+        const position = row.requestorTitle || "";
+        const disciplineName = row.requestor || "Unknown Employee";
+        const timeIn = row.timeIn ? moment(row.timeIn).format("HH:mm") : "";
+        const dateKey = moment(row.timeIn).format("YYYY-MM-DD");
+
+        // Skip if discipline/employee is inactive
+        const isActive = activeEmployeesMap[row.requestorId] || activeEmployeesMap[disciplineName];
+        if (isActive === false) {
+          return; // Skip this record
+        }
+
+        // Check if there's a frequency assignment for this patient-discipline combination
+        const key1 = `${clientCd}-${disciplineName}`;
+        const key2 = `${clientCd}-${row.requestorId}`;
+        const frequency = assignmentsMap[key1] || assignmentsMap[key2];
+
+        // Skip if no frequency assignment exists
+        if (!frequency || frequency === "-") {
+          return; // Skip this record - no frequency assignment
+        }
+
+        // Count disciplines for summary
+        // Check CNA first before checking for "nurse" (to avoid matching "Certified Nursing Assistant")
+        const positionLower = position.toLowerCase();
+        if (positionLower.includes("cna") ||
+            positionLower.includes("aide") ||
+            positionLower.includes("assistant") ||
+            positionLower.includes("certified nurse assistant") ||
+            positionLower.includes("certified nursing assistant")) {
+          disciplineCounts.cna++;
+        } else if (positionLower.includes("rn") || positionLower.includes("lpn")) {
+          disciplineCounts.nurse++;
+        } else if (positionLower.includes("nurse")) {
+          // If it contains "nurse" but didn't match CNA checks above, it's a nurse
+          disciplineCounts.nurse++;
+        } else if (positionLower.includes("msw") || positionLower.includes("social")) {
+          disciplineCounts.msw++;
+        } else if (positionLower.includes("sc") || positionLower.includes("chaplain")) {
+          disciplineCounts.sc++;
+        } else {
+          disciplineCounts.nurse++; // Default to nurse
+        }
+
+        // Group by discipline for original view
+        if (!groupedByDiscipline[disciplineName]) {
+          groupedByDiscipline[disciplineName] = {
+            position,
+            clientVisits: {},
+            clientFrequency: {},
+          };
+        }
+
+        if (!groupedByDiscipline[disciplineName].clientVisits[clientCd]) {
+          groupedByDiscipline[disciplineName].clientVisits[clientCd] = {};
+        }
+
+        // Store visit for this day (if multiple visits same day, keep latest)
+        if (!groupedByDiscipline[disciplineName].clientVisits[clientCd][dateKey] ||
+            timeIn > groupedByDiscipline[disciplineName].clientVisits[clientCd][dateKey].timeIn) {
+          groupedByDiscipline[disciplineName].clientVisits[clientCd][dateKey] = {
+            timeIn,
+            date: moment(row.timeIn).format("MM/DD/YY"),
+          };
+        }
+
+        // Look up frequency from assignments (only set once per client-discipline combination)
+        if (!groupedByDiscipline[disciplineName].clientFrequency[clientCd]) {
+          // Try both patientCd-disciplineName and patientCd-disciplineId as keys
+          const key1 = `${clientCd}-${disciplineName}`;
+          const key2 = `${clientCd}-${row.requestorId}`;
+          groupedByDiscipline[disciplineName].clientFrequency[clientCd] =
+            assignmentsMap[key1] || assignmentsMap[key2] || "-";
+        }
+
+        // Group by patient for summary view
+        if (!groupedByPatient[clientCd]) {
+          groupedByPatient[clientCd] = {};
+        }
+
+        if (!groupedByPatient[clientCd][dateKey]) {
+          groupedByPatient[clientCd][dateKey] = [];
+        }
+
+        groupedByPatient[clientCd][dateKey].push({
+          position,
+          disciplineName,
+        });
+      });
+
+      // Debug logging
+      console.log("Week Start:", weekStart.format("YYYY-MM-DD"));
+      console.log("Week End:", weekEnd.format("YYYY-MM-DD"));
+      console.log("Grouped By Discipline:", groupedByDiscipline);
+      console.log("Grouped By Patient:", groupedByPatient);
+
+      // Generate PDF
+      const pdfDocument = (
+        <DisciplineWorkMatrixDocument
+          disciplineData={groupedByDiscipline}
+          patientData={groupedByPatient}
+          weekStart={weekStart.toDate()}
+          weekEnd={weekEnd.toDate()}
+          disciplineCounts={disciplineCounts}
+        />
+      );
+
+      const blob = await pdf(pdfDocument).toBlob();
+
+      // Create filename with date range
+      const filename = `discipline_work_matrix_${weekStart.format("YYYY-MM-DD")}_to_${weekEnd.format("YYYY-MM-DD")}.pdf`;
+
+      // Download the PDF
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      link.click();
+
+      showNotification(
+        `Work matrix generated for ${weekData.length} Regular Visit(s)`,
+        "success"
+      );
+    } catch (error) {
+      console.error("Error generating work matrix:", error);
+      showNotification(
+        error.message || "Failed to generate work matrix. Please try again.",
+        "danger"
+      );
+    } finally {
+      setWorkMatrixLoading(false);
+    }
+  };
+
   const exportToExcelHandler = () => {
     const excelData = dataSource.filter((r) => r.isChecked);
     const headers = columns;
@@ -1046,6 +1282,23 @@ function RoutesheetFunction(props) {
                               >
                                 <PrintIcon style={{ marginRight: "5px", fontSize: "18px" }} />
                                 {printLoading ? "Generating..." : "Print Report"}
+                              </Button>
+
+                              <Button
+                                onClick={generateWorkMatrixHandler}
+                                disabled={workMatrixLoading || bulkStatusLoading}
+                                variant="contained"
+                                style={{
+                                  backgroundColor: workMatrixLoading || bulkStatusLoading ? "#ccc" : "#e91e63",
+                                  color: "white",
+                                  fontSize: "12px",
+                                  fontWeight: 500,
+                                  height: "36px",
+                                  textTransform: "none",
+                                }}
+                              >
+                                <PrintIcon style={{ marginRight: "5px", fontSize: "18px" }} />
+                                {workMatrixLoading ? "Generating..." : "Work Matrix"}
                               </Button>
                             </div>
 
