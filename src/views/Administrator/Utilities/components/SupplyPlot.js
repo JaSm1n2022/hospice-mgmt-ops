@@ -19,6 +19,41 @@ import React, { useEffect, useState } from "react";
 import { PDFDownloadLink, Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import moment from "moment";
 
+// Helper function to abbreviate vendor names
+const abbreviateVendor = (vendorName) => {
+  if (!vendorName) return "";
+
+  // Common vendor abbreviations
+  const abbreviations = {
+    "Platinum Medical LTC": "PML",
+    "Platinum Medical": "PM",
+    "McKesson": "McK",
+    "Medline": "MDL",
+    "Cardinal Health": "CH",
+    "Amazon": "AMZ",
+    "Costco": "CSTC",
+    "Sam's Club": "SC",
+    "Walmart": "WM",
+    "Walgreens": "WG",
+    "Dollar Tree": "DT",
+  };
+
+  // Check if there's a direct match
+  if (abbreviations[vendorName]) {
+    return abbreviations[vendorName];
+  }
+
+  // Otherwise, create abbreviation from capital letters or first letters of words
+  const words = vendorName.split(" ");
+  if (words.length > 1) {
+    // Take first letter of each word
+    return words.map(w => w.charAt(0).toUpperCase()).join("");
+  }
+
+  // Single word - take first 3-4 characters
+  return vendorName.substring(0, Math.min(4, vendorName.length)).toUpperCase();
+};
+
 // PDF Document Component
 const SupplyPlotPDF = ({ title, patientPlot, summary, unusedSummary, estimatedGrandTotal, suppliesFrequency }) => {
   const styles = StyleSheet.create({
@@ -80,15 +115,18 @@ const SupplyPlotPDF = ({ title, patientPlot, summary, unusedSummary, estimatedGr
     col6: { width: "10%" },
     col7: { width: "12%" },
     col8: { width: "12%" },
-    summaryCol1: { width: "22%" },
-    summaryCol2: { width: "13%" },
-    summaryCol3: { width: "9%" },
-    summaryCol4: { width: "11%" },
-    summaryCol5: { width: "9%" },
-    summaryCol6: { width: "9%" },
-    summaryCol7: { width: "9%" },
-    summaryCol8: { width: "9%" },
-    summaryCol9: { width: "10%" },
+    summaryCol1: { width: "16%" },
+    summaryCol2: { width: "9%" },
+    summaryCol3: { width: "6%" },
+    summaryCol4: { width: "8%" },
+    summaryCol5: { width: "6%" },
+    summaryCol6: { width: "7%" },
+    summaryCol7: { width: "6%" },
+    summaryCol8: { width: "6%" },
+    summaryCol9: { width: "9%" },
+    summaryCol10: { width: "7%" },
+    summaryCol11: { width: "7%" },
+    summaryCol12: { width: "8%" },
     totalRow: {
       marginTop: 15,
       padding: 10,
@@ -149,22 +187,37 @@ const SupplyPlotPDF = ({ title, patientPlot, summary, unusedSummary, estimatedGr
           <Text style={styles.summaryCol1}>Product</Text>
           <Text style={styles.summaryCol2}>Vendor</Text>
           <Text style={styles.summaryCol3}>Size</Text>
-          <Text style={styles.summaryCol4}>Threshold Order</Text>
+          <Text style={styles.summaryCol4}>Order Pcs</Text>
           <Text style={styles.summaryCol5}>In Stock</Text>
           <Text style={styles.summaryCol6}>To Order</Text>
           <Text style={styles.summaryCol7}>Carton</Text>
-          <Text style={styles.summaryCol8}>Excess</Text>
-          <Text style={styles.summaryCol9}>Estimated Amt</Text>
+          <Text style={styles.summaryCol8}>Pcs/Ctn</Text>
+          <Text style={styles.summaryCol9}>Bag/Ctn</Text>
+          <Text style={styles.summaryCol10}>Total Order</Text>
+          <Text style={styles.summaryCol11}>Excess</Text>
+          <Text style={styles.summaryCol12}>Estimated Amt</Text>
         </View>
         {summary && summary.map((item, index) => {
           const adjustedThreshold = item.total * frequencyMultiplier;
           const toOrder = parseInt(adjustedThreshold) - parseInt(item.stock || 0);
           const totalOrderedPcs = parseInt(item.carton || 0) * parseInt(item.cartonItemQty || 1);
           const excess = totalOrderedPcs - toOrder;
+
+          // Format bag/carton info: e.g., "4@20pcs"
+          // Calculate bags per carton = carton_item_qty / cnt
+          const cnt = parseInt(item.cnt || item.count || 0);
+          const cartonItemQty = parseInt(item.cartonItemQty || item.carton_item_qty || 0);
+          const bagsPerCarton = (cnt > 0 && cartonItemQty > 0)
+            ? Math.floor(cartonItemQty / cnt)
+            : 0;
+          const bagInfo = (bagsPerCarton > 0 && cnt > 0)
+            ? `${bagsPerCarton}@${cnt}pcs`
+            : "";
+
           return (
             <View key={index} style={index % 2 === 0 ? styles.tableRow : styles.tableRowAlt} wrap={false}>
               <Text style={styles.summaryCol1}>{item.product || ""}</Text>
-              <Text style={styles.summaryCol2}>{item.vendor || ""}</Text>
+              <Text style={styles.summaryCol2}>{abbreviateVendor(item.vendor)}</Text>
               <Text style={styles.summaryCol3}>{item.size || ""}</Text>
               <Text style={styles.summaryCol4}>
                 {item.total}{suppliesFrequency === "1month" ? ` (x2=${adjustedThreshold})` : ""}
@@ -172,8 +225,11 @@ const SupplyPlotPDF = ({ title, patientPlot, summary, unusedSummary, estimatedGr
               <Text style={styles.summaryCol5}>{item.stock || 0}</Text>
               <Text style={styles.summaryCol6}>{toOrder}</Text>
               <Text style={styles.summaryCol7}>{item.carton || 0}</Text>
-              <Text style={styles.summaryCol8}>{excess}</Text>
-              <Text style={styles.summaryCol9}>${parseFloat(item.amt || 0).toFixed(2)}</Text>
+              <Text style={styles.summaryCol8}>{item.cartonItemQty || 0}</Text>
+              <Text style={styles.summaryCol9}>{bagInfo}</Text>
+              <Text style={styles.summaryCol10}>{totalOrderedPcs}</Text>
+              <Text style={styles.summaryCol11}>{excess}</Text>
+              <Text style={styles.summaryCol12}>${parseFloat(item.amt || 0).toFixed(2)}</Text>
             </View>
           );
         })}
@@ -197,7 +253,7 @@ const SupplyPlotPDF = ({ title, patientPlot, summary, unusedSummary, estimatedGr
             {unusedSummary.map((item, index) => (
               <View key={index} style={index % 2 === 0 ? styles.tableRow : styles.tableRowAlt} wrap={false}>
                 <Text style={[styles.summaryCol1, { width: "40%" }]}>{item.shortDescription || item.product || ""}</Text>
-                <Text style={[styles.summaryCol2, { width: "25%" }]}>{item.vendor || ""}</Text>
+                <Text style={[styles.summaryCol2, { width: "25%" }]}>{abbreviateVendor(item.vendor)}</Text>
                 <Text style={[styles.summaryCol3, { width: "15%" }]}>{item.size || ""}</Text>
                 <Text style={[styles.summaryCol4, { width: "20%" }]}>{item.qty || 0}</Text>
               </View>
@@ -494,6 +550,9 @@ const SupplyPlot = (props) => {
               <TableCell>In Stock</TableCell>
               <TableCell>To Order (qty)</TableCell>
               <TableCell>Carton Needed</TableCell>
+              <TableCell>Pcs/Ctn</TableCell>
+              <TableCell>Bag/Ctn</TableCell>
+              <TableCell>Total Order</TableCell>
               <TableCell>Excess</TableCell>
               <TableCell>Estimated Amt</TableCell>
             </TableRow>
@@ -507,6 +566,18 @@ const SupplyPlot = (props) => {
                 const toOrder = parseInt(adjustedThreshold) - parseInt(map.stock);
                 const totalOrderedPcs = parseInt(map.carton || 0) * parseInt(map.cartonItemQty || 1);
                 const excess = totalOrderedPcs - toOrder;
+
+                // Format bag/carton info: e.g., "4@20pcs"
+                // Calculate bags per carton = carton_item_qty / cnt
+                const cnt = parseInt(map.cnt || map.count || 0);
+                const cartonItemQty = parseInt(map.cartonItemQty || map.carton_item_qty || 0);
+                const bagsPerCarton = (cnt > 0 && cartonItemQty > 0)
+                  ? Math.floor(cartonItemQty / cnt)
+                  : 0;
+                const bagInfo = (bagsPerCarton > 0 && cnt > 0)
+                  ? `${bagsPerCarton}@${cnt}pcs`
+                  : "";
+
                 return (
                   <TableRow key={`sumary${indx}`}>
                     <TableCell>{map.product}</TableCell>
@@ -519,6 +590,9 @@ const SupplyPlot = (props) => {
                     <TableCell>{map.stock}</TableCell>
                     <TableCell>{toOrder}</TableCell>
                     <TableCell>{map.carton}</TableCell>
+                    <TableCell>{map.cartonItemQty || 0}</TableCell>
+                    <TableCell>{bagInfo}</TableCell>
+                    <TableCell>{totalOrderedPcs}</TableCell>
                     <TableCell>{excess}</TableCell>
                     <TableCell>{`$${parseFloat(map.amt || 0.0).toFixed(
                       2
