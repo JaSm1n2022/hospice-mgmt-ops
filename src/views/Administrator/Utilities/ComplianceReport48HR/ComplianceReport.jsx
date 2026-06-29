@@ -653,8 +653,9 @@ export default function ComplianceReport() {
             </div>
 
             {/* Page 3: Visual Charts */}
-            <div data-pdf-section="page3" style={{ paddingBottom: "150px", minHeight: "200px" }}>
-            <Box mt={5} mb={8} style={{ paddingTop: "0" }}>
+            {/* Page 3: Visual Dashboard - First 12 charts (3 rows) */}
+            <div data-pdf-section="page3" style={{ paddingBottom: "80px", minHeight: "200px" }}>
+            <Box mt={2} mb={4} style={{ paddingTop: "0" }}>
               <h2 style={{
                 marginBottom: "16px",
                 fontSize: "1.5rem",
@@ -667,7 +668,7 @@ export default function ComplianceReport() {
               </h2>
               <Paper elevation={0} style={{
                 padding: "12px 16px",
-                marginBottom: "24px",
+                marginBottom: "20px",
                 backgroundColor: "#eff6ff",
                 borderLeft: `4px solid ${NAVY}`,
                 fontSize: "0.875rem",
@@ -688,16 +689,49 @@ export default function ComplianceReport() {
                 style={{
                   backgroundColor: "#fafafa",
                   padding: "24px",
-                  paddingBottom: "100px",
+                  paddingBottom: "40px",
                   borderRadius: "8px"
                 }}
               >
-                {summary.authors.map((a) => (
+                {summary.authors.slice(0, 12).map((a) => (
                   <AuthorDonut key={a.author} a={a} />
                 ))}
               </Box>
             </Box>
             </div>
+
+            {/* Page 4: Remaining charts if more than 12 */}
+            {summary.authors.length > 12 && (
+              <div data-pdf-section="page4" style={{ paddingBottom: "150px", minHeight: "200px" }}>
+                <Box mt={2} mb={4} style={{ paddingTop: "0" }}>
+                  <h2 style={{
+                    marginBottom: "16px",
+                    fontSize: "1.5rem",
+                    fontWeight: "bold",
+                    color: NAVY,
+                    borderBottom: `2px solid ${NAVY}20`,
+                    paddingBottom: "8px"
+                  }}>
+                    📈 Visual Compliance Dashboard (Continued)
+                  </h2>
+                  <Box
+                    display="grid"
+                    gridTemplateColumns="repeat(4, 1fr)"
+                    gap={3}
+                    style={{
+                      backgroundColor: "#fafafa",
+                      padding: "24px",
+                      paddingBottom: "100px",
+                      borderRadius: "8px"
+                    }}
+                  >
+                    {summary.authors.slice(12).map((a) => (
+                      <AuthorDonut key={a.author} a={a} />
+                    ))}
+                  </Box>
+                </Box>
+              </div>
+            )}
           </div>
         </>
       )}
