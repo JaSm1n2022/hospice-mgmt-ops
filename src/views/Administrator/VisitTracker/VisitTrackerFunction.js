@@ -668,7 +668,7 @@ export default function VisitTrackerFunction() {
                     empData.patients.map((patient) => (
                       <div key={patient.patientId} className={classes.patientSection}>
                         <div className={classes.patientName}>
-                          Patient: {patient.patientName}
+                          Client: {patient.patientName}
                         </div>
                         <div className={classes.comparisonContainer}>
                           {/* Left Panel - Expected Schedule */}
@@ -736,7 +736,7 @@ export default function VisitTrackerFunction() {
                             <table className={classes.table}>
                               <thead>
                                 <tr>
-                                  <th className={classes.tableHeader}>Patient</th>
+                                  <th className={classes.tableHeader}>Client</th>
                                   <th className={classes.tableHeader}>DOS</th>
                                   <th className={classes.tableHeader}>Day</th>
                                   <th className={classes.tableHeader}>Time In/Out</th>

@@ -6,6 +6,7 @@ import PlotIcon from "@material-ui/icons/ViewList";
 import AssignmentIcon from "@material-ui/icons/Assignment";
 import ChecklistIcon from "@material-ui/icons/PlaylistAddCheck";
 import Person from "@material-ui/icons/Person";
+import AssessmentIcon from "@material-ui/icons/Assessment";
 import AssignmentMain from "views/Assignment/AssignmentMain";
 import PaymentMethod from "./PaymentMethod";
 import AdmittanceMain from "views/Admittance/AdmittanceMain";
@@ -18,6 +19,7 @@ import PatientMetrics from "./PatientMetrics";
 import PatientDistribution from "./PatientDistribution";
 import PatientSupplies from "./PatientSupplies";
 import IncidentReport from "./Forms/IncidentReport";
+import ComplianceReport48HR from "./ComplianceReport48HR";
 
 import KeyMain from "./Key/KeyMain";
 function Utilities() {
@@ -71,6 +73,11 @@ function Utilities() {
                 tabName: "Generate Keys",
                 tabIcon: KeyIcon,
                 tabContent: <KeyMain />,
+              },
+              {
+                tabName: "48HR Compliance",
+                tabIcon: AssessmentIcon,
+                tabContent: <ComplianceReport48HR />,
               },
               {
                 /*

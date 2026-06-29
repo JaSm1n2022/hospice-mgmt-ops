@@ -97,6 +97,7 @@ import RecertificationTimeline from "views/Administrator/RecertificationTimeline
 import BereavementTimeline from "views/Administrator/BereavementTimeline/BereavementTimelineFunction";
 import UpdateBenefits from "views/Administrator/Utilities/UpdateBenefits";
 import QAChart from "views/Administrator/Utilities/QAChart";
+import ComplianceReport48HR from "views/Administrator/Utilities/ComplianceReport48HR";
 import DmeManagement from "views/Administrator/Operations/DmeManagement/DmeManagement";
 import PharmacyManagement from "views/Administrator/Operations/PharmacyManagement/PharmacyManagement";
 var dashRoutes = [
@@ -454,6 +455,15 @@ var dashRoutes = [
         mini: "QA",
         rtlMini: "ع",
         component: QAChart,
+        layout: "/admin",
+      },
+      {
+        path: "/compliance48hr",
+        name: "48HR Compliance",
+        rtlName: "عالتسعير",
+        mini: "48",
+        rtlMini: "ع",
+        component: ComplianceReport48HR,
         layout: "/admin",
       },
     ],
