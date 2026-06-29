@@ -73,6 +73,7 @@ const COLUMN_GROUPS = [
   {
     name: "Brief",
     columns: [
+      { key: "briefSM", label: "SM" },
       { key: "briefMD", label: "MD" },
       { key: "briefLG", label: "LG" },
       { key: "briefXL", label: "XL" },
@@ -272,6 +273,7 @@ const SupplyMatrix = ({ patientList, distributionList, productList, dateFrom, da
 
       const row = {
         patientName: patient.patientCd,
+        briefSM: false,
         briefMD: false,
         briefLG: false,
         briefXL: false,
@@ -302,9 +304,7 @@ const SupplyMatrix = ({ patientList, distributionList, productList, dateFrom, da
 
         // Check Briefs
         if (subCategory === "adult diapers and briefs") {
-          if (size.includes("MD") || size.includes("MEDIUM")) {
-            row.briefMD = true;
-          } else if (size.includes("3XL")) {
+          if (size.includes("3XL")) {
             row.brief3XL = true;
           } else if (size.includes("2XL")) {
             row.brief2XL = true;
@@ -312,6 +312,10 @@ const SupplyMatrix = ({ patientList, distributionList, productList, dateFrom, da
             row.briefXL = true;
           } else if (size.includes("LG") || size.includes("LARGE")) {
             row.briefLG = true;
+          } else if (size.includes("MD") || size.includes("MEDIUM")) {
+            row.briefMD = true;
+          } else if (size.includes("SM") || size.includes("SMALL")) {
+            row.briefSM = true;
           }
         }
 

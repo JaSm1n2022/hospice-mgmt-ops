@@ -80,14 +80,15 @@ const SupplyPlotPDF = ({ title, patientPlot, summary, unusedSummary, estimatedGr
     col6: { width: "10%" },
     col7: { width: "12%" },
     col8: { width: "12%" },
-    summaryCol1: { width: "25%" },
-    summaryCol2: { width: "15%" },
-    summaryCol3: { width: "10%" },
-    summaryCol4: { width: "12%" },
-    summaryCol5: { width: "10%" },
-    summaryCol6: { width: "10%" },
-    summaryCol7: { width: "10%" },
-    summaryCol8: { width: "13%" },
+    summaryCol1: { width: "22%" },
+    summaryCol2: { width: "13%" },
+    summaryCol3: { width: "9%" },
+    summaryCol4: { width: "11%" },
+    summaryCol5: { width: "9%" },
+    summaryCol6: { width: "9%" },
+    summaryCol7: { width: "9%" },
+    summaryCol8: { width: "9%" },
+    summaryCol9: { width: "10%" },
     totalRow: {
       marginTop: 15,
       padding: 10,
@@ -152,10 +153,14 @@ const SupplyPlotPDF = ({ title, patientPlot, summary, unusedSummary, estimatedGr
           <Text style={styles.summaryCol5}>In Stock</Text>
           <Text style={styles.summaryCol6}>To Order</Text>
           <Text style={styles.summaryCol7}>Carton</Text>
-          <Text style={styles.summaryCol8}>Estimated Amt</Text>
+          <Text style={styles.summaryCol8}>Excess</Text>
+          <Text style={styles.summaryCol9}>Estimated Amt</Text>
         </View>
         {summary && summary.map((item, index) => {
           const adjustedThreshold = item.total * frequencyMultiplier;
+          const toOrder = parseInt(adjustedThreshold) - parseInt(item.stock || 0);
+          const totalOrderedPcs = parseInt(item.carton || 0) * parseInt(item.cartonItemQty || 1);
+          const excess = totalOrderedPcs - toOrder;
           return (
             <View key={index} style={index % 2 === 0 ? styles.tableRow : styles.tableRowAlt} wrap={false}>
               <Text style={styles.summaryCol1}>{item.product || ""}</Text>
@@ -165,9 +170,10 @@ const SupplyPlotPDF = ({ title, patientPlot, summary, unusedSummary, estimatedGr
                 {item.total}{suppliesFrequency === "1month" ? ` (x2=${adjustedThreshold})` : ""}
               </Text>
               <Text style={styles.summaryCol5}>{item.stock || 0}</Text>
-              <Text style={styles.summaryCol6}>{parseInt(adjustedThreshold) - parseInt(item.stock || 0)}</Text>
+              <Text style={styles.summaryCol6}>{toOrder}</Text>
               <Text style={styles.summaryCol7}>{item.carton || 0}</Text>
-              <Text style={styles.summaryCol8}>${parseFloat(item.amt || 0).toFixed(2)}</Text>
+              <Text style={styles.summaryCol8}>{excess}</Text>
+              <Text style={styles.summaryCol9}>${parseFloat(item.amt || 0).toFixed(2)}</Text>
             </View>
           );
         })}
@@ -488,6 +494,7 @@ const SupplyPlot = (props) => {
               <TableCell>In Stock</TableCell>
               <TableCell>To Order (qty)</TableCell>
               <TableCell>Carton Needed</TableCell>
+              <TableCell>Excess</TableCell>
               <TableCell>Estimated Amt</TableCell>
             </TableRow>
           </TableHead>
@@ -497,6 +504,9 @@ const SupplyPlot = (props) => {
               summary.map((map, indx) => {
                 const frequencyMultiplier = suppliesFrequency === "1month" ? 2 : 1;
                 const adjustedThreshold = map.total * frequencyMultiplier;
+                const toOrder = parseInt(adjustedThreshold) - parseInt(map.stock);
+                const totalOrderedPcs = parseInt(map.carton || 0) * parseInt(map.cartonItemQty || 1);
+                const excess = totalOrderedPcs - toOrder;
                 return (
                   <TableRow key={`sumary${indx}`}>
                     <TableCell>{map.product}</TableCell>
@@ -507,10 +517,9 @@ const SupplyPlot = (props) => {
                       {suppliesFrequency === "1month" && ` (x2 = ${adjustedThreshold})`}
                     </TableCell>
                     <TableCell>{map.stock}</TableCell>
-                    <TableCell>
-                      {parseInt(adjustedThreshold) - parseInt(map.stock)}
-                    </TableCell>
+                    <TableCell>{toOrder}</TableCell>
                     <TableCell>{map.carton}</TableCell>
+                    <TableCell>{excess}</TableCell>
                     <TableCell>{`$${parseFloat(map.amt || 0.0).toFixed(
                       2
                     )}`}</TableCell>

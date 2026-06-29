@@ -177,6 +177,12 @@ export const CLIENT_SERVICES = [
     permission: ["Case Manager", "Registered Nurse", "Director of Nurse"],
   },
   {
+    code: "PAV",
+    name: "Potential Admission Visit",
+    isClientRequired: false,
+    permission: ["Case Manager", "Registered Nurse", "Director of Nurse"],
+  },
+  {
     code: "REA",
     name: "Reassessment Visit",
     isClientRequired: true,
@@ -1688,6 +1694,14 @@ export const EMPLOYEE_SERVICE_TYPE = [
     value: "SFV",
     category: "serviceType",
     code: "SFV",
+  },
+  {
+    id: 83,
+    name: "Potential Admission Visit",
+    label: "Potential Admission Visit",
+    value: "Potential Admission Visit",
+    category: "serviceType",
+    code: "PAV",
   },
 ];
 
