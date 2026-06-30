@@ -203,36 +203,36 @@ function AuthorDonut({ a }) {
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
-      padding: "16px",
+      padding: "12px",
       backgroundColor: "white",
       borderRadius: "8px",
       boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
     }}>
       <p style={{
-        marginBottom: "12px",
+        marginBottom: "8px",
         textAlign: "center",
-        fontSize: "1rem",
+        fontSize: "0.95rem",
         fontWeight: 700,
         color: NAVY,
-        minHeight: "40px",
+        minHeight: "38px",
         display: "flex",
         alignItems: "center"
       }}>
         {a.author}
       </p>
       <div style={{ position: "relative", display: "inline-block" }}>
-        <PieChart width={220} height={220}>
+        <PieChart width={190} height={190}>
           <Pie
             data={data}
             dataKey="value"
-            cx={110}
-            cy={110}
-            innerRadius={70}
-            outerRadius={100}
+            cx={95}
+            cy={95}
+            innerRadius={60}
+            outerRadius={85}
             startAngle={90}
             endAngle={-270}
             stroke="#fff"
-            strokeWidth={4}
+            strokeWidth={3}
             label={renderCustomLabel}
           >
             {data.map((d, i) => (
@@ -250,7 +250,7 @@ function AuthorDonut({ a }) {
           pointerEvents: "none"
         }}>
           <div style={{
-            fontSize: "32px",
+            fontSize: "28px",
             fontWeight: "bold",
             color: compColor(a.compPct),
             lineHeight: 1,
@@ -259,9 +259,9 @@ function AuthorDonut({ a }) {
             {a.compPct}%
           </div>
           <div style={{
-            fontSize: "11px",
+            fontSize: "10px",
             color: "#64748b",
-            marginTop: "6px",
+            marginTop: "5px",
             fontWeight: "500",
             letterSpacing: "0.5px"
           }}>
@@ -270,8 +270,8 @@ function AuthorDonut({ a }) {
         </div>
       </div>
       <p style={{
-        marginTop: "12px",
-        fontSize: "0.875rem",
+        marginTop: "8px",
+        fontSize: "0.8rem",
         color: "#475569",
         textAlign: "center",
         fontWeight: 500
@@ -685,11 +685,11 @@ export default function ComplianceReport() {
               <Box
                 display="grid"
                 gridTemplateColumns="repeat(4, 1fr)"
-                gap={3}
+                gap={2}
                 style={{
                   backgroundColor: "#fafafa",
-                  padding: "24px",
-                  paddingBottom: "40px",
+                  padding: "20px",
+                  paddingBottom: "30px",
                   borderRadius: "8px"
                 }}
               >
@@ -717,11 +717,11 @@ export default function ComplianceReport() {
                   <Box
                     display="grid"
                     gridTemplateColumns="repeat(4, 1fr)"
-                    gap={3}
+                    gap={2}
                     style={{
                       backgroundColor: "#fafafa",
-                      padding: "24px",
-                      paddingBottom: "100px",
+                      padding: "20px",
+                      paddingBottom: "80px",
                       borderRadius: "8px"
                     }}
                   >
