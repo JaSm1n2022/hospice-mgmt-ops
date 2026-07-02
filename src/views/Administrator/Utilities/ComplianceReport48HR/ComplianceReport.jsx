@@ -4,7 +4,7 @@ import { PieChart, Pie, Cell } from "recharts";
 import { Upload, FileSpreadsheet, AlertCircle, Download } from "lucide-react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
-import { Button, Paper, Box, CircularProgress } from "@material-ui/core";
+import { Button, Paper, Box, CircularProgress, TextField } from "@material-ui/core";
 import { makeStyles } from "@material-ui/core/styles";
 
 // ---------------------------------------------------------------- CONFIG
@@ -16,7 +16,6 @@ const EXCLUDED_VISIT_TYPES = new Set([
   "COMMUNICATION LOG",
 ]);
 const COMPLIANCE_LIMIT_DAYS = 2; // within 48 hrs = 2 calendar days or fewer
-const REPORT_PERIOD = "June 1 – June 29, 2026";
 
 const NAVY = "#1F3864";
 const GREEN = "#548235";
@@ -292,6 +291,9 @@ export default function ComplianceReport() {
   const [error, setError] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [reportingPeriod, setReportingPeriod] = useState("");
+  const [fileData, setFileData] = useState(null);
+  const [showPeriodInput, setShowPeriodInput] = useState(false);
   const pdfRef = useRef();
 
   const handleDownloadPDF = async () => {
@@ -381,6 +383,18 @@ export default function ComplianceReport() {
   const handleFile = useCallback((file) => {
     if (!file) return;
     setError("");
+    setFileName(file.name);
+    setFileData(file);
+    setShowPeriodInput(true);
+    setSummary(null);
+  }, []);
+
+  const handleGenerateReport = useCallback(() => {
+    if (!fileData || !reportingPeriod.trim()) {
+      setError("Please enter a reporting period");
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
@@ -393,15 +407,15 @@ export default function ComplianceReport() {
           );
         }
         setSummary(analyze(rows));
-        setFileName(file.name);
+        setShowPeriodInput(false);
       } catch (err) {
         setError(err.message || "Could not read this file.");
         setSummary(null);
       }
     };
     reader.onerror = () => setError("Could not read this file.");
-    reader.readAsArrayBuffer(file);
-  }, []);
+    reader.readAsArrayBuffer(fileData);
+  }, [fileData, reportingPeriod]);
 
   const handleDragEnter = (e) => {
     e.preventDefault();
@@ -478,13 +492,54 @@ export default function ComplianceReport() {
           />
         </label>
 
-        {fileName && (
+        {fileName && !summary && (
           <Box mt={2} display="flex" alignItems="center" gap={1} style={{ color: "#475569", fontSize: "0.875rem" }}>
             <FileSpreadsheet style={{ width: "16px", height: "16px", color: GREEN }} />
             <span style={{ fontWeight: 500 }}>{fileName}</span>
           </Box>
         )}
       </Box>
+
+      {/* Reporting Period Input */}
+      {showPeriodInput && (
+        <Paper elevation={2} style={{ marginTop: "24px", padding: "24px", backgroundColor: "#f8fafc" }}>
+          <Box mb={2}>
+            <h3 style={{ margin: 0, marginBottom: "8px", color: NAVY, fontSize: "1.125rem", fontWeight: 600 }}>
+              Enter Reporting Period
+            </h3>
+            <p style={{ margin: 0, fontSize: "0.875rem", color: "#64748b" }}>
+              Please specify the date range for this compliance report
+            </p>
+          </Box>
+          <Box display="flex" alignItems="center" gap={2}>
+            <TextField
+              fullWidth
+              variant="outlined"
+              label="Reporting Period"
+              placeholder="e.g., June 1 - June 29, 2026"
+              value={reportingPeriod}
+              onChange={(e) => setReportingPeriod(e.target.value)}
+              helperText="Enter the date range covered by this report"
+              InputLabelProps={{
+                shrink: true,
+              }}
+            />
+            <Button
+              variant="contained"
+              style={{
+                backgroundColor: NAVY,
+                color: "white",
+                padding: "14px 32px",
+                whiteSpace: "nowrap"
+              }}
+              onClick={handleGenerateReport}
+              disabled={!reportingPeriod.trim()}
+            >
+              Generate Report
+            </Button>
+          </Box>
+        </Paper>
+      )}
 
       {error && (
         <Paper elevation={2} style={{
@@ -569,7 +624,7 @@ export default function ComplianceReport() {
                 borderLeft: `3px solid ${GREEN}`,
                 borderRadius: "4px"
               }}>
-                <div><strong>Reporting Period:</strong> {REPORT_PERIOD}</div>
+                <div><strong>Reporting Period:</strong> {reportingPeriod}</div>
                 <div style={{ marginTop: "4px", fontSize: "0.75rem", fontStyle: "italic" }}>
                   Scope: Clinical visit notes only. Excludes physician orders, certifications, IDG, and communication logs.
                 </div>

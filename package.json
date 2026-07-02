@@ -29,6 +29,7 @@
     "moment": "2.29.1",
     "nanoid": "^4.0.2",
     "nouislider": "15.0.0",
+    "pdfjs-dist": "^3.11.174",
     "perfect-scrollbar": "1.5.1",
     "prop-types": "15.7.2",
     "react": "17.0.2",
