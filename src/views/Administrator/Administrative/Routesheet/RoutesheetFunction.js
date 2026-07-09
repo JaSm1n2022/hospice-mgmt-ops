@@ -854,11 +854,22 @@ function RoutesheetFunction(props) {
           console.log("Total assignments fetched:", assignments.length);
 
           assignments.forEach((assignment) => {
-            // Skip if disciplines field explicitly indicates admission nurse or non-regular visit
+            // Skip if disciplines field explicitly indicates admission nurse
             const disciplines = (assignment.disciplines || "").toLowerCase();
 
-            // Skip only if explicitly admission nurse (but include if disciplines is empty/null)
-            if (disciplines.includes("admission") && !disciplines.includes("registered nurse")) {
+            // Check if this is an admission nurse assignment
+            // Skip if disciplines contains "admission" and doesn't contain both "registered" and "nurse"
+            // This ensures we skip "Admission Nurse" but keep "Registered Nurse"
+            if (disciplines.includes("admission")) {
+              const isRegisteredNurse = disciplines.includes("registered") && disciplines.includes("nurse");
+              if (!isRegisteredNurse) {
+                console.log("Skipping admission nurse:", assignment.disciplineName, assignment.disciplines);
+                return;
+              }
+            }
+
+            // Also check if the disciplines field contains "admission nurse" as a complete phrase
+            if (disciplines.includes("admission nurse")) {
               console.log("Skipping admission nurse:", assignment.disciplineName, assignment.disciplines);
               return;
             }
