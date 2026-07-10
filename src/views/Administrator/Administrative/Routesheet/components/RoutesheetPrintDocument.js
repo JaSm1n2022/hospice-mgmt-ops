@@ -375,8 +375,8 @@ const RoutesheetPrintDocument = ({ groupedData, logoBase64 }) => {
             ? `${dates[0].format("MMM D, YYYY")} - ${dates[dates.length - 1].format("MMM D, YYYY")}`
             : "";
 
-        // Ensure minimum 20 rows for consistent layout
-        const minRows = 20;
+        // Ensure minimum 18 rows for consistent layout
+        const minRows = 18;
         const displayRows = [...rows];
         while (displayRows.length < minRows) {
           displayRows.push({
