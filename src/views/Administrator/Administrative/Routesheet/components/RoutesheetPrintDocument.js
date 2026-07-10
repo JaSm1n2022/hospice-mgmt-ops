@@ -523,8 +523,10 @@ const RoutesheetPrintDocument = ({ groupedData, logoBase64 }) => {
                   <View style={[styles.td, { width: W.sig }]}>
                     {row.signature_based ? (
                       <Image src={row.signature_based} style={styles.signatureImage} />
+                    ) : filled ? (
+                      <Text style={styles.sig}>{employeeName}</Text>
                     ) : (
-                      <Text style={styles.sig}>{employeeName || ""}</Text>
+                      <Text> </Text>
                     )}
                   </View>
                   <View style={[styles.td, { width: W.rate }]}>
