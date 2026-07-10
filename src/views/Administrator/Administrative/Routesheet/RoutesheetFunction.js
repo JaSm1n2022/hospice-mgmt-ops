@@ -61,6 +61,7 @@ import AddAlert from "@material-ui/icons/AddAlert";
 import { pdf } from "@react-pdf/renderer";
 import RoutesheetPrintDocument from "./components/RoutesheetPrintDocument";
 import DisciplineWorkMatrixDocument from "./components/DisciplineWorkMatrixDocument";
+import NonComplianceReportDocument from "./components/NonComplianceReportDocument";
 import PrintIcon from "@material-ui/icons/Print";
 
 const styles = {
@@ -146,6 +147,7 @@ function RoutesheetFunction(props) {
   const [isPayrollDueDateModal, setIsPayrollDueDateModal] = useState(false);
   const [isSubmitPayrollCollection, setIsSubmitPayrollCollection] = useState(true);
   const [workMatrixLoading, setWorkMatrixLoading] = useState(false);
+  const [nonComplianceLoading, setNonComplianceLoading] = useState(false);
 
   const createFormHandler = (data, mode) => {
     setItem(data);
@@ -1060,6 +1062,94 @@ function RoutesheetFunction(props) {
     }
   };
 
+  const generate48NonComplianceHandler = async () => {
+    try {
+      setNonComplianceLoading(true);
+
+      // Filter records that have alert icon (status = "Review" and exceeds threshold)
+      const nonCompliantRecords = dataSource.filter((row) => {
+        return (
+          row.status === "Review" &&
+          row.dosStart &&
+          moment().diff(moment(row.dosStart), "hours") > thresholdHours
+        );
+      });
+
+      if (nonCompliantRecords.length === 0) {
+        showNotification(
+          `No records found exceeding ${thresholdHours}h threshold with Review status`,
+          "warning"
+        );
+        return;
+      }
+
+      // Transform records to the format needed for the PDF
+      const reportRecords = nonCompliantRecords.map((row) => {
+        const hoursSinceTimeIn = row.dosStart
+          ? moment().diff(moment(row.dosStart), "hours")
+          : 0;
+
+        // Combine service notes and comments
+        const notes = [row.serviceNotes || "", row.comments || ""]
+          .filter(Boolean)
+          .join(" ") || "No notes";
+
+        return {
+          client: row.patientCd || "Unknown",
+          service: row.service || "N/A",
+          timeIn: row.timeIn || moment(row.dosStart).format("YYYY-MM-DD HH:mm"),
+          employee: row.requestor || "Unknown",
+          position: row.requestorTitle || "N/A",
+          hoursSinceTimeIn: hoursSinceTimeIn,
+          notes: notes,
+        };
+      });
+
+      // Sort by hours (highest first)
+      reportRecords.sort((a, b) => b.hoursSinceTimeIn - a.hoursSinceTimeIn);
+
+      // Load logo
+      const logoUrl =
+        "https://acwocotrngkeaxtzdzfz.supabase.co/storage/v1/object/public/images/headerdoc.png";
+      const logoBase64 = await Helper.getImageBase64(logoUrl);
+
+      // Generate PDF
+      const pdfDocument = (
+        <NonComplianceReportDocument
+          records={reportRecords}
+          logoBase64={logoBase64}
+          thresholdHours={thresholdHours}
+          generatedDate={moment().format("MMM DD, YYYY - hh:mm A")}
+        />
+      );
+
+      const blob = await pdf(pdfDocument).toBlob();
+
+      // Create filename with date and threshold
+      const dateStr = moment().format("YYYY-MM-DD");
+      const filename = `48hr_non_compliance_report_${dateStr}.pdf`;
+
+      // Download the PDF
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      link.click();
+
+      showNotification(
+        `48-Hour Non-Compliance Report generated: ${nonCompliantRecords.length} record(s)`,
+        "success"
+      );
+    } catch (error) {
+      console.error("Error generating 48-hour non-compliance report:", error);
+      showNotification(
+        error.message || "Failed to generate report. Please try again.",
+        "danger"
+      );
+    } finally {
+      setNonComplianceLoading(false);
+    }
+  };
+
   const exportToExcelHandler = () => {
     const excelData = dataSource.filter((r) => r.isChecked);
     const headers = columns;
@@ -1221,6 +1311,16 @@ function RoutesheetFunction(props) {
                         onClick={() => createFormHandler()}
                       >
                         <AddIcon className={classes.icons} /> Add Routesheet
+                      </Button>
+
+                      <Button
+                        color="rose"
+                        className={classes.marginRight}
+                        onClick={generate48NonComplianceHandler}
+                        disabled={nonComplianceLoading}
+                      >
+                        <Warning className={classes.icons} />
+                        {nonComplianceLoading ? "Generating..." : "48 Non Compliance"}
                       </Button>
 
                       <Grid item md={12} xs={12}>
