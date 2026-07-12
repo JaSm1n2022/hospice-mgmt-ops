@@ -375,8 +375,8 @@ const RoutesheetPrintDocument = ({ groupedData, logoBase64 }) => {
             ? `${dates[0].format("MMM D, YYYY")} - ${dates[dates.length - 1].format("MMM D, YYYY")}`
             : "";
 
-        // Ensure minimum 18 rows for consistent layout
-        const minRows = 18;
+        // Ensure minimum 15 rows for consistent layout
+        const minRows = 15;
         const displayRows = [...rows];
         while (displayRows.length < minRows) {
           displayRows.push({
@@ -478,11 +478,13 @@ const RoutesheetPrintDocument = ({ groupedData, logoBase64 }) => {
               const timeIn = startTime ? moment(startTime).format("HH:mm") : "";
               const timeOut = endTime ? moment(endTime).format("HH:mm") : "";
 
-              // Trim patient code - keep only the part before dot
+              // Trim patient code - keep only the part before dot and limit to 12 characters
               let trimmedPatient = row.patientCd || "";
               if (trimmedPatient.includes(".")) {
                 trimmedPatient = trimmedPatient.split(".")[0];
               }
+              // Limit to 12 characters
+              trimmedPatient = trimmedPatient.substring(0, 12);
 
               // Get service code
               let serviceCode = row.serviceCd || "";
