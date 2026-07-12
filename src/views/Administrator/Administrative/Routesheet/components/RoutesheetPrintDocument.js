@@ -542,6 +542,12 @@ const RoutesheetPrintDocument = ({ groupedData, logoBase64 }) => {
             {/* Total */}
             <View style={styles.total}>
               <View style={styles.totalBox}>
+                <Text style={styles.totalLbl}>Total Services</Text>
+                <Text style={styles.totalAmt}>
+                  {rows.length}
+                </Text>
+              </View>
+              <View style={[styles.totalBox, { marginLeft: 12 }]}>
                 <Text style={styles.totalLbl}>Total Earnings</Text>
                 <Text style={styles.totalAmt}>
                   <Text style={styles.totalCur}>$</Text>

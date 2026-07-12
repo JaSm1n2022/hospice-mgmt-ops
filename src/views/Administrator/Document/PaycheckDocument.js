@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
     paddingTop: "8px",
     paddingBottom: "8px",
     fontWeight: "bold",
-    width: "100%",
+    flex: 1,
   },
   detailsCell: {
     display: "flex",
@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
     paddingBottom: "6px",
     borderTop: "none",
     borderBottom: "1px solid #ecf0f1",
-    width: "100%",
+    flex: 1,
   },
   detailsCellCnt: {
     display: "flex",
@@ -541,7 +541,6 @@ export default function PaycheckDocument(props) {
                             <Text
                               style={{
                                 ...styles.detailsHeaderLast,
-                                width: "140px",
                                 padding: "5px 0",
                               }}
                             >
@@ -637,7 +636,6 @@ export default function PaycheckDocument(props) {
                                       <Text
                                         style={{
                                           ...styles.detailsCellLast,
-                                          width: "140px",
                                           padding: "5px 0",
                                           height: "50px",
                                         }}
