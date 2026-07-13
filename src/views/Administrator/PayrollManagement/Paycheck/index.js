@@ -71,7 +71,9 @@ import FilterTable from "components/Table/FilterTable";
 import moment from "moment";
 import PaycheckDocument from "views/Administrator/Document/PaycheckDocument";
 import EmployeePaycheckSummary from "views/Administrator/Document/EmployeePaycheckSummary";
+import EmployeePaycheckSummaryV2 from "views/Administrator/Document/EmployeePaycheckSummaryV2";
 import PayrollPaymentDocument from "views/Administrator/Document/PayrollPaymentDocument";
+import PayrollTotalsDocument from "views/Administrator/Document/PayrollTotalsDocument";
 import PayrollReceivedDocument from "views/Administrator/Document/PayrollReceivedDocument";
 import PatientPayrollPaymentDocument from "views/Administrator/Document/PatientPayrollDocument";
 import ServicesReportDocument from "views/Administrator/Document/ServicesReportDocument";
@@ -148,7 +150,9 @@ function PayrollFunction(props) {
   const [anchorEl, setAnchorEl] = useState(false);
   const [isPaycheckDocument, setIsPaycheckDocument] = useState(false);
   const [isEmployeePaycheckSummary, setIsEmployeePaycheckSummary] = useState(false);
+  const [isEmployeePaycheckSummaryV2, setIsEmployeePaycheckSummaryV2] = useState(false);
   const [isPaymentDocument, setIsPaymentDocument] = useState(false);
+  const [isPayrollTotalsDocument, setIsPayrollTotalsDocument] = useState(false);
   const [isPatientPaymentDocument, setIsPatientPaymentDocument] = useState(
     false
   );
@@ -162,6 +166,7 @@ function PayrollFunction(props) {
   const [printData, setPrintData] = useState({});
   const [isPayPeriodModalOpen, setIsPayPeriodModalOpen] = useState(false);
   const [payPeriod, setPayPeriod] = useState("");
+  const [pendingReportType, setPendingReportType] = useState(""); // Track which report to generate
   const [columns, setColumns] = useState(PayrollHandler.columns());
   const [
     isDuplicateBillingModalOpen,
@@ -600,7 +605,9 @@ function PayrollFunction(props) {
   const closePrintModalHandler = () => {
     setIsPaycheckDocument(false);
     setIsEmployeePaycheckSummary(false);
+    setIsEmployeePaycheckSummaryV2(false);
     setIsPaymentDocument(false);
+    setIsPayrollTotalsDocument(false);
     setIsPayrollReceivedDocument(false);
     setIsPatientPaymentDocument(false);
     setIsServicesReportDocument(false);
@@ -743,9 +750,24 @@ function PayrollFunction(props) {
     setAnchorEl(null);
   };
 
+  const employeePaycheckSummaryV2Handler = () => {
+    setPrintData(formatEmployeeReportHandler());
+    setIsEmployeePaycheckSummaryV2(true);
+    setAnchorEl(null);
+  };
+
   const paymentPdfHandler = () => {
     // Open the pay period modal first
     setPayPeriod("");
+    setPendingReportType("totalPayment");
+    setIsPayPeriodModalOpen(true);
+    setAnchorEl(null);
+  };
+
+  const payrollTotalsHandler = () => {
+    // Open the pay period modal first
+    setPayPeriod("");
+    setPendingReportType("payrollTotals");
     setIsPayPeriodModalOpen(true);
     setAnchorEl(null);
   };
@@ -802,7 +824,16 @@ function PayrollFunction(props) {
     });
     setPrintData(newPdfData);
     setIsPayPeriodModalOpen(false);
-    setIsPaymentDocument(true);
+
+    // Check which document to show based on pending report type
+    if (pendingReportType === "payrollTotals") {
+      setIsPayrollTotalsDocument(true);
+    } else if (pendingReportType === "totalPayment") {
+      setIsPaymentDocument(true);
+    }
+
+    // Reset pending report type
+    setPendingReportType("");
   };
   const patientPaymentPdfHandler = () => {
     const selectedData = dataSource.filter((r) => r.isChecked);
@@ -1548,15 +1579,21 @@ function PayrollFunction(props) {
                           open={Boolean(anchorEl)}
                           onClose={closeChangeReportMenuHandler}
                         >
-                          <MenuItem onClick={() => employeePaycheckSummaryHandler()}>
+                          {/* <MenuItem onClick={() => employeePaycheckSummaryHandler()}>
                             Employee Paycheck Summary
+                          </MenuItem> */}
+                          <MenuItem onClick={() => employeePaycheckSummaryV2Handler()}>
+                            Employee Payroll
                           </MenuItem>
                           <MenuItem onClick={() => patientPaymentPdfHandler()}>
                             Client Payment
                           </MenuItem>
-                          <MenuItem onClick={() => paymentPdfHandler()}>
-                            Total Payment
+                          <MenuItem onClick={() => payrollTotalsHandler()}>
+                            Payroll Totals
                           </MenuItem>
+                          {/* <MenuItem onClick={() => paymentPdfHandler()}>
+                            Total Payment
+                          </MenuItem> */}
                           <MenuItem onClick={() => payrollReceivedPdfHandler()}>
                             Client Signature
                           </MenuItem>
@@ -1608,9 +1645,23 @@ function PayrollFunction(props) {
           closePrintModalHandler={closePrintModalHandler}
         />
       )}
+      {isEmployeePaycheckSummaryV2 && (
+        <EmployeePaycheckSummaryV2
+          isOpen={isEmployeePaycheckSummaryV2}
+          printData={printData}
+          closePrintModalHandler={closePrintModalHandler}
+        />
+      )}
       {isPaymentDocument && (
         <PayrollPaymentDocument
           isOpen={isPaymentDocument}
+          printData={printData}
+          closePrintModalHandler={closePrintModalHandler}
+        />
+      )}
+      {isPayrollTotalsDocument && (
+        <PayrollTotalsDocument
+          isOpen={isPayrollTotalsDocument}
           printData={printData}
           closePrintModalHandler={closePrintModalHandler}
         />
