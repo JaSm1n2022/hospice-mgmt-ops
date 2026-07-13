@@ -495,9 +495,9 @@ const Distribution = (props) => {
   if (props.products && props.products.status === ACTION_STATUSES.SUCCEED) {
     productList = [...props.products.data];
     productList.forEach((item) => {
-      item.name = item.description.toUpperCase();
-      item.value = item.description.toUpperCase();
-      item.label = item.description.toUpperCase();
+      item.name = item.description ? item.description.toUpperCase() : "";
+      item.value = item.description ? item.description.toUpperCase() : "";
+      item.label = item.description ? item.description.toUpperCase() : "";
       item.categoryType = "description";
     });
     isProductListDone = true;
@@ -507,7 +507,9 @@ const Distribution = (props) => {
   if (props.stocks && props.stocks.status === ACTION_STATUSES.SUCCEED) {
     stockList = [...props.stocks.data];
     stockList.forEach((item) => {
-      item.name = `${item.description.toUpperCase()} (${item.vendor})`;
+      const description = item.description ? item.description.toUpperCase() : "";
+      const vendor = item.vendor || "";
+      item.name = `${description} (${vendor})`;
       item.value = item.name;
       item.label = item.name;
       item.categoryType = "stock";
