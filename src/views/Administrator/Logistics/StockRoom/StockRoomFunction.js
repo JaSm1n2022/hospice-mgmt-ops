@@ -368,11 +368,14 @@ function StockRoomFunction(props) {
       console.log("[Tempt]", temp);
       let found = temp.filter(
         (data) =>
-          data.description.toLowerCase().indexOf(keyword.toLowerCase()) !==
-            -1 ||
-          data.category.toLowerCase().indexOf(keyword.toLowerCase()) !== -1 ||
-          data.subCategory.toLowerCase().indexOf(keyword.toLowerCase()) !==
-            -1 ||
+          (data.description &&
+            data.description.toLowerCase().indexOf(keyword.toLowerCase()) !==
+              -1) ||
+          (data.category &&
+            data.category.toLowerCase().indexOf(keyword.toLowerCase()) !== -1) ||
+          (data.subCategory &&
+            data.subCategory.toLowerCase().indexOf(keyword.toLowerCase()) !==
+              -1) ||
           (data.vendor &&
             data.vendor.toLowerCase().indexOf(keyword.toLowerCase()) !== -1)
       );
