@@ -2566,6 +2566,14 @@ export const QA_TYPE = [
     category: "qaType",
   },
   {
+    id: "ha-visit",
+    name: "HA Visit",
+    label: "HA Visit",
+    value: "HA Visit",
+    code: "ha-visit",
+    category: "qaType",
+  },
+  {
     id: "huv1",
     name: "HUV1",
     label: "HUV1",
@@ -2638,6 +2646,14 @@ export const QA_STATUS = [
     label: "Resolved",
     value: "Resolved",
     code: "resolved",
+    category: "qaStatus",
+  },
+  {
+    id: "complete",
+    name: "Complete",
+    label: "Complete",
+    value: "Complete",
+    code: "complete",
     category: "qaStatus",
   },
 ];

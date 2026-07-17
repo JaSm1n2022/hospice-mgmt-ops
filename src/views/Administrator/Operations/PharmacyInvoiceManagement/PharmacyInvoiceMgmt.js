@@ -446,8 +446,8 @@ function PharmacyInvoiceMgmt() {
 
       // Group items by patient and create records
       const records = rows.map(row => {
-        // Find patient ID from patientCd
-        const patient = patientList.find((p) => p.patientCd === row.patientCd);
+        // Find patient ID from patientCd - use filteredPatientList for consistency
+        const patient = filteredPatientList.find((p) => p.patientCd === row.patientCd);
         const patientId = patient ? patient.id : null;
 
         return {

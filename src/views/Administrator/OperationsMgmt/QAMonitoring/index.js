@@ -35,6 +35,7 @@ import { employeeListStateSelector } from "store/selectors/employeeSelector";
 
 import QAForm from "./components/QAForm";
 import QAPrintDocument from "./components/QAPrintDocument";
+import QAImportModal from "./components/QAImportModal";
 
 const styles = {
   cardCategoryWhite: {
@@ -81,6 +82,7 @@ function QAMonitoring(props) {
   const [isLoading, setIsLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [selectedRows, setSelectedRows] = useState([]);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   const handleRowSelection = (id) => {
     setSelectedRows((prev) => {
@@ -477,9 +479,14 @@ function QAMonitoring(props) {
             <CardHeader color="primary">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <h4 className={classes.cardTitleWhite}>QA Monitoring</h4>
-                <Button color="white" onClick={handleAddNew}>
-                  <AddIcon /> Add QA Record
-                </Button>
+                <Box display="flex" gap={1}>
+                  <Button color="white" onClick={handleAddNew}>
+                    <AddIcon /> Add QA Record
+                  </Button>
+                  <Button color="white" onClick={() => setIsImportModalOpen(true)}>
+                    Upload Visit
+                  </Button>
+                </Box>
               </div>
             </CardHeader>
             <CardBody>
@@ -533,6 +540,17 @@ function QAMonitoring(props) {
         employeeList={Array.isArray(employeeList) ? employeeList : []}
         onSubmit={handleFormSubmit}
         onClose={handleFormClose}
+      />
+
+      <QAImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        patientList={Array.isArray(patientList) ? patientList : []}
+        userProfile={context.userProfile}
+        onSuccess={() => {
+          setIsImportModalOpen(false);
+          props.fetchQA({ companyId: context.userProfile.companyId });
+        }}
       />
     </div>
   );
