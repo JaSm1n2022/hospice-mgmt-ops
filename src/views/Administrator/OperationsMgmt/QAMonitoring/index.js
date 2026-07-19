@@ -36,6 +36,7 @@ import { employeeListStateSelector } from "store/selectors/employeeSelector";
 import QAForm from "./components/QAForm";
 import QAPrintDocument from "./components/QAPrintDocument";
 import QAImportModal from "./components/QAImportModal";
+import QATasksPrintDocument from "./components/QATasksPrintDocument";
 
 const styles = {
   cardCategoryWhite: {
@@ -448,6 +449,20 @@ function QAMonitoring(props) {
     } catch (error) {
       console.error("Error generating PDF:", error);
       TOAST.error("Failed to generate PDF. Please try again.");
+    }
+  };
+
+  const handlePrintQATasks = async () => {
+    try {
+      const doc = <QATasksPrintDocument qaRecords={filteredData} />;
+      const asPdf = pdf(doc);
+      const blob = await asPdf.toBlob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+      TOAST.ok("QA Tasks PDF generated successfully");
+    } catch (error) {
+      console.error("Error generating QA Tasks PDF:", error);
+      TOAST.error("Failed to generate QA Tasks PDF. Please try again.");
     }
   };
 
