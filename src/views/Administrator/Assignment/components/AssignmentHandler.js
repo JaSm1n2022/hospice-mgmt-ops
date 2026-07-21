@@ -52,6 +52,12 @@ class AssignmentHandler {
         name: "eocDisplay",
         header: "EOC",
       },
+      {
+        defaultFlex: 1,
+        minWidth: 120,
+        name: "bereavementDisplay",
+        header: "Bereavement",
+      },
     ];
   }
   static mapData(items) {
@@ -64,6 +70,7 @@ class AssignmentHandler {
       item.eocDisplay = item.eoc_dt
         ? moment(item.eoc_dt).format("MM/DD/YYYY")
         : "";
+      item.bereavementDisplay = item.is_bereavement ? "Yes" : "No";
     });
     return items;
   }

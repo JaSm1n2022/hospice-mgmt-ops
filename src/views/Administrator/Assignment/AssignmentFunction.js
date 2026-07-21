@@ -51,6 +51,12 @@ import Snackbar from "components/Snackbar/Snackbar.js";
 import { handleExport } from "utils/XlsxHelper";
 import IDGForm from "./components/Form";
 import ActionsFunction from "./components/ActionsFunction";
+import Dialog from "@material-ui/core/Dialog";
+import DialogTitle from "@material-ui/core/DialogTitle";
+import DialogContent from "@material-ui/core/DialogContent";
+import DialogActions from "@material-ui/core/DialogActions";
+import CustomDatePicker from "components/Date/CustomDatePicker";
+import { FormControlLabel, Radio, RadioGroup, Typography } from "@material-ui/core";
 
 const styles = {
   cardCategoryWhite: {
@@ -125,6 +131,10 @@ function AssignmentFunction(props) {
   const [keywordValue, setKeywordValue] = useState("");
   const [isEmployeeCollection, setIsEmployeeCollection] = useState(true);
   const [isPatientCollection, setIsPatientCollection] = useState(true);
+  const [isEocModal, setIsEocModal] = useState(false);
+  const [isBereavementModal, setIsBereavementModal] = useState(false);
+  const [bulkEocDate, setBulkEocDate] = useState(null);
+  const [bulkBereavementValue, setBulkBereavementValue] = useState(true);
 
   // Reset module-level flags on mount
   useEffect(() => {
@@ -543,6 +553,67 @@ function AssignmentFunction(props) {
     }
   };
 
+  const updateEocHandler = () => {
+    setIsEocModal(true);
+  };
+
+  const updateBereavementHandler = () => {
+    setIsBereavementModal(true);
+  };
+
+  const submitBulkEocUpdate = () => {
+    const selectedRecords = dataSource.filter((r) => r.isChecked);
+    if (!bulkEocDate) {
+      TOAST.error("Please select an EOC date");
+      return;
+    }
+
+    selectedRecords.forEach((record) => {
+      // Format date as YYYY-MM-DD (date only, no timezone)
+      const dateOnly = bulkEocDate instanceof Date
+        ? bulkEocDate.toISOString().split('T')[0]
+        : new Date(bulkEocDate).toISOString().split('T')[0];
+
+      const params = {
+        id: record.id,
+        eoc_dt: dateOnly,
+        companyId: context.userProfile?.companyId,
+        updatedUser: {
+          name: context.userProfile?.name,
+          userId: context.userProfile?.id,
+          date: new Date(),
+        },
+      };
+      props.updateAssignment(params);
+    });
+
+    setIsEocModal(false);
+    setBulkEocDate(null);
+    TOAST.ok(`Updated EOC for ${selectedRecords.length} record(s)`);
+  };
+
+  const submitBulkBereavementUpdate = () => {
+    const selectedRecords = dataSource.filter((r) => r.isChecked);
+
+    selectedRecords.forEach((record) => {
+      const params = {
+        id: record.id,
+        is_bereavement: bulkBereavementValue,
+        companyId: context.userProfile?.companyId,
+        updatedUser: {
+          name: context.userProfile?.name,
+          userId: context.userProfile?.id,
+          date: new Date(),
+        },
+      };
+      props.updateAssignment(params);
+    });
+
+    setIsBereavementModal(false);
+    setBulkBereavementValue(true);
+    TOAST.ok(`Updated Bereavement Program for ${selectedRecords.length} record(s)`);
+  };
+
   const onPressEnterKeyHandler = (value) => {
     filterRecordHandler(value);
     setKeywordValue(value);
@@ -613,14 +684,30 @@ function AssignmentFunction(props) {
                           </Button>
 
                           {isAddGroupButtons && (
-                            <Button
-                              color="success"
-                              className={classes.marginRight}
-                              onClick={() => exportToExcelHandler()}
-                            >
-                              <ImportExport className={classes.icons} /> Export
-                              Excel
-                            </Button>
+                            <>
+                              <Button
+                                color="success"
+                                className={classes.marginRight}
+                                onClick={() => exportToExcelHandler()}
+                              >
+                                <ImportExport className={classes.icons} /> Export
+                                Excel
+                              </Button>
+                              <Button
+                                color="info"
+                                className={classes.marginRight}
+                                onClick={() => updateEocHandler()}
+                              >
+                                Update EOC
+                              </Button>
+                              <Button
+                                color="warning"
+                                className={classes.marginRight}
+                                onClick={() => updateBereavementHandler()}
+                              >
+                                Update Bereavement
+                              </Button>
+                            </>
                           )}
                         </div>
                       </GridItem>
@@ -694,6 +781,83 @@ function AssignmentFunction(props) {
           onClose={closeFormModalHandler}
         />
       )}
+
+      {/* EOC Update Modal */}
+      <Dialog
+        open={isEocModal}
+        onClose={() => setIsEocModal(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          <Typography variant="h6" style={{ fontWeight: "bold" }}>
+            Update EOC Date
+          </Typography>
+        </DialogTitle>
+        <DialogContent>
+          <div style={{ padding: "20px 0" }}>
+            <CustomDatePicker
+              placeholder="EOC Date"
+              label="EOC Date"
+              name="bulkEocDate"
+              value={bulkEocDate}
+              onChange={(date) => setBulkEocDate(date)}
+            />
+          </div>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIsEocModal(false)} color="transparent">
+            Cancel
+          </Button>
+          <Button onClick={submitBulkEocUpdate} color="info">
+            Update
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Bereavement Update Modal */}
+      <Dialog
+        open={isBereavementModal}
+        onClose={() => setIsBereavementModal(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          <Typography variant="h6" style={{ fontWeight: "bold" }}>
+            Update Bereavement Program
+          </Typography>
+        </DialogTitle>
+        <DialogContent>
+          <div style={{ padding: "20px 0" }}>
+            <Typography variant="body1" style={{ marginBottom: "20px" }}>
+              Are the selected records still in the Bereavement Program?
+            </Typography>
+            <RadioGroup
+              value={bulkBereavementValue.toString()}
+              onChange={(e) => setBulkBereavementValue(e.target.value === "true")}
+            >
+              <FormControlLabel
+                value="true"
+                control={<Radio color="primary" />}
+                label="Yes - Enable Bereavement Program"
+              />
+              <FormControlLabel
+                value="false"
+                control={<Radio color="primary" />}
+                label="No - Disable Bereavement Program"
+              />
+            </RadioGroup>
+          </div>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIsBereavementModal(false)} color="transparent">
+            Cancel
+          </Button>
+          <Button onClick={submitBulkBereavementUpdate} color="warning">
+            Update
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }

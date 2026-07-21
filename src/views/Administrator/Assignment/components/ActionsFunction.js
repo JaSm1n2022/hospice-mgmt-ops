@@ -106,7 +106,17 @@ export default function ActionsFunction(props) {
       dayOfWeekOptions.filter((f) => f.selected)?.map((m) => m.value) || [];
     currentItem.visitType = selectedVisitType.value;
     currentItem.timeOfVisit = timeOpen ? "Open" : timeOfVisit;
-    currentItem.eoc_dt = eocDate;
+
+    // Format EOC date as YYYY-MM-DD (date only, no timezone)
+    if (eocDate) {
+      const dateOnly = eocDate instanceof Date
+        ? eocDate.toISOString().split('T')[0]
+        : new Date(eocDate).toISOString().split('T')[0];
+      currentItem.eoc_dt = dateOnly;
+    } else {
+      currentItem.eoc_dt = null;
+    }
+
     currentItem.is_bereavement = isBereavementProgram;
     props.onEdit(currentItem);
   };
