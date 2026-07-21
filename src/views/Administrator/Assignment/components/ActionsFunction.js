@@ -23,6 +23,7 @@ import { VISIT_TYPE } from "utils/constants.js";
 import CustomTextField from "components/TextField/CustomTextField.js";
 import CustomMultipleAutoComplete from "components/AutoComplete/CustomMultipleAutoComplete.js";
 import { DAY_OF_WEEK } from "utils/constants.js";
+import CustomDatePicker from "components/Date/CustomDatePicker.js";
 
 const useStyles = makeStyles(styles);
 const useStyles2 = makeStyles(styles2);
@@ -42,6 +43,8 @@ export default function ActionsFunction(props) {
   const [editModal, setEditModal] = useState(false);
   const [currentItem, setCurrentItem] = useState(undefined);
   const [isRefresh, setIsRefresh] = useState(false);
+  const [eocDate, setEocDate] = useState(null);
+  const [isBereavementProgram, setIsBereavementProgram] = useState(false);
   useEffect(() => {
     if (props.data) {
       // console.log('[CurrentItem]', currentItem);
@@ -68,6 +71,8 @@ export default function ActionsFunction(props) {
           DEFAULT_ITEM
       );
       setNumberOfVisit(currentItem?.frequencyVisit);
+      setEocDate(currentItem?.eoc_dt || null);
+      setIsBereavementProgram(currentItem?.is_bereavement || false);
 
       // Check if time is "Open" and set states accordingly
       if (currentItem?.timeOfVisit === "Open") {
@@ -101,6 +106,8 @@ export default function ActionsFunction(props) {
       dayOfWeekOptions.filter((f) => f.selected)?.map((m) => m.value) || [];
     currentItem.visitType = selectedVisitType.value;
     currentItem.timeOfVisit = timeOpen ? "Open" : timeOfVisit;
+    currentItem.eoc_dt = eocDate;
+    currentItem.is_bereavement = isBereavementProgram;
     props.onEdit(currentItem);
   };
   const selectAllHandler = (isAll, options) => {
@@ -435,6 +442,73 @@ export default function ActionsFunction(props) {
                                   />
                                 }
                                 label="Open"
+                              />
+                            </div>
+                          </div>
+                        </GridItem>
+                        <GridItem xs={12} md={12}>
+                          <div
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              width: "100%",
+                              gap: 10,
+                              paddingRight: 10,
+                            }}
+                          >
+                            {/* Left side: Label */}
+                            <div style={{ flex: "0 0 auto", minWidth: 126 }}>
+                              <Typography
+                                variant="h6"
+                                style={{ fontWeight: "bold" }}
+                              >
+                                EOC
+                              </Typography>
+                            </div>
+
+                            {/* Right side: Date Input */}
+                            <div style={{ flex: 1 }}>
+                              <CustomDatePicker
+                                placeholder="EOC Date"
+                                label="EOC Date"
+                                name="eocDate"
+                                value={eocDate}
+                                onChange={(date) => setEocDate(date)}
+                              />
+                            </div>
+                          </div>
+                        </GridItem>
+                        <GridItem xs={12} md={12}>
+                          <div
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              width: "100%",
+                              gap: 10,
+                              paddingRight: 10,
+                            }}
+                          >
+                            {/* Left side: Label */}
+                            <div style={{ flex: "0 0 auto", minWidth: 126 }}>
+                              <Typography
+                                variant="h6"
+                                style={{ fontWeight: "bold" }}
+                              >
+                                Bereavement Program
+                              </Typography>
+                            </div>
+
+                            {/* Right side: Checkbox */}
+                            <div style={{ flex: 1 }}>
+                              <FormControlLabel
+                                control={
+                                  <Checkbox
+                                    checked={isBereavementProgram}
+                                    onChange={(e) => setIsBereavementProgram(e.target.checked)}
+                                    color="primary"
+                                  />
+                                }
+                                label="Enable Bereavement Program"
                               />
                             </div>
                           </div>

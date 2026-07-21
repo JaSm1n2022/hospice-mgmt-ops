@@ -420,6 +420,8 @@ function AssignmentFunction(props) {
       visitType: payload.visitType,
       dayOfTheWeek: payload.dayOfTheWeek,
       timeOfVisit: payload.timeOfVisit,
+      eoc_dt: payload.eoc_dt,
+      is_bereavement: payload.is_bereavement,
       createdUser: {
         name: context.userProfile?.name,
         userId: context.userProfile?.id,

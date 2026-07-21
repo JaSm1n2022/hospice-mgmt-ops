@@ -46,6 +46,12 @@ class AssignmentHandler {
         name: "timeOfVisit",
         header: "Time",
       },
+      {
+        defaultFlex: 1,
+        minWidth: 120,
+        name: "eocDisplay",
+        header: "EOC",
+      },
     ];
   }
   static mapData(items) {
@@ -55,6 +61,9 @@ class AssignmentHandler {
       item.numberOfVisit = item.frequencyVisit != null
         ? `${item.frequencyVisit}/${item.visitType}`
         : "N/A";
+      item.eocDisplay = item.eoc_dt
+        ? moment(item.eoc_dt).format("MM/DD/YYYY")
+        : "";
     });
     return items;
   }
