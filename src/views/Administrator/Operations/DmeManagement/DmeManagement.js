@@ -326,6 +326,12 @@ function DmeManagement() {
         );
       }
 
+      // Handle close modal request
+      if (event.data && event.data.type === "CLOSE_INVOICE_MODAL") {
+        console.log("Closing invoice extractor modal");
+        setIsExtractorModalOpen(false);
+      }
+
       // Handle request for patient data
       if (event.data && event.data.type === "REQUEST_PATIENT_DATA") {
         if (patientList.length === 0) {

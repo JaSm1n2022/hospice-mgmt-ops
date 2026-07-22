@@ -49,6 +49,142 @@
     vertical-align: top;
   }
   tbody tr:hover { background: #fafaf7; }
+
+  /* Custom Dialog Styles */
+  .dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: fadeIn 0.2s ease-out;
+  }
+  .dialog-box {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    animation: slideUp 0.3s ease-out;
+  }
+  .dialog-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0 0 16px;
+    color: #1F3864;
+  }
+  .dialog-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 2px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 14px;
+    margin-bottom: 20px;
+    transition: border-color 0.2s;
+  }
+  .dialog-input:focus {
+    outline: none;
+    border-color: #0c447c;
+  }
+  .dialog-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+  }
+  .dialog-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .dialog-btn-primary {
+    background: #0c447c;
+    color: white;
+  }
+  .dialog-btn-primary:hover {
+    background: #083564;
+  }
+  .dialog-btn-secondary {
+    background: #e5e7eb;
+    color: #374151;
+  }
+  .dialog-btn-secondary:hover {
+    background: #d1d5db;
+  }
+
+  /* Toast Notification Styles */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: white;
+    padding: 16px 20px;
+    border-radius: 8px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 10001;
+    animation: slideInRight 0.3s ease-out;
+    max-width: 400px;
+  }
+  .toast-success {
+    border-left: 4px solid #22c55e;
+  }
+  .toast-error {
+    border-left: 4px solid #ef4444;
+  }
+  .toast-icon {
+    font-size: 24px;
+    line-height: 1;
+  }
+  .toast-content {
+    flex: 1;
+  }
+  .toast-title {
+    font-weight: 600;
+    margin: 0 0 4px;
+    color: #1a1a1a;
+  }
+  .toast-message {
+    font-size: 13px;
+    color: #666;
+    margin: 0;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(100px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
 </style>
 </head>
 <body>
@@ -73,9 +209,8 @@ let globalPatients = [];
 let currentView = 'dme';
 let patientCodesList = []; // List of patient codes from React app
 
-// Column X-ranges derived from ACTUAL data positions in the invoice.
-// Patient names sit at x=85-170; addresses at x=185-265 (NOT overlapping).
-const COLUMNS = [
+// Column X-ranges - will be dynamically detected from header row
+let COLUMNS = [
   { name: 'inv',          xStart: 20,  xEnd: 80  },
   { name: 'patient_name', xStart: 80,  xEnd: 180 },
   { name: 'address',      xStart: 180, xEnd: 330 },
@@ -86,6 +221,227 @@ const COLUMNS = [
   { name: 'rate',         xStart: 685, xEnd: 730 },
   { name: 'total',        xStart: 730, xEnd: 780 }
 ];
+
+// Detect column positions from header row
+function detectColumnPositions(items) {
+  const headerTexts = {
+    'inv': 'Inv.',
+    'patient_name': 'PATIENT NAME',
+    'address': 'ADDRESS & PHONE',
+    'delivery_date': 'DELIVERY DATE',
+    'equipment': 'EQUIPMENT DESCRIPTION',
+    'qty': 'QTY/DAYS',
+    'pickup_date': 'PICKUP DATE',
+    'rate': 'RATE',
+    'total': 'TOTAL'
+  };
+
+  const detected = {};
+
+  // Find each header
+  Object.entries(headerTexts).forEach(([key, text]) => {
+    const item = items.find(it => it.text.trim() === text);
+    if (item) {
+      detected[key] = item.x;
+    }
+  });
+
+  // If we found at least patient_name and equipment, use detected positions
+  if (detected.patient_name && detected.equipment) {
+    // Build array of detected columns in order
+    const detectedArray = [];
+    Object.keys(headerTexts).forEach(key => {
+      if (detected[key] !== undefined) {
+        detectedArray.push({ name: key, x: detected[key] });
+      }
+    });
+
+    // Sort by X position
+    detectedArray.sort((a, b) => a.x - b.x);
+
+    // Create column ranges using MIDPOINTS between headers
+    const newColumns = [];
+    for (let i = 0; i < detectedArray.length; i++) {
+      const current = detectedArray[i];
+      const prev = detectedArray[i - 1];
+      const next = detectedArray[i + 1];
+
+      // Start at midpoint between previous and current header (or 0 for first)
+      const xStart = i === 0 ? 0 : Math.floor((prev.x + current.x) / 2);
+
+      // End at midpoint between current and next header (or 9999 for last)
+      const xEnd = next ? Math.floor((current.x + next.x) / 2) : 9999;
+
+      newColumns.push({
+        name: current.name,
+        xStart: xStart,
+        xEnd: xEnd
+      });
+    }
+
+    if (newColumns.length >= 5) {
+      console.log('✓ Detected columns from headers:', newColumns);
+      return newColumns;
+    }
+  }
+
+  console.log('⚠ Using default column positions');
+  return COLUMNS;
+}
+
+// Smart patient code matching
+function findMatchingPatientCodes(patientName) {
+  if (!patientName || !patientCodesList.length) return [];
+
+  // Extract last name (last word in name)
+  const nameParts = patientName.trim().split(/\s+/);
+  const lastName = nameParts[nameParts.length - 1];
+
+  if (!lastName || lastName.length < 3) return [];
+
+  // Get first 3 characters of last name (case-insensitive)
+  const searchKey = lastName.substring(0, 3).toUpperCase();
+
+  // Find matching patient codes
+  return patientCodesList.filter(p => {
+    const code = typeof p === 'string' ? p : p.code;
+    return code && code.toUpperCase().startsWith(searchKey);
+  });
+}
+
+// Show custom dialog for date input
+function showDateDialog() {
+  return new Promise((resolve) => {
+    // Get today's date as default
+    const today = new Date().toISOString().split('T')[0];
+
+    const overlay = document.createElement('div');
+    overlay.className = 'dialog-overlay';
+    overlay.innerHTML = `
+      <div class="dialog-box">
+        <h3 class="dialog-title">Enter Invoice Date</h3>
+        <input type="date" class="dialog-input" id="invoice-date-input" value="${today}">
+        <div class="dialog-buttons">
+          <button class="dialog-btn dialog-btn-secondary" id="dialog-cancel">Cancel</button>
+          <button class="dialog-btn dialog-btn-primary" id="dialog-submit">Submit</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const input = document.getElementById('invoice-date-input');
+    const submitBtn = document.getElementById('dialog-submit');
+    const cancelBtn = document.getElementById('dialog-cancel');
+
+    // Focus input
+    setTimeout(() => input.focus(), 100);
+
+    // Handle submit
+    submitBtn.onclick = () => {
+      const date = input.value;
+      document.body.removeChild(overlay);
+      resolve(date);
+    };
+
+    // Handle cancel
+    cancelBtn.onclick = () => {
+      document.body.removeChild(overlay);
+      resolve(null);
+    };
+
+    // Handle Enter key
+    input.onkeydown = (e) => {
+      if (e.key === 'Enter') {
+        submitBtn.click();
+      } else if (e.key === 'Escape') {
+        cancelBtn.click();
+      }
+    };
+
+    // Close on overlay click
+    overlay.onclick = (e) => {
+      if (e.target === overlay) {
+        cancelBtn.click();
+      }
+    };
+  });
+}
+
+// Show custom confirmation dialog
+function showConfirmDialog(title, message) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'dialog-overlay';
+    overlay.innerHTML = `
+      <div class="dialog-box">
+        <h3 class="dialog-title">${title}</h3>
+        <p style="margin: 0 0 20px; color: #666; line-height: 1.5;">${message}</p>
+        <div class="dialog-buttons">
+          <button class="dialog-btn dialog-btn-secondary" id="dialog-cancel">Cancel</button>
+          <button class="dialog-btn dialog-btn-primary" id="dialog-confirm" style="background: #ef4444;">Delete</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const confirmBtn = document.getElementById('dialog-confirm');
+    const cancelBtn = document.getElementById('dialog-cancel');
+
+    // Handle confirm
+    confirmBtn.onclick = () => {
+      document.body.removeChild(overlay);
+      resolve(true);
+    };
+
+    // Handle cancel
+    cancelBtn.onclick = () => {
+      document.body.removeChild(overlay);
+      resolve(false);
+    };
+
+    // Close on overlay click
+    overlay.onclick = (e) => {
+      if (e.target === overlay) {
+        cancelBtn.click();
+      }
+    };
+
+    // Handle Escape key
+    document.addEventListener('keydown', function escapeHandler(e) {
+      if (e.key === 'Escape') {
+        cancelBtn.click();
+        document.removeEventListener('keydown', escapeHandler);
+      }
+    });
+  });
+}
+
+// Show toast notification
+function showToast(title, message, type = 'success') {
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.innerHTML = `
+    <div class="toast-icon">${type === 'success' ? '✅' : '❌'}</div>
+    <div class="toast-content">
+      <div class="toast-title">${title}</div>
+      <p class="toast-message">${message}</p>
+    </div>
+  `;
+
+  document.body.appendChild(toast);
+
+  // Auto remove after 4 seconds
+  setTimeout(() => {
+    toast.style.animation = 'slideInRight 0.3s ease-out reverse';
+    setTimeout(() => {
+      if (document.body.contains(toast)) {
+        document.body.removeChild(toast);
+      }
+    }, 300);
+  }, 4000);
+}
 
 // Listen for patient data from parent React component
 window.addEventListener('message', (event) => {
@@ -140,10 +496,25 @@ document.getElementById('pdf-upload').addEventListener('change', async (e) => {
           height: it.height
         }));
 
+      // Detect column positions on first page
+      if (p === 1) {
+        const detectedCols = detectColumnPositions(allItems);
+        if (detectedCols) {
+          COLUMNS = detectedCols;
+        }
+      }
+
       // Skip the CUSTOMER header block on page 1
+      // Keep items BELOW the "Inv." header row (table data)
       const invHeader = allItems.find(it => it.text.trim() === 'Inv.');
-      const headerY = invHeader ? invHeader.y : pageHeight;
-      const items = allItems.filter(it => it.y < headerY - 2);
+      let items = allItems;
+
+      if (p === 1 && invHeader) {
+        // PDF.js uses bottom-up Y coordinates (Y increases UPWARD from bottom of page)
+        // So items BELOW the header have SMALLER Y values
+        // We want to KEEP items below the header (smaller Y), REMOVE items above (larger Y)
+        items = allItems.filter(it => it.y < invHeader.y - 2);
+      }
 
       // Group items into rows and assign to columns
       const pageRows = groupItemsIntoRows(items).map(assignToColumns);
@@ -153,86 +524,94 @@ document.getElementById('pdf-upload').addEventListener('change', async (e) => {
     }
 
     // ── Step 2: Group ALL rows by patient ──
-    // Rules:
-    // - Patient group STARTS when we find a patient_name with length > 2
-    // - Patient group ENDS when we find:
-    //   1. "R" or "GH" (location markers indicating end of patient)
-    //   2. A NEW patient_name (length > 2)
-    //   3. "Sub-Total" text
+    // KEY INSIGHT from extract_reliant.py:
+    // - A new patient STARTS on a row where equipment == "Daily Rate"
+    //   AND the patient column contains UPPER-CASE name tokens
+    // - Patient NAME = leading UPPER-CASE tokens until first token with digit
+    // - Status markers "R", "GH" belong to the current patient
+    // - All rows after anchor belong to that patient until next anchor
+
+    function extractPatientName(patientCell) {
+      // Extract leading UPPER-CASE tokens until we hit a digit (address starts)
+      const tokens = patientCell.split(/\s+/).filter(t => t.length > 0);
+      const nameToks = [];
+
+      for (const tok of tokens) {
+        // Stop at first token containing a digit (start of address)
+        if (/\d/.test(tok)) {
+          break;
+        }
+        // Only take UPPER-CASE tokens (must have at least one letter)
+        if (tok === tok.toUpperCase() && /[A-Z]/.test(tok)) {
+          nameToks.push(tok);
+        } else {
+          break; // Stop at first non-uppercase token
+        }
+      }
+
+      // Convert to title case
+      const result = nameToks.map(t =>
+        t.charAt(0).toUpperCase() + t.slice(1).toLowerCase()
+      ).join(' ');
+
+      return result;
+    }
 
     const allPatients = [];
-    let currentPatientRows = [];
-    let currentPatientName = null;
+    let currentPatient = null;
 
     for (const row of allRowsFromAllPages) {
-      // Check if this row contains "Sub-Total" - end of patient group
-      const hasSubTotal = Object.values(row).some(val =>
-        val && val.toString().includes('Sub-Total')
-      );
+      const equipment = (row.equipment || '').trim();
+      const patientCol = (row.patient_name || '').trim();
+      const totalCol = (row.total || '').trim();
 
-      if (hasSubTotal) {
-        // Save current patient group if it has data
-        if (currentPatientName && currentPatientRows.length > 0) {
-          allPatients.push({
-            patientName: currentPatientName,
-            rows: [...currentPatientRows]
-          });
+      // Check for Sub-Total or TOTAL AMT (end of invoice) - stop processing
+      if (Object.values(row).some(val => val && (
+            val.toString().includes('Sub-Total') ||
+            val.toString().includes('TOTAL AMT')
+          ))) {
+        break; // Stop processing rows - we've hit the footer
+      }
+
+      // ANCHOR: New patient starts when equipment == "Daily Rate"
+      if (equipment === 'Daily Rate') {
+        const name = extractPatientName(patientCol);
+
+        // Only start new patient if we extracted a name
+        // (Daily Rate with no name = location change for same patient)
+        if (name && name.length > 2) {
+          // Save previous patient
+          if (currentPatient) {
+            allPatients.push(currentPatient);
+          }
+
+          // Start new patient
+          currentPatient = {
+            patientName: name,
+            address: patientCol.replace(name, '').trim() + ' ' + (row.address || '').trim(),
+            status: '',
+            rows: [row]
+          };
+          continue;
         }
-        // Reset for next patient
-        currentPatientRows = [];
-        currentPatientName = null;
+      }
+
+      // If no current patient yet, skip (header rows before first patient)
+      if (!currentPatient) continue;
+
+      // Status markers belong to current patient
+      if (['R', 'GH', 'GD', 'G', 'GHS'].includes(patientCol) && !equipment) {
+        currentPatient.status = patientCol;
         continue;
       }
 
-      // Check if this row is an end marker: "R" or "GH"
-      const patientNameValue = row.patient_name ? row.patient_name.trim() : '';
-      const isEndMarker = patientNameValue === 'R' || patientNameValue === 'GH';
-
-      if (isEndMarker) {
-        // Save current patient group and reset
-        if (currentPatientName && currentPatientRows.length > 0) {
-          allPatients.push({
-            patientName: currentPatientName,
-            rows: [...currentPatientRows]
-          });
-        }
-        currentPatientRows = [];
-        currentPatientName = null;
-        continue;
-      }
-
-      // Check if this row has a NEW patient name (length > 2)
-      // Exclude "(RETURN)" - it's a note, not a patient
-      const hasNewPatientName = patientNameValue &&
-                                patientNameValue.length > 2 &&
-                                !patientNameValue.includes('(RETURN)');
-
-      if (hasNewPatientName) {
-        // If we already have a patient, save it first
-        if (currentPatientName && currentPatientRows.length > 0) {
-          allPatients.push({
-            patientName: currentPatientName,
-            rows: [...currentPatientRows]
-          });
-        }
-        // Start new patient group
-        currentPatientName = patientNameValue;
-        currentPatientRows = [row];
-        continue;
-      }
-
-      // Add row to current patient group (equipment/detail rows)
-      if (currentPatientName) {
-        currentPatientRows.push(row);
-      }
+      // Add row to current patient
+      currentPatient.rows.push(row);
     }
 
     // Don't forget the last patient
-    if (currentPatientName && currentPatientRows.length > 0) {
-      allPatients.push({
-        patientName: currentPatientName,
-        rows: [...currentPatientRows]
-      });
+    if (currentPatient) {
+      allPatients.push(currentPatient);
     }
 
     // ── Store and render all patients ──
@@ -256,6 +635,7 @@ function switchTab(view) {
 
 function renderCurrentView() {
   const output = document.getElementById('output');
+
   if (currentView === 'full') {
     renderFullInvoice(output, globalPatients);
   } else {
@@ -325,7 +705,11 @@ function renderDMEInvoice(container, patients) {
     : '<span style="color:#854f0b;">⚠ Waiting for patient codes...</span>';
   header.innerHTML = `<h2 style="margin:0 0 4px;">DME Invoice Report</h2>
     <p style="color:#666;margin:0 0 0.5rem;">${patients.length} patients - Grouped by patient with totals</p>
-    <p style="margin:0 0 1.5rem; font-size:12px;">${patientCodesInfo}</p>`;
+    <p style="margin:0 0 0.5rem; font-size:12px;">${patientCodesInfo}</p>
+    <p style="margin:0 0 1.5rem; font-size:11px; color:#666;">
+      💡 <strong>Smart Matching:</strong> Patient codes auto-matched by last name (first 3 chars).
+      Green border = auto-matched, ⭐ = suggested matches
+    </p>`;
   container.appendChild(header);
 
   // Create grouped table
@@ -348,10 +732,8 @@ function renderDMEInvoice(container, patients) {
   patients.forEach((patient, idx) => {
     const tr = document.createElement('tr');
 
-    // Patient name - ALWAYS from the first row with data
-    const patientName = patient.patientName ||
-                       (patient.rows.length > 0 ? patient.rows[0].patient_name : '') ||
-                       '';
+    // Patient name - from the patient object (extracted during grouping)
+    const patientName = patient.patientName || '';
 
     // Collect all equipment items (filter out empty values and "Daily Rate")
     const equipmentItems = patient.rows
@@ -386,9 +768,14 @@ function renderDMEInvoice(container, patients) {
       return sum;
     }, 0);
 
-    // Create the select dropdown
+    // Smart patient code matching
+    const matchingCodes = findMatchingPatientCodes(patientName);
+    const autoSelectedCode = matchingCodes.length === 1 ?
+      (typeof matchingCodes[0] === 'string' ? matchingCodes[0] : matchingCodes[0].code) : '';
+
+    // Create the select dropdown with smart matching
     const selectHtml = `
-      <select style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
+      <select style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid ${autoSelectedCode ? '#22c55e' : '#ccc'};">
         <option value="">— Select Patient Code —</option>
         ${patientCodesList.map(p => {
           const code = typeof p === 'string' ? p : p.code;
@@ -397,10 +784,27 @@ function renderDMEInvoice(container, patients) {
           const status = fullData?.status || '';
           const displayText = name ? `${code} - ${name}` : code;
           const statusBadge = status === 'Active' || status === 'active' ? '🟢' : '🔴';
-          return `<option value="${escapeHTML(code)}">${statusBadge} ${escapeHTML(displayText)}</option>`;
+
+          // Check if this code matches
+          const isMatch = matchingCodes.some(m => {
+            const matchCode = typeof m === 'string' ? m : m.code;
+            return matchCode === code;
+          });
+
+          const selected = code === autoSelectedCode ? 'selected' : '';
+          const matchIndicator = isMatch && !autoSelectedCode ? '⭐ ' : '';
+
+          return `<option value="${escapeHTML(code)}" ${selected}>${matchIndicator}${statusBadge} ${escapeHTML(displayText)}</option>`;
         }).join('')}
       </select>
     `;
+
+    // Smart match indicator
+    const matchInfo = autoSelectedCode
+      ? `<div style="font-size: 10px; color: #16a34a; margin-top: 2px;">✓ Auto-matched</div>`
+      : matchingCodes.length > 1
+        ? `<div style="font-size: 10px; color: #ea580c; margin-top: 2px;">⭐ ${matchingCodes.length} suggestions</div>`
+        : '';
 
     tr.innerHTML = `
       <td style="text-align: center;">
@@ -408,7 +812,7 @@ function renderDMEInvoice(container, patients) {
           🗑️ Delete
         </button>
       </td>
-      <td>${selectHtml}</td>
+      <td>${selectHtml}${matchInfo}</td>
       <td style="font-weight: 500;">${escapeHTML(patientName)}</td>
       <td>${escapeHTML(equipmentString)}</td>
       <td style="text-align: right; font-weight: 500;">$${totalAmount.toFixed(2)}</td>
@@ -420,16 +824,25 @@ function renderDMEInvoice(container, patients) {
   setTimeout(() => {
     const deleteButtons = document.querySelectorAll('.delete-row-btn');
     deleteButtons.forEach(btn => {
-      btn.addEventListener('click', function() {
+      btn.addEventListener('click', async function() {
         const rowIndex = parseInt(this.getAttribute('data-row-index'));
+        const patientName = globalPatients[rowIndex]?.patientName || 'this patient';
 
-        // Confirm deletion
-        if (confirm('Are you sure you want to delete this patient from the invoice?')) {
+        // Show custom confirmation dialog
+        const confirmed = await showConfirmDialog(
+          'Delete Patient',
+          `Are you sure you want to remove <strong>${patientName}</strong> from this invoice?`
+        );
+
+        if (confirmed) {
           // Remove from globalPatients array
           globalPatients.splice(rowIndex, 1);
 
           // Re-render the view
           renderCurrentView();
+
+          // Show success toast
+          showToast('Patient Removed', `${patientName} has been removed from the invoice.`, 'success');
         }
       });
     });
@@ -474,7 +887,7 @@ function renderDMEInvoice(container, patients) {
   }, 0);
 }
 
-function handleSubmitInvoice() {
+async function handleSubmitInvoice() {
   // Validate that all patients have selected codes
   const table = document.querySelector('#output table tbody');
   const rows = table.querySelectorAll('tr');
@@ -487,10 +900,10 @@ function handleSubmitInvoice() {
 
     if (!patientCd) {
       hasError = true;
-      select.style.border = '2px solid #791f1f';
+      select.style.border = '2px solid #ef4444';
       return;
     } else {
-      select.style.border = '1px solid #ccc';
+      select.style.border = '';
     }
 
     const patient = globalPatients[idx];
@@ -538,22 +951,15 @@ function handleSubmitInvoice() {
   });
 
   if (hasError) {
-    alert('Please select a patient code for all patients before submitting.');
+    showToast('Validation Error', 'Please select a patient code for all patients before submitting.', 'error');
     return;
   }
 
-  // Ask for invoice date
-  const invoiceDate = prompt('Enter Invoice Date (YYYY-MM-DD):');
+  // Ask for invoice date using custom dialog
+  const invoiceDate = await showDateDialog();
 
   if (!invoiceDate) {
     return; // User cancelled
-  }
-
-  // Validate date format
-  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-  if (!dateRegex.test(invoiceDate)) {
-    alert('Invalid date format. Please use YYYY-MM-DD format.');
-    return;
   }
 
   // Send data back to parent component
@@ -566,6 +972,354 @@ function handleSubmitInvoice() {
   }, '*');
 
   console.log('✓ Submitted DME Invoice:', { invoice_dt: invoiceDate, items: invoiceItems });
+
+  // Show success toast
+  showToast('Invoice Submitted!', `Successfully submitted invoice for ${invoiceItems.length} patients on ${invoiceDate}`, 'success');
+
+  // Close modal and return to DME management after short delay
+  setTimeout(() => {
+    window.parent.postMessage({ type: 'CLOSE_INVOICE_MODAL' }, '*');
+  }, 1500);
+}
+
+function renderDMEInvoiceV2(container, patients) {
+  container.innerHTML = '';
+
+  if (patients.length === 0) {
+    container.innerHTML = '<p>No patients extracted yet. Please upload a PDF file.</p>';
+    return;
+  }
+
+  // Summary header
+  const header = document.createElement('div');
+  const patientCodesInfo = patientCodesList.length > 0
+    ? `<span style="color:#0f6e56;">✓ ${patientCodesList.length} patient codes available</span>`
+    : '<span style="color:#854f0b;">⚠ Waiting for patient codes...</span>';
+  header.innerHTML = `<h2 style="margin:0 0 4px;">DME Invoice V2 - Pure Equipment Only</h2>
+    <p style="color:#666;margin:0 0 0.5rem;">${patients.length} patients - Showing only durable medical equipment</p>
+    <p style="margin:0 0 1.5rem; font-size:12px;">${patientCodesInfo}</p>`;
+  container.appendChild(header);
+
+  // Create table with styling per spec
+  const table = document.createElement('table');
+  table.style.cssText = 'border-collapse:collapse; width:100%; font-size:13px; font-family: Arial, Helvetica, sans-serif;';
+  table.innerHTML = `
+    <thead>
+      <tr>
+        <th style="background:#1F3864; color:#fff; text-align:left; border:1px solid #cfd6e4; padding:8px 10px;">Delete</th>
+        <th style="background:#1F3864; color:#fff; text-align:left; border:1px solid #cfd6e4; padding:8px 10px;">Patient Code</th>
+        <th style="background:#1F3864; color:#fff; text-align:left; border:1px solid #cfd6e4; padding:8px 10px;">Patient</th>
+        <th style="background:#1F3864; color:#fff; text-align:left; border:1px solid #cfd6e4; padding:8px 10px;">Equipment Description</th>
+        <th style="background:#1F3864; color:#fff; text-align:right; border:1px solid #cfd6e4; padding:8px 10px;">Total</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+    <tfoot>
+      <tr>
+        <td colspan="4" style="font-weight:bold; background:#D9E1F2; border:1px solid #cfd6e4; padding:8px 10px;">Sub-Total</td>
+        <td id="grand-total-v2" style="font-weight:bold; background:#D9E1F2; border:1px solid #cfd6e4; padding:8px 10px; text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums;">$0.00</td>
+      </tr>
+    </tfoot>
+  `;
+  const tbody = table.querySelector('tbody');
+
+  // Filter equipment to only pure DME (no daily rates, consumables, refills, service words)
+  const excludePatterns = [
+    /daily\s+rate/i,
+    /\d+ft\s+(soft\s+)?cannula/i,
+    /\d+ft\s+tubing/i,
+    /refill/i,
+    /swap/i,
+    /purchase/i,
+    /gratis/i,
+    /unbilled/i,
+    /new\s+location/i,
+    /pu:/i,
+    /\(pu\s+\d/i
+  ];
+
+  function isPureEquipment(text) {
+    const cleaned = text.trim().toLowerCase();
+    if (!cleaned || cleaned.length === 0) return false;
+
+    // Check against exclude patterns
+    for (const pattern of excludePatterns) {
+      if (pattern.test(cleaned)) return false;
+    }
+
+    return true;
+  }
+
+  let grandTotal = 0;
+
+  // Group and aggregate data for each patient
+  patients.forEach((patient, idx) => {
+    const tr = document.createElement('tr');
+
+    // Patient name
+    const patientName = patient.patientName ||
+                       (patient.rows.length > 0 ? patient.rows[0].patient_name : '') ||
+                       '';
+
+    // Collect PURE equipment items only
+    const equipmentItems = patient.rows
+      .map(row => row.equipment)
+      .filter(eq => eq && eq.trim().length > 0)
+      .map(eq => {
+        // Clean equipment text
+        let cleaned = eq;
+        cleaned = cleaned.replace(/\(PU[^)]*\)/gi, '').trim();
+
+        // Replace "E-Tank,Cart,Reg" variations
+        if (cleaned.toLowerCase().includes('e-tank') && cleaned.includes(',')) {
+          cleaned = cleaned
+            .replace(/E-Tank,Cart,Reg/gi, 'E-tank w/ cart')
+            .replace(/E-Tank,\s*Cart,\s*Reg/gi, 'E-tank w/ cart')
+            .replace(/Etank\s+Reg\s+Cart/gi, 'E-tank w/ cart');
+        }
+
+        // Replace O2 with O₂
+        cleaned = cleaned.replace(/\bO2\b/g, 'O₂');
+        cleaned = cleaned.replace(/\bO2\s+/g, 'O₂ ');
+
+        return cleaned;
+      })
+      .filter(eq => isPureEquipment(eq)); // Only pure equipment
+
+    // Remove duplicates (case-insensitive)
+    const uniqueEquipmentItems = equipmentItems.filter((item, index, self) => {
+      const normalizedItem = item.trim().toLowerCase();
+      return index === self.findIndex(e => e.trim().toLowerCase() === normalizedItem);
+    });
+
+    const equipmentString = uniqueEquipmentItems.join('; ');
+
+    // Calculate total
+    const totalAmount = patient.rows.reduce((sum, row) => {
+      if (row.total) {
+        return sum + (parseFloat(row.total.replace(/[$,]/g, '')) || 0);
+      }
+      return sum;
+    }, 0);
+
+    grandTotal += totalAmount;
+
+    // Create the select dropdown
+    const selectHtml = `
+      <select style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
+        <option value="">— Select Patient Code —</option>
+        ${patientCodesList.map(p => {
+          const code = typeof p === 'string' ? p : p.code;
+          const name = typeof p === 'string' ? '' : (p.name || '');
+          const fullData = typeof p === 'string' ? null : p.fullData;
+          const status = fullData?.status || '';
+          const displayText = name ? `${code} - ${name}` : code;
+          const statusBadge = status === 'Active' || status === 'active' ? '🟢' : '🔴';
+          return `<option value="${escapeHTML(code)}">${statusBadge} ${escapeHTML(displayText)}</option>`;
+        }).join('')}
+      </select>
+    `;
+
+    tr.innerHTML = `
+      <td style="border:1px solid #cfd6e4; padding:8px 10px; text-align:center; vertical-align:top;">
+        <button class="delete-row-btn-v2" data-row-index="${idx}" style="padding: 4px 10px; background: #d32f2f; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">
+          🗑️ Delete
+        </button>
+      </td>
+      <td style="border:1px solid #cfd6e4; padding:8px 10px; vertical-align:top;">${selectHtml}</td>
+      <td class="patient" style="border:1px solid #cfd6e4; padding:8px 10px; font-weight:bold; white-space:nowrap; vertical-align:top;">${escapeHTML(patientName)}</td>
+      <td style="border:1px solid #cfd6e4; padding:8px 10px; vertical-align:top;">${escapeHTML(equipmentString)}</td>
+      <td class="total" style="border:1px solid #cfd6e4; padding:8px 10px; text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums; vertical-align:top;">$${totalAmount.toFixed(2)}</td>
+    `;
+
+    // Apply zebra striping after creating the row
+    if (idx % 2 === 1) {
+      const cells = tr.querySelectorAll('td');
+      cells.forEach(td => {
+        const currentBg = td.style.background;
+        if (!currentBg || currentBg === '' || currentBg === 'transparent') {
+          td.style.background = '#f4f6fb';
+        }
+      });
+    }
+
+    tbody.appendChild(tr);
+  });
+
+  container.appendChild(table);
+
+  // Update grand total after table is in DOM
+  const grandTotalCell = document.getElementById('grand-total-v2');
+  if (grandTotalCell) {
+    grandTotalCell.textContent = `$${grandTotal.toFixed(2)}`;
+  }
+
+  // Add delete button event listeners
+  setTimeout(() => {
+    const deleteButtons = document.querySelectorAll('.delete-row-btn-v2');
+    deleteButtons.forEach(btn => {
+      btn.addEventListener('click', async function() {
+        const rowIndex = parseInt(this.getAttribute('data-row-index'));
+        const patientName = globalPatients[rowIndex]?.patientName || 'this patient';
+
+        // Show custom confirmation dialog
+        const confirmed = await showConfirmDialog(
+          'Delete Patient',
+          `Are you sure you want to remove <strong>${patientName}</strong> from this invoice?`
+        );
+
+        if (confirmed) {
+          globalPatients.splice(rowIndex, 1);
+          renderCurrentView();
+
+          // Show success toast
+          showToast('Patient Removed', `${patientName} has been removed from the invoice.`, 'success');
+        }
+      });
+    });
+  }, 0);
+
+  // Submit button
+  const submitRow = document.createElement('div');
+  submitRow.style.cssText = 'margin-top: 1rem; text-align: right;';
+  submitRow.innerHTML = `
+    <button id="submit-dme-invoice-v2" style="padding: 10px 24px; background: #0c447c; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer;">
+      Submit Invoice V2
+    </button>
+  `;
+  container.appendChild(submitRow);
+
+  // Add submit button event listener
+  setTimeout(() => {
+    const submitBtn = document.getElementById('submit-dme-invoice-v2');
+    if (submitBtn) {
+      submitBtn.addEventListener('click', handleSubmitInvoiceV2);
+    }
+  }, 0);
+}
+
+async function handleSubmitInvoiceV2() {
+  // Same validation and submission as original, but with V2 equipment list
+  const table = document.querySelector('#output table tbody');
+  const rows = table.querySelectorAll('tr');
+  const invoiceItems = [];
+  let hasError = false;
+
+  // Filter patterns for pure equipment
+  const excludePatterns = [
+    /daily\s+rate/i,
+    /\d+ft\s+(soft\s+)?cannula/i,
+    /\d+ft\s+tubing/i,
+    /refill/i,
+    /swap/i,
+    /purchase/i,
+    /gratis/i,
+    /unbilled/i,
+    /new\s+location/i,
+    /pu:/i,
+    /\(pu\s+\d/i
+  ];
+
+  function isPureEquipment(text) {
+    const cleaned = text.trim().toLowerCase();
+    if (!cleaned || cleaned.length === 0) return false;
+
+    for (const pattern of excludePatterns) {
+      if (pattern.test(cleaned)) return false;
+    }
+
+    return true;
+  }
+
+  rows.forEach((row, idx) => {
+    const select = row.querySelector('select');
+    const patientCd = select ? select.value : '';
+
+    if (!patientCd) {
+      hasError = true;
+      select.style.border = '2px solid #ef4444';
+      return;
+    } else {
+      select.style.border = '';
+    }
+
+    const patient = globalPatients[idx];
+    if (!patient) return;
+
+    const patientName = patient.patientName ||
+                       (patient.rows.length > 0 ? patient.rows[0].patient_name : '');
+
+    // Collect pure equipment
+    const equipmentItems = patient.rows
+      .map(row => row.equipment)
+      .filter(eq => eq && eq.trim().length > 0)
+      .map(eq => {
+        let cleaned = eq;
+        cleaned = cleaned.replace(/\(PU[^)]*\)/gi, '').trim();
+        if (cleaned.toLowerCase().includes('e-tank') && cleaned.includes(',')) {
+          cleaned = cleaned
+            .replace(/E-Tank,Cart,Reg/gi, 'E-tank w/ cart')
+            .replace(/E-Tank,\s*Cart,\s*Reg/gi, 'E-tank w/ cart')
+            .replace(/Etank\s+Reg\s+Cart/gi, 'E-tank w/ cart');
+        }
+        cleaned = cleaned.replace(/\bO2\b/g, 'O₂');
+        cleaned = cleaned.replace(/\bO2\s+/g, 'O₂ ');
+        return cleaned;
+      })
+      .filter(eq => isPureEquipment(eq));
+
+    // Remove duplicates
+    const uniqueEquipmentItems = equipmentItems.filter((item, index, self) => {
+      const normalizedItem = item.trim().toLowerCase();
+      return index === self.findIndex(e => e.trim().toLowerCase() === normalizedItem);
+    });
+
+    // Calculate total
+    const totalAmount = patient.rows.reduce((sum, row) => {
+      if (row.total) {
+        return sum + (parseFloat(row.total.replace(/[$,]/g, '')) || 0);
+      }
+      return sum;
+    }, 0);
+
+    invoiceItems.push({
+      patientCd: patientCd,
+      patientName: patientName,
+      equipments: uniqueEquipmentItems,
+      invoice_amt: totalAmount
+    });
+  });
+
+  if (hasError) {
+    showToast('Validation Error', 'Please select a patient code for all patients before submitting.', 'error');
+    return;
+  }
+
+  // Ask for invoice date using custom dialog
+  const invoiceDate = await showDateDialog();
+
+  if (!invoiceDate) {
+    return;
+  }
+
+  // Send data back to parent component
+  window.parent.postMessage({
+    type: 'SUBMIT_DME_INVOICE',
+    data: {
+      invoice_dt: invoiceDate,
+      items: invoiceItems
+    }
+  }, '*');
+
+  console.log('✓ Submitted DME Invoice V2:', { invoice_dt: invoiceDate, items: invoiceItems });
+
+  // Show success toast
+  showToast('Invoice Submitted!', `Successfully submitted invoice for ${invoiceItems.length} patients on ${invoiceDate}`, 'success');
+
+  // Close modal and return to DME management after short delay
+  setTimeout(() => {
+    window.parent.postMessage({ type: 'CLOSE_INVOICE_MODAL' }, '*');
+  }, 1500);
 }
 
 // ────────────────────────────────────────────────────────────────

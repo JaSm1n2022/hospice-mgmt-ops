@@ -580,11 +580,11 @@ const PatientSupplies = (props) => {
         ["dme"].includes(supply.category?.toLowerCase())
       );
       const nurse = supplies.filter(
-        (supply) =>
-          supply.category?.toLowerCase() === "payroll" &&
-          ["nurse", "case manager", "director of nursing"].includes(
-            supply.subCategory.toLowerCase()
-          )
+        (supply) => {
+          if (supply.category?.toLowerCase()?.trim() !== "payroll") return false;
+          const subCat = (supply.subCategory || "").toLowerCase().trim();
+          return ["nurse", "registered nurse", "case manager", "director of nursing"].includes(subCat);
+        }
       );
       const cna = supplies.filter(
         (supply) =>

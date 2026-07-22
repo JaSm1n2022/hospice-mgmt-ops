@@ -1,0 +1,225 @@
+[
+  {
+    "patient": "Alexander Canevale",
+    "status": "R",
+    "address": "7750 S Royal Oaks Rd",
+    "equipment": [
+      "Half Rails",
+      "Nebulizer Full Kit",
+      "5L Oxygen Concentrator Full Kit",
+      "E-Tank w/ Cart"
+    ],
+    "total": 142.5
+  },
+  {
+    "patient": "Catherine Haller",
+    "status": "R",
+    "address": "2617 Twin Pines Ave.",
+    "equipment": [
+      "FE Hospital Bed w/ Half Rails",
+      "APP Pump and Pad",
+      "Overbed Table",
+      "5L Oxygen Concentrator Full Kit",
+      "Front Wheeled Walker",
+      "Nebulizer Full Kit",
+      "Etank Reg Cart"
+    ],
+    "total": 142.5
+  },
+  {
+    "patient": "Charles Goldberg",
+    "status": "R",
+    "address": "4468 S Don Quioxte St",
+    "equipment": [
+      "FE Hospital Bed",
+      "18\" Std Wheelchair",
+      "Overbed Table",
+      "5L Oxygen Concentrator Full Kit",
+      "Nebulizer Full Kit",
+      "E-Tank w/ Cart"
+    ],
+    "total": 142.5
+  },
+  {
+    "patient": "Darlene Grider",
+    "status": "R",
+    "address": "1205 Ponce de Leon Ave.",
+    "equipment": [
+      "FE Hospital Bed w/ Half Rails",
+      "Overbed Table",
+      "5L Oxygen Concentrator Full Kit",
+      "Nebulizer Full Kit",
+      "E-Tank w/ Cart",
+      "Low Airloss Mattress"
+    ],
+    "total": 163.0
+  },
+  {
+    "patient": "George Keller",
+    "status": "R",
+    "address": "4516 Savin Circle",
+    "equipment": [
+      "FE Hospital Bed w/ Full Rails",
+      "APP Pump & Pad",
+      "Overbed Table",
+      "5L Oxygen Concentrator Full Kit",
+      "Front Wheeled Walker",
+      "Fall mat"
+    ],
+    "total": 142.5
+  },
+  {
+    "patient": "Harry Johns",
+    "status": "R",
+    "address": "1371 Adagietto Dr.",
+    "equipment": [
+      "18\" STD Wheelchair"
+    ],
+    "total": 35.0
+  },
+  {
+    "patient": "Jeannette Kuehn",
+    "status": "R",
+    "address": "55 S. La Laguna St.",
+    "equipment": [
+      "15\" STD Wheelchair",
+      "5L Oxygen Concentrator Full Kit",
+      "Nebulizer Full Kit",
+      "E-Tank w/ Cart",
+      "Overbed Table",
+      "Front Wheeled Walker",
+      "18\" STD Wheelchair"
+    ],
+    "total": 142.5
+  },
+  {
+    "patient": "John Slight",
+    "status": "",
+    "address": "609 Cadence Vista Dr",
+    "equipment": [
+      "FE Hospital Bed",
+      "5L Oxygen Concentrator Full Kit",
+      "18\" Std Wheelchair",
+      "Nebulizer Full Kit",
+      "Etank Reg Cart"
+    ],
+    "total": 142.5
+  },
+  {
+    "patient": "Joyce Gantz",
+    "status": "R",
+    "address": "7907 Mountain Man Way",
+    "equipment": [
+      "Overbed Table",
+      "18\" STD Wheelchair",
+      "Shower Chair"
+    ],
+    "total": 142.5
+  },
+  {
+    "patient": "Linda Moss",
+    "status": "GH",
+    "address": "3646 E Billman Ave",
+    "equipment": [
+      "FE Hospital Bed (PU 6/5)",
+      "Overbed Table (PU 6/5)",
+      "FE Hospital Bed",
+      "Overbed Table",
+      "APP Pump & Pad"
+    ],
+    "total": 142.5
+  },
+  {
+    "patient": "Martha Amour",
+    "status": "R",
+    "address": "465 Ridgeway Rd",
+    "equipment": [
+      "FE Hospital Bed",
+      "Overbed Table",
+      "5L Oxygen Concentrator Full Kit",
+      "Nebulizer Full Kit",
+      "Etank Reg Cart",
+      "18\" Std Wheelchair",
+      "Bed Tab Alarm"
+    ],
+    "total": 157.5
+  },
+  {
+    "patient": "Miklos Rosta",
+    "status": "R",
+    "address": "4300 Del Monte Ave. LV 89102",
+    "equipment": [
+      "18\" STD Wheelchair",
+      "Mattress ONLY",
+      "Mickey Mouse Rails",
+      "Fall mat",
+      "Bed Tab Alarm"
+    ],
+    "total": 157.5
+  },
+  {
+    "patient": "Patrick Sunne",
+    "status": "R",
+    "address": "5817 W. Rae Dr.",
+    "equipment": [
+      "BARI FE Hospital Bed w/ HR",
+      "Overbed Table",
+      "5L Oxygen Concentrator Full Kit",
+      "Nebulizer Full Kit",
+      "E-Tank w/ Cart",
+      "20\" STD Wheelchair",
+      "BARI Rollator",
+      "BARI Shower Chair"
+    ],
+    "total": 65.0
+  },
+  {
+    "patient": "Roberto Garcia",
+    "status": "GH",
+    "address": "10210 Valaspen St.",
+    "equipment": [
+      "FE Hospital Bed w/ Half Rails",
+      "Shower Bench",
+      "18\" STD Wheelchair",
+      "Low Airloss Mattress",
+      "Trapeeze Bar",
+      "5L Oxygen Concentrator Full Kit",
+      "Nebulizer Full Kit",
+      "E-Tank w/ Cart",
+      "Transfer Bench",
+      "Front Wheeled Walker",
+      "Hoyer Lift w Select Sling (PU 5/10)"
+    ],
+    "total": 310.0
+  },
+  {
+    "patient": "Shep Rose",
+    "status": "GH",
+    "address": "55 S La Laguna St",
+    "equipment": [
+      "Suction Machine",
+      "5L Oxygen Concentrator Full Kit",
+      "Overbed Table",
+      "APP Pump and Pad",
+      "Reclining Wheelchair w ELRs",
+      "Nebulizer Full Kit",
+      "Fall Mat"
+    ],
+    "total": 222.5
+  },
+  {
+    "patient": "Vilaipon Gray",
+    "status": "",
+    "address": "35 Onyx Way,",
+    "equipment": [
+      "Overbed Table",
+      "5L Oxygen Concentrator Full Ki",
+      "Nebulizer Full Kit",
+      "E-Tank w/ Cart",
+      "Shower Chair",
+      "18\" STD Wheelchair",
+      "3-IN-1 Commode"
+    ],
+    "total": 74.5
+  }
+]

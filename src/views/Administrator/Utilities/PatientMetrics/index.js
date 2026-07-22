@@ -465,9 +465,18 @@ const PatientDistribution = (props) => {
       patient.category = "patient";
 
       const supplies = distributionList.filter(
-        (dist) => dist.patient_id === patient.id
+        (dist) =>
+          dist.patient_id === patient.id ||
+          dist.patientCd?.trim() === patient.patientCd?.trim()
       );
       console.log("[Supplies]", patient.id, supplies);
+
+      // Debug logging for SLIGH-JON patient
+      if (patient.patientCd && patient.patientCd.includes("SLIGH-JON")) {
+        console.log("🔍 DEBUG: Patient SLIGH-JON found:", patient.patientCd);
+        console.log("🔍 Total distributions for SLIGH-JON:", supplies.length);
+        console.log("🔍 All distributions:", supplies);
+      }
       supplies.forEach((supply) => {
         estimatedAmt += parseFloat(supply.estimated_total_amt);
       });
@@ -487,12 +496,28 @@ const PatientDistribution = (props) => {
         ["dme"].includes(supply.category?.toLowerCase())
       );
       const nurse = supplies.filter(
-        (supply) =>
-          supply.category?.toLowerCase() === "payroll" &&
-          ["nurse", "case manager", "director of nursing"].includes(
-            supply.subCategory.toLowerCase()
-          )
+        (supply) => {
+          if (supply.category?.toLowerCase()?.trim() !== "payroll") return false;
+          const subCat = (supply.subCategory || "").toLowerCase().trim();
+          return ["nurse", "registered nurse", "case manager", "director of nursing"].includes(subCat);
+        }
       );
+
+      // Debug logging for nurse records for SLIGH-JON patient
+      if (patient.patientCd && patient.patientCd.includes("SLIGH-JON")) {
+        console.log("🔍 Nurse distributions count:", nurse.length);
+        console.log("🔍 Nurse distributions details:", nurse.map(d => ({
+          id: d.id,
+          order_at: d.order_at,
+          estimated_total_amt: d.estimated_total_amt,
+          patient_id: d.patient_id,
+          patientCd: d.patientCd,
+          category: d.category,
+          subCategory: d.subCategory,
+          description: d.description,
+          requestor: d.requestor
+        })));
+      }
       const cna = supplies.filter(
         (supply) =>
           supply.category?.toLowerCase() === "payroll" &&
