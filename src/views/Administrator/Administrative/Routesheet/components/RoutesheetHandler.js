@@ -52,6 +52,7 @@ class RoutesheetHandler {
         header: "Service Type",
       },
       // { defaultFlex: 1, minWidth: 120, name: "dos", header: "DOS" },
+      { defaultFlex: 1, minWidth: 80, name: "day", header: "Day" },
       { defaultFlex: 1, minWidth: 120, name: "timeIn", header: "Time In" },
       { defaultFlex: 1, minWidth: 120, name: "timeOut", header: "Time Out" },
       { defaultFlex: 1, minWidth: 100, name: "duration", header: "Duration" },
