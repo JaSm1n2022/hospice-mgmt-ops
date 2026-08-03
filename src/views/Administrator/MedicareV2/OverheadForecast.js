@@ -1004,66 +1004,43 @@ function OverheadForecast(props) {
     const patientsWithRecerts = RecertificationTimelineHandler.mapData(patients);
 
     patientsWithRecerts.forEach((patient) => {
-      if (!patient.currentRecertification) {
-        if (patient.patientCd === 'GRID-DARLE.20260603') {
-          console.log(`[Recert Debug] GRID-DARLE: No currentRecertification`);
-        }
+      // Skip patients with no recertifications at all
+      if (!patient.recertifications || patient.recertifications.length === 0) {
         return;
       }
 
-      const recertDueDate = moment(patient.currentRecertification.dueDate);
+      // Loop through ALL recertifications to find ones due in the current month
+      // (Don't just use currentRecertification, as it skips "completed" ones)
+      patient.recertifications.forEach((recert) => {
+        const recertDueDate = moment(recert.dueDate);
 
-      // The benefit period from currentRecertification represents the current BP ending
-      // The recertification is FOR the NEXT benefit period, so add 1
-      const benefitPeriod = patient.currentRecertification.benefitPeriod + 1;
+        // The benefit period from recertification represents the current BP ending
+        // The recertification is FOR the NEXT benefit period, so add 1
+        const benefitPeriod = recert.benefitPeriod + 1;
 
-      // Debug for GRID-DARLE
-      if (patient.patientCd === 'GRID-DARLE.20260603') {
-        console.log(`[Recert Debug] GRID-DARLE: BP${benefitPeriod}, Due: ${recertDueDate.format('YYYY-MM-DD')}, MonthStart: ${monthStart.format('YYYY-MM-DD')}, MonthEnd: ${monthEnd.format('YYYY-MM-DD')}`);
-        console.log(`[Recert Debug] GRID-DARLE: isSameOrAfter: ${recertDueDate.isSameOrAfter(monthStart, "day")}, isSameOrBefore: ${recertDueDate.isSameOrBefore(monthEnd, "day")}`);
-      }
+        // Only include recertifications that are DUE in the current forecast month
+        // (Even though visits can happen 15 days early, we only forecast for recerts due this month)
+        const isDueInMonth = recertDueDate.isSameOrAfter(monthStart, "day") &&
+                             recertDueDate.isSameOrBefore(monthEnd, "day");
 
-      // Check if the recertification is due in the current forecast month (e.g., 08/01 to 08/31)
-      if (
-        recertDueDate.isSameOrAfter(monthStart, "day") &&
-        recertDueDate.isSameOrBefore(monthEnd, "day")
-      ) {
-        // Skip BP 1 - already covered by admission/SOC
-        // If currentRecertification.benefitPeriod is 0, then +1 = 1, skip
-        if (benefitPeriod <= 1) {
-          if (patient.patientCd === 'GRID-DARLE.20260603') {
-            console.log(`[Recert Debug] GRID-DARLE: Skipped - BP${benefitPeriod} <= 1`);
-          }
-          return;
-        }
+        if (isDueInMonth) {
+          // Skip BP 1 - already covered by admission/SOC
+          if (benefitPeriod <= 1) return;
 
-        // Skip patients with EOC if EOC is before or on the recertification due date
-        if (patient.eoc) {
-          const eocDate = moment(patient.eoc);
-          // If patient has EOC before or on the recert due date, skip
-          if (eocDate.isSameOrBefore(recertDueDate, "day")) {
-            if (patient.patientCd === 'GRID-DARLE.20260603') {
-              console.log(`[Recert Debug] GRID-DARLE: Skipped - EOC (${eocDate.format('YYYY-MM-DD')}) <= recert due date`);
+          // Skip patients with EOC if EOC is before or on the recertification due date
+          if (patient.eoc) {
+            const eocDate = moment(patient.eoc);
+            if (eocDate.isSameOrBefore(recertDueDate, "day")) {
+              return;
             }
-            return;
           }
-        }
 
-        if (patient.patientCd === 'GRID-DARLE.20260603') {
-          console.log(`[Recert Debug] GRID-DARLE: Passed all checks, processing...`);
-        }
+          recertificationCount.count++;
 
-        recertificationCount.count++;
-
-        // Find all assignments for this patient
-        const patientAssignments = assignments.filter(
-          (a) => a.patientCd === patient.patientCd
-        );
-
-        // Debug logging for missing patients
-        if (patient.patientCd === 'AMOU-MARTH.20260515' || patient.patientCd === 'GRID-DARLE.20260603') {
-          console.log(`[Recert Debug] ${patient.patientCd}: BP${benefitPeriod}, Due: ${recertDueDate.format('YYYY-MM-DD')}, Assignments: ${patientAssignments.length}`);
-        }
+          // Find all assignments for this patient
+          const patientAssignments = assignments.filter(
+            (a) => a.patientCd === patient.patientCd
+          );
 
         // Helper function to add employee to details
         const addEmployeeToDetails = (employee, rate, visitType) => {
@@ -1146,11 +1123,6 @@ function OverheadForecast(props) {
                 );
               }
 
-              // Debug logging
-              if (patient.patientCd === 'AMOU-MARTH.20260515' || patient.patientCd === 'GRID-DARLE.20260603') {
-                console.log(`[Recert Debug] ${patient.patientCd}: Employee ${employee.name} (${position}), Contract found: ${!!recertContract}`);
-              }
-
               if (recertContract) {
                 const rate = parseFloat(recertContract.serviceRate || 0);
                 total += rate;
@@ -1165,11 +1137,6 @@ function OverheadForecast(props) {
 
         // 2. F2F VISIT - Nurse Practitioner (only for BP > 2)
         if (benefitPeriod > 2) {
-          // Debug logging
-          if (patient.patientCd === 'AMOU-MARTH.20260515' || patient.patientCd === 'GRID-DARLE.20260603') {
-            console.log(`[Recert Debug] ${patient.patientCd}: BP${benefitPeriod} > 2, checking for NP F2F`);
-          }
-
           // Track NP to avoid duplicates (use a separate set since NP is separate from recert staff)
           let npProcessed = false;
 
@@ -1213,8 +1180,9 @@ function OverheadForecast(props) {
             }
           });
         }
-      }
-    });
+        } // End of if (isDueInMonth || isVisitWindowInMonth)
+      }); // End of patient.recertifications.forEach
+    }); // End of patientsWithRecerts.forEach
 
     // Sort by amount descending
     details.sort((a, b) => b.amount - a.amount);
