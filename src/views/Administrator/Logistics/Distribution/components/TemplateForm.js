@@ -515,115 +515,124 @@ function TemplateForm(props) {
           <br />
         </Grid>
 
-        {detailForm && detailForm.length
-          ? detailForm.map((item, index) => {
-              return (
-                <Grid
-                  container
-                  spacing={1}
-                  direction="row"
-                  style={{ paddingBottom: 12 }}
-                  key={`contr-${index}`}
-                >
+        <div
+          style={{
+            maxHeight: "400px",
+            overflowY: "auto",
+            overflowX: "hidden",
+            paddingRight: "10px",
+          }}
+        >
+          {detailForm && detailForm.length
+            ? detailForm.map((item, index) => {
+                return (
                   <Grid
-                    item
-                    xs={12}
-                    style={{
-                      display:
-                        templateType === "add" || templateType === "edit"
-                          ? ""
-                          : "none",
-                    }}
+                    container
+                    spacing={1}
+                    direction="row"
+                    style={{ paddingBottom: 12 }}
+                    key={`contr-${index}`}
                   >
-                    <div style={{ display: "inline-flex", gap: 10 }}>
-                      <Avatar
-                        style={{
-                          height: 24,
-                          width: 24,
-                          color: "black",
-                          background: "white",
-                          border: "1px solid black",
-                        }}
-                      >
-                        {index + 1}
-                      </Avatar>
-                      <div style={{ paddingTop: 4 }}>
-                        <Tooltip title={"Delete Item"}>
-                          <DeleteIcon
-                            style={{
-                              color: "#F62100",
-                              fontSize: "24px",
-                              cursor: "pointer",
-                            }}
-                            onClick={() => deleteItemHandler(index)}
+                    <Grid
+                      item
+                      xs={12}
+                      style={{
+                        display:
+                          templateType === "add" || templateType === "edit"
+                            ? ""
+                            : "none",
+                      }}
+                    >
+                      <div style={{ display: "inline-flex", gap: 10 }}>
+                        <Avatar
+                          style={{
+                            height: 24,
+                            width: 24,
+                            color: "black",
+                            background: "white",
+                            border: "1px solid black",
+                          }}
+                        >
+                          {index + 1}
+                        </Avatar>
+                        <div style={{ paddingTop: 4 }}>
+                          <Tooltip title={"Delete Item"}>
+                            <DeleteIcon
+                              style={{
+                                color: "#F62100",
+                                fontSize: "24px",
+                                cursor: "pointer",
+                              }}
+                              onClick={() => deleteItemHandler(index)}
+                            />
+                          </Tooltip>
+                        </div>
+
+                        <div style={{ width: 340 }}>
+                          <CustomSingleAutoComplete
+                            disabled={
+                              props.mode && props.mode === "view" ? true : false
+                            }
+                            source={item}
+                            {...details.find((d) => d.id === "search")}
+                            value={item["search"]}
+                            onSelectHandler={autoCompleteDetailInputHander}
+                            onChangeHandler={onChangeDetailInputHandler}
+                            options={[...props.stockList]}
                           />
-                        </Tooltip>
-                      </div>
+                        </div>
 
-                      <div style={{ width: 340 }}>
-                        <CustomSingleAutoComplete
-                          disabled={
-                            props.mode && props.mode === "view" ? true : false
-                          }
-                          source={item}
-                          {...details.find((d) => d.id === "search")}
-                          value={item["search"]}
-                          onSelectHandler={autoCompleteDetailInputHander}
-                          onChangeHandler={onChangeDetailInputHandler}
-                          options={[...props.stockList]}
-                        />
-                      </div>
+                        <div style={{ width: 120 }}>
+                          <CustomTextField
+                            disabled={false}
+                            source={item}
+                            {...details.find((d) => d.id === "orderQty")}
+                            value={item["orderQty"]}
+                            onChange={inputDetailHandler}
+                          />
+                        </div>
 
-                      <div style={{ width: 120 }}>
-                        <CustomTextField
-                          disabled={false}
-                          source={item}
-                          {...details.find((d) => d.id === "orderQty")}
-                          value={item["orderQty"]}
-                          onChange={inputDetailHandler}
-                        />
+                        <div style={{ width: 400 }}>
+                          <CustomTextField
+                            disabled={true}
+                            source={item}
+                            {...details.find((d) => d.id === "description")}
+                            value={item["shortDescription"] || "-"}
+                            onChange={inputDetailHandler}
+                          />
+                        </div>
+                        <div style={{ width: 120 }}>
+                          <CustomTextField
+                            disabled={true}
+                            source={item}
+                            {...details.find((d) => d.id === "size")}
+                            value={item["size"]}
+                            onChange={inputDetailHandler}
+                          />
+                        </div>
+                        <div style={{ width: 120 }}>
+                          <CustomTextField
+                            disabled={true}
+                            source={item}
+                            {...details.find((d) => d.id === "unitDistribution")}
+                            value={item["unitDistribution"]}
+                          />
+                        </div>
+                        <div style={{ width: 120 }}>
+                          <CustomTextField
+                            disabled={true}
+                            source={item}
+                            {...details.find((d) => d.id === "vendor")}
+                            value={item["vendor"] || "-"}
+                          />
+                        </div>
                       </div>
-
-                      <div style={{ width: 400 }}>
-                        <CustomTextField
-                          disabled={true}
-                          source={item}
-                          {...details.find((d) => d.id === "description")}
-                          value={item["shortDescription"] || "-"}
-                          onChange={inputDetailHandler}
-                        />
-                      </div>
-                      <div style={{ width: 120 }}>
-                        <CustomTextField
-                          disabled={true}
-                          source={item}
-                          {...details.find((d) => d.id === "size")}
-                          value={item["size"]}
-                          onChange={inputDetailHandler}
-                        />
-                      </div>
-                      <div style={{ width: 120 }}>
-                        <CustomTextField
-                          disabled={true}
-                          source={item}
-                          {...details.find((d) => d.id === "unitDistribution")}
-                          value={item["unitDistribution"]}
-                        />
-                      </div>
-                      <div style={{ width: 120 }}>
-                        <CustomTextField
-                          disabled={true}
-                          source={item}
-                          {...details.find((d) => d.id === "vendor")}
-                          value={item["vendor"] || "-"}
-                        />
-                      </div>
-                    </div>
+                    </Grid>
                   </Grid>
-                </Grid>
-              );
-            })
-          : null}
+                );
+              })
+            : null}
+        </div>
 
         {templateType !== "delete" &&
         templateType !== "use" &&
