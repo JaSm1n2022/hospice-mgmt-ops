@@ -42,7 +42,8 @@ function getModalStyle() {
     top: `${top}%`,
     left: `${left}%`,
     right: `${right}%`,
-    height: "80%",
+    height: "85vh",
+    maxHeight: "85vh",
     width: "95%",
     transform: `translate(-${top}%, -${left}%)`,
   };
@@ -61,12 +62,44 @@ const useStyles = makeStyles((theme) => ({
     position: "absolute",
     width: "98%",
     height: "95%",
-    overflow: "auto",
     backgroundColor: theme.palette.background.paper,
     border: "1px solid #000",
     boxShadow: theme.shadows[0],
-    padding: theme.spacing(2, 4, 3),
+    padding: 0,
     elevation: 2,
+    overflow: "hidden",
+  },
+  modalHeader: {
+    padding: theme.spacing(2, 4, 2),
+    borderBottom: "1px solid rgba(0, 0, 0, 0.12)",
+    backgroundColor: theme.palette.background.paper,
+    position: "relative",
+    zIndex: 1,
+  },
+  modalBody: {
+    position: "absolute",
+    top: "280px",
+    right: 0,
+    bottom: "150px",
+    left: 0,
+    overflowY: "auto",
+    overflowX: "hidden",
+    padding: theme.spacing(3, 4, 2),
+    backgroundColor: theme.palette.background.paper,
+  },
+  modalFooter: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: theme.spacing(3, 4, 3),
+    borderTop: "1px solid rgba(0, 0, 0, 0.12)",
+    backgroundColor: theme.palette.background.paper,
+    minHeight: "150px",
+    zIndex: 1,
+  },
+  detailsContainer: {
+    maxHeight: "none",
   },
   small: {
     width: theme.spacing(3),
@@ -368,161 +401,157 @@ function TemplateForm(props) {
       aria-describedby="distributionModal"
     >
       <div style={modalStyle} className={classes.paper}>
-        <HeaderModal title={titleHandler()} onClose={clearModalHandler} />
-        <FormControl component="fieldset">
-          <FormLabel component="legend">Select Action</FormLabel>
-          <div style={{ display: "inline-flex" }}>
-            <div>
-              <Radio
-                checked={templateType === "add"}
-                onChange={templateTypeHandler}
-                value="add"
-                label="Add"
-                name="radio-button-demo"
-                inputProps={{ "aria-label": "A" }}
-              ></Radio>
-              ADD TEMPLATE
-              <Radio
-                checked={templateType === "edit"}
-                onChange={templateTypeHandler}
-                value="edit"
-                name="radio-button-demo"
-                inputProps={{ "aria-label": "B" }}
-              ></Radio>
-              EDIT TEMPLATE
-              <Radio
-                checked={templateType === "delete"}
-                onChange={templateTypeHandler}
-                value="delete"
-                name="radio-button-demo"
-                inputProps={{ "aria-label": "A" }}
-              ></Radio>
-              DELETE TEMPLATE
-              <Radio
-                checked={templateType === "use"}
-                onChange={templateTypeHandler}
-                value="use"
-                name="radio-button-demo"
-                inputProps={{ "aria-label": "A" }}
-              ></Radio>
-              USE TEMPLATE
+        {/* HEADER SECTION - Fixed */}
+        <div className={classes.modalHeader}>
+          <HeaderModal title={titleHandler()} onClose={clearModalHandler} />
+          <FormControl component="fieldset" style={{ marginTop: 10 }}>
+            <FormLabel component="legend">Select Action</FormLabel>
+            <div style={{ display: "inline-flex" }}>
+              <div>
+                <Radio
+                  checked={templateType === "add"}
+                  onChange={templateTypeHandler}
+                  value="add"
+                  label="Add"
+                  name="radio-button-demo"
+                  inputProps={{ "aria-label": "A" }}
+                ></Radio>
+                ADD TEMPLATE
+                <Radio
+                  checked={templateType === "edit"}
+                  onChange={templateTypeHandler}
+                  value="edit"
+                  name="radio-button-demo"
+                  inputProps={{ "aria-label": "B" }}
+                ></Radio>
+                EDIT TEMPLATE
+                <Radio
+                  checked={templateType === "delete"}
+                  onChange={templateTypeHandler}
+                  value="delete"
+                  name="radio-button-demo"
+                  inputProps={{ "aria-label": "A" }}
+                ></Radio>
+                DELETE TEMPLATE
+                <Radio
+                  checked={templateType === "use"}
+                  onChange={templateTypeHandler}
+                  value="use"
+                  name="radio-button-demo"
+                  inputProps={{ "aria-label": "A" }}
+                ></Radio>
+                USE TEMPLATE
+              </div>
             </div>
-          </div>
-        </FormControl>
-        {templateType === "add" ? (
-          <div style={{ width: "500px", paddingTop: 20, paddingBottom: 20 }}>
-            <FormGroup>
-              <Typography>TEMPLATE NAME</Typography>
-              <CustomTextField
-                isError={templateNameError.isError}
-                errorMsg={templateNameError.message}
-                placeholder="Enter Template Name *"
-                value={generalForm.templateName || ""}
-                name="templateName"
-                onChange={inputGeneralHandler}
-              />
-            </FormGroup>
-          </div>
-        ) : templateType === "edit" ? (
-          <div style={{ width: "500px", paddingTop: 20, paddingBottom: 20 }}>
-            <FormGroup>
-              <Typography>TEMPLATE NAME</Typography>
-              <CustomSingleAutoComplete
-                value={selectedTemplate}
-                onSelectHandler={autoCompleteGeneralInputHander}
-                onChangeHandler={onChangeGeneralInputHandler}
-                options={[...props.templateList]}
-              />
-            </FormGroup>
-          </div>
-        ) : templateType === "delete" ? (
-          <div style={{ width: "500px", paddingTop: 20, paddingBottom: 20 }}>
-            <FormGroup>
-              <Typography>TEMPLATE NAME</Typography>
-              <div style={{ display: "inline-flex", gap: 20 }}>
-                <div style={{ width: "400px" }}>
-                  <CustomSingleAutoComplete
-                    value={selectedTemplate}
-                    onSelectHandler={autoCompleteGeneralInputHander}
-                    onChangeHandler={onChangeGeneralInputHandler}
-                    options={[...props.templateList]}
-                  />
-                </div>
-                <div
-                  style={{
-                    width: "200px",
-                    display: selectedTemplate.name ? "" : "none",
-                  }}
-                >
-                  <Button
-                    onClick={deleteTemplateHandler}
-                    variant="contained"
-                    color="secondary"
+          </FormControl>
+          {templateType === "add" ? (
+            <div style={{ width: "500px", paddingTop: 20, paddingBottom: 10 }}>
+              <FormGroup>
+                <Typography>TEMPLATE NAME</Typography>
+                <CustomTextField
+                  isError={templateNameError.isError}
+                  errorMsg={templateNameError.message}
+                  placeholder="Enter Template Name *"
+                  value={generalForm.templateName || ""}
+                  name="templateName"
+                  onChange={inputGeneralHandler}
+                />
+              </FormGroup>
+            </div>
+          ) : templateType === "edit" ? (
+            <div style={{ width: "500px", paddingTop: 20, paddingBottom: 10 }}>
+              <FormGroup>
+                <Typography>TEMPLATE NAME</Typography>
+                <CustomSingleAutoComplete
+                  value={selectedTemplate}
+                  onSelectHandler={autoCompleteGeneralInputHander}
+                  onChangeHandler={onChangeGeneralInputHandler}
+                  options={[...props.templateList]}
+                />
+              </FormGroup>
+            </div>
+          ) : templateType === "delete" ? (
+            <div style={{ width: "500px", paddingTop: 20, paddingBottom: 10 }}>
+              <FormGroup>
+                <Typography>TEMPLATE NAME</Typography>
+                <div style={{ display: "inline-flex", gap: 20 }}>
+                  <div style={{ width: "400px" }}>
+                    <CustomSingleAutoComplete
+                      value={selectedTemplate}
+                      onSelectHandler={autoCompleteGeneralInputHander}
+                      onChangeHandler={onChangeGeneralInputHandler}
+                      options={[...props.templateList]}
+                    />
+                  </div>
+                  <div
+                    style={{
+                      width: "200px",
+                      display: selectedTemplate.name ? "" : "none",
+                    }}
                   >
-                    Delete Template
-                  </Button>
+                    <Button
+                      onClick={deleteTemplateHandler}
+                      variant="contained"
+                      color="secondary"
+                    >
+                      Delete Template
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </FormGroup>
-          </div>
-        ) : templateType === "use" ? (
-          <div style={{ width: "500px", paddingTop: 20, paddingBottom: 20 }}>
-            <FormGroup>
-              <Typography>TEMPLATE NAME</Typography>
-              <div style={{ display: "inline-flex", gap: 20 }}>
-                <div style={{ width: "400px" }}>
-                  <CustomSingleAutoComplete
-                    value={selectedTemplate}
-                    onSelectHandler={autoCompleteGeneralInputHander}
-                    onChangeHandler={onChangeGeneralInputHandler}
-                    options={[...props.templateList]}
-                  />
-                </div>
-                <div
-                  style={{
-                    width: "200px",
-                    display: selectedTemplate.name ? "" : "none",
-                  }}
-                >
-                  <Button
-                    onClick={useTemplateHandler}
-                    variant="contained"
-                    color="primary"
+              </FormGroup>
+            </div>
+          ) : templateType === "use" ? (
+            <div style={{ width: "500px", paddingTop: 20, paddingBottom: 10 }}>
+              <FormGroup>
+                <Typography>TEMPLATE NAME</Typography>
+                <div style={{ display: "inline-flex", gap: 20 }}>
+                  <div style={{ width: "400px" }}>
+                    <CustomSingleAutoComplete
+                      value={selectedTemplate}
+                      onSelectHandler={autoCompleteGeneralInputHander}
+                      onChangeHandler={onChangeGeneralInputHandler}
+                      options={[...props.templateList]}
+                    />
+                  </div>
+                  <div
+                    style={{
+                      width: "200px",
+                      display: selectedTemplate.name ? "" : "none",
+                    }}
                   >
-                    Use Template
-                  </Button>
+                    <Button
+                      onClick={useTemplateHandler}
+                      variant="contained"
+                      color="primary"
+                    >
+                      Use Template
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </FormGroup>
-          </div>
-        ) : null}
+              </FormGroup>
+            </div>
+          ) : null}
+        </div>
 
-        <Grid container>
-          <Grid container style={{ paddingTop: 20 }}>
-            <Typography variant="h5">Details</Typography>
+        {/* BODY SECTION - Scrollable */}
+        <div className={classes.modalBody}>
+          <Grid container>
+            <Grid container style={{ paddingBottom: 15, paddingTop: 15 }}>
+              <Typography variant="h5" style={{ fontWeight: 600 }}>Details</Typography>
+            </Grid>
+            <Grid item xs={12} style={{ paddingBottom: 20 }}>
+              <Divider
+                variant="fullWidth"
+                style={{
+                  height: ".02em",
+                  border: "solid 1px rgba(0, 0, 0, 0.12)",
+                }}
+                orientation="horizontal"
+                flexItem
+              />
+            </Grid>
           </Grid>
-          <Grid item xs={12} style={{ paddingBottom: 10 }}>
-            <Divider
-              variant="fullWidth"
-              style={{
-                height: ".02em",
-                border: "solid 1px rgba(0, 0, 0, 0.12)",
-              }}
-              orientation="horizontal"
-              flexItem
-            />
-          </Grid>
-          <br />
-        </Grid>
 
-        <div
-          style={{
-            maxHeight: "400px",
-            overflowY: "auto",
-            overflowX: "hidden",
-            paddingRight: "10px",
-          }}
-        >
           {detailForm && detailForm.length
             ? detailForm.map((item, index) => {
                 return (
@@ -634,31 +663,42 @@ function TemplateForm(props) {
             : null}
         </div>
 
-        {templateType !== "delete" &&
-        templateType !== "use" &&
-        detailForm &&
-        detailForm.length ? (
-          <div
-            style={{
-              paddingTop: 4,
-              display: props.mode && props.mode === "edit" ? "none" : "",
-            }}
-          >
-            <Button
-              disabled={props.mode && props.mode === "view" ? true : false}
-              variant="outlined"
-              color="primary"
-              style={{ fontSize: 14 }}
-              onClick={() => addItemHandler()}
-            >
-              Add Item
-            </Button>
-          </div>
-        ) : null}
+        {/* FOOTER SECTION - Fixed */}
         {(props.mode && props.mode === "view") ||
         templateType === "delete" ||
         templateType === "use" ? null : (
-          <ModalFooter actions={footerActions} templateType={templateType} />
+          <div className={classes.modalFooter}>
+            {templateType !== "delete" &&
+            templateType !== "use" &&
+            detailForm &&
+            detailForm.length ? (
+              <div
+                style={{
+                  marginBottom: 20,
+                  marginTop: 0,
+                  display: props.mode && props.mode === "edit" ? "none" : "",
+                }}
+              >
+                <Button
+                  disabled={props.mode && props.mode === "view" ? true : false}
+                  variant="outlined"
+                  color="primary"
+                  style={{
+                    fontSize: 14,
+                    minHeight: 40,
+                    padding: "10px 20px",
+                    fontWeight: 500
+                  }}
+                  onClick={() => addItemHandler()}
+                >
+                  Add Item
+                </Button>
+              </div>
+            ) : null}
+            <div>
+              <ModalFooter actions={footerActions} templateType={templateType} />
+            </div>
+          </div>
         )}
       </div>
     </Modal>
