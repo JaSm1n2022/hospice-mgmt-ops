@@ -32,6 +32,7 @@ import {
 } from "@react-pdf/renderer";
 
 import { ACTION_STATUSES, getOverheadValue } from "utils/constants";
+import RecertificationTimelineHandler from "../RecertificationTimeline/components/RecertificationTimelineHandler";
 import {
   attemptToFetchEmployee,
   resetFetchEmployeeState,
@@ -125,6 +126,14 @@ const styles = {
       color: "#e65100",
     },
   },
+  recertRow: {
+    backgroundColor: "#f3e5f5",
+    "& td": {
+      fontSize: "0.85rem",
+      fontStyle: "italic",
+      color: "#6a1b9a",
+    },
+  },
   fixedRow: {
     backgroundColor: "#e8f5e9",
     "& td": {
@@ -182,6 +191,14 @@ const pdfStyles = StyleSheet.create({
     fontWeight: "bold",
     backgroundColor: "#fff3e0",
     color: "#e65100",
+    padding: 5,
+    marginTop: 5,
+  },
+  recertSectionHeader: {
+    fontSize: 11,
+    fontWeight: "bold",
+    backgroundColor: "#f3e5f5",
+    color: "#6a1b9a",
     padding: 5,
     marginTop: 5,
   },
@@ -294,6 +311,24 @@ const PayrollForecastPDF = ({ data, currentMonthLabel }) => {
                       <View key={dIdx} style={pdfStyles.detailRow}>
                         <Text style={pdfStyles.col1}>{detail.patientCd}</Text>
                         <Text style={pdfStyles.col2}>{detail.serviceType}</Text>
+                        <Text style={pdfStyles.col5}>${detail.rate.toFixed(2)}</Text>
+                        <Text style={pdfStyles.col6}>${detail.amount.toFixed(2)}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {/* Recertification Expenses */}
+                {employee.recertificationDetails && employee.recertificationDetails.length > 0 && (
+                  <View>
+                    <Text style={pdfStyles.recertSectionHeader}>
+                      Recertification Expenses: ${employee.recertificationExpenses.toFixed(2)}
+                    </Text>
+                    {employee.recertificationDetails.map((detail, dIdx) => (
+                      <View key={dIdx} style={pdfStyles.detailRow}>
+                        <Text style={pdfStyles.col1}>{detail.patientCd}</Text>
+                        <Text style={pdfStyles.col2}>{detail.visitType}</Text>
+                        <Text style={pdfStyles.col3}>BP{detail.benefitPeriod}</Text>
                         <Text style={pdfStyles.col5}>${detail.rate.toFixed(2)}</Text>
                         <Text style={pdfStyles.col6}>${detail.amount.toFixed(2)}</Text>
                       </View>
@@ -523,6 +558,8 @@ function EmployeePayrollForecast(props) {
       const regularDetails = [];
       let socExpenses = 0;
       const socDetails = [];
+      let recertificationExpenses = 0;
+      const recertificationDetails = [];
       let fixedExpenses = 0;
       const fixedDetails = [];
 
@@ -686,6 +723,90 @@ function EmployeePayrollForecast(props) {
         });
       }
 
+      // --- Recertification Visits ---
+      // Map patient data to get recertification timelines
+      const patientsWithRecerts = RecertificationTimelineHandler.mapData(patientList);
+
+      patientsWithRecerts.forEach((patient) => {
+        // Skip patients with no recertifications
+        if (!patient.recertifications || patient.recertifications.length === 0) return;
+
+        // Loop through ALL recertifications to find ones due in current month
+        patient.recertifications.forEach((recert) => {
+          const recertDueDate = moment(recert.dueDate);
+          const benefitPeriod = recert.benefitPeriod + 1;
+
+          // Only include recerts due in current month
+          const isDueInMonth = recertDueDate.isSameOrAfter(currentMonthStart, "day") &&
+                               recertDueDate.isSameOrBefore(currentMonthEnd, "day");
+
+          if (!isDueInMonth) return;
+          if (benefitPeriod <= 1) return; // Skip BP 1
+
+          // Skip if patient has EOC before recert due date
+          if (patient.eoc) {
+            const eocDate = moment(patient.eoc);
+            if (eocDate.isSameOrBefore(recertDueDate, "day")) return;
+          }
+
+          // Check if this employee is assigned to this patient
+          const isAssignedToPatient = employeeAssignments.some(
+            (a) => a.patientCd === patient.patientCd
+          );
+
+          if (!isAssignedToPatient) return;
+
+          // Check the employee position for recertification eligibility
+          const position = employeePosition.toLowerCase();
+
+          // BP >= 2: Case Manager, Registered Nurse, MSW, Chaplain
+          const isRecertStaff = benefitPeriod >= 2 && (
+            position.includes("case manager") ||
+            position.includes("registered nurse") ||
+            position.includes("msw") ||
+            position.includes("chaplain")
+          );
+
+          // BP > 2: Nurse Practitioner for F2F
+          const isNP = benefitPeriod > 2 && (
+            position.includes("nurse practitioner") ||
+            position.includes("np")
+          );
+
+          if (isRecertStaff || isNP) {
+            // Find recertification contract
+            let recertContract = contractList.find(
+              (c) =>
+                c.employeeId?.toString() === employeeId?.toString() &&
+                c.patientCd === patient.patientCd &&
+                c.serviceType?.toLowerCase()?.includes("recertification")
+            );
+
+            if (!recertContract) {
+              recertContract = contractList.find(
+                (c) =>
+                  c.employeeId?.toString() === employeeId?.toString() &&
+                  (!c.patientCd || c.patientCd === "" || c.patientCd === "ALL") &&
+                  c.serviceType?.toLowerCase()?.includes("recertification")
+              );
+            }
+
+            if (recertContract) {
+              const rate = parseFloat(recertContract.serviceRate || 0);
+              recertificationExpenses += rate;
+              recertificationDetails.push({
+                patientCd: patient.patientCd,
+                benefitPeriod: benefitPeriod,
+                dueDate: recertDueDate.format("YYYY-MM-DD"),
+                visitType: isNP ? "F2F Visit" : "Recertification Visit",
+                rate: rate,
+                amount: rate,
+              });
+            }
+          }
+        });
+      });
+
       // --- Fixed IDT Meeting Compensation ---
       // Not patient-associated, just check if employee has contract
       // Only Direct Care employees are eligible for IDT meetings
@@ -717,8 +838,8 @@ function EmployeePayrollForecast(props) {
         }
       }
 
-      // Calculate total payroll = salary + visits + SOC + fixed IDT
-      const totalPayroll = salaryAmount + regularExpenses + socExpenses + fixedExpenses;
+      // Calculate total payroll = salary + visits + SOC + recertification + fixed IDT
+      const totalPayroll = salaryAmount + regularExpenses + socExpenses + recertificationExpenses + fixedExpenses;
 
       // Only add employee to results if they have any payroll
       if (totalPayroll > 0) {
@@ -733,6 +854,8 @@ function EmployeePayrollForecast(props) {
           regularDetails,
           socExpenses,
           socDetails,
+          recertificationExpenses,
+          recertificationDetails,
           fixedExpenses,
           fixedDetails,
         });
@@ -875,6 +998,9 @@ function EmployeePayrollForecast(props) {
                             SOC
                           </TableCell>
                           <TableCell align="right" style={{ width: "10%" }}>
+                            Recertification
+                          </TableCell>
+                          <TableCell align="right" style={{ width: "10%" }}>
                             Fixed IDT
                           </TableCell>
                           <TableCell align="right" style={{ width: "13%" }}>
@@ -918,6 +1044,9 @@ function EmployeePayrollForecast(props) {
                                 </TableCell>
                                 <TableCell align="right">
                                   ${employee.socExpenses.toFixed(2)}
+                                </TableCell>
+                                <TableCell align="right">
+                                  ${(employee.recertificationExpenses || 0).toFixed(2)}
                                 </TableCell>
                                 <TableCell align="right">
                                   ${employee.fixedExpenses.toFixed(2)}
@@ -984,6 +1113,39 @@ function EmployeePayrollForecast(props) {
                                           <TableCell>{detail.patientCd || "—"}</TableCell>
                                           <TableCell>{detail.serviceType}</TableCell>
                                           <TableCell align="right" colSpan={2}>
+                                            ${detail.rate.toFixed(2)}
+                                          </TableCell>
+                                          <TableCell align="right" colSpan={3}>
+                                            ${detail.amount.toFixed(2)}
+                                          </TableCell>
+                                        </TableRow>
+                                      ))}
+                                    </>
+                                  )}
+
+                                  {/* Recertification Details */}
+                                  {employee.recertificationDetails.length > 0 && (
+                                    <>
+                                      <TableRow className={classes.recertRow}>
+                                        <TableCell colSpan={8}>
+                                          <strong>Recertification Expenses</strong>
+                                        </TableCell>
+                                      </TableRow>
+                                      <TableRow className={classes.recertRow}>
+                                        <TableCell></TableCell>
+                                        <TableCell>Patient Cd</TableCell>
+                                        <TableCell>Visit Type</TableCell>
+                                        <TableCell align="right">BP</TableCell>
+                                        <TableCell align="right">Rate</TableCell>
+                                        <TableCell align="right" colSpan={3}>Amount</TableCell>
+                                      </TableRow>
+                                      {employee.recertificationDetails.map((detail, idx) => (
+                                        <TableRow key={idx} className={classes.recertRow}>
+                                          <TableCell></TableCell>
+                                          <TableCell>{detail.patientCd || "—"}</TableCell>
+                                          <TableCell>{detail.visitType}</TableCell>
+                                          <TableCell align="right">BP{detail.benefitPeriod}</TableCell>
+                                          <TableCell align="right">
                                             ${detail.rate.toFixed(2)}
                                           </TableCell>
                                           <TableCell align="right" colSpan={3}>
