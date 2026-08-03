@@ -37,6 +37,7 @@ import {
 
 import { ACTION_STATUSES, getOverheadValue } from "utils/constants";
 import MedicareHandler from "./components/MedicareHandler";
+import RecertificationTimelineHandler from "../RecertificationTimeline/components/RecertificationTimelineHandler";
 import {
   attemptToFetchPatient,
   resetFetchPatientState,
@@ -367,6 +368,23 @@ const OverheadForecastPDF = ({ data, currentMonthLabel }) => {
           <Text style={pdfStyles.value}>${data.npEvaluation.toFixed(2)}</Text>
         </View>
 
+        {/* Recertification */}
+        <View style={pdfStyles.subsectionRow}>
+          <Text style={pdfStyles.label}>
+            Recertification ({data.recertificationCount} recerts due)
+          </Text>
+          <Text style={pdfStyles.value}>${data.recertification.toFixed(2)}</Text>
+        </View>
+        {data.recertificationDetails &&
+          data.recertificationDetails.map((detail, idx) => (
+            <View key={`pdf-recert-${idx}`} style={pdfStyles.detailRow}>
+              <Text style={pdfStyles.label}>
+                {detail.employeeName} - {detail.position}
+              </Text>
+              <Text style={pdfStyles.value}>${detail.amount.toFixed(2)}</Text>
+            </View>
+          ))}
+
         {/* Fixed Expenses */}
         <View style={pdfStyles.subsectionRow}>
           <Text style={pdfStyles.label}>Fixed Expenses</Text>
@@ -505,6 +523,7 @@ function OverheadForecast(props) {
     revenue: false,
     salaries: false,
     contracted: false,
+    recertification: false,
   });
 
   const currentMonthLabel = moment().format("MMMM YYYY");
@@ -838,6 +857,18 @@ function OverheadForecast(props) {
     const npEvaluation =
       socCount * getOverheadValue("NP_EVALUATION", overheadTableData);
 
+    // 11c. Recertification
+    const recertificationData = calculateRecertification(
+      patientList,
+      assignmentList,
+      contractList,
+      activeEmployees,
+      currentMonthStart,
+      currentMonthEnd
+    );
+    const recertification = recertificationData.total;
+    const recertificationDetails = recertificationData.details;
+
     // 12. Fixed Expenses
     const fixedExpenses = {
       rent: getOverheadValue("RENT_OFFICE", overheadTableData),
@@ -891,6 +922,7 @@ function OverheadForecast(props) {
       potentialAdmission +
       transportation +
       npEvaluation +
+      recertification +
       totalFixedExpenses +
       billingFees +
       marketing +
@@ -937,6 +969,9 @@ function OverheadForecast(props) {
       potentialAdmission,
       transportation,
       npEvaluation,
+      recertification,
+      recertificationDetails,
+      recertificationCount: recertificationData.count,
       fixedExpenses,
       totalFixedExpenses,
       billingFees,
@@ -951,6 +986,240 @@ function OverheadForecast(props) {
       expenseAdjPerc: (expenseAdjPerc * 100).toFixed(2), // Convert to percentage for display
       potentialAdjustedNetIncome,
     };
+  };
+
+  const calculateRecertification = (
+    patients,
+    assignments,
+    contracts,
+    activeEmployees,
+    monthStart,
+    monthEnd
+  ) => {
+    let total = 0;
+    const details = [];
+    const recertificationCount = { count: 0 };
+
+    // Map patient data to get recertification timelines
+    const patientsWithRecerts = RecertificationTimelineHandler.mapData(patients);
+
+    patientsWithRecerts.forEach((patient) => {
+      if (!patient.currentRecertification) {
+        if (patient.patientCd === 'GRID-DARLE.20260603') {
+          console.log(`[Recert Debug] GRID-DARLE: No currentRecertification`);
+        }
+        return;
+      }
+
+      const recertDueDate = moment(patient.currentRecertification.dueDate);
+
+      // The benefit period from currentRecertification represents the current BP ending
+      // The recertification is FOR the NEXT benefit period, so add 1
+      const benefitPeriod = patient.currentRecertification.benefitPeriod + 1;
+
+      // Debug for GRID-DARLE
+      if (patient.patientCd === 'GRID-DARLE.20260603') {
+        console.log(`[Recert Debug] GRID-DARLE: BP${benefitPeriod}, Due: ${recertDueDate.format('YYYY-MM-DD')}, MonthStart: ${monthStart.format('YYYY-MM-DD')}, MonthEnd: ${monthEnd.format('YYYY-MM-DD')}`);
+        console.log(`[Recert Debug] GRID-DARLE: isSameOrAfter: ${recertDueDate.isSameOrAfter(monthStart, "day")}, isSameOrBefore: ${recertDueDate.isSameOrBefore(monthEnd, "day")}`);
+      }
+
+      // Check if the recertification is due in the current forecast month (e.g., 08/01 to 08/31)
+      if (
+        recertDueDate.isSameOrAfter(monthStart, "day") &&
+        recertDueDate.isSameOrBefore(monthEnd, "day")
+      ) {
+        // Skip BP 1 - already covered by admission/SOC
+        // If currentRecertification.benefitPeriod is 0, then +1 = 1, skip
+        if (benefitPeriod <= 1) {
+          if (patient.patientCd === 'GRID-DARLE.20260603') {
+            console.log(`[Recert Debug] GRID-DARLE: Skipped - BP${benefitPeriod} <= 1`);
+          }
+          return;
+        }
+
+        // Skip patients with EOC if EOC is before or on the recertification due date
+        if (patient.eoc) {
+          const eocDate = moment(patient.eoc);
+          // If patient has EOC before or on the recert due date, skip
+          if (eocDate.isSameOrBefore(recertDueDate, "day")) {
+            if (patient.patientCd === 'GRID-DARLE.20260603') {
+              console.log(`[Recert Debug] GRID-DARLE: Skipped - EOC (${eocDate.format('YYYY-MM-DD')}) <= recert due date`);
+            }
+            return;
+          }
+        }
+
+        if (patient.patientCd === 'GRID-DARLE.20260603') {
+          console.log(`[Recert Debug] GRID-DARLE: Passed all checks, processing...`);
+        }
+
+        recertificationCount.count++;
+
+        // Find all assignments for this patient
+        const patientAssignments = assignments.filter(
+          (a) => a.patientCd === patient.patientCd
+        );
+
+        // Debug logging for missing patients
+        if (patient.patientCd === 'AMOU-MARTH.20260515' || patient.patientCd === 'GRID-DARLE.20260603') {
+          console.log(`[Recert Debug] ${patient.patientCd}: BP${benefitPeriod}, Due: ${recertDueDate.format('YYYY-MM-DD')}, Assignments: ${patientAssignments.length}`);
+        }
+
+        // Helper function to add employee to details
+        const addEmployeeToDetails = (employee, rate, visitType) => {
+          const employeeName = employee.name || `${employee.fn || ""} ${employee.ln || ""}`.trim();
+          const existingDetail = details.find((d) => d.employeeName === employeeName);
+
+          if (existingDetail) {
+            existingDetail.amount += rate;
+            const existingPatient = existingDetail.patients.find(p => p.patientCd === patient.patientCd);
+            if (existingPatient) {
+              existingPatient.visits.push({ type: visitType, rate: rate });
+            } else {
+              existingDetail.patients.push({
+                patientCd: patient.patientCd,
+                patientName: patient.name || patient.patientCd,
+                recertDate: recertDueDate.format("YYYY-MM-DD"),
+                benefitPeriod: benefitPeriod,
+                visits: [{ type: visitType, rate: rate }],
+              });
+            }
+          } else {
+            details.push({
+              employeeName: employeeName,
+              position: employee.position || "N/A",
+              amount: rate,
+              patients: [{
+                patientCd: patient.patientCd,
+                patientName: patient.name || patient.patientCd,
+                recertDate: recertDueDate.format("YYYY-MM-DD"),
+                benefitPeriod: benefitPeriod,
+                visits: [{ type: visitType, rate: rate }],
+              }],
+            });
+          }
+        };
+
+        // 1. RECERTIFICATION VISIT
+        // BP 1: Skip (already covered by admission/SOC)
+        // BP >= 2: Case Manager, RN, MSW, Chaplain
+        if (benefitPeriod >= 2) {
+          // Track employees who have already been processed for this patient to avoid duplicates
+          const processedEmployeeIds = new Set();
+
+          patientAssignments.forEach((assignment) => {
+            const employee = activeEmployees.find(
+              (emp) => emp.id?.toString() === assignment.disciplineId?.toString()
+            );
+
+            if (!employee) return;
+
+            // Skip if this employee has already been processed for this patient
+            const employeeId = employee.id?.toString();
+            if (processedEmployeeIds.has(employeeId)) return;
+
+            const position = (employee.position || "").toLowerCase();
+
+            // BP >= 2: Case Manager, Registered Nurse, MSW, Chaplain
+            const isRecertificationStaff =
+              position.includes("case manager") ||
+              position.includes("registered nurse") ||
+              position.includes("msw") ||
+              position.includes("chaplain");
+
+            if (isRecertificationStaff) {
+              // Find "Recertification Visit" contract for this employee
+              let recertContract = contracts.find(
+                (c) =>
+                  c.employeeId?.toString() === employee.id?.toString() &&
+                  c.patientCd === patient.patientCd &&
+                  c.serviceType?.toLowerCase()?.includes("recertification")
+              );
+
+              // If no patient-specific contract, look for generic contract
+              if (!recertContract) {
+                recertContract = contracts.find(
+                  (c) =>
+                    c.employeeId?.toString() === employee.id?.toString() &&
+                    (!c.patientCd || c.patientCd === "" || c.patientCd === "ALL") &&
+                    c.serviceType?.toLowerCase()?.includes("recertification")
+                );
+              }
+
+              // Debug logging
+              if (patient.patientCd === 'AMOU-MARTH.20260515' || patient.patientCd === 'GRID-DARLE.20260603') {
+                console.log(`[Recert Debug] ${patient.patientCd}: Employee ${employee.name} (${position}), Contract found: ${!!recertContract}`);
+              }
+
+              if (recertContract) {
+                const rate = parseFloat(recertContract.serviceRate || 0);
+                total += rate;
+                addEmployeeToDetails(employee, rate, `Recertification Visit (BP${benefitPeriod})`);
+
+                // Mark this employee as processed for this patient
+                processedEmployeeIds.add(employeeId);
+              }
+            }
+          });
+        }
+
+        // 2. F2F VISIT - Nurse Practitioner (only for BP > 2)
+        if (benefitPeriod > 2) {
+          // Debug logging
+          if (patient.patientCd === 'AMOU-MARTH.20260515' || patient.patientCd === 'GRID-DARLE.20260603') {
+            console.log(`[Recert Debug] ${patient.patientCd}: BP${benefitPeriod} > 2, checking for NP F2F`);
+          }
+
+          // Track NP to avoid duplicates (use a separate set since NP is separate from recert staff)
+          let npProcessed = false;
+
+          // Find NP from IDT assignments
+          patientAssignments.forEach((assignment) => {
+            if (npProcessed) return; // Only process first NP found
+
+            const employee = activeEmployees.find(
+              (emp) => emp.id?.toString() === assignment.disciplineId?.toString()
+            );
+            if (!employee) return;
+
+            const position = (employee.position || "").toLowerCase();
+            const isNP = position.includes("nurse practitioner") || position.includes("np");
+
+            if (isNP) {
+              // Find "Recertification Visit" contract for NP (F2F)
+              let npRecertContract = contracts.find(
+                (c) =>
+                  c.employeeId?.toString() === employee.id?.toString() &&
+                  c.patientCd === patient.patientCd &&
+                  c.serviceType?.toLowerCase()?.includes("recertification")
+              );
+
+              // If no patient-specific contract, look for generic contract
+              if (!npRecertContract) {
+                npRecertContract = contracts.find(
+                  (c) =>
+                    c.employeeId?.toString() === employee.id?.toString() &&
+                    (!c.patientCd || c.patientCd === "" || c.patientCd === "ALL") &&
+                    c.serviceType?.toLowerCase()?.includes("recertification")
+                );
+              }
+
+              if (npRecertContract) {
+                const rate = parseFloat(npRecertContract.serviceRate || 0);
+                total += rate;
+                addEmployeeToDetails(employee, rate, "F2F Visit (BP>2)");
+                npProcessed = true; // Mark as processed to avoid duplicates
+              }
+            }
+          });
+        }
+      }
+    });
+
+    // Sort by amount descending
+    details.sort((a, b) => b.amount - a.amount);
+
+    return { total, details, count: recertificationCount.count };
   };
 
   const calculateSalariesWages = (activeEmployees, contracts) => {
@@ -1570,6 +1839,66 @@ function OverheadForecast(props) {
                           ${forecastData.npEvaluation.toFixed(2)}
                         </TableCell>
                       </TableRow>
+
+                      {/* Recertification */}
+                      <TableRow
+                        className={classes.subsectionHeader}
+                        style={{ cursor: forecastData.recertificationDetails?.length > 0 ? "pointer" : "default" }}
+                        onClick={() => forecastData.recertificationDetails?.length > 0 && toggleSection("recertification")}
+                      >
+                        <TableCell>
+                          <div
+                            style={{ display: "flex", alignItems: "center" }}
+                          >
+                            {forecastData.recertificationDetails?.length > 0 && (
+                              expandedSections.recertification ? (
+                                <KeyboardArrowUp />
+                              ) : (
+                                <KeyboardArrowDown />
+                              )
+                            )}
+                            <span style={{ marginLeft: forecastData.recertificationDetails?.length > 0 ? 8 : 0 }}>
+                              Recertification ({forecastData.recertificationCount} recert
+                              {forecastData.recertificationCount !== 1 ? "s" : ""} due)
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell style={{ textAlign: "right" }}>
+                          ${forecastData.recertification.toFixed(2)}
+                        </TableCell>
+                      </TableRow>
+                      {expandedSections.recertification &&
+                        forecastData.recertificationDetails?.map((detail, idx) => (
+                          <TableRow
+                            key={`recert-${idx}`}
+                            className={classes.detailRow}
+                          >
+                            <TableCell style={{ paddingLeft: "70px" }}>
+                              {detail.employeeName} - {detail.position}
+                              {detail.patients && detail.patients.length > 0 && (
+                                <div style={{ fontSize: "0.85em", color: "#666", marginTop: 4 }}>
+                                  {detail.patients.map((p, pIdx) => (
+                                    <div key={pIdx} style={{ marginBottom: 4 }}>
+                                      • {p.patientName} (BP{p.benefitPeriod}, Due: {moment(p.recertDate).format("MMM DD, YYYY")})
+                                      {p.visits && p.visits.length > 0 && (
+                                        <div style={{ paddingLeft: 12, fontSize: "0.95em" }}>
+                                          {p.visits.map((v, vIdx) => (
+                                            <div key={vIdx}>
+                                              - {v.type}: ${v.rate.toFixed(2)}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </TableCell>
+                            <TableCell style={{ textAlign: "right" }}>
+                              ${detail.amount.toFixed(2)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
 
                       {/* Fixed Expenses */}
                       <TableRow className={classes.subsectionHeader}>
