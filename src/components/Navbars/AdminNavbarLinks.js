@@ -13,6 +13,7 @@ import Grow from "@material-ui/core/Grow";
 import Hidden from "@material-ui/core/Hidden";
 import Popper from "@material-ui/core/Popper";
 import Divider from "@material-ui/core/Divider";
+import { Typography } from "@material-ui/core";
 
 // @material-ui/icons
 import Person from "@material-ui/icons/Person";
@@ -30,6 +31,17 @@ import { supabaseClient } from "config/SupabaseClient";
 const storageUtil = require("utils/storageUtil");
 
 const useStyles = makeStyles(styles);
+
+// Generate app version based on current date/time (YYMMDD-HHMM format)
+const getAppVersion = () => {
+  const now = new Date();
+  const year = String(now.getFullYear()).slice(-2);
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  return `${year}${month}${day}-${hours}${minutes}`;
+};
 
 export default function HeaderLinks(props) {
   const [openNotification, setOpenNotification] = React.useState(null);
@@ -171,6 +183,20 @@ export default function HeaderLinks(props) {
               <Paper className={classes.dropdown}>
                 <ClickAwayListener onClickAway={handleCloseProfile}>
                   <MenuList role="menu">
+                    <MenuItem disabled style={{ opacity: 1, cursor: 'default', padding: '8px 16px' }}>
+                      <div style={{ width: '100%' }}>
+                        <Typography variant="caption" style={{ fontSize: '11px', color: '#999', display: 'block', fontWeight: 'bold', marginBottom: '4px' }}>
+                          APP VERSION
+                        </Typography>
+                        <Typography variant="body2" style={{ fontSize: '12px', color: '#666', display: 'block' }}>
+                          App v{getAppVersion()}
+                        </Typography>
+                        <Typography variant="body2" style={{ fontSize: '12px', color: '#666', display: 'block' }}>
+                          React v{React.version}
+                        </Typography>
+                      </div>
+                    </MenuItem>
+                    <Divider />
                     <MenuItem onClick={logout} className={dropdownItem}>
                       {rtlActive ? "الخروج" : "Log out"}
                     </MenuItem>

@@ -35,7 +35,7 @@ Scope is limited to clinical visit notes. The following `VISIT TYPE` values are 
 
 Everything else is included (e.g. `HA VISIT NOTES`, `VISIT NOTES`, `NURSING - *`, `PSYCHOSOCIAL - *`, `SPIRITUAL - *`, `BEREAVEMENT ASSESSMENT`, `INCIDENT/OCCURENCE`).
 
-**Note status is *not* used as a filter** — every action row of an included visit type counts, regardless of whether it is `Note Created`, `QA Required`, `Electronically Signed`, etc.
+**Note status filter**: Only records where `NOTE STATUS` is `"Note Created"` are included. This prevents duplicate counting of the same note as it progresses through different statuses (`QA Required`, `Electronically Signed`, etc.).
 
 To change scope, edit the `EXCLUDED_VISIT_TYPES` set at the top of the script.
 

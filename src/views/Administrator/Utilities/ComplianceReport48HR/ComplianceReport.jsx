@@ -113,16 +113,40 @@ function compColor(cp) {
 // ---------------------------------------------------------------- ANALYSIS
 function analyze(rows) {
   const records = [];
+  const detailedRecords = []; // Store detailed records for 48Hrs List report
+
   for (const row of rows) {
     const visitType = String(row["VISIT TYPE"] ?? "").trim();
     if (EXCLUDED_VISIT_TYPES.has(visitType)) continue;
+
+    // Filter: Only include records where Note Status is "Note Created" to avoid duplicates
+    const noteStatus = String(row["NOTE STATUS"] ?? "").trim();
+    if (noteStatus !== "Note Created") continue;
+
     const vd = parseLogDate(row["VISIT DATE"]);
     const ad = parseLogDate(row["ACTION DATE"]);
     if (!vd || !ad) continue;
+
     const lag = Math.round((ad - vd) / 86400000);
+    const isNonCompliant = lag > COMPLIANCE_LIMIT_DAYS;
+
+    const author = cleanAuthor(row["AUTHOR OF NOTE"]);
+
     records.push({
-      author: cleanAuthor(row["AUTHOR OF NOTE"]),
-      nonCompliant: lag > COMPLIANCE_LIMIT_DAYS,
+      author,
+      nonCompliant: isNonCompliant,
+    });
+
+    // Store detailed record for 48Hrs List report
+    detailedRecords.push({
+      patient: row["PATIENT"] ?? "",
+      visitType: visitType,
+      visitDate: vd,
+      author: author,
+      noteStatus: noteStatus,
+      actionDate: ad,
+      lagDays: lag,
+      nonCompliant: isNonCompliant,
     });
   }
 
@@ -151,6 +175,7 @@ function analyze(rows) {
     compPct: total ? Math.round((1000 * (total - nc)) / total) / 10 : 0,
     ncPct: total ? Math.round((1000 * nc) / total) / 10 : 0,
     authors,
+    detailedRecords, // Include detailed records for 48Hrs List
   };
 }
 
@@ -380,6 +405,156 @@ export default function ComplianceReport() {
     }
   };
 
+  const handleDownload48HrsList = async () => {
+    if (!summary || !summary.detailedRecords) return;
+
+    setIsGeneratingPDF(true);
+    try {
+      // Filter only non-compliant records
+      const nonCompliantRecords = summary.detailedRecords.filter(r => r.nonCompliant);
+
+      // Group by author
+      const groupedByAuthor = {};
+      nonCompliantRecords.forEach(record => {
+        if (!groupedByAuthor[record.author]) {
+          groupedByAuthor[record.author] = [];
+        }
+        groupedByAuthor[record.author].push(record);
+      });
+
+      // Sort authors alphabetically
+      const sortedAuthors = Object.keys(groupedByAuthor).sort();
+
+      // Create PDF
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 15;
+      let yPosition = margin;
+
+      // Helper function to check if we need a new page
+      const checkNewPage = (requiredSpace = 10) => {
+        if (yPosition + requiredSpace > pageHeight - margin) {
+          pdf.addPage();
+          yPosition = margin;
+          return true;
+        }
+        return false;
+      };
+
+      // Title
+      pdf.setFontSize(18);
+      pdf.setTextColor(31, 56, 100); // NAVY
+      pdf.setFont("helvetica", "bold");
+      pdf.text("48-Hour Non-Compliance Report", margin, yPosition);
+      yPosition += 10;
+
+      // Reporting Period
+      pdf.setFontSize(10);
+      pdf.setFont("helvetica", "normal");
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(`Reporting Period: ${reportingPeriod}`, margin, yPosition);
+      yPosition += 6;
+
+      pdf.text(`Generated: ${new Date().toLocaleDateString()}`, margin, yPosition);
+      yPosition += 10;
+
+      // Summary
+      pdf.setFontSize(11);
+      pdf.setTextColor(0, 0, 0);
+      pdf.text(`Total Non-Compliant Records: ${nonCompliantRecords.length}`, margin, yPosition);
+      yPosition += 6;
+      pdf.text(`Total Authors with Non-Compliance: ${sortedAuthors.length}`, margin, yPosition);
+      yPosition += 12;
+
+      // For each author
+      sortedAuthors.forEach((author, authorIndex) => {
+        const authorRecords = groupedByAuthor[author];
+
+        checkNewPage(20);
+
+        // Author Header
+        pdf.setFontSize(13);
+        pdf.setFont("helvetica", "bold");
+        pdf.setTextColor(31, 56, 100); // NAVY
+        pdf.text(`${author} (${authorRecords.length} record${authorRecords.length > 1 ? 's' : ''})`, margin, yPosition);
+        yPosition += 8;
+
+        // Table header
+        pdf.setFontSize(9);
+        pdf.setFillColor(217, 226, 243); // Light blue header
+        pdf.rect(margin, yPosition - 5, pageWidth - 2 * margin, 7, 'F');
+
+        pdf.setTextColor(0, 0, 0);
+        pdf.setFont("helvetica", "bold");
+        pdf.text("Patient", margin + 2, yPosition);
+        pdf.text("Visit Date", margin + 50, yPosition);
+        pdf.text("Visit Type", margin + 80, yPosition);
+        pdf.text("Days", margin + 120, yPosition);
+        pdf.text("Note Status", margin + 135, yPosition);
+        yPosition += 8;
+
+        // Table rows
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(8);
+
+        authorRecords.forEach((record, recordIndex) => {
+          checkNewPage(8);
+
+          const rowY = yPosition - 5;
+
+          // Alternating row colors
+          if (recordIndex % 2 === 1) {
+            pdf.setFillColor(248, 250, 252);
+            pdf.rect(margin, rowY, pageWidth - 2 * margin, 7, 'F');
+          }
+
+          pdf.setTextColor(0, 0, 0);
+
+          // Patient name (truncated if too long)
+          const patientName = record.patient.length > 20 ? record.patient.substring(0, 18) + '..' : record.patient;
+          pdf.text(patientName, margin + 2, yPosition);
+
+          // Visit Date
+          const visitDateStr = record.visitDate.toLocaleDateString();
+          pdf.text(visitDateStr, margin + 50, yPosition);
+
+          // Visit Type (truncated if too long)
+          const visitType = record.visitType.length > 18 ? record.visitType.substring(0, 16) + '..' : record.visitType;
+          pdf.text(visitType, margin + 80, yPosition);
+
+          // Lag days
+          pdf.setTextColor(192, 0, 0); // RED
+          pdf.setFont("helvetica", "bold");
+          pdf.text(String(record.lagDays), margin + 120, yPosition);
+
+          // Note Status (truncated)
+          pdf.setFont("helvetica", "normal");
+          pdf.setTextColor(0, 0, 0);
+          const noteStatus = record.noteStatus.length > 25 ? record.noteStatus.substring(0, 23) + '..' : record.noteStatus;
+          pdf.text(noteStatus, margin + 135, yPosition);
+
+          yPosition += 7;
+        });
+
+        yPosition += 8; // Space between authors
+      });
+
+      const dateStr = new Date().toISOString().split('T')[0];
+      pdf.save(`48HR_NonCompliance_List_${dateStr}.pdf`);
+    } catch (error) {
+      console.error("Error generating 48Hrs List PDF:", error);
+      setError("Failed to generate 48Hrs List PDF. Please try again.");
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
   const handleFile = useCallback((file) => {
     if (!file) return;
     setError("");
@@ -558,8 +733,24 @@ export default function ComplianceReport() {
 
       {summary && (
         <>
-          {/* PDF Download Button */}
+          {/* PDF Download Buttons */}
           <Box display="flex" justifyContent="flex-end" alignItems="center" gap={2}>
+            <Button
+              variant="contained"
+              style={{
+                marginTop: "24px",
+                marginBottom: "16px",
+                backgroundColor: RED,
+                color: "white",
+                padding: "10px 24px",
+                fontSize: "1rem",
+              }}
+              startIcon={isGeneratingPDF ? <CircularProgress size={18} color="inherit" /> : <Download style={{ width: "20px", height: "20px" }} />}
+              onClick={handleDownload48HrsList}
+              disabled={isGeneratingPDF}
+            >
+              {isGeneratingPDF ? "Generating..." : "Download 48Hrs List (PDF)"}
+            </Button>
             <Button
               variant="contained"
               className={classes.pdfButton}
@@ -567,7 +758,7 @@ export default function ComplianceReport() {
               onClick={handleDownloadPDF}
               disabled={isGeneratingPDF}
             >
-              {isGeneratingPDF ? "Generating PDF..." : "Download as PDF"}
+              {isGeneratingPDF ? "Generating PDF..." : "Download Full Report (PDF)"}
             </Button>
           </Box>
 

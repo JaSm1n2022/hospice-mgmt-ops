@@ -434,8 +434,10 @@ function RoutesheetFunction(props) {
     if (keyword) {
       filtered = filtered.filter(
         (data) =>
-          data.requestor &&
-          data.requestor.toLowerCase().indexOf(keyword.toLowerCase()) !== -1
+          (data.requestor &&
+          data.requestor.toLowerCase().indexOf(keyword.toLowerCase()) !== -1) ||
+          (data.patientCd &&
+          data.patientCd.toLowerCase().indexOf(keyword.toLowerCase()) !== -1)
       );
     }
 

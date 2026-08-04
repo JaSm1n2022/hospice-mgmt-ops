@@ -53,6 +53,7 @@ import {
 } from "store/actions/employeeAction";
 import { employeeListStateSelector } from "store/selectors/employeeSelector";
 import { SupaContext } from "App";
+import RecertificationTimelineHandler from "../RecertificationTimeline/components/RecertificationTimelineHandler";
 
 const styles = {
   cardCategoryWhite: {
@@ -118,6 +119,14 @@ const styles = {
       fontSize: "0.85rem",
       fontStyle: "italic",
       color: "#e65100",
+    },
+  },
+  recertRow: {
+    backgroundColor: "#f3e5f5",
+    "& td": {
+      fontSize: "0.85rem",
+      fontStyle: "italic",
+      color: "#6a1b9a",
     },
   },
 };
@@ -249,7 +258,8 @@ const pdfStyles = StyleSheet.create({
 const ExpensesForecastPDF = ({ data, currentMonthLabel }) => {
   const totalRegular = data.reduce((sum, r) => sum + r.regularExpenses, 0);
   const totalSOC = data.reduce((sum, r) => sum + r.socExpenses, 0);
-  const grandTotal = totalRegular + totalSOC;
+  const totalRecert = data.reduce((sum, r) => sum + (r.recertificationExpenses || 0), 0);
+  const grandTotal = totalRegular + totalSOC + totalRecert;
 
   return (
     <Document>
@@ -336,6 +346,34 @@ const ExpensesForecastPDF = ({ data, currentMonthLabel }) => {
               </View>
             )}
 
+            {/* Recertification Expenses */}
+            {patient.recertificationDetails && patient.recertificationDetails.length > 0 && (
+              <View>
+                <Text style={pdfStyles.sectionTitle}>
+                  Recertification Expenses
+                </Text>
+                {patient.recertificationDetails.map((detail, dIdx) => (
+                  <View key={dIdx} style={pdfStyles.socDetailRow}>
+                    <Text style={pdfStyles.detailLabel}>
+                      {detail.visitType} (BP{detail.benefitPeriod})
+                    </Text>
+                    <Text style={pdfStyles.detailValue}>
+                      @ ${parseFloat(detail.rate).toFixed(2)}
+                    </Text>
+                    <Text style={pdfStyles.detailAmount}>
+                      ${parseFloat(detail.amount).toFixed(2)}
+                    </Text>
+                  </View>
+                ))}
+                <View style={pdfStyles.totalRow}>
+                  <Text style={{ width: "70%" }}>Recertification Expenses Total</Text>
+                  <Text style={{ width: "30%", textAlign: "right" }}>
+                    ${parseFloat(patient.recertificationExpenses || 0).toFixed(2)}
+                  </Text>
+                </View>
+              </View>
+            )}
+
             {/* Patient Total */}
             <View
               style={[
@@ -365,6 +403,12 @@ const ExpensesForecastPDF = ({ data, currentMonthLabel }) => {
             <Text style={pdfStyles.grandTotalLabel}>Total SOC Expenses</Text>
             <Text style={pdfStyles.grandTotalValue}>
               ${parseFloat(totalSOC).toFixed(2)}
+            </Text>
+          </View>
+          <View style={pdfStyles.grandTotalRow}>
+            <Text style={pdfStyles.grandTotalLabel}>Total Recertification Expenses</Text>
+            <Text style={pdfStyles.grandTotalValue}>
+              ${parseFloat(totalRecert).toFixed(2)}
             </Text>
           </View>
           <View
@@ -928,7 +972,134 @@ function ExpensesClientForecast(props) {
         });
       }
 
-      const totalExpenses = regularExpenses + socExpenses;
+      // --- Recertification Expenses ---
+      let recertificationExpenses = 0;
+      const recertificationDetails = [];
+
+      // Get recertification data for this patient
+      const patientsWithRecerts = RecertificationTimelineHandler.mapData([patient]);
+      const patientRecertData = patientsWithRecerts[0];
+
+      if (patientRecertData && patientRecertData.recertifications && patientRecertData.recertifications.length > 0) {
+        patientRecertData.recertifications.forEach((recert) => {
+          const recertDueDate = moment(recert.dueDate);
+          const benefitPeriod = recert.benefitPeriod + 1;
+
+          // Only include recerts due in current month
+          const isDueInMonth = recertDueDate.isSameOrAfter(currentMonthStart, "day") &&
+                               recertDueDate.isSameOrBefore(currentMonthEnd, "day");
+
+          if (!isDueInMonth) return;
+          if (benefitPeriod <= 1) return; // Skip BP 1
+
+          // Skip if patient has EOC before recert due date
+          if (eocDate && eocDate.isSameOrBefore(recertDueDate, "day")) return;
+
+          const processedEmployeeIds = new Set(); // Prevent duplicates
+
+          // 1. RECERTIFICATION VISIT - Case Manager, RN, MSW, Chaplain (BP >= 2)
+          if (benefitPeriod >= 2) {
+            patientAssignments.forEach((assignment) => {
+              const employee = employeeList.find(
+                (emp) => emp.id?.toString() === assignment.disciplineId?.toString()
+              );
+              if (!employee) return;
+
+              const employeeId = employee.id?.toString();
+              if (processedEmployeeIds.has(employeeId)) return; // Skip duplicates
+
+              const position = (employee.position || "").toLowerCase();
+              const isRecertificationStaff =
+                position.includes("case manager") ||
+                position.includes("registered nurse") ||
+                position.includes("msw") ||
+                position.includes("chaplain");
+
+              if (isRecertificationStaff) {
+                // Find recertification contract
+                let recertContract = contractList.find(
+                  (c) =>
+                    c.employeeId?.toString() === employee.id?.toString() &&
+                    c.patientCd === patient.patientCd &&
+                    c.serviceType?.toLowerCase()?.includes("recertification")
+                );
+
+                if (!recertContract) {
+                  recertContract = contractList.find(
+                    (c) =>
+                      c.employeeId?.toString() === employee.id?.toString() &&
+                      (!c.patientCd || c.patientCd === "" || c.patientCd === "ALL") &&
+                      c.serviceType?.toLowerCase()?.includes("recertification")
+                  );
+                }
+
+                if (recertContract) {
+                  const rate = parseFloat(recertContract.serviceRate || 0);
+                  recertificationExpenses += rate;
+                  recertificationDetails.push({
+                    benefitPeriod: benefitPeriod,
+                    dueDate: recertDueDate.format("YYYY-MM-DD"),
+                    visitType: `Recertification Visit - ${employee.position}`,
+                    rate: rate,
+                    amount: rate,
+                  });
+                  processedEmployeeIds.add(employeeId);
+                }
+              }
+            });
+          }
+
+          // 2. F2F VISIT - Nurse Practitioner (only for BP > 2)
+          if (benefitPeriod > 2) {
+            let npProcessed = false;
+
+            patientAssignments.forEach((assignment) => {
+              if (npProcessed) return;
+
+              const employee = employeeList.find(
+                (emp) => emp.id?.toString() === assignment.disciplineId?.toString()
+              );
+              if (!employee) return;
+
+              const position = (employee.position || "").toLowerCase();
+              const isNP = position.includes("nurse practitioner") || position.includes("np");
+
+              if (isNP) {
+                let npRecertContract = contractList.find(
+                  (c) =>
+                    c.employeeId?.toString() === employee.id?.toString() &&
+                    c.patientCd === patient.patientCd &&
+                    c.serviceType?.toLowerCase()?.includes("recertification")
+                );
+
+                if (!npRecertContract) {
+                  npRecertContract = contractList.find(
+                    (c) =>
+                      c.employeeId?.toString() === employee.id?.toString() &&
+                      (!c.patientCd || c.patientCd === "" || c.patientCd === "ALL") &&
+                      c.serviceType?.toLowerCase()?.includes("recertification")
+                  );
+                }
+
+                if (npRecertContract) {
+                  const rate = parseFloat(npRecertContract.serviceRate || 0);
+                  recertificationExpenses += rate;
+                  recertificationDetails.push({
+                    benefitPeriod: benefitPeriod,
+                    dueDate: recertDueDate.format("YYYY-MM-DD"),
+                    visitType: "F2F Visit - NP",
+                    rate: rate,
+                    amount: rate,
+                  });
+                  npProcessed = true;
+                }
+              }
+            });
+          }
+        });
+      }
+
+      const totalExpenses = regularExpenses + socExpenses + recertificationExpenses;
 
       results.push({
         patientCd: patient.patientCd,
@@ -939,10 +1110,12 @@ function ExpensesClientForecast(props) {
         daysInCurrentMonth: daysInCurrentMonth,
         regularExpenses: regularExpenses,
         socExpenses: socExpenses,
+        recertificationExpenses: recertificationExpenses,
         totalExpenses: totalExpenses,
         socInCurrentMonth: socInCurrentMonth,
         regularDetails: regularDetails,
         socDetails: socDetails,
+        recertificationDetails: recertificationDetails,
       });
     });
 
@@ -964,7 +1137,8 @@ function ExpensesClientForecast(props) {
     0
   );
   const totalSOC = forecastData.reduce((sum, r) => sum + r.socExpenses, 0);
-  const grandTotal = totalRegular + totalSOC;
+  const totalRecert = forecastData.reduce((sum, r) => sum + (r.recertificationExpenses || 0), 0);
+  const grandTotal = totalRegular + totalSOC + totalRecert;
 
   const currentMonthLabel = moment().format("MMMM YYYY");
 
@@ -1071,6 +1245,9 @@ function ExpensesClientForecast(props) {
                           SOC Expenses
                         </TableCell>
                         <TableCell style={{ textAlign: "right" }}>
+                          Recertification
+                        </TableCell>
+                        <TableCell style={{ textAlign: "right" }}>
                           Total Expenses
                         </TableCell>
                       </TableRow>
@@ -1108,6 +1285,9 @@ function ExpensesClientForecast(props) {
                               ${parseFloat(row.socExpenses).toFixed(2)}
                             </TableCell>
                             <TableCell style={{ textAlign: "right" }}>
+                              ${parseFloat(row.recertificationExpenses || 0).toFixed(2)}
+                            </TableCell>
+                            <TableCell style={{ textAlign: "right" }}>
                               <strong>
                                 ${parseFloat(row.totalExpenses).toFixed(2)}
                               </strong>
@@ -1121,7 +1301,7 @@ function ExpensesClientForecast(props) {
                               {row.regularDetails.length > 0 && (
                                 <>
                                   <TableRow>
-                                    <TableCell colSpan={9}>
+                                    <TableCell colSpan={10}>
                                       <Typography
                                         variant="subtitle2"
                                         style={{
@@ -1154,6 +1334,7 @@ function ExpensesClientForecast(props) {
                                         /visit
                                       </TableCell>
                                       <TableCell />
+                                      <TableCell />
                                       <TableCell style={{ textAlign: "right" }}>
                                         ${parseFloat(detail.amount).toFixed(2)}
                                       </TableCell>
@@ -1167,7 +1348,7 @@ function ExpensesClientForecast(props) {
                                 row.socDetails.length > 0 && (
                                   <>
                                     <TableRow>
-                                      <TableCell colSpan={9}>
+                                      <TableCell colSpan={10}>
                                         <Typography
                                           variant="subtitle2"
                                           style={{
@@ -1201,6 +1382,58 @@ function ExpensesClientForecast(props) {
                                           {parseFloat(detail.rate).toFixed(2)}
                                         </TableCell>
                                         <TableCell />
+                                        <TableCell />
+                                        <TableCell
+                                          style={{ textAlign: "right" }}
+                                        >
+                                          $
+                                          {parseFloat(detail.amount).toFixed(2)}
+                                        </TableCell>
+                                      </TableRow>
+                                    ))}
+                                  </>
+                                )}
+
+                              {/* Recertification detail rows */}
+                              {row.recertificationDetails &&
+                                row.recertificationDetails.length > 0 && (
+                                  <>
+                                    <TableRow>
+                                      <TableCell colSpan={10}>
+                                        <Typography
+                                          variant="subtitle2"
+                                          style={{
+                                            paddingLeft: 40,
+                                            color: "#6a1b9a",
+                                          }}
+                                        >
+                                          Recertification Expenses
+                                        </Typography>
+                                      </TableCell>
+                                    </TableRow>
+                                    {row.recertificationDetails.map((detail, idx) => (
+                                      <TableRow
+                                        key={`recert-${row.patientCd}-${idx}`}
+                                        className={classes.recertRow}
+                                      >
+                                        <TableCell />
+                                        <TableCell style={{ paddingLeft: 40 }}>
+                                          {detail.visitType}
+                                        </TableCell>
+                                        <TableCell colSpan={3}>
+                                          BP{detail.benefitPeriod} - Due: {moment(detail.dueDate).format("MMM DD, YYYY")}
+                                        </TableCell>
+                                        <TableCell
+                                          style={{ textAlign: "right" }}
+                                        />
+                                        <TableCell
+                                          style={{ textAlign: "right" }}
+                                        >
+                                          @ $
+                                          {parseFloat(detail.rate).toFixed(2)}
+                                        </TableCell>
+                                        <TableCell />
+                                        <TableCell />
                                         <TableCell
                                           style={{ textAlign: "right" }}
                                         >
@@ -1226,6 +1459,9 @@ function ExpensesClientForecast(props) {
                         </TableCell>
                         <TableCell style={{ textAlign: "right" }}>
                           ${parseFloat(totalSOC).toFixed(2)}
+                        </TableCell>
+                        <TableCell style={{ textAlign: "right" }}>
+                          ${parseFloat(totalRecert).toFixed(2)}
                         </TableCell>
                         <TableCell style={{ textAlign: "right" }}>
                           ${parseFloat(grandTotal).toFixed(2)}
