@@ -4,7 +4,7 @@ import { PieChart, Pie, Cell } from "recharts";
 import { Upload, FileSpreadsheet, AlertCircle, Download } from "lucide-react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
-import { Button, Paper, Box, CircularProgress, TextField } from "@material-ui/core";
+import { Button, Paper, Box, CircularProgress, TextField, Select, MenuItem, FormControl, InputLabel } from "@material-ui/core";
 import { makeStyles } from "@material-ui/core/styles";
 
 // ---------------------------------------------------------------- CONFIG
@@ -15,7 +15,14 @@ const EXCLUDED_VISIT_TYPES = new Set([
   "CERTIFICATION REF",
   "COMMUNICATION LOG",
 ]);
-const COMPLIANCE_LIMIT_DAYS = 2; // within 48 hrs = 2 calendar days or fewer
+
+// Threshold options in hours
+const THRESHOLD_OPTIONS = [
+  { hours: 48, days: 2, label: "48 Hours" },
+  { hours: 72, days: 3, label: "72 Hours" },
+  { hours: 96, days: 4, label: "96 Hours" },
+  { hours: 120, days: 5, label: "120 Hours" },
+];
 
 const NAVY = "#1F3864";
 const GREEN = "#548235";
@@ -111,9 +118,9 @@ function compColor(cp) {
 }
 
 // ---------------------------------------------------------------- ANALYSIS
-function analyze(rows) {
+function analyze(rows, thresholdDays) {
   const records = [];
-  const detailedRecords = []; // Store detailed records for 48Hrs List report
+  const detailedRecords = []; // Store detailed records for threshold List report
 
   for (const row of rows) {
     const visitType = String(row["VISIT TYPE"] ?? "").trim();
@@ -128,7 +135,7 @@ function analyze(rows) {
     if (!vd || !ad) continue;
 
     const lag = Math.round((ad - vd) / 86400000);
-    const isNonCompliant = lag > COMPLIANCE_LIMIT_DAYS;
+    const isNonCompliant = lag > thresholdDays;
 
     const author = cleanAuthor(row["AUTHOR OF NOTE"]);
 
@@ -137,7 +144,7 @@ function analyze(rows) {
       nonCompliant: isNonCompliant,
     });
 
-    // Store detailed record for 48Hrs List report
+    // Store detailed record for threshold List report
     detailedRecords.push({
       patient: row["PATIENT"] ?? "",
       visitType: visitType,
@@ -211,10 +218,10 @@ function StatCard({ value, label, color, classes }) {
   );
 }
 
-function AuthorDonut({ a }) {
+function AuthorDonut({ a, thresholdHours }) {
   const data = [
     { name: "Compliant", value: a.compliant, fill: GREEN },
-    { name: "Over 48h", value: a.nonCompliant, fill: RED },
+    { name: `Over ${thresholdHours}h`, value: a.nonCompliant, fill: RED },
   ];
 
   const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }) => {
@@ -300,9 +307,9 @@ function AuthorDonut({ a }) {
         textAlign: "center",
         fontWeight: 500
       }}>
-        <span style={{ color: GREEN, fontWeight: 600 }}>{a.compliant}</span> within 48h
+        <span style={{ color: GREEN, fontWeight: 600 }}>{a.compliant}</span> within {thresholdHours}h
         <br />
-        <span style={{ color: RED, fontWeight: 600 }}>{a.nonCompliant}</span> over 48h
+        <span style={{ color: RED, fontWeight: 600 }}>{a.nonCompliant}</span> over {thresholdHours}h
       </p>
     </div>
   );
@@ -319,7 +326,13 @@ export default function ComplianceReport() {
   const [reportingPeriod, setReportingPeriod] = useState("");
   const [fileData, setFileData] = useState(null);
   const [showPeriodInput, setShowPeriodInput] = useState(false);
+  const [thresholdHours, setThresholdHours] = useState(48); // Default 48 hours
   const pdfRef = useRef();
+
+  // Get threshold details based on selected hours
+  const thresholdConfig = useMemo(() => {
+    return THRESHOLD_OPTIONS.find(opt => opt.hours === thresholdHours) || THRESHOLD_OPTIONS[0];
+  }, [thresholdHours]);
 
   const handleDownloadPDF = async () => {
     if (!pdfRef.current) return;
@@ -390,7 +403,7 @@ export default function ComplianceReport() {
       element.style.width = originalWidth;
 
       const dateStr = new Date().toISOString().split('T')[0];
-      pdf.save(`48HR_Compliance_Report_${dateStr}.pdf`);
+      pdf.save(`${thresholdHours}HR_Compliance_Report_${dateStr}.pdf`);
     } catch (error) {
       console.error("Error generating PDF:", error);
       setError("Failed to generate PDF. Please try again.");
@@ -451,7 +464,7 @@ export default function ComplianceReport() {
       pdf.setFontSize(18);
       pdf.setTextColor(31, 56, 100); // NAVY
       pdf.setFont("helvetica", "bold");
-      pdf.text("48-Hour Non-Compliance Report", margin, yPosition);
+      pdf.text(`${thresholdHours}-Hour Non-Compliance Report`, margin, yPosition);
       yPosition += 10;
 
       // Reporting Period
@@ -546,7 +559,7 @@ export default function ComplianceReport() {
       });
 
       const dateStr = new Date().toISOString().split('T')[0];
-      pdf.save(`48HR_NonCompliance_List_${dateStr}.pdf`);
+      pdf.save(`${thresholdHours}HR_NonCompliance_List_${dateStr}.pdf`);
     } catch (error) {
       console.error("Error generating 48Hrs List PDF:", error);
       setError("Failed to generate 48Hrs List PDF. Please try again.");
@@ -561,7 +574,7 @@ export default function ComplianceReport() {
     setFileName(file.name);
     setFileData(file);
     setShowPeriodInput(true);
-    setSummary(null);
+    // Don't clear summary - allow regeneration with different thresholds
   }, []);
 
   const handleGenerateReport = useCallback(() => {
@@ -581,8 +594,8 @@ export default function ComplianceReport() {
             "Couldn't find the expected columns. The first sheet needs headers including VISIT TYPE, VISIT DATE, ACTION DATE, and AUTHOR OF NOTE."
           );
         }
-        setSummary(analyze(rows));
-        setShowPeriodInput(false);
+        setSummary(analyze(rows, thresholdConfig.days));
+        // Keep the input visible for threshold changes
       } catch (err) {
         setError(err.message || "Could not read this file.");
         setSummary(null);
@@ -590,7 +603,7 @@ export default function ComplianceReport() {
     };
     reader.onerror = () => setError("Could not read this file.");
     reader.readAsArrayBuffer(fileData);
-  }, [fileData, reportingPeriod]);
+  }, [fileData, reportingPeriod, thresholdConfig.days]);
 
   const handleDragEnter = (e) => {
     e.preventDefault();
@@ -631,6 +644,8 @@ export default function ComplianceReport() {
           style={{
             display: "block",
             width: "100%",
+            opacity: summary ? 0.6 : 1,
+            cursor: summary ? "default" : "pointer",
           }}
         >
           <div style={{
@@ -650,10 +665,10 @@ export default function ComplianceReport() {
               }}
             />
             <div style={{ fontSize: "1.125rem", fontWeight: 600, color: "#334155", marginBottom: "8px" }}>
-              {isDragging ? "Drop your file here!" : "Drag & Drop Submission Report"}
+              {isDragging ? "Drop your file here!" : summary ? "Upload Different File" : "Drag & Drop Submission Report"}
             </div>
             <div style={{ fontSize: "0.875rem", color: "#64748b", marginBottom: "12px" }}>
-              or click to browse for .xlsx or .xls files
+              {summary ? "Click to upload a new file to replace the current data" : "or click to browse for .xlsx or .xls files"}
             </div>
             <div style={{ fontSize: "0.75rem", color: "#94a3b8", fontStyle: "italic" }}>
               Processed securely in your browser — no upload to server
@@ -670,48 +685,87 @@ export default function ComplianceReport() {
         {fileName && !summary && (
           <Box mt={2} display="flex" alignItems="center" gap={1} style={{ color: "#475569", fontSize: "0.875rem" }}>
             <FileSpreadsheet style={{ width: "16px", height: "16px", color: GREEN }} />
-            <span style={{ fontWeight: 500 }}>{fileName}</span>
+            <span style={{ fontWeight: 500 }}>Selected: {fileName}</span>
+          </Box>
+        )}
+
+        {summary && (
+          <Box mt={2} p={2} style={{ backgroundColor: "#f0fdf4", borderRadius: "8px", border: `1px solid ${GREEN}40` }}>
+            <Box display="flex" alignItems="center" gap={1} style={{ color: "#15803d", fontSize: "0.875rem" }}>
+              <span style={{ fontSize: "1.2rem" }}>✓</span>
+              <span style={{ fontWeight: 600 }}>Report Generated</span>
+            </Box>
+            <Box mt={1} style={{ fontSize: "0.75rem", color: "#166534" }}>
+              You can change the threshold below and regenerate without re-uploading the file
+            </Box>
           </Box>
         )}
       </Box>
 
       {/* Reporting Period Input */}
       {showPeriodInput && (
-        <Paper elevation={2} style={{ marginTop: "24px", padding: "24px", backgroundColor: "#f8fafc" }}>
+        <Paper elevation={2} style={{ marginTop: "24px", padding: "24px", backgroundColor: summary ? "#e8f4f8" : "#f8fafc", border: summary ? `2px solid ${NAVY}40` : "none" }}>
           <Box mb={2}>
             <h3 style={{ margin: 0, marginBottom: "8px", color: NAVY, fontSize: "1.125rem", fontWeight: 600 }}>
-              Enter Reporting Period
+              {summary ? "⚙️ Adjust Configuration & Regenerate" : "Configure Compliance Report"}
             </h3>
             <p style={{ margin: 0, fontSize: "0.875rem", color: "#64748b" }}>
-              Please specify the date range for this compliance report
+              {summary
+                ? "Change threshold or reporting period and click 'Regenerate' to update the report with the same data"
+                : "Select threshold and specify the date range for this compliance report"}
             </p>
           </Box>
-          <Box display="flex" alignItems="center" gap={2}>
-            <TextField
-              fullWidth
-              variant="outlined"
-              label="Reporting Period"
-              placeholder="e.g., June 1 - June 29, 2026"
-              value={reportingPeriod}
-              onChange={(e) => setReportingPeriod(e.target.value)}
-              helperText="Enter the date range covered by this report"
-              InputLabelProps={{
-                shrink: true,
-              }}
-            />
-            <Button
-              variant="contained"
-              style={{
-                backgroundColor: NAVY,
-                color: "white",
-                padding: "14px 32px",
-                whiteSpace: "nowrap"
-              }}
-              onClick={handleGenerateReport}
-              disabled={!reportingPeriod.trim()}
-            >
-              Generate Report
-            </Button>
+          <Box display="flex" flexDirection="column" gap={2}>
+            <Box display="flex" alignItems="flex-start" gap={2}>
+              <FormControl variant="outlined" style={{ minWidth: 200 }}>
+                <InputLabel>Compliance Threshold</InputLabel>
+                <Select
+                  value={thresholdHours}
+                  onChange={(e) => setThresholdHours(e.target.value)}
+                  label="Compliance Threshold"
+                >
+                  {THRESHOLD_OPTIONS.map((option) => (
+                    <MenuItem key={option.hours} value={option.hours}>
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <TextField
+                fullWidth
+                variant="outlined"
+                label="Reporting Period"
+                placeholder="e.g., June 1 - June 29, 2026"
+                value={reportingPeriod}
+                onChange={(e) => setReportingPeriod(e.target.value)}
+                helperText="Enter the date range covered by this report"
+                InputLabelProps={{
+                  shrink: true,
+                }}
+              />
+            </Box>
+            <Box display="flex" justifyContent="space-between" alignItems="center">
+              {summary && fileName && (
+                <Box display="flex" alignItems="center" gap={1} style={{ color: "#475569", fontSize: "0.875rem" }}>
+                  <FileSpreadsheet style={{ width: "16px", height: "16px", color: GREEN }} />
+                  <span style={{ fontWeight: 500 }}>Using: {fileName}</span>
+                </Box>
+              )}
+              <Button
+                variant="contained"
+                style={{
+                  backgroundColor: summary ? GREEN : NAVY,
+                  color: "white",
+                  padding: "14px 32px",
+                  whiteSpace: "nowrap",
+                  marginLeft: "auto"
+                }}
+                onClick={handleGenerateReport}
+                disabled={!reportingPeriod.trim()}
+              >
+                {summary ? "🔄 Regenerate Report" : "Generate Report"}
+              </Button>
+            </Box>
           </Box>
         </Paper>
       )}
@@ -749,7 +803,7 @@ export default function ComplianceReport() {
               onClick={handleDownload48HrsList}
               disabled={isGeneratingPDF}
             >
-              {isGeneratingPDF ? "Generating..." : "Download 48Hrs List (PDF)"}
+              {isGeneratingPDF ? "Generating..." : `Download ${thresholdHours}Hrs List (PDF)`}
             </Button>
             <Button
               variant="contained"
@@ -797,7 +851,7 @@ export default function ComplianceReport() {
                 color: NAVY,
                 lineHeight: 1.2
               }}>
-                48-Hour Note Timeliness
+                {thresholdHours}-Hour Note Timeliness
               </Box>
               <Box style={{
                 fontSize: "1.5rem",
@@ -836,8 +890,8 @@ export default function ComplianceReport() {
               </h2>
               <Box display="grid" gridTemplateColumns="repeat(3, 1fr)" gap={4} mb={3}>
                 <StatCard value={summary.total} label="Note actions reviewed" color={NAVY} classes={classes} />
-                <StatCard value={`${summary.compPct}%`} label="Compliant (≤ 48 hrs)" color={GREEN} classes={classes} />
-                <StatCard value={`${summary.ncPct}%`} label="Non-compliant (> 48 hrs)" color={RED} classes={classes} />
+                <StatCard value={`${summary.compPct}%`} label={`Compliant (≤ ${thresholdHours} hrs)`} color={GREEN} classes={classes} />
+                <StatCard value={`${summary.ncPct}%`} label={`Non-compliant (> ${thresholdHours} hrs)`} color={RED} classes={classes} />
               </Box>
               <Paper elevation={0} style={{
                 padding: "20px",
@@ -851,13 +905,13 @@ export default function ComplianceReport() {
                 <strong style={{ color: GREEN, fontSize: "1.1rem" }}>
                   {summary.compliant} ({summary.compPct}%)
                 </strong>{" "}
-                were completed within 48 hours and are <strong style={{ color: GREEN }}>compliant</strong>.
+                were completed within {thresholdHours} hours and are <strong style={{ color: GREEN }}>compliant</strong>.
                 <br />
                 The remaining{" "}
                 <strong style={{ color: RED, fontSize: "1.1rem" }}>
                   {summary.nonCompliant} ({summary.ncPct}%)
                 </strong>{" "}
-                exceeded 48 hours and are <strong style={{ color: RED }}>non-compliant</strong>.
+                exceeded {thresholdHours} hours and are <strong style={{ color: RED }}>non-compliant</strong>.
               </Paper>
             </Box>
 
@@ -877,6 +931,7 @@ export default function ComplianceReport() {
                 rows={tableRows.slice(0, 5)}
                 showRank
                 classes={classes}
+                thresholdHours={thresholdHours}
               />
             </Box>
             </div>
@@ -894,7 +949,7 @@ export default function ComplianceReport() {
                 }}>
                   📊 Compliance by Author - Detailed Breakdown
                 </h2>
-                <RankTable rows={tableRows} totals={summary} classes={classes} />
+                <RankTable rows={tableRows} totals={summary} classes={classes} thresholdHours={thresholdHours} />
               </Box>
             </div>
 
@@ -921,8 +976,8 @@ export default function ComplianceReport() {
                 color: "#475569"
               }}>
                 <strong>Legend:</strong>{" "}
-                <span style={{ color: GREEN, fontWeight: 600 }}>● Green</span> = Compliant (≤ 48 hrs) |{" "}
-                <span style={{ color: RED, fontWeight: 600 }}>● Red</span> = Non-compliant (&gt; 48 hrs)
+                <span style={{ color: GREEN, fontWeight: 600 }}>● Green</span> = Compliant (≤ {thresholdHours} hrs) |{" "}
+                <span style={{ color: RED, fontWeight: 600 }}>● Red</span> = Non-compliant (&gt; {thresholdHours} hrs)
                 <br />
                 <span style={{ fontSize: "0.75rem", fontStyle: "italic" }}>
                   The percentage shown in the center represents each author's compliance rate
@@ -940,7 +995,7 @@ export default function ComplianceReport() {
                 }}
               >
                 {summary.authors.slice(0, 12).map((a) => (
-                  <AuthorDonut key={a.author} a={a} />
+                  <AuthorDonut key={a.author} a={a} thresholdHours={thresholdHours} />
                 ))}
               </Box>
             </Box>
@@ -972,7 +1027,7 @@ export default function ComplianceReport() {
                     }}
                   >
                     {summary.authors.slice(12).map((a) => (
-                      <AuthorDonut key={a.author} a={a} />
+                      <AuthorDonut key={a.author} a={a} thresholdHours={thresholdHours} />
                     ))}
                   </Box>
                 </Box>
@@ -995,7 +1050,7 @@ export default function ComplianceReport() {
   );
 }
 
-function RankTable({ rows, showRank = false, totals = null, classes }) {
+function RankTable({ rows, showRank = false, totals = null, classes, thresholdHours = 48 }) {
   return (
     <Paper elevation={3} style={{ overflow: "auto", border: "1px solid #e2e8f0" }}>
       <table className={classes.table} style={{ width: "100%", borderCollapse: "collapse", fontSize: "1rem" }}>
@@ -1004,8 +1059,8 @@ function RankTable({ rows, showRank = false, totals = null, classes }) {
             {showRank && <Th style={{ width: "80px", textAlign: "center", color: "white", borderColor: NAVY }}>Rank</Th>}
             <Th style={{ color: "white", borderColor: NAVY }}>Author of Note</Th>
             <Th style={{ textAlign: "center", color: "white", borderColor: NAVY }}>Total Actions</Th>
-            <Th style={{ textAlign: "center", color: "white", borderColor: NAVY }}>Within 48 hrs</Th>
-            {!showRank && <Th style={{ textAlign: "center", color: "white", borderColor: NAVY }}>&gt;48 hrs</Th>}
+            <Th style={{ textAlign: "center", color: "white", borderColor: NAVY }}>Within {thresholdHours} hrs</Th>
+            {!showRank && <Th style={{ textAlign: "center", color: "white", borderColor: NAVY }}>&gt;{thresholdHours} hrs</Th>}
             <Th style={{ textAlign: "center", color: "white", borderColor: NAVY }}>% Compliant</Th>
           </tr>
         </thead>
