@@ -455,6 +455,189 @@ class MedicareHandler {
 
     return items;
   }
+
+  static calculateFiscalYearProjection(items) {
+    // Get fiscal year end date
+    const currentDate = moment();
+    const currentYear = currentDate.year();
+    const fiscalYearEnd = moment(`${currentYear}-09-30`);
+    if (currentDate.isAfter(fiscalYearEnd)) {
+      fiscalYearEnd.add(1, "year");
+    }
+
+    // Process active patients (project to 09/30)
+    const activePatients = items.filter((item) => !item.eoc || item.eoc === "N/A");
+
+    // Process death discharge patients with available cap (include current available cap)
+    const deathDischargePatients = items.filter((item) => {
+      if (!item.eoc || item.eoc === "N/A") return false;
+
+      // Check if death discharge and within the target fiscal year
+      const isDeathDischarge = item.eoc_discharge === "Death Discharge";
+      const eocDate = moment(item.eoc, "YYYY-MM-DD");
+      const fyStart = moment(fiscalYearEnd).subtract(1, "year").add(1, "day");
+      const isWithinFY = eocDate.isSameOrAfter(fyStart) && eocDate.isSameOrBefore(fiscalYearEnd);
+
+      // Check if has available cap
+      const totalAvailableCap = parseFloat(item.availableCapFirstPeriod || 0) +
+                                 parseFloat(item.availableCapSecondPeriod || 0);
+
+      return isDeathDischarge && isWithinFY && totalAvailableCap > 0;
+    });
+
+    // Map active patients with projections
+    const activeProjections = activePatients.map((item) => {
+      const projection = { ...item };
+      projection.isActiveProjection = true;
+      projection.fiscalYearEnd = fiscalYearEnd.format("YYYY-MM-DD");
+
+      // Calculate days from current date to fiscal year end
+      const daysToFYEnd = fiscalYearEnd.diff(currentDate, "days");
+      projection.remainingDaysToFYEnd = daysToFYEnd;
+
+      // Calculate projected total days by FY end (inclusive)
+      const socDate = moment(item.soc, "YYYY-MM-DD");
+      const projectedTotalDays = fiscalYearEnd.diff(socDate, "days") + 1;
+      projection.projectedTotalDays = projectedTotalDays;
+
+      // Get rates for this patient's location
+      const rates = this.getRatesForLocation(item.state, item.county, item.soc);
+
+      // Calculate projected claim by FY end using location-specific rates
+      projection.projectedTotalClaim = this.calculateClaim(projectedTotalDays, rates);
+
+      // Calculate projected claim for the remaining days only
+      const additionalDays = daysToFYEnd;
+      projection.projectedAdditionalClaim = this.calculateClaim(additionalDays, rates);
+
+      // Determine which fiscal period we're in
+      const firstPeriod = MEDICARE_CAP_AMOUNT.find(
+        (m) =>
+          new Date(`${item.soc} 17:00`) >= new Date(`${m.from} 17:00`) &&
+          new Date(`${item.soc} 17:00`) <= new Date(`${m.to} 17:00`)
+      );
+
+      if (firstPeriod) {
+        const firstEndDt = moment(firstPeriod.to, "YYYY-MM-DD");
+        const projectedFirstPeriodDays = Math.min(
+          projectedTotalDays,
+          firstEndDt.diff(socDate, "days") + 1
+        );
+        const projectedSecondPeriodDays = Math.max(
+          0,
+          projectedTotalDays - projectedFirstPeriodDays
+        );
+
+        projection.projectedFirstPeriodDays = projectedFirstPeriodDays;
+        projection.projectedSecondPeriodDays = projectedSecondPeriodDays;
+
+        // Get rates for second period if needed
+        const secondYear = moment(firstPeriod.to, "YYYY-MM-DD")
+          .add(1, "days")
+          .format("YYYY-MM-DD");
+        const secondRates = this.getRatesForLocation(
+          item.state,
+          item.county,
+          secondYear
+        );
+
+        // Calculate projected used cap for each period
+        if (projectedSecondPeriodDays > 0) {
+          projection.projectedUsedCapFirstPeriod = this.calculateClaim(
+            projectedFirstPeriodDays,
+            rates
+          );
+          projection.projectedUsedCapSecondPeriod = this.calculateClaim(
+            projectedSecondPeriodDays,
+            secondRates
+          );
+
+          // Handle prior hospice in projection
+          let totalDaysIncludingPrior = projectedTotalDays;
+          if (item.hasPriorHospice && item.priorDayCare > 0) {
+            const postDischargeDays = parseInt(item.new_hospice_care_day || 0, 10);
+            totalDaysIncludingPrior = projectedTotalDays + item.priorDayCare + postDischargeDays;
+          }
+
+          // Calculate projected allowed cap
+          const firstPctAvailable =
+            (projectedFirstPeriodDays / totalDaysIncludingPrior) * (rates.aggregate_cap || item.firstPeriodCap);
+          const secondPctAvailable =
+            (projectedSecondPeriodDays / totalDaysIncludingPrior) * (secondRates.aggregate_cap || item.secondPeriodCap);
+          projection.projectedAllowedCapFirstPeriod = parseFloat(firstPctAvailable).toFixed(2);
+          projection.projectedAllowedCapSecondPeriod = parseFloat(secondPctAvailable).toFixed(2);
+
+          // Calculate projected available cap
+          projection.projectedAvailableCapFirstPeriod = parseFloat(
+            parseFloat(projection.projectedAllowedCapFirstPeriod) -
+              parseFloat(projection.projectedUsedCapFirstPeriod)
+          ).toFixed(2);
+          projection.projectedAvailableCapSecondPeriod = parseFloat(
+            parseFloat(projection.projectedAllowedCapSecondPeriod) -
+              parseFloat(projection.projectedUsedCapSecondPeriod)
+          ).toFixed(2);
+        } else {
+          projection.projectedUsedCapFirstPeriod = projection.projectedTotalClaim;
+
+          // Handle prior hospice in projection
+          let totalDaysIncludingPrior = projectedTotalDays;
+          if (item.hasPriorHospice && item.priorDayCare > 0) {
+            const postDischargeDays = parseInt(item.new_hospice_care_day || 0, 10);
+            totalDaysIncludingPrior = projectedTotalDays + item.priorDayCare + postDischargeDays;
+          }
+
+          const allowedCap =
+            (projectedTotalDays / totalDaysIncludingPrior) * (rates.aggregate_cap || item.firstPeriodCap);
+          projection.projectedAllowedCapFirstPeriod = parseFloat(allowedCap).toFixed(2);
+          projection.projectedAvailableCapFirstPeriod = parseFloat(
+            parseFloat(projection.projectedAllowedCapFirstPeriod) -
+              parseFloat(projection.projectedTotalClaim)
+          ).toFixed(2);
+          projection.projectedUsedCapSecondPeriod = 0.0;
+          projection.projectedAllowedCapSecondPeriod = 0.0;
+          projection.projectedAvailableCapSecondPeriod = 0.0;
+        }
+
+        // Calculate total projected available cap
+        projection.projectedTotalAvailableCap = parseFloat(
+          parseFloat(projection.projectedAvailableCapFirstPeriod) +
+            parseFloat(projection.projectedAvailableCapSecondPeriod)
+        ).toFixed(2);
+      }
+
+      return projection;
+    });
+
+    // Map death discharge patients (no projection, just current available cap)
+    const deathDischargeProjections = deathDischargePatients.map((item) => {
+      const projection = { ...item };
+      projection.isDeathDischarge = true;
+      projection.fiscalYearEnd = fiscalYearEnd.format("YYYY-MM-DD");
+
+      // For death discharge, we don't project - we use current values
+      projection.projectedTotalDays = item.totalDayCare;
+      projection.projectedTotalClaim = item.totalClaim;
+      projection.projectedFirstPeriodDays = item.firstPeriodDays;
+      projection.projectedSecondPeriodDays = item.secondPeriodDays;
+      projection.projectedUsedCapFirstPeriod = item.usedCapFirstPeriod;
+      projection.projectedUsedCapSecondPeriod = item.usedCapSecondPeriod;
+      projection.projectedAllowedCapFirstPeriod = item.allowedCapFirstPeriod;
+      projection.projectedAllowedCapSecondPeriod = item.allowedCapSecondPeriod;
+      projection.projectedAvailableCapFirstPeriod = item.availableCapFirstPeriod;
+      projection.projectedAvailableCapSecondPeriod = item.availableCapSecondPeriod;
+      projection.projectedTotalAvailableCap = parseFloat(
+        parseFloat(item.availableCapFirstPeriod || 0) +
+          parseFloat(item.availableCapSecondPeriod || 0)
+      ).toFixed(2);
+      projection.remainingDaysToFYEnd = 0; // Already discharged
+      projection.projectedAdditionalClaim = "0.00";
+
+      return projection;
+    });
+
+    // Combine active projections and death discharge patients
+    return [...activeProjections, ...deathDischargeProjections];
+  }
 }
 
 export default MedicareHandler;

@@ -39,11 +39,12 @@ const W = {
   client: "13%",
   code: "8%",
   date: "11%",
+  day: "6%",
   tin: "8%",
   tout: "8%",
   sig: "15%",
   rate: "9%",
-  cmt: "28%",
+  cmt: "22%",
 };
 
 const styles = StyleSheet.create({
@@ -457,10 +458,11 @@ const RoutesheetPrintDocument = ({ groupedData, logoBase64 }) => {
             {/* Table Header */}
             <View style={styles.tHead}>
               <Text style={[styles.th, { width: W.client }]}>Client</Text>
-              <Text style={[styles.th, { width: W.code }]}>Service Code</Text>
+              <Text style={[styles.th, { width: W.code }]}>Srvc</Text>
               <Text style={[styles.th, { width: W.date }, styles.ctr]}>Date</Text>
-              <Text style={[styles.th, { width: W.tin }, styles.ctr]}>Time In</Text>
-              <Text style={[styles.th, { width: W.tout }, styles.ctr]}>Time Out</Text>
+              <Text style={[styles.th, { width: W.tin }, styles.ctr]}>Time{"\n"}In</Text>
+              <Text style={[styles.th, { width: W.tout }, styles.ctr]}>Time{"\n"}Out</Text>
+              <Text style={[styles.th, { width: W.day }, styles.ctr]}>Day</Text>
               <Text style={[styles.th, { width: W.sig }]}>Signature</Text>
               <Text style={[styles.th, { width: W.rate }, styles.right]}>Rate</Text>
               <Text style={[styles.th, { width: W.cmt }]}>Comment</Text>
@@ -475,6 +477,7 @@ const RoutesheetPrintDocument = ({ groupedData, logoBase64 }) => {
               const endTime = row.timeOut || row.dosEnd;
 
               const date = startTime ? moment(startTime).format("YYYY-MM-DD") : "";
+              const day = startTime ? moment(startTime).format("ddd") : "";
               const timeIn = startTime ? moment(startTime).format("HH:mm") : "";
               const timeOut = endTime ? moment(endTime).format("HH:mm") : "";
 
@@ -521,6 +524,9 @@ const RoutesheetPrintDocument = ({ groupedData, logoBase64 }) => {
                   </View>
                   <View style={[styles.td, { width: W.tout }]}>
                     <Text style={styles.ctr}>{timeOut}</Text>
+                  </View>
+                  <View style={[styles.td, { width: W.day }]}>
+                    <Text style={styles.ctr}>{day}</Text>
                   </View>
                   <View style={[styles.td, { width: W.sig }]}>
                     {row.signature_based ? (

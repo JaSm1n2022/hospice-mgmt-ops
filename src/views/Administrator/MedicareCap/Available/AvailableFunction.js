@@ -15,8 +15,9 @@ import { ACTION_STATUSES } from "utils/constants";
 import { Button, CircularProgress, Grid } from "@material-ui/core";
 
 import HospiceTable from "components/Table/HospiceTable";
-import { ImportExport, Print } from "@material-ui/icons";
+import { ImportExport, Print, TrendingUp } from "@material-ui/icons";
 import PrintOverviewModal from "./components/PrintOverviewModal";
+import PrintFiscalYearProjectionModal from "./components/PrintFiscalYearProjectionModal";
 import Helper from "utils/helper";
 import * as FileSaver from "file-saver";
 
@@ -80,6 +81,7 @@ function AvailableFunction(props) {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [isPrintOverviewModalOpen, setIsPrintOverviewModalOpen] = useState(false);
+  const [isFiscalYearProjectionModalOpen, setIsFiscalYearProjectionModalOpen] = useState(false);
   const createFormHandler = (data, mode) => {
     setItem(data);
     setMode(mode || "create");
@@ -190,6 +192,35 @@ function AvailableFunction(props) {
   const closePrintOverviewModal = () => {
     setIsPrintOverviewModalOpen(false);
   };
+
+  const fiscalYearProjectionHandler = () => {
+    const selectedData = dataSource.filter((r) => r.isChecked);
+    if (selectedData.length === 0) {
+      alert("Please select at least one patient for fiscal year projection");
+      return;
+    }
+    // Check for active patients or death discharge with available cap
+    const activePatients = selectedData.filter((p) => !p.eoc || p.eoc === "Active");
+    const deathDischargeWithCap = selectedData.filter((p) => {
+      if (!p.eoc || p.eoc === "Active") return false;
+      const isDeathDischarge = p.eoc_discharge === "Death Discharge";
+      const totalAvailableCap = parseFloat(p.availableCapFirstPeriod || 0) +
+                                 parseFloat(p.availableCapSecondPeriod || 0);
+      return isDeathDischarge && totalAvailableCap > 0;
+    });
+
+    if (activePatients.length === 0 && deathDischargeWithCap.length === 0) {
+      alert("No eligible patients selected. Fiscal year projection requires active patients or death discharge patients with available cap.");
+      return;
+    }
+    console.log("Fiscal year projection for:", { activePatients, deathDischargeWithCap });
+    setIsFiscalYearProjectionModalOpen(true);
+  };
+
+  const closeFiscalYearProjectionModal = () => {
+    setIsFiscalYearProjectionModalOpen(false);
+  };
+
   const onPressEnterKeyHandler = (value) => {
     filterRecordHandler(value);
     setKeywordValue(value);
@@ -208,6 +239,11 @@ function AvailableFunction(props) {
       <PrintOverviewModal
         isOpen={isPrintOverviewModalOpen}
         onClose={closePrintOverviewModal}
+        patientsData={dataSource.filter((r) => r.isChecked)}
+      />
+      <PrintFiscalYearProjectionModal
+        isOpen={isFiscalYearProjectionModalOpen}
+        onClose={closeFiscalYearProjectionModal}
         patientsData={dataSource.filter((r) => r.isChecked)}
       />
       {!isProcessDone ? (
@@ -285,6 +321,28 @@ function AvailableFunction(props) {
                           >
                             {" "}
                             Print Overview{" "}
+                          </Button>
+                          <Button
+                            onClick={() => fiscalYearProjectionHandler()}
+                            variant="outlined"
+                            style={{
+                              fontFamily: "Roboto",
+                              fontSize: "12px",
+                              fontWeight: 500,
+                              fontStretch: "normal",
+                              fontStyle: "normal",
+                              lineHeight: 1.71,
+                              letterSpacing: "0.4px",
+                              textAlign: "left",
+                              cursor: "pointer",
+                              color: "#4caf50",
+                              borderColor: "#4caf50",
+                            }}
+                            component="span"
+                            startIcon={<TrendingUp />}
+                          >
+                            {" "}
+                            Fiscal Year Projection{" "}
                           </Button>
                         </>
                       )}
