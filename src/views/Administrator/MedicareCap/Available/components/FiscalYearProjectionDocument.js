@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
   },
 });
 
-const FiscalYearProjectionDocument = ({ patientsData, summary }) => {
+const FiscalYearProjectionDocument = ({ patientsData, originalPatientsData, summary, summaryOnly }) => {
   const formatCurrency = (value) => {
     if (!value) return "$0.00";
     const numValue = parseFloat(value);
@@ -158,7 +158,8 @@ const FiscalYearProjectionDocument = ({ patientsData, summary }) => {
   });
 
   // Get EOC patients (non-death) - ONLY those with NEGATIVE available cap (exceeding)
-  const eocNonDeathPatients = (patientsData || []).filter((p) => {
+  // Use originalPatientsData which has ALL patients, not just projected ones
+  const eocNonDeathPatients = (originalPatientsData || patientsData || []).filter((p) => {
     if (!p.eoc || p.eoc === "N/A") return false;
     if (p.eoc_discharge === "Death Discharge") return false;
 
@@ -455,11 +456,14 @@ const FiscalYearProjectionDocument = ({ patientsData, summary }) => {
   };
 
   const renderEocNonDeathSummary = () => {
-    if (!eocNonDeathPatients || eocNonDeathPatients.length === 0) {
+    // Show summary even if no patients, as long as we have the deficit from summary
+    const hasDeficit = summary?.eocNonDeathCapDeficit && parseFloat(summary.eocNonDeathCapDeficit) !== 0;
+
+    if (!hasDeficit && (!eocNonDeathPatients || eocNonDeathPatients.length === 0)) {
       return null;
     }
 
-    const totalAvailableCap = eocNonDeathPatients.reduce(
+    const totalCapDeficit = eocNonDeathPatients.reduce(
       (sum, p) =>
         sum +
         parseFloat(p.availableCapFirstPeriod || 0) +
@@ -467,27 +471,27 @@ const FiscalYearProjectionDocument = ({ patientsData, summary }) => {
       0
     );
 
-    const isCapAvailable = totalAvailableCap >= 0;
-
     return (
       <Page size="A4" style={styles.page}>
         <View style={styles.mainHeader}>
-          <Text style={styles.mainTitle}>EOC (Non-Death) Patients - Available Cap Summary</Text>
+          <Text style={styles.mainTitle}>EOC (Non-Death) Patients - Exceeded Cap</Text>
           <Text style={styles.generatedText}>
             Fiscal Year: {summary?.fiscalYearEnd || "N/A"}
           </Text>
           <Text style={styles.generatedText}>
-            Total EOC (Non-Death) Patients: {eocNonDeathPatients.length}
+            Total EOC (Non-Death) Patients Exceeding Cap: {eocNonDeathPatients?.length || summary?.totalEocNonDeathPatients || 0}
           </Text>
           <Text style={styles.generatedText}>
-            Total Available Cap: {formatCurrency(totalAvailableCap)}
+            Total Cap Deficit: {formatCurrency(summary?.eocNonDeathCapDeficit || totalCapDeficit)}
           </Text>
         </View>
 
-        <View style={{ marginTop: 20, marginBottom: 10 }}>
-          <Text style={{ fontSize: 11, color: "#666", marginBottom: 10 }}>
-            These patients were discharged for reasons other than death (e.g., revocation, transfer, improvement).
-            Their available cap (positive or negative) is included in the aggregate cap calculation.
+        <View style={{ marginTop: 20, marginBottom: 10, padding: 10, backgroundColor: "#fff3cd", borderLeft: "4px solid #ff6600" }}>
+          <Text style={{ fontSize: 11, color: "#ff6600", marginBottom: 6, fontWeight: "bold" }}>
+            ⚠ These patients were discharged (non-death) and exceeded their allocated cap
+          </Text>
+          <Text style={{ fontSize: 9, color: "#666" }}>
+            Discharge reasons: revocation, transfer, improvement, or other. Their cap deficit impacts the aggregate cap pool.
           </Text>
         </View>
 
@@ -519,15 +523,15 @@ const FiscalYearProjectionDocument = ({ patientsData, summary }) => {
             Used Cap
           </Text>
           <Text style={{ flex: 1.1, fontSize: 10, fontWeight: "bold", color: "#333", textAlign: "right" }}>
-            Available Cap
+            Cap Deficit
           </Text>
         </View>
 
         {/* Table Rows */}
-        {eocNonDeathPatients.map((patient, index) => {
-          const patientAvailableCap = parseFloat(patient.availableCapFirstPeriod || 0) +
-                                       parseFloat(patient.availableCapSecondPeriod || 0);
-          const isPositive = patientAvailableCap >= 0;
+        {eocNonDeathPatients && eocNonDeathPatients.length > 0 ? (
+          eocNonDeathPatients.map((patient, index) => {
+          const patientCapDeficit = parseFloat(patient.availableCapFirstPeriod || 0) +
+                                     parseFloat(patient.availableCapSecondPeriod || 0);
 
           return (
             <View
@@ -558,58 +562,63 @@ const FiscalYearProjectionDocument = ({ patientsData, summary }) => {
               <Text style={{ flex: 1, fontSize: 9, color: "#666", textAlign: "right" }}>
                 {formatCurrency(patient.totalClaim)}
               </Text>
-              <Text style={{ flex: 1.1, fontSize: 9, color: isPositive ? "#4caf50" : "#ff6600", fontWeight: "bold", textAlign: "right" }}>
-                {formatCurrency(patientAvailableCap)}
+              <Text style={{ flex: 1.1, fontSize: 9, color: "#ff6600", fontWeight: "bold", textAlign: "right" }}>
+                {formatCurrency(patientCapDeficit)}
               </Text>
             </View>
           );
-        })}
+        })
+        ) : (
+          <View style={{ padding: 20, textAlign: "center" }}>
+            <Text style={{ fontSize: 10, color: "#666", fontStyle: "italic" }}>
+              No individual patient data available. Summary total shown below.
+            </Text>
+          </View>
+        )}
 
         {/* Summary Row */}
         <View style={{
           flexDirection: "row",
-          borderTop: isCapAvailable ? "2px solid #4caf50" : "2px solid #ff6600",
+          borderTop: "2px solid #ff6600",
           paddingTop: 8,
           marginTop: 8,
           paddingHorizontal: 6,
-          backgroundColor: isCapAvailable ? "#f0f8ff" : "#fff3cd"
+          backgroundColor: "#fff3cd"
         }}>
           <Text style={{ flex: 4.9, fontSize: 10, fontWeight: "bold", color: "#333", textAlign: "right", paddingRight: 10 }}>
-            TOTAL ({eocNonDeathPatients.length} patients):
+            TOTAL ({eocNonDeathPatients?.length || summary?.totalEocNonDeathPatients || 0} patients):
           </Text>
           <Text style={{ flex: 1, fontSize: 10, fontWeight: "bold", color: "#666", textAlign: "right", paddingRight: 10 }}>
             {formatCurrency(
-              eocNonDeathPatients.reduce((sum, p) => sum + parseFloat(p.totalClaim || 0), 0)
+              eocNonDeathPatients?.reduce((sum, p) => sum + parseFloat(p.totalClaim || 0), 0) || 0
             )}
           </Text>
-          <Text style={{ flex: 1.1, fontSize: 11, fontWeight: "bold", color: isCapAvailable ? "#4caf50" : "#ff6600", textAlign: "right" }}>
-            {formatCurrency(totalAvailableCap)}
+          <Text style={{ flex: 1.1, fontSize: 11, fontWeight: "bold", color: "#ff6600", textAlign: "right" }}>
+            {formatCurrency(summary?.eocNonDeathCapDeficit || totalCapDeficit)}
           </Text>
         </View>
 
-        <View style={{ marginTop: 20, padding: 10, backgroundColor: "#f5f5f5", borderLeft: "4px solid #666" }}>
+        <View style={{ marginTop: 20, padding: 10, backgroundColor: "#f5f5f5", borderLeft: "4px solid #ff6600" }}>
           <Text style={{ fontSize: 10, color: "#333", marginBottom: 4, fontWeight: "bold" }}>
-            About EOC (Non-Death) Patients:
+            Impact on Aggregate Cap:
           </Text>
           <Text style={{ fontSize: 9, color: "#666", marginBottom: 3 }}>
-            • These patients were discharged but not due to death
+            • These patients exceeded their allocated cap before discharge
           </Text>
           <Text style={{ fontSize: 9, color: "#666", marginBottom: 3 }}>
-            • Discharge reasons may include: revocation, transfer, improvement, or other
+            • Discharge reasons: revocation, transfer, improvement, or other (not death)
           </Text>
           <Text style={{ fontSize: 9, color: "#666", marginBottom: 3 }}>
-            • Their available cap (positive or negative) is part of the aggregate cap pool
+            • Their cap deficit reduces the overall aggregate cap pool
           </Text>
           <Text style={{ fontSize: 9, color: "#666", marginBottom: 3 }}>
-            • {isCapAvailable
-                ? "Positive total indicates net contribution to aggregate cap pool"
-                : "Negative total indicates net deficit from aggregate cap pool"}
+            • Total deficit of {formatCurrency(totalCapDeficit)} must be covered by aggregate cap
           </Text>
         </View>
 
         <View style={styles.footer}>
           <Text>
-            EOC (Non-Death) Summary - Patients discharged for reasons other than death within the fiscal year.
+            EOC (Non-Death) Exceeded Cap - Patients discharged (non-death) who exceeded their allocated cap.
           </Text>
         </View>
       </Page>
@@ -770,7 +779,7 @@ const FiscalYearProjectionDocument = ({ patientsData, summary }) => {
         </View>
         {summary.totalEocNonDeathPatients > 0 && (
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>EOC (Non-Death) Patients:</Text>
+            <Text style={styles.summaryLabel}>EOC (Non-Death) Exceeded Cap:</Text>
             <Text style={styles.summaryValue}>{summary.totalEocNonDeathPatients}</Text>
           </View>
         )}
@@ -806,9 +815,9 @@ const FiscalYearProjectionDocument = ({ patientsData, summary }) => {
           </View>
           {summary.totalEocNonDeathPatients > 0 && (
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>EOC (Non-Death) - Available Cap:</Text>
-              <Text style={[styles.summaryValue, parseFloat(summary.eocNonDeathAvailableCap || 0) >= 0 ? styles.positiveText : styles.warningText]}>
-                {formatCurrency(summary.eocNonDeathAvailableCap || 0)}
+              <Text style={styles.summaryLabel}>EOC (Non-Death) - Cap Deficit ({summary.totalEocNonDeathPatients} patients):</Text>
+              <Text style={[styles.summaryValue, styles.warningText]}>
+                {formatCurrency(summary.eocNonDeathCapDeficit || 0)}
               </Text>
             </View>
           )}
@@ -831,6 +840,13 @@ const FiscalYearProjectionDocument = ({ patientsData, summary }) => {
               {formatCurrency(summary.totalProjectedAvailableCap)}
             </Text>
           </View>
+          {summary.totalEocNonDeathPatients > 0 && (
+            <View style={{ marginTop: 6 }}>
+              <Text style={{ fontSize: 8, color: "#666", fontStyle: "italic" }}>
+                * Includes EOC (Non-Death) cap deficit of {formatCurrency(summary.eocNonDeathCapDeficit || 0)} subtracted from total
+              </Text>
+            </View>
+          )}
         </View>
 
         {!isCapAvailable && (
@@ -1055,11 +1071,12 @@ const FiscalYearProjectionDocument = ({ patientsData, summary }) => {
       {/* Summary Tables - Right After Page 1 */}
       {renderPatientsWithAvailableCapSummary()}
       {renderPatientsExceedingCapSummary()}
-      {renderEocNonDeathSummary()}
       {renderDeathDischargeSummary()}
+      {renderEocNonDeathSummary()}
 
       {/* Individual Patient Details - Starts on New Page */}
-      {sortedPatientsData && sortedPatientsData.length > 0 && (
+      {/* Only render if summaryOnly is false or undefined */}
+      {!summaryOnly && sortedPatientsData && sortedPatientsData.length > 0 && (
         <>
           <Page size="A4" style={styles.page}>
             <View style={styles.mainHeader}>

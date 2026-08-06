@@ -13,6 +13,7 @@ import MedicareCard from "./components/MedicareCard";
 import SummaryStats from "./components/SummaryStats";
 import PrintOverviewModal from "./components/PrintOverviewModal";
 import PrintFiscalYearProjectionModal from "../MedicareCap/Available/components/PrintFiscalYearProjectionModal";
+import PrintCurrentFYSummaryModal from "../MedicareCap/Available/components/PrintCurrentFYSummaryModal";
 import { connect } from "react-redux";
 
 import { ACTION_STATUSES } from "utils/constants";
@@ -30,7 +31,7 @@ import {
   Typography,
   Button,
 } from "@material-ui/core";
-import { Search, AttachMoney, Print, TrendingUp } from "@material-ui/icons";
+import { Search, AttachMoney, Print, TrendingUp, Assessment } from "@material-ui/icons";
 
 import { attemptToFetchPatient } from "store/actions/patientAction";
 import { resetFetchPatientState } from "store/actions/patientAction";
@@ -120,6 +121,7 @@ function MedicareV2Function(props) {
   const [fiscalYear, setFiscalYear] = useState("");
   const [isPrintOverviewModalOpen, setIsPrintOverviewModalOpen] = useState(false);
   const [isFiscalYearProjectionModalOpen, setIsFiscalYearProjectionModalOpen] = useState(false);
+  const [isCurrentFYSummaryModalOpen, setIsCurrentFYSummaryModalOpen] = useState(false);
 
   useEffect(() => {
     console.log("Medicare V2 - loading patient data");
@@ -399,6 +401,29 @@ function MedicareV2Function(props) {
     setIsFiscalYearProjectionModalOpen(false);
   };
 
+  const currentFYSummaryHandler = () => {
+    console.log("Current FY Summary for all patients");
+    // Check if we have any active patients or death discharge with available cap
+    const activePatients = dataSource.filter((p) => !p.eoc || p.eoc === "N/A");
+    const deathDischargeWithCap = dataSource.filter((p) => {
+      if (!p.eoc || p.eoc === "N/A") return false;
+      const isDeathDischarge = p.eoc_discharge === "Death Discharge";
+      const totalAvailableCap = parseFloat(p.availableCapFirstPeriod || 0) +
+                                 parseFloat(p.availableCapSecondPeriod || 0);
+      return isDeathDischarge && totalAvailableCap > 0;
+    });
+
+    if (activePatients.length === 0 && deathDischargeWithCap.length === 0) {
+      alert("No eligible patients found. Current FY Summary requires active patients or death discharge patients with available cap.");
+      return;
+    }
+    setIsCurrentFYSummaryModalOpen(true);
+  };
+
+  const closeCurrentFYSummaryModal = () => {
+    setIsCurrentFYSummaryModalOpen(false);
+  };
+
   const summaryStats = calculateSummaryStats();
 
   isProcessDone = isPatientListDone;
@@ -414,6 +439,12 @@ function MedicareV2Function(props) {
       <PrintFiscalYearProjectionModal
         isOpen={isFiscalYearProjectionModalOpen}
         onClose={closeFiscalYearProjectionModal}
+        patientsData={dataSource}
+        handler={MedicareHandler}
+      />
+      <PrintCurrentFYSummaryModal
+        isOpen={isCurrentFYSummaryModalOpen}
+        onClose={closeCurrentFYSummaryModal}
         patientsData={dataSource}
         handler={MedicareHandler}
       />
@@ -456,6 +487,18 @@ function MedicareV2Function(props) {
                         onClick={fiscalYearProjectionHandler}
                       >
                         Fiscal Year Projection
+                      </Button>
+                      <Button
+                        variant="contained"
+                        style={{
+                          backgroundColor: "white",
+                          color: "#4caf50",
+                          fontWeight: "500",
+                        }}
+                        startIcon={<Assessment />}
+                        onClick={currentFYSummaryHandler}
+                      >
+                        Current FY Summary
                       </Button>
                     </div>
                   </div>

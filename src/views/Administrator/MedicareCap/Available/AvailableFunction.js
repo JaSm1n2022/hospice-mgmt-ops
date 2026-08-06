@@ -15,9 +15,10 @@ import { ACTION_STATUSES } from "utils/constants";
 import { Button, CircularProgress, Grid } from "@material-ui/core";
 
 import HospiceTable from "components/Table/HospiceTable";
-import { ImportExport, Print, TrendingUp } from "@material-ui/icons";
+import { ImportExport, Print, TrendingUp, Assessment } from "@material-ui/icons";
 import PrintOverviewModal from "./components/PrintOverviewModal";
 import PrintFiscalYearProjectionModal from "./components/PrintFiscalYearProjectionModal";
+import PrintCurrentFYSummaryModal from "./components/PrintCurrentFYSummaryModal";
 import Helper from "utils/helper";
 import * as FileSaver from "file-saver";
 
@@ -82,6 +83,7 @@ function AvailableFunction(props) {
   const [dateTo, setDateTo] = useState("");
   const [isPrintOverviewModalOpen, setIsPrintOverviewModalOpen] = useState(false);
   const [isFiscalYearProjectionModalOpen, setIsFiscalYearProjectionModalOpen] = useState(false);
+  const [isCurrentFYSummaryModalOpen, setIsCurrentFYSummaryModalOpen] = useState(false);
   const createFormHandler = (data, mode) => {
     setItem(data);
     setMode(mode || "create");
@@ -221,6 +223,34 @@ function AvailableFunction(props) {
     setIsFiscalYearProjectionModalOpen(false);
   };
 
+  const currentFYSummaryHandler = () => {
+    const selectedData = dataSource.filter((r) => r.isChecked);
+    if (selectedData.length === 0) {
+      alert("Please select at least one patient for current FY summary");
+      return;
+    }
+    // Check for active patients or death discharge with available cap
+    const activePatients = selectedData.filter((p) => !p.eoc || p.eoc === "Active");
+    const deathDischargeWithCap = selectedData.filter((p) => {
+      if (!p.eoc || p.eoc === "Active") return false;
+      const isDeathDischarge = p.eoc_discharge === "Death Discharge";
+      const totalAvailableCap = parseFloat(p.availableCapFirstPeriod || 0) +
+                                 parseFloat(p.availableCapSecondPeriod || 0);
+      return isDeathDischarge && totalAvailableCap > 0;
+    });
+
+    if (activePatients.length === 0 && deathDischargeWithCap.length === 0) {
+      alert("No eligible patients selected. Current FY summary requires active patients or death discharge patients with available cap.");
+      return;
+    }
+    console.log("Current FY summary for:", { activePatients, deathDischargeWithCap });
+    setIsCurrentFYSummaryModalOpen(true);
+  };
+
+  const closeCurrentFYSummaryModal = () => {
+    setIsCurrentFYSummaryModalOpen(false);
+  };
+
   const onPressEnterKeyHandler = (value) => {
     filterRecordHandler(value);
     setKeywordValue(value);
@@ -244,6 +274,11 @@ function AvailableFunction(props) {
       <PrintFiscalYearProjectionModal
         isOpen={isFiscalYearProjectionModalOpen}
         onClose={closeFiscalYearProjectionModal}
+        patientsData={dataSource.filter((r) => r.isChecked)}
+      />
+      <PrintCurrentFYSummaryModal
+        isOpen={isCurrentFYSummaryModalOpen}
+        onClose={closeCurrentFYSummaryModal}
         patientsData={dataSource.filter((r) => r.isChecked)}
       />
       {!isProcessDone ? (
@@ -343,6 +378,28 @@ function AvailableFunction(props) {
                           >
                             {" "}
                             Fiscal Year Projection{" "}
+                          </Button>
+                          <Button
+                            onClick={() => currentFYSummaryHandler()}
+                            variant="outlined"
+                            style={{
+                              fontFamily: "Roboto",
+                              fontSize: "12px",
+                              fontWeight: 500,
+                              fontStretch: "normal",
+                              fontStyle: "normal",
+                              lineHeight: 1.71,
+                              letterSpacing: "0.4px",
+                              textAlign: "left",
+                              cursor: "pointer",
+                              color: "#4caf50",
+                              borderColor: "#4caf50",
+                            }}
+                            component="span"
+                            startIcon={<Assessment />}
+                          >
+                            {" "}
+                            Current FY Summary{" "}
                           </Button>
                         </>
                       )}

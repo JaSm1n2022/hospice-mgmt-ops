@@ -2,9 +2,11 @@ import React from "react";
 import { Modal, makeStyles, CircularProgress } from "@material-ui/core";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import { Clear, GetApp } from "@material-ui/icons";
-import FiscalYearProjectionDocument from "./FiscalYearProjectionDocument";
 import moment from "moment";
 import AvailableHandler from "./AvailableHandler";
+
+// Import the summary document and the full projection document for shared functions
+import FiscalYearProjectionDocument from "./FiscalYearProjectionDocument";
 
 function getModalStyle() {
   const top = 50;
@@ -66,14 +68,6 @@ const useStyles = makeStyles((theme) => ({
     fontWeight: "bold",
     color: "#000",
   },
-  warningText: {
-    color: "#ff6600",
-    fontWeight: "bold",
-  },
-  positiveText: {
-    color: "#4caf50",
-    fontWeight: "bold",
-  },
   downloadButton: {
     display: "inline-flex",
     alignItems: "center",
@@ -97,9 +91,17 @@ const useStyles = makeStyles((theme) => ({
     color: "#999",
     fontStyle: "italic",
   },
+  positiveText: {
+    color: "#4caf50",
+    fontWeight: "bold",
+  },
+  warningText: {
+    color: "#ff6600",
+    fontWeight: "bold",
+  },
 }));
 
-function PrintFiscalYearProjectionModal({ isOpen, onClose, patientsData, handler }) {
+function PrintCurrentFYSummaryModal({ isOpen, onClose, patientsData, handler }) {
   const classes = useStyles();
   const [modalStyle] = React.useState(getModalStyle);
   const [error, setError] = React.useState(null);
@@ -112,7 +114,7 @@ function PrintFiscalYearProjectionModal({ isOpen, onClose, patientsData, handler
   const projectionHandler = handler || AvailableHandler;
   const projectedData = projectionHandler.calculateFiscalYearProjection(patientsData);
 
-  // Calculate summary statistics
+  // Calculate summary statistics (same as full projection)
   const currentDate = moment();
   const currentYear = currentDate.year();
   const fiscalYearEnd = moment(`${currentYear}-09-30`);
@@ -124,7 +126,7 @@ function PrintFiscalYearProjectionModal({ isOpen, onClose, patientsData, handler
   const activePatients = projectedData.filter((p) => p.isActiveProjection);
   const deathDischargePatients = projectedData.filter((p) => p.isDeathDischarge);
 
-  // Get EOC non-death patients - ONLY those with NEGATIVE available cap (exceeding)
+  // Get EOC non-death patients - ONLY those with NEGATIVE available cap
   const eocNonDeathPatients = patientsData.filter((p) => {
     if (!p.eoc || p.eoc === "N/A") return false;
     if (p.eoc_discharge === "Death Discharge") return false;
@@ -132,7 +134,6 @@ function PrintFiscalYearProjectionModal({ isOpen, onClose, patientsData, handler
     const totalAvailableCap = parseFloat(p.availableCapFirstPeriod || 0) +
                                parseFloat(p.availableCapSecondPeriod || 0);
 
-    // ONLY include patients with NEGATIVE available cap
     return totalAvailableCap < 0;
   });
 
@@ -198,16 +199,12 @@ function PrintFiscalYearProjectionModal({ isOpen, onClose, patientsData, handler
   summary.totalProjectedAvailableCap = (
     parseFloat(summary.activeProjectedAvailableCap) +
     parseFloat(summary.deathDischargeAvailableCap) +
-    parseFloat(summary.eocNonDeathCapDeficit) // This is already negative, so + works as subtraction
+    parseFloat(summary.eocNonDeathCapDeficit) // This is already negative
   ).toFixed(2);
 
   const isCapAvailable = parseFloat(summary.totalProjectedAvailableCap) >= 0;
 
-  const fileName = `Medicare_Cap_FY_Projection_${moment().format("YYYY-MM-DD_HHmmss")}.pdf`;
-
-  // Limit to prevent freezing with large datasets
-  const limitedData = projectedData.slice(0, 50);
-  const isLimited = projectedData.length > 50;
+  const fileName = `Medicare_Cap_Current_FY_Summary_${moment().format("YYYY-MM-DD_HHmmss")}.pdf`;
 
   const formatCurrency = (value) => {
     if (!value) return "$0.00";
@@ -227,7 +224,7 @@ function PrintFiscalYearProjectionModal({ isOpen, onClose, patientsData, handler
     >
       <div style={modalStyle} className={classes.paper}>
         <div className={classes.header}>
-          <h3 style={{ margin: 0 }}>Fiscal Year Projection</h3>
+          <h3 style={{ margin: 0 }}>Current FY Summary</h3>
           <Clear className={classes.closeButton} onClick={onClose} />
         </div>
         <div className={classes.content}>
@@ -239,123 +236,37 @@ function PrintFiscalYearProjectionModal({ isOpen, onClose, patientsData, handler
           ) : (
             <>
               <div className={classes.infoSection}>
-                <div className={classes.infoTitle}>Projection Summary</div>
+                <div className={classes.infoTitle}>Summary Preview</div>
                 <div className={classes.infoRow}>
                   <span className={classes.infoLabel}>Fiscal Year End:</span>
                   <span className={classes.infoValue}>{summary.fiscalYearEnd}</span>
                 </div>
                 <div className={classes.infoRow}>
-                  <span className={classes.infoLabel}>Active Patients (Projected):</span>
-                  <span className={classes.infoValue}>
-                    {summary.totalActivePatients}
-                  </span>
+                  <span className={classes.infoLabel}>Active Patients:</span>
+                  <span className={classes.infoValue}>{summary.totalActivePatients}</span>
                 </div>
-                {summary.totalEocNonDeathPatients > 0 && (
-                  <div className={classes.infoRow}>
-                    <span className={classes.infoLabel}>EOC (Non-Death) Exceeded Cap:</span>
-                    <span className={classes.infoValue}>
-                      {summary.totalEocNonDeathPatients}
-                    </span>
-                  </div>
-                )}
-                {summary.totalDeathDischargePatients > 0 && (
-                  <div className={classes.infoRow}>
-                    <span className={classes.infoLabel}>Death Discharge w/ Available Cap:</span>
-                    <span className={classes.infoValue}>
-                      {summary.totalDeathDischargePatients}
-                    </span>
-                  </div>
-                )}
                 <div className={classes.infoRow}>
-                  <span className={classes.infoLabel}>Total Patients:</span>
-                  <span className={classes.infoValue}>
-                    {limitedData.length}
-                    {isLimited && (
-                      <span style={{ color: "orange", fontSize: "0.9em" }}>
-                        {" "}
-                        (of {summary.totalPatients} total)
-                      </span>
-                    )}
+                  <span className={classes.infoLabel}>
+                    TOTAL Projected Available Cap:
+                  </span>
+                  <span
+                    className={
+                      isCapAvailable ? classes.positiveText : classes.warningText
+                    }
+                  >
+                    {formatCurrency(summary.totalProjectedAvailableCap)}
                   </span>
                 </div>
-                <div style={{ borderTop: "1px solid #ddd", margin: "10px 0", paddingTop: "10px" }}>
-                  <div className={classes.infoRow}>
-                    <span className={classes.infoLabel}>
-                      Active Patients - Projected Used Cap by {summary.fiscalYearEnd}:
-                    </span>
-                    <span className={classes.infoValue}>
-                      {formatCurrency(summary.activeProjectedUsedCap)}
-                    </span>
-                  </div>
-                  <div className={classes.infoRow}>
-                    <span className={classes.infoLabel}>Active Patients - Projected Allowed Cap:</span>
-                    <span className={classes.infoValue}>
-                      {formatCurrency(summary.activeProjectedAllowedCap)}
-                    </span>
-                  </div>
-                  <div className={classes.infoRow}>
-                    <span className={classes.infoLabel}>Active Patients - Projected Available Cap:</span>
-                    <span className={classes.infoValue}>
-                      {formatCurrency(summary.activeProjectedAvailableCap)}
-                    </span>
-                  </div>
-                  {summary.totalEocNonDeathPatients > 0 && (
-                    <div className={classes.infoRow}>
-                      <span className={classes.infoLabel}>
-                        EOC (Non-Death) - Cap Deficit:
-                      </span>
-                      <span className={classes.warningText}>
-                        {formatCurrency(summary.eocNonDeathCapDeficit)}
-                      </span>
-                    </div>
-                  )}
-                  {summary.totalDeathDischargePatients > 0 && (
-                    <div className={classes.infoRow}>
-                      <span className={classes.infoLabel}>
-                        Death Discharge - Available Cap Ready to Use:
-                      </span>
-                      <span className={classes.positiveText}>
-                        {formatCurrency(summary.deathDischargeAvailableCap)}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <div style={{ borderTop: "2px solid #4caf50", margin: "10px 0", paddingTop: "10px" }}>
-                  <div className={classes.infoRow}>
-                    <span className={classes.infoLabel} style={{ fontWeight: "bold", fontSize: "16px" }}>
-                      TOTAL Projected Available Cap (FY {summary.fiscalYearEnd}):
-                    </span>
-                    <span
-                      className={
-                        isCapAvailable ? classes.positiveText : classes.warningText
-                      }
-                      style={{ fontSize: "18px" }}
-                    >
-                      {formatCurrency(summary.totalProjectedAvailableCap)}
-                    </span>
-                  </div>
-                  {summary.totalEocNonDeathPatients > 0 && (
-                    <div style={{ marginTop: "8px", fontSize: "11px", color: "#666", fontStyle: "italic" }}>
-                      * Includes EOC (Non-Death) cap deficit of {formatCurrency(summary.eocNonDeathCapDeficit)} subtracted from total
-                    </div>
-                  )}
-                </div>
-                {!isCapAvailable && (
-                  <div style={{ marginTop: 10 }}>
-                    <span className={classes.warningText}>
-                      WARNING: Projected to exceed cap by fiscal year end!
-                    </span>
-                  </div>
-                )}
               </div>
 
               <div style={{ textAlign: "center" }}>
                 <PDFDownloadLink
                   document={
                     <FiscalYearProjectionDocument
-                      patientsData={limitedData}
+                      patientsData={projectedData.slice(0, 50)}
                       originalPatientsData={patientsData}
                       summary={summary}
+                      summaryOnly={true}
                     />
                   }
                   fileName={fileName}
@@ -369,12 +280,12 @@ function PrintFiscalYearProjectionModal({ isOpen, onClose, patientsData, handler
                     return loading ? (
                       <>
                         <CircularProgress size={20} style={{ color: "white" }} />
-                        Generating Projection PDF...
+                        Generating Summary PDF...
                       </>
                     ) : (
                       <>
                         <GetApp />
-                        Download Fiscal Year Projection PDF
+                        Download Current FY Summary PDF
                       </>
                     );
                   }}
@@ -382,10 +293,9 @@ function PrintFiscalYearProjectionModal({ isOpen, onClose, patientsData, handler
               </div>
 
               <p className={classes.note}>
-                This comprehensive report includes: (1) Summary overview, (2) Detailed breakdowns for
-                patients with available cap, patients exceeding cap, EOC non-death patients, and death
-                discharge patients, (3) Individual patient details sorted by available cap.
-                Projections use location-specific RHC rates and include prior hospice allocations.
+                This summary includes: Page 1 overview and all summary tables (Active with Available Cap,
+                Patients Exceeding Cap, Death Discharge, and EOC Non-Death). Individual patient details
+                are excluded for a concise report.
               </p>
             </>
           )}
@@ -395,4 +305,4 @@ function PrintFiscalYearProjectionModal({ isOpen, onClose, patientsData, handler
   );
 }
 
-export default PrintFiscalYearProjectionModal;
+export default PrintCurrentFYSummaryModal;
