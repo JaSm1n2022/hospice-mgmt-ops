@@ -13,6 +13,12 @@ class ContractHandler {
       {
         defaultFlex: 1,
         minWidth: 200,
+        name: "employeeTitle",
+        header: "Employee Position",
+      },
+      {
+        defaultFlex: 1,
+        minWidth: 200,
         name: "employeeType",
         header: "Employee Type",
       },

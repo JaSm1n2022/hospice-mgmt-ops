@@ -380,7 +380,23 @@ function ContractFunction(props) {
 
   const exportToExcelHandler = () => {
     const excelData = dataSource.filter((r) => r.isChecked);
-    const excel = Helper.formatExcelReport(columns, excelData);
+
+    // Sort by employee position (employeeTitle)
+    const sortedData = [...excelData].sort((a, b) => {
+      const positionA = (a.employeeTitle || '').toLowerCase();
+      const positionB = (b.employeeTitle || '').toLowerCase();
+
+      // Sort alphabetically by position
+      if (positionA < positionB) return -1;
+      if (positionA > positionB) return 1;
+
+      // If same position, sort by employee name
+      const nameA = (a.employeeName || '').toLowerCase();
+      const nameB = (b.employeeName || '').toLowerCase();
+      return nameA.localeCompare(nameB);
+    });
+
+    const excel = Helper.formatExcelReport(columns, sortedData);
     let fileName = `contract_list_batch_${new Date().getTime()}`;
 
     if (excel && excel.length) {

@@ -99,7 +99,6 @@ import UpdateBenefits from "views/Administrator/Utilities/UpdateBenefits";
 import QAChart from "views/Administrator/Utilities/QAChart";
 import ComplianceReport48HR from "views/Administrator/Utilities/ComplianceReport48HR";
 import DmeManagement from "views/Administrator/Operations/DmeManagement/DmeManagement";
-import PharmacyManagement from "views/Administrator/Operations/PharmacyManagement/PharmacyManagement";
 import PharmacyInvoiceMgmt from "views/Administrator/Operations/PharmacyInvoiceManagement/PharmacyInvoiceMgmt";
 var dashRoutes = [
   {
@@ -269,19 +268,10 @@ var dashRoutes = [
         layout: "/admin",
       },
       {
-        path: "/pharmacy-management",
-        name: "Pharmacy Management",
+        path: "/pharmacy-invoice-mgmt",
+        name: "Pharmacy Mgmt",
         rtlName: "عالتسعير",
         mini: "PM",
-        rtlMini: "ع",
-        component: PharmacyManagement,
-        layout: "/admin",
-      },
-      {
-        path: "/pharmacy-invoice-mgmt",
-        name: "Pharmacy Invoice Upload",
-        rtlName: "عالتسعير",
-        mini: "PIU",
         rtlMini: "ع",
         component: PharmacyInvoiceMgmt,
         layout: "/admin",
