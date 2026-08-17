@@ -200,7 +200,7 @@ const SupplyMatrixPDF = ({ matrixData, dateFrom, dateTo }) => {
       <Page size="A4" style={styles.page} orientation="landscape">
         <Text style={styles.header}>PATIENT SUPPLY MATRIX</Text>
         <Text style={styles.dateInfo}>
-          Date Range: {dateFrom} to {dateTo} | Generated: {moment().format("MM/DD/YYYY hh:mm A")}
+          Date Range: {dateFrom && moment(dateFrom).isValid() ? moment(dateFrom).format("MM/DD/YYYY") : dateFrom || "N/A"} to {dateTo && moment(dateTo).isValid() ? moment(dateTo).format("MM/DD/YYYY") : dateTo || "N/A"} | Generated: {moment().format("MM/DD/YYYY hh:mm A")}
         </Text>
 
         <View style={styles.table}>

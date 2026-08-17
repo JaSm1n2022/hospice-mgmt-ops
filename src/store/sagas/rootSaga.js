@@ -38,6 +38,7 @@ import certificationSaga from "./certificationSaga";
 import incomeSaga from "./incomeSaga";
 import potentialAdmissionSaga from "./potentialAdmissionSaga";
 import qaSaga from "./qaSaga";
+import schedulerSaga from "./schedulerSaga";
 export function* rootSaga() {
   yield all([
     authSaga(),
@@ -79,5 +80,6 @@ export function* rootSaga() {
     incomeSaga(),
     potentialAdmissionSaga(),
     qaSaga(),
+    schedulerSaga(),
   ]);
 }

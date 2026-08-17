@@ -100,6 +100,7 @@ import QAChart from "views/Administrator/Utilities/QAChart";
 import ComplianceReport48HR from "views/Administrator/Utilities/ComplianceReport48HR";
 import DmeManagement from "views/Administrator/Operations/DmeManagement/DmeManagement";
 import PharmacyInvoiceMgmt from "views/Administrator/Operations/PharmacyInvoiceManagement/PharmacyInvoiceMgmt";
+import Scheduler from "views/Administrator/Utilities/Scheduler/SchedulerFunction";
 var dashRoutes = [
   {
     path: "/dashboard",
@@ -464,6 +465,15 @@ var dashRoutes = [
         mini: "48",
         rtlMini: "ع",
         component: ComplianceReport48HR,
+        layout: "/admin",
+      },
+      {
+        path: "/scheduler",
+        name: "Scheduler",
+        rtlName: "عالتسعير",
+        mini: "SC",
+        rtlMini: "ع",
+        component: Scheduler,
         layout: "/admin",
       },
     ],

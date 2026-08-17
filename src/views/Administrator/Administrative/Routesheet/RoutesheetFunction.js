@@ -18,7 +18,7 @@ import { CircularProgress, Grid } from "@material-ui/core";
 import AddIcon from "@material-ui/icons/Add";
 
 import HospiceTable from "components/Table/HospiceTable";
-import { ImportExport, Warning, MoneyOutlined } from "@material-ui/icons";
+import { ImportExport, Warning, MoneyOutlined, Refresh } from "@material-ui/icons";
 import Helper from "utils/helper";
 import * as FileSaver from "file-saver";
 import SearchCustomTextField from "components/TextField/SearchCustomTextField";
@@ -1221,6 +1221,17 @@ function RoutesheetFunction(props) {
       to: moment(new Date(dates.to)).utc().format("YYYY-MM-DD"),
     });
   };
+
+  const refreshHandler = () => {
+    if (dateFrom && dateTo) {
+      props.listRoutesheet({
+        companyId: context.userProfile.companyId,
+        from: moment(new Date(dateFrom)).utc().format("YYYY-MM-DD"),
+        to: moment(new Date(dateTo)).utc().format("YYYY-MM-DD"),
+      });
+      showNotification("Data refreshed successfully", "success");
+    }
+  };
   return (
     <>
       {!isProcessDone ? (
@@ -1256,12 +1267,22 @@ function RoutesheetFunction(props) {
                 </CardHeader>
                 <CardBody>
                   <GridContainer style={{ paddingLeft: 20 }}>
-                    <GridItem md={8} sm={6} xs={12}>
+                    <GridItem md={7} sm={5} xs={12}>
                       <FilterTable
                         filterRecordHandler={filterRecordHandler}
                         filterByDateHandler={filterByDateHandler}
                         dateRangeSelection="thisWeek"
                       />
+                    </GridItem>
+                    <GridItem md={1} sm={1} xs={12}>
+                      <Button
+                        color="info"
+                        onClick={refreshHandler}
+                        style={{ marginTop: 8 }}
+                        size="sm"
+                      >
+                        <Refresh />
+                      </Button>
                     </GridItem>
                     <GridItem md={2} sm={3} xs={12}>
                       <FormControl
