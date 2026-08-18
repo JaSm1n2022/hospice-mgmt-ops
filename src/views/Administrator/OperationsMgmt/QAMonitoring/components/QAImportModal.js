@@ -23,6 +23,7 @@ import {
 import { makeStyles } from "@material-ui/core/styles";
 import CloudUploadIcon from "@material-ui/icons/CloudUpload";
 import CloseIcon from "@material-ui/icons/Close";
+import DeleteIcon from "@material-ui/icons/Delete";
 import * as XLSX from "xlsx";
 import TOAST from "modules/toastManager";
 import { supabaseClient } from "config/SupabaseClient";
@@ -145,6 +146,12 @@ const useStyles = makeStyles((theme) => ({
     fontSize: "0.75rem",
     color: "#666",
     textTransform: "uppercase",
+  },
+  deleteButton: {
+    color: "#f44336",
+    "&:hover": {
+      backgroundColor: "#ffebee",
+    },
   },
 }));
 
@@ -331,6 +338,11 @@ function QAImportModal({ isOpen, onClose, patientList, userProfile, onSuccess })
           : row
       )
     );
+  };
+
+  const handleDeleteRow = (rowIndex) => {
+    setImportRows((prev) => prev.filter((_, idx) => idx !== rowIndex));
+    TOAST.ok("Row deleted");
   };
 
   const validateRows = () => {
@@ -574,6 +586,9 @@ function QAImportModal({ isOpen, onClose, patientList, userProfile, onSuccess })
                     <TableCell className={classes.headerCell} style={{ minWidth: 250, backgroundColor: "#c62828" }}>
                       DisciplineId (Employee) <span className={classes.requiredStar}>*</span>
                     </TableCell>
+                    <TableCell className={classes.headerCell} style={{ minWidth: 80, textAlign: "center" }}>
+                      Actions
+                    </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -677,6 +692,16 @@ function QAImportModal({ isOpen, onClose, patientList, userProfile, onSuccess })
                               {getEmployeeDisplayName(selectedEmployee)}
                             </Typography>
                           )}
+                        </TableCell>
+                        <TableCell className={classes.tableCell} style={{ textAlign: "center" }}>
+                          <IconButton
+                            size="small"
+                            className={classes.deleteButton}
+                            onClick={() => handleDeleteRow(index)}
+                            title="Delete row"
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
                         </TableCell>
                       </TableRow>
                     );
