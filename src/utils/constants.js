@@ -2574,6 +2574,22 @@ export const QA_TYPE = [
     category: "qaType",
   },
   {
+    id: "bereavement-initial",
+    name: "Bereavement Initial",
+    label: "Bereavement Initial",
+    value: "Bereavement Initial",
+    code: "bereavement-initial",
+    category: "qaType",
+  },
+  {
+    id: "bereavement-post",
+    name: "Bereavement Post",
+    label: "Bereavement Post",
+    value: "Bereavement Post",
+    code: "bereavement-post",
+    category: "qaType",
+  },
+  {
     id: "huv1",
     name: "HUV1",
     label: "HUV1",
