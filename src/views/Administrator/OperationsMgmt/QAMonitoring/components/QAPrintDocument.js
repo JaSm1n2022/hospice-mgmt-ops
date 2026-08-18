@@ -37,14 +37,14 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   patientSection: {
-    marginBottom: 20,
-    break: "inside",
+    marginBottom: 15,
+    marginTop: 10,
   },
   patientHeader: {
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: "bold",
-    marginBottom: 10,
-    padding: 8,
+    marginBottom: 8,
+    padding: 6,
     backgroundColor: "#9c27b0",
     color: "#fff",
   },
@@ -107,6 +107,8 @@ const styles = StyleSheet.create({
 });
 
 const QAPrintDocument = ({ qaRecords }) => {
+  const ROWS_PER_PAGE = 20;
+
   // Group records by patient and sort by source date
   const groupByPatient = () => {
     const grouped = {};
@@ -131,102 +133,127 @@ const QAPrintDocument = ({ qaRecords }) => {
     return grouped;
   };
 
+  // Split records into pages with max 20 rows per page
+  const paginateRecords = (records, patientCd) => {
+    const pages = [];
+    for (let i = 0; i < records.length; i += ROWS_PER_PAGE) {
+      pages.push({
+        patientCd,
+        records: records.slice(i, i + ROWS_PER_PAGE),
+        pageNum: Math.floor(i / ROWS_PER_PAGE) + 1,
+        totalPages: Math.ceil(records.length / ROWS_PER_PAGE),
+        totalRecords: records.length,
+      });
+    }
+    return pages;
+  };
+
   const groupedRecords = groupByPatient();
   const sortedPatients = Object.keys(groupedRecords).sort();
 
+  // Create paginated pages for all patients
+  const allPages = [];
+  sortedPatients.forEach((patientCd) => {
+    const records = groupedRecords[patientCd];
+    const patientPages = paginateRecords(records, patientCd);
+    allPages.push(...patientPages);
+  });
+
+  // Render table header
+  const renderTableHeader = () => (
+    <View style={styles.tableHeaderRow}>
+      <Text style={[styles.tableHeaderCell, { flex: 1 }]}>QA Type</Text>
+      <Text style={[styles.tableHeaderCell, { flex: 0.8 }]}>Source Date</Text>
+      <Text style={[styles.tableHeaderCell, { flex: 0.8 }]}>QA Date</Text>
+      <Text style={[styles.tableHeaderCell, { flex: 0.8 }]}>Complete Date</Text>
+      <Text style={[styles.tableHeaderCell, { flex: 0.8 }]}>Status</Text>
+      <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Discipline</Text>
+      <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Reviewer</Text>
+      <Text style={[styles.tableHeaderCell, { flex: 0.7 }]}>LCD</Text>
+      <Text style={[styles.tableHeaderCell, { flex: 0.5, ...styles.lastCell }]}>Cert #</Text>
+    </View>
+  );
+
+  // Render data row
+  const renderDataRow = (record, idx) => (
+    <View key={idx} style={styles.tableRow}>
+      <Text style={[styles.tableCell, { flex: 1 }]}>
+        {record.qa_type || ""}
+      </Text>
+      <Text style={[styles.tableCell, { flex: 0.8 }]}>
+        {record.qa_source_dt ? moment(record.qa_source_dt).format("MM/DD/YYYY") : ""}
+      </Text>
+      <Text style={[styles.tableCell, { flex: 0.8 }]}>
+        {record.qa_date ? moment(record.qa_date).format("MM/DD/YYYY") : ""}
+      </Text>
+      <Text style={[styles.tableCell, { flex: 0.8 }]}>
+        {record.completed_dt ? moment(record.completed_dt).format("MM/DD/YYYY") : ""}
+      </Text>
+      <Text style={[styles.tableCell, { flex: 0.8 }]}>
+        {record.qa_status || ""}
+      </Text>
+      <Text style={[styles.tableCell, { flex: 1 }]}>
+        {record.discipline_name || ""}
+      </Text>
+      <Text style={[styles.tableCell, { flex: 1 }]}>
+        {record.reviewer_name || ""}
+      </Text>
+      <Text style={[styles.tableCell, { flex: 0.7 }]}>
+        {record.qa_type && (
+          record.qa_type.toLowerCase().includes("visit") ||
+          record.qa_type === "SC Assessment" ||
+          record.qa_type === "MSW Assessment"
+        )
+          ? "N/A"
+          : record.isLcdCompliance === true
+            ? "Compliant"
+            : record.isLcdCompliance === false
+              ? "Non-Compliant"
+              : ""}
+      </Text>
+      <Text style={[styles.tableCell, { flex: 0.5, ...styles.lastCell }]}>
+        {record.recertNumber || ""}
+      </Text>
+    </View>
+  );
+
   return (
     <Document>
-      <Page size="A4" orientation="landscape" style={styles.page}>
-        <View style={styles.header}>
-          <Text style={styles.title}>
-            QA Monitoring Report
-          </Text>
-          <Text style={styles.subtitle}>
-            Quality Assurance Records Grouped by Patient
-          </Text>
-          <Text style={styles.generated}>
-            Generated: {moment().format("MM/DD/YYYY hh:mm A")}
-          </Text>
-        </View>
+      {allPages.map((page, pageIndex) => (
+        <Page key={pageIndex} size="A4" orientation="landscape" style={styles.page}>
+          <View style={styles.header}>
+            <Text style={styles.title}>
+              QA Monitoring Report
+            </Text>
+            <Text style={styles.subtitle}>
+              Quality Assurance Records Grouped by Patient
+            </Text>
+            <Text style={styles.generated}>
+              Generated: {moment().format("MM/DD/YYYY hh:mm A")}
+            </Text>
+          </View>
 
-        {sortedPatients.map((patientCd, index) => {
-          const records = groupedRecords[patientCd];
-          return (
-            <View key={index} style={styles.patientSection} wrap={false}>
-              <Text style={styles.patientHeader}>
-                Patient: {patientCd} ({records.length} record{records.length !== 1 ? "s" : ""})
-              </Text>
+          <View style={styles.patientSection}>
+            <Text style={styles.patientHeader}>
+              Patient: {page.patientCd} ({page.totalRecords} total record{page.totalRecords !== 1 ? "s" : ""} - Page {page.pageNum} of {page.totalPages})
+            </Text>
 
-              <View style={styles.table}>
-                {/* Header Row */}
-                <View style={styles.tableHeaderRow}>
-                  <Text style={[styles.tableHeaderCell, { flex: 1 }]}>QA Type</Text>
-                  <Text style={[styles.tableHeaderCell, { flex: 0.8 }]}>Source Date</Text>
-                  <Text style={[styles.tableHeaderCell, { flex: 0.8 }]}>QA Date</Text>
-                  <Text style={[styles.tableHeaderCell, { flex: 0.8 }]}>Complete Date</Text>
-                  <Text style={[styles.tableHeaderCell, { flex: 0.8 }]}>Status</Text>
-                  <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Discipline</Text>
-                  <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Reviewer</Text>
-                  <Text style={[styles.tableHeaderCell, { flex: 0.7 }]}>LCD</Text>
-                  <Text style={[styles.tableHeaderCell, { flex: 0.5, ...styles.lastCell }]}>Cert #</Text>
-                </View>
-
-                {/* Data Rows */}
-                {records.map((record, idx) => (
-                  <View key={idx} style={styles.tableRow}>
-                    <Text style={[styles.tableCell, { flex: 1 }]}>
-                      {record.qa_type || ""}
-                    </Text>
-                    <Text style={[styles.tableCell, { flex: 0.8 }]}>
-                      {record.qa_source_dt ? moment(record.qa_source_dt).format("MM/DD/YYYY") : ""}
-                    </Text>
-                    <Text style={[styles.tableCell, { flex: 0.8 }]}>
-                      {record.qa_date ? moment(record.qa_date).format("MM/DD/YYYY") : ""}
-                    </Text>
-                    <Text style={[styles.tableCell, { flex: 0.8 }]}>
-                      {record.completed_dt ? moment(record.completed_dt).format("MM/DD/YYYY") : ""}
-                    </Text>
-                    <Text style={[styles.tableCell, { flex: 0.8 }]}>
-                      {record.qa_status || ""}
-                    </Text>
-                    <Text style={[styles.tableCell, { flex: 1 }]}>
-                      {record.discipline_name || ""}
-                    </Text>
-                    <Text style={[styles.tableCell, { flex: 1 }]}>
-                      {record.reviewer_name || ""}
-                    </Text>
-                    <Text style={[styles.tableCell, { flex: 0.7 }]}>
-                      {record.qa_type && (
-                        record.qa_type.toLowerCase().includes("visit") ||
-                        record.qa_type === "SC Assessment" ||
-                        record.qa_type === "MSW Assessment"
-                      )
-                        ? "N/A"
-                        : record.isLcdCompliance === true
-                          ? "Compliant"
-                          : record.isLcdCompliance === false
-                            ? "Non-Compliant"
-                            : ""}
-                    </Text>
-                    <Text style={[styles.tableCell, { flex: 0.5, ...styles.lastCell }]}>
-                      {record.recertNumber || ""}
-                    </Text>
-                  </View>
-                ))}
-              </View>
+            <View style={styles.table}>
+              {renderTableHeader()}
+              {page.records.map((record, idx) => renderDataRow(record, idx))}
             </View>
-          );
-        })}
+          </View>
 
-        <View style={styles.footer}>
-          <Text>
-            This document was generated automatically. Please verify all information before use.
-          </Text>
-          <Text style={{ marginTop: 4 }}>
-            Total Patients: {sortedPatients.length} | Total Records: {qaRecords.length}
-          </Text>
-        </View>
-      </Page>
+          <View style={styles.footer}>
+            <Text>
+              This document was generated automatically. Please verify all information before use.
+            </Text>
+            <Text style={{ marginTop: 4 }}>
+              Page {pageIndex + 1} of {allPages.length} | Total Patients: {sortedPatients.length} | Total Records: {qaRecords.length}
+            </Text>
+          </View>
+        </Page>
+      ))}
     </Document>
   );
 };
