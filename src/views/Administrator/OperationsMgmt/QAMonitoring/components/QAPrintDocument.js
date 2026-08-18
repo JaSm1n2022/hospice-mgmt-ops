@@ -14,27 +14,27 @@ const styles = StyleSheet.create({
     fontSize: 9,
   },
   header: {
-    marginBottom: 20,
-    paddingBottom: 10,
-    borderBottom: 2,
+    marginBottom: 10,
+    paddingBottom: 5,
+    borderBottom: 1,
     borderBottomColor: "#9c27b0",
     borderBottomStyle: "solid",
   },
   title: {
-    fontSize: 18,
+    fontSize: 12,
     fontWeight: "bold",
-    marginBottom: 5,
+    marginBottom: 3,
     color: "#9c27b0",
   },
   subtitle: {
-    fontSize: 11,
+    fontSize: 8,
     color: "#666",
-    marginBottom: 3,
+    marginBottom: 2,
   },
   generated: {
-    fontSize: 9,
+    fontSize: 7,
     color: "#999",
-    marginTop: 5,
+    marginTop: 3,
   },
   patientSection: {
     marginBottom: 15,
@@ -97,9 +97,12 @@ const styles = StyleSheet.create({
     borderRightWidth: 0,
   },
   footer: {
-    marginTop: 20,
-    paddingTop: 10,
-    fontSize: 8,
+    position: "absolute",
+    bottom: 15,
+    left: 20,
+    right: 20,
+    paddingTop: 5,
+    fontSize: 6,
     color: "#666",
     textAlign: "center",
     borderTop: "1px solid #ccc",
@@ -279,8 +282,8 @@ const QAPrintDocument = ({ qaRecords }) => {
   return (
     <Document>
       {validPages.map((page, pageIndex) => (
-        <Page key={pageIndex} size="A4" orientation="landscape" style={styles.page}>
-          <View style={styles.header}>
+        <Page key={pageIndex} size="A4" orientation="landscape" style={styles.page} wrap>
+          <View style={styles.header} fixed>
             <Text style={styles.title}>
               QA Monitoring Report
             </Text>
@@ -303,11 +306,11 @@ const QAPrintDocument = ({ qaRecords }) => {
             </View>
           </View>
 
-          <View style={styles.footer}>
+          <View style={styles.footer} fixed>
             <Text>
               This document was generated automatically. Please verify all information before use.
             </Text>
-            <Text style={{ marginTop: 4 }}>
+            <Text style={{ marginTop: 2 }}>
               Page {pageIndex + 1} of {validPages.length} | Total Patients: {sortedPatients.length} | Total Records: {qaRecords.length}
             </Text>
           </View>
