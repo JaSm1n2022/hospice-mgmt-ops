@@ -64,6 +64,8 @@ const styles = {
       fontWeight: "bold",
       fontSize: "0.95rem",
       padding: "12px",
+      border: "1px solid #ddd",
+      whiteSpace: "nowrap",
     },
   },
   tableRow: {
@@ -72,6 +74,11 @@ const styles = {
     },
     "&:hover": {
       backgroundColor: "#e3f2fd",
+    },
+    "& td": {
+      border: "1px solid #ddd",
+      padding: "8px",
+      whiteSpace: "nowrap",
     },
   },
   monthGroupHeader: {
@@ -89,6 +96,46 @@ const styles = {
       fontWeight: "bold",
       fontSize: "0.95rem",
       padding: "12px",
+    },
+  },
+  "@media print": {
+    "@page": {
+      size: "landscape",
+      margin: "5mm",
+    },
+    ".no-print": {
+      display: "none !important",
+    },
+    "& $tableContainer": {
+      maxHeight: "none !important",
+      overflow: "visible !important",
+    },
+    "& table": {
+      fontSize: "7px !important",
+      tableLayout: "fixed",
+      width: "100%",
+      borderCollapse: "collapse",
+    },
+    "& $tableHeader": {
+      "& th": {
+        padding: "2px 4px !important",
+        fontSize: "7px !important",
+        border: "0.5px solid black !important",
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "clip",
+      },
+    },
+    "& $tableRow": {
+      pageBreakInside: "avoid",
+      "& td": {
+        padding: "2px 4px !important",
+        fontSize: "7px !important",
+        border: "0.5px solid black !important",
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "clip",
+      },
     },
   },
 };

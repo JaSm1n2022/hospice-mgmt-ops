@@ -10,8 +10,8 @@ import moment from "moment";
 
 const styles = StyleSheet.create({
   page: {
-    padding: 30,
-    fontSize: 10,
+    padding: 20,
+    fontSize: 9,
   },
   header: {
     marginBottom: 20,
@@ -60,6 +60,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#ddd",
     borderBottomStyle: "solid",
+    minHeight: 20,
   },
   tableHeaderRow: {
     flexDirection: "row",
@@ -67,23 +68,30 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#999",
     borderBottomStyle: "solid",
+    minHeight: 22,
   },
   tableCell: {
-    padding: 6,
-    fontSize: 8,
+    padding: 4,
+    fontSize: 7,
     flex: 1,
     borderRightWidth: 1,
     borderRightColor: "#ddd",
     borderRightStyle: "solid",
+    textAlign: "left",
+    justifyContent: "center",
+    overflow: "hidden",
   },
   tableHeaderCell: {
-    padding: 6,
-    fontSize: 8,
+    padding: 4,
+    fontSize: 7,
     fontWeight: "bold",
     flex: 1,
     borderRightWidth: 1,
     borderRightColor: "#999",
     borderRightStyle: "solid",
+    textAlign: "left",
+    justifyContent: "center",
+    overflow: "hidden",
   },
   lastCell: {
     borderRightWidth: 0,
