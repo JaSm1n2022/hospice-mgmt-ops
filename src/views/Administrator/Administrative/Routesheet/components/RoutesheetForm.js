@@ -612,6 +612,7 @@ function RoutesheetForm(props) {
       dosStart: dosStartCombined.format("YYYY-MM-DD HH:mm"),
       dosEnd: dosEndCombined.format("YYYY-MM-DD HH:mm"),
       dos: dayjs(dosStartDate).format("YYYY-MM-DD"),
+      day: moment(dosStartDate).format("ddd"),
       status: isApproved ? "Approved" : "For Review",
     };
 
