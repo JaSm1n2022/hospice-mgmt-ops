@@ -114,11 +114,14 @@ const QAPrintDocument = ({ qaRecords }) => {
     const grouped = {};
 
     qaRecords.forEach((record) => {
-      const patientKey = record.patientCd || "Unknown";
-      if (!grouped[patientKey]) {
-        grouped[patientKey] = [];
+      // Only include records with a valid patientCd
+      if (record && record.patientCd && record.patientCd.trim()) {
+        const patientKey = record.patientCd.trim();
+        if (!grouped[patientKey]) {
+          grouped[patientKey] = [];
+        }
+        grouped[patientKey].push(record);
       }
-      grouped[patientKey].push(record);
     });
 
     // Sort records within each patient by source date
@@ -155,8 +158,10 @@ const QAPrintDocument = ({ qaRecords }) => {
   const allPages = [];
   sortedPatients.forEach((patientCd) => {
     const records = groupedRecords[patientCd];
-    const patientPages = paginateRecords(records, patientCd);
-    allPages.push(...patientPages);
+    if (records && records.length > 0) {
+      const patientPages = paginateRecords(records, patientCd);
+      allPages.push(...patientPages);
+    }
   });
 
   // Render table header
@@ -216,6 +221,24 @@ const QAPrintDocument = ({ qaRecords }) => {
       </Text>
     </View>
   );
+
+  // Return empty document if no pages
+  if (allPages.length === 0) {
+    return (
+      <Document>
+        <Page size="A4" orientation="landscape" style={styles.page}>
+          <View style={styles.header}>
+            <Text style={styles.title}>
+              QA Monitoring Report
+            </Text>
+            <Text style={styles.subtitle}>
+              No records found
+            </Text>
+          </View>
+        </Page>
+      </Document>
+    );
+  }
 
   return (
     <Document>
