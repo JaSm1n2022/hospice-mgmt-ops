@@ -139,14 +139,23 @@ const QAPrintDocument = ({ qaRecords }) => {
   // Split records into pages with max 20 rows per page
   const paginateRecords = (records, patientCd) => {
     const pages = [];
+    // Only create pages if there are records
+    if (!records || records.length === 0) {
+      return pages;
+    }
+
     for (let i = 0; i < records.length; i += ROWS_PER_PAGE) {
-      pages.push({
-        patientCd,
-        records: records.slice(i, i + ROWS_PER_PAGE),
-        pageNum: Math.floor(i / ROWS_PER_PAGE) + 1,
-        totalPages: Math.ceil(records.length / ROWS_PER_PAGE),
-        totalRecords: records.length,
-      });
+      const recordsSlice = records.slice(i, i + ROWS_PER_PAGE);
+      // Only add page if the slice has records
+      if (recordsSlice.length > 0) {
+        pages.push({
+          patientCd,
+          records: recordsSlice,
+          pageNum: Math.floor(i / ROWS_PER_PAGE) + 1,
+          totalPages: Math.ceil(records.length / ROWS_PER_PAGE),
+          totalRecords: records.length,
+        });
+      }
     }
     return pages;
   };
@@ -160,8 +169,35 @@ const QAPrintDocument = ({ qaRecords }) => {
     const records = groupedRecords[patientCd];
     if (records && records.length > 0) {
       const patientPages = paginateRecords(records, patientCd);
-      allPages.push(...patientPages);
+      // Only add pages that have records
+      if (patientPages && patientPages.length > 0) {
+        patientPages.forEach(page => {
+          if (page && page.records && page.records.length > 0) {
+            allPages.push(page);
+          }
+        });
+      }
     }
+  });
+
+  // Filter out any null or invalid pages
+  const validPages = allPages.filter(page =>
+    page &&
+    page.patientCd &&
+    page.records &&
+    page.records.length > 0
+  );
+
+  console.log('QA Print Debug:', {
+    totalRecords: qaRecords.length,
+    groupedPatientsCount: sortedPatients.length,
+    totalPages: allPages.length,
+    validPagesCount: validPages.length,
+    validPages: validPages.map(p => ({
+      patient: p.patientCd,
+      recordCount: p.records.length,
+      pageNum: p.pageNum
+    }))
   });
 
   // Render table header
@@ -223,7 +259,7 @@ const QAPrintDocument = ({ qaRecords }) => {
   );
 
   // Return empty document if no pages
-  if (allPages.length === 0) {
+  if (validPages.length === 0) {
     return (
       <Document>
         <Page size="A4" orientation="landscape" style={styles.page}>
@@ -242,7 +278,7 @@ const QAPrintDocument = ({ qaRecords }) => {
 
   return (
     <Document>
-      {allPages.map((page, pageIndex) => (
+      {validPages.map((page, pageIndex) => (
         <Page key={pageIndex} size="A4" orientation="landscape" style={styles.page}>
           <View style={styles.header}>
             <Text style={styles.title}>
@@ -272,7 +308,7 @@ const QAPrintDocument = ({ qaRecords }) => {
               This document was generated automatically. Please verify all information before use.
             </Text>
             <Text style={{ marginTop: 4 }}>
-              Page {pageIndex + 1} of {allPages.length} | Total Patients: {sortedPatients.length} | Total Records: {qaRecords.length}
+              Page {pageIndex + 1} of {validPages.length} | Total Patients: {sortedPatients.length} | Total Records: {qaRecords.length}
             </Text>
           </View>
         </Page>
