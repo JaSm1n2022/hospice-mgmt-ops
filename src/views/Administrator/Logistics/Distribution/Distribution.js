@@ -229,7 +229,6 @@ const Distribution = (props) => {
   const [printOrdersDatePickup, setPrintOrdersDatePickup] = useState(
     moment().format("YYYY-MM-DD")
   );
-  const [selectedRows, setSelectedRows] = useState([]);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [printOrdersRequestor, setPrintOrdersRequestor] = useState(null);
   const showNotification = (place, color, msg) => {
@@ -553,66 +552,43 @@ const Distribution = (props) => {
       source = DistributionHandler.mapData(source);
     }
 
-    const cols = [
-      {
-        name: "checkbox",
-        header: () => (
-          <Checkbox
-            checked={selectedRows.length > 0 && selectedRows.length === source.length}
-            indeterminate={selectedRows.length > 0 && selectedRows.length < source.length}
-            onChange={(e) => handleSelectAll(e.target.checked)}
-            color="primary"
-          />
-        ),
-        defaultFlex: 0.3,
-        minWidth: 50,
-        render: ({ data }) => (
-          <Checkbox
-            checked={selectedRows.includes(data.id)}
-            onChange={() => handleRowSelection(data.id)}
-            color="primary"
-            onClick={(e) => e.stopPropagation()}
-          />
-        ),
-      },
-      ...DistributionHandler.columns().map((col, index) => {
-        if (col.name === "actions") {
-          return {
-            ...col,
-            editable: () => false,
-            render: (cellProps) => (
-              <ActionsFunction
-                deleteRecordItemHandler={deleteRecordItemHandler}
-                disabled={
-                  cellProps.data.order_status &&
-                  cellProps.data.order_status.toLowerCase() !== "order"
-                    ? false
-                    : false
-                }
-                createFormHandler={createFormHandler}
-                data={{ ...cellProps.data }}
-              />
-            ),
-          };
-        } else if (col.name === "record_id") {
-          return {
-            ...col,
-            editable: () => false,
-            render: (cellProps) => (
-              <DialogFunction
-                currentItem={{ ...cellProps.data }}
-                showProofHandler={showProofHandler}
-              />
-            ),
-          };
-        } else {
-          return {
-            ...col,
-            editable: () => false,
-          };
-        }
-      })
-    ];
+    const cols = DistributionHandler.columns().map((col, index) => {
+      if (col.name === "actions") {
+        return {
+          ...col,
+          editable: () => false,
+          render: (cellProps) => (
+            <ActionsFunction
+              deleteRecordItemHandler={deleteRecordItemHandler}
+              disabled={
+                cellProps.data.order_status &&
+                cellProps.data.order_status.toLowerCase() !== "order"
+                  ? false
+                  : false
+              }
+              createFormHandler={createFormHandler}
+              data={{ ...cellProps.data }}
+            />
+          ),
+        };
+      } else if (col.name === "record_id") {
+        return {
+          ...col,
+          editable: () => false,
+          render: (cellProps) => (
+            <DialogFunction
+              currentItem={{ ...cellProps.data }}
+              showProofHandler={showProofHandler}
+            />
+          ),
+        };
+      } else {
+        return {
+          ...col,
+          editable: () => false,
+        };
+      }
+    });
     setColumns(cols);
     originalSource = [...source];
     grandTotalHandler(source);
@@ -724,12 +700,14 @@ const Distribution = (props) => {
   };
 
   const handleBulkDelete = async () => {
-    if (selectedRows.length === 0) {
+    const selectedRecords = dataSource.filter(row => row.isChecked);
+
+    if (selectedRecords.length === 0) {
       TOAST.error("Please select at least one record to delete");
       return;
     }
 
-    if (!window.confirm(`Are you sure you want to delete ${selectedRows.length} selected record(s)?`)) {
+    if (!window.confirm(`Are you sure you want to delete ${selectedRecords.length} selected record(s)?`)) {
       return;
     }
 
@@ -737,58 +715,36 @@ const Distribution = (props) => {
     forStockUpdates = [];
 
     // Prepare stock updates for all selected rows
-    selectedRows.forEach(rowId => {
-      const distributionRecord = dataSource.find(d => d.id === rowId);
-      if (distributionRecord) {
-        const stock = stockList.find((s) => s.productId === distributionRecord.productId);
-        if (stock) {
-          // Check if stock update already exists for this product
-          const existingUpdate = forStockUpdates.find(u => u.id === stock.id);
-          if (existingUpdate) {
-            // Add to existing update
-            existingUpdate.qty_on_hand = Math.abs(
-              parseInt(existingUpdate.qty_on_hand || 0, 10) + parseInt(distributionRecord.order_qty, 10)
-            );
-          } else {
-            // Create new update
-            forStockUpdates.push({
-              id: stock.id,
-              companyId: context.userProfile?.companyId,
-              qty_on_hand: Math.abs(
-                parseInt(stock.qty_on_hand || 0, 10) + parseInt(distributionRecord.order_qty, 10)
-              ),
-            });
-          }
+    selectedRecords.forEach(distributionRecord => {
+      const stock = stockList.find((s) => s.productId === distributionRecord.productId);
+      if (stock) {
+        // Check if stock update already exists for this product
+        const existingUpdate = forStockUpdates.find(u => u.id === stock.id);
+        if (existingUpdate) {
+          // Add to existing update
+          existingUpdate.qty_on_hand = Math.abs(
+            parseInt(existingUpdate.qty_on_hand || 0, 10) + parseInt(distributionRecord.order_qty, 10)
+          );
+        } else {
+          // Create new update
+          forStockUpdates.push({
+            id: stock.id,
+            companyId: context.userProfile?.companyId,
+            qty_on_hand: Math.abs(
+              parseInt(stock.qty_on_hand || 0, 10) + parseInt(distributionRecord.order_qty, 10)
+            ),
+          });
         }
       }
     });
 
     // Delete all selected records
-    for (const rowId of selectedRows) {
-      await props.deleteDistribution(rowId);
+    for (const record of selectedRecords) {
+      await props.deleteDistribution(record.id);
     }
 
-    setSelectedRows([]);
     setIsBulkDeleting(false);
-    TOAST.ok(`${selectedRows.length} record(s) deleted successfully`);
-  };
-
-  const handleRowSelection = (rowId) => {
-    setSelectedRows(prev => {
-      if (prev.includes(rowId)) {
-        return prev.filter(id => id !== rowId);
-      } else {
-        return [...prev, rowId];
-      }
-    });
-  };
-
-  const handleSelectAll = (checked) => {
-    if (checked) {
-      setSelectedRows(dataSource.map(row => row.id));
-    } else {
-      setSelectedRows([]);
-    }
+    TOAST.ok(`${selectedRecords.length} record(s) deleted successfully`);
   };
 
   const createMultiDistributionHandler = () => {
@@ -1690,18 +1646,6 @@ const Distribution = (props) => {
                       <AddIcon className={classes.icons} /> Add Distribution
                     </Button>
 
-                    {selectedRows.length > 0 && (
-                      <Button
-                        color="danger"
-                        className={classes.marginRight}
-                        onClick={handleBulkDelete}
-                        disabled={isBulkDeleting}
-                      >
-                        <DeleteIcon className={classes.icons} />
-                        {isBulkDeleting ? "Deleting..." : `Delete (${selectedRows.length})`}
-                      </Button>
-                    )}
-
                     <Button
                       onClick={() => addEditTemplateHandler()}
                       color="success"
@@ -1730,6 +1674,18 @@ const Distribution = (props) => {
                         >
                           <UploadIcon className={classes.icons} /> Export Excel
                         </Button>
+
+                        {dataSource.filter(row => row.isChecked).length > 0 && (
+                          <Button
+                            color="danger"
+                            className={classes.marginRight}
+                            onClick={handleBulkDelete}
+                            disabled={isBulkDeleting}
+                          >
+                            <DeleteIcon className={classes.icons} />
+                            {isBulkDeleting ? "Deleting..." : `Delete (${dataSource.filter(row => row.isChecked).length})`}
+                          </Button>
+                        )}
 
                         <Tooltip title={"Limit to 16 records"}>
                           <Button
