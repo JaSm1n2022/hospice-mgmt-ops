@@ -2637,6 +2637,30 @@ export const QA_TYPE = [
     code: "lcd",
     category: "qaType",
   },
+  {
+    id: "discharge-death",
+    name: "Discharge - Death",
+    label: "Discharge - Death",
+    value: "Discharge - Death",
+    code: "discharge-death",
+    category: "qaType",
+  },
+  {
+    id: "discharge-revoked",
+    name: "Discharge - Revoked",
+    label: "Discharge - Revoked",
+    value: "Discharge - Revoked",
+    code: "discharge-revoked",
+    category: "qaType",
+  },
+  {
+    id: "discharged-live",
+    name: "Discharged - Live",
+    label: "Discharged - Live",
+    value: "Discharged - Live",
+    code: "discharged-live",
+    category: "qaType",
+  },
 ];
 
 export const QA_STATUS = [
