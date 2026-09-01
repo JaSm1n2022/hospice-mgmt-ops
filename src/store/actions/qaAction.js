@@ -17,7 +17,12 @@ RESET_UPDATE_QA_STATE: 'dashboard/@HOSPICE/RESET_UPDATE_QA_STATE',
 ATTEMPT_TO_DELETE_QA: 'dashboard/@HOSPICE/ATTEMPT_TO_DELETE_QA',
 SET_DELETE_QA_SUCCEED: 'dashboard/@HOSPICE/SET_DELETE_QA_SUCCEED',
 SET_DELETE_QA_FAILURE: 'dashboard/@HOSPICE/SET_DELETE_QA_FAILURE',
-RESET_DELETE_QA_STATE: 'dashboard/@HOSPICE/RESET_DELETE_QA_STATE'
+RESET_DELETE_QA_STATE: 'dashboard/@HOSPICE/RESET_DELETE_QA_STATE',
+
+ATTEMPT_TO_BATCH_UPDATE_QA: 'dashboard/@HOSPICE/ATTEMPT_TO_BATCH_UPDATE_QA',
+SET_BATCH_UPDATE_QA_SUCCEED: 'dashboard/@HOSPICE/SET_BATCH_UPDATE_QA_SUCCEED',
+SET_BATCH_UPDATE_QA_FAILURE: 'dashboard/@HOSPICE/SET_BATCH_UPDATE_QA_FAILURE',
+RESET_BATCH_UPDATE_QA_STATE: 'dashboard/@HOSPICE/RESET_BATCH_UPDATE_QA_STATE'
 
 }
 //FETCH QA
@@ -90,4 +95,22 @@ export const setDeleteQAFailure = (payload: Object): BaseAction => ({
 });
 export const resetDeleteQAState = (): BaseAction => ({
   type: QA_ACTIONS.RESET_DELETE_QA_STATE
+});
+
+//BATCH UPDATE QA
+export const attemptToBatchUpdateQA =  (data: Object): BaseAction  => ({
+  type: QA_ACTIONS.ATTEMPT_TO_BATCH_UPDATE_QA,
+  payload: data
+});
+export const setBatchUpdateQASucceed = (payload: Object): BaseAction => ({
+  type: QA_ACTIONS.SET_BATCH_UPDATE_QA_SUCCEED,
+  payload
+});
+
+export const setBatchUpdateQAFailure = (payload: Object): BaseAction => ({
+  type: QA_ACTIONS.SET_BATCH_UPDATE_QA_FAILURE,
+  payload
+});
+export const resetBatchUpdateQAState = (): BaseAction => ({
+  type: QA_ACTIONS.RESET_BATCH_UPDATE_QA_STATE
 });

@@ -9,6 +9,8 @@ import {
   setUpdateQAFailure,
   setDeleteQASucceed,
   setDeleteQAFailure,
+  setBatchUpdateQASucceed,
+  setBatchUpdateQAFailure,
 } from 'store/actions/qaAction';
 import { supabaseClient } from '../../../../../config/SupabaseClient';
 
@@ -86,9 +88,28 @@ function* attemptToDeleteQA(action) {
   }
 }
 
+// Batch Update QA
+function* attemptToBatchUpdateQA(action) {
+  try {
+    const { ids, ...updateData } = action.payload;
+    const { data, error } = yield call(
+      [supabaseClient.from('qa_monitoring').update(updateData).in('id', ids),
+       supabaseClient.from('qa_monitoring').update(updateData).in('id', ids).select]
+    );
+    if (error) {
+      yield put(setBatchUpdateQAFailure(error));
+    } else {
+      yield put(setBatchUpdateQASucceed(data));
+    }
+  } catch (error) {
+    yield put(setBatchUpdateQAFailure(error));
+  }
+}
+
 export default function* QAHandler() {
   yield takeLatest(QA_ACTIONS.ATTEMPT_TO_FETCH_QA, attemptToFetchQA);
   yield takeLatest(QA_ACTIONS.ATTEMPT_TO_CREATE_QA, attemptToCreateQA);
   yield takeLatest(QA_ACTIONS.ATTEMPT_TO_UPDATE_QA, attemptToUpdateQA);
   yield takeLatest(QA_ACTIONS.ATTEMPT_TO_DELETE_QA, attemptToDeleteQA);
+  yield takeLatest(QA_ACTIONS.ATTEMPT_TO_BATCH_UPDATE_QA, attemptToBatchUpdateQA);
 }

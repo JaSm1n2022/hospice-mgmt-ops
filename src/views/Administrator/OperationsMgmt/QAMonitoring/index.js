@@ -13,6 +13,7 @@ import EditIcon from "@material-ui/icons/Edit";
 import DeleteIcon from "@material-ui/icons/Delete";
 import GetAppIcon from "@material-ui/icons/GetApp";
 import PrintIcon from "@material-ui/icons/Print";
+import AssignmentTurnedInIcon from "@material-ui/icons/AssignmentTurnedIn";
 import HospiceTable from "components/Table/HospiceTable";
 import moment from "moment";
 import { SupaContext } from "App";
@@ -25,7 +26,8 @@ import { attemptToFetchQA, resetFetchQAState } from "store/actions/qaAction";
 import { attemptToCreateQA, resetCreateQAState } from "store/actions/qaAction";
 import { attemptToUpdateQA, resetUpdateQAState } from "store/actions/qaAction";
 import { attemptToDeleteQA, resetDeleteQAState } from "store/actions/qaAction";
-import { qaListStateSelector, qaCreateStateSelector, qaUpdateStateSelector, qaDeleteStateSelector } from "store/selectors/qaSelector";
+import { attemptToBatchUpdateQA, resetBatchUpdateQAState } from "store/actions/qaAction";
+import { qaListStateSelector, qaCreateStateSelector, qaUpdateStateSelector, qaDeleteStateSelector, qaBatchUpdateStateSelector } from "store/selectors/qaSelector";
 
 import { attemptToFetchPatient, resetFetchPatientState } from "store/actions/patientAction";
 import { patientListStateSelector } from "store/selectors/patientSelector";
@@ -37,6 +39,7 @@ import QAForm from "./components/QAForm";
 import QAPrintDocument from "./components/QAPrintDocument";
 import QAImportModal from "./components/QAImportModal";
 import QATasksPrintDocument from "./components/QATasksPrintDocument";
+import QAChangeStatusModal from "./components/QAChangeStatusModal";
 
 const styles = {
   cardCategoryWhite: {
@@ -84,6 +87,7 @@ function QAMonitoring(props) {
   const [searchText, setSearchText] = useState("");
   const [selectedRows, setSelectedRows] = useState([]);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isChangeStatusModalOpen, setIsChangeStatusModalOpen] = useState(false);
 
   const handleRowSelection = (id) => {
     setSelectedRows((prev) => {
@@ -340,6 +344,20 @@ function QAMonitoring(props) {
     }
   }, [props.qaDelete]);
 
+  // Handle batch update response
+  useEffect(() => {
+    if (props.qaBatchUpdate.status === ACTION_STATUSES.SUCCEED) {
+      TOAST.ok("QA records updated successfully");
+      setIsChangeStatusModalOpen(false);
+      setSelectedRows([]);
+      props.resetBatchUpdateQA();
+      props.fetchQA({ companyId: context.userProfile.companyId });
+    } else if (props.qaBatchUpdate.status === ACTION_STATUSES.FAILED) {
+      TOAST.error("Failed to update QA records");
+      props.resetBatchUpdateQA();
+    }
+  }, [props.qaBatchUpdate]);
+
   const handleAddNew = () => {
     setFormMode("create");
     setSelectedItem(null);
@@ -438,6 +456,33 @@ function QAMonitoring(props) {
     TOAST.ok(`Exported ${selectedData.length} record(s) to Excel`);
   };
 
+  const handleChangeStatusSubmit = (formData) => {
+    const updateData = {};
+
+    if (formData.qaDate) {
+      updateData.qa_date = moment(formData.qaDate).format("YYYY-MM-DD HH:mm:ss");
+    }
+    if (formData.completeDate) {
+      updateData.completed_dt = moment(formData.completeDate).format("YYYY-MM-DD");
+    }
+    if (formData.status && formData.status.value) {
+      updateData.qa_status = formData.status.value;
+    }
+    if (formData.reviewer && formData.reviewer.id) {
+      const reviewerName = formData.reviewer.name || `${formData.reviewer.fn || ""} ${formData.reviewer.ln || ""}`.trim();
+      updateData.reviewerId = formData.reviewer.id;
+      updateData.reviewer_name = reviewerName;
+    }
+
+    updateData.updatedUser = {
+      name: context.userProfile.name,
+      userId: context.userProfile.id,
+      date: new Date(),
+    };
+
+    props.batchUpdateQA({ ids: selectedRows, ...updateData });
+  };
+
   const handlePrintPDF = async () => {
     try {
       const doc = <QAPrintDocument qaRecords={filteredData} />;
@@ -525,6 +570,16 @@ function QAMonitoring(props) {
                       Export Excel ({selectedRows.length})
                     </Button>
                   )}
+                  {selectedRows.length > 0 && (
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      onClick={() => setIsChangeStatusModalOpen(true)}
+                      startIcon={<AssignmentTurnedInIcon />}
+                    >
+                      Change Status ({selectedRows.length})
+                    </Button>
+                  )}
                   <Button
                     variant="contained"
                     color="primary"
@@ -567,6 +622,14 @@ function QAMonitoring(props) {
           props.fetchQA({ companyId: context.userProfile.companyId });
         }}
       />
+
+      <QAChangeStatusModal
+        isOpen={isChangeStatusModalOpen}
+        selectedCount={selectedRows.length}
+        employeeList={Array.isArray(employeeList) ? employeeList : []}
+        onSubmit={handleChangeStatusSubmit}
+        onClose={() => setIsChangeStatusModalOpen(false)}
+      />
     </div>
   );
 }
@@ -576,6 +639,7 @@ const mapStateToProps = (state) => ({
   qaCreate: qaCreateStateSelector(state) || { data: {}, status: null, error: null },
   qaUpdate: qaUpdateStateSelector(state) || { data: {}, status: null, error: null },
   qaDelete: qaDeleteStateSelector(state) || { data: {}, status: null, error: null },
+  qaBatchUpdate: qaBatchUpdateStateSelector(state) || { data: {}, status: null, error: null },
   patientList: patientListStateSelector(state) || { data: [], status: null, error: null },
   employeeList: employeeListStateSelector(state) || { data: [], status: null, error: null },
 });
@@ -589,6 +653,8 @@ const mapDispatchToProps = {
   resetUpdateQA: resetUpdateQAState,
   deleteQA: attemptToDeleteQA,
   resetDeleteQA: resetDeleteQAState,
+  batchUpdateQA: attemptToBatchUpdateQA,
+  resetBatchUpdateQA: resetBatchUpdateQAState,
   fetchPatient: attemptToFetchPatient,
   resetFetchPatient: resetFetchPatientState,
   fetchEmployee: attemptToFetchEmployee,

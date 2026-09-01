@@ -27,6 +27,11 @@ const initialState = (): QAState => ({
     status: null,
     error: null
 
+  },
+  qaBatchUpdate: {
+    data: {},
+    status: null,
+    error: null
   }
 });
 
@@ -164,6 +169,39 @@ const RESET_DELETE_QA_STATE = (state: QAState) => ({
   qaDelete: initialState().qaDelete
 });
 
+/*
+Batch Update
+ */
+const ATTEMPT_TO_BATCH_UPDATE_QA = (state: QAState) => ({
+  ...state,
+  qaBatchUpdate: {
+    status: ACTION_STATUSES.PENDING,
+    data: {},
+    error: null
+  }
+});
+
+const SET_BATCH_UPDATE_QA_SUCCEED = (state: QAState, action: BaseAction) => ({
+  ...state,
+  qaBatchUpdate: {
+    data: action.payload,
+    status: ACTION_STATUSES.SUCCEED,
+    error: null
+  }
+});
+
+const SET_BATCH_UPDATE_QA_FAILURE = (state: QAState) => ({
+  ...state,
+  qaBatchUpdate: {
+    ...state.qaBatchUpdate,
+    status: ACTION_STATUSES.FAILED
+  }
+});
+const RESET_BATCH_UPDATE_QA_STATE = (state: QAState) => ({
+  ...state,
+  qaBatchUpdate: initialState().qaBatchUpdate
+});
+
 
 const reducer = (state: QAState = initialState(), action: BaseAction) => {
   switch (action.type) {
@@ -202,6 +240,15 @@ const reducer = (state: QAState = initialState(), action: BaseAction) => {
       return SET_DELETE_QA_FAILURE(state);
     case QA_ACTIONS.RESET_DELETE_QA_STATE:
       return RESET_DELETE_QA_STATE(state);
+
+    case QA_ACTIONS.ATTEMPT_TO_BATCH_UPDATE_QA:
+      return ATTEMPT_TO_BATCH_UPDATE_QA(state);
+    case QA_ACTIONS.SET_BATCH_UPDATE_QA_SUCCEED:
+      return SET_BATCH_UPDATE_QA_SUCCEED(state, action);
+    case QA_ACTIONS.SET_BATCH_UPDATE_QA_FAILURE:
+      return SET_BATCH_UPDATE_QA_FAILURE(state);
+    case QA_ACTIONS.RESET_BATCH_UPDATE_QA_STATE:
+      return RESET_BATCH_UPDATE_QA_STATE(state);
     default:
       return state;
   }

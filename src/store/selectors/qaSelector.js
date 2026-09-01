@@ -14,3 +14,6 @@ export const qaUpdateStateSelector = createSelector(
 export const qaDeleteStateSelector = createSelector(
   getQAReducer, data => data.qaDelete
 );
+export const qaBatchUpdateStateSelector = createSelector(
+  getQAReducer, data => data.qaBatchUpdate
+);
