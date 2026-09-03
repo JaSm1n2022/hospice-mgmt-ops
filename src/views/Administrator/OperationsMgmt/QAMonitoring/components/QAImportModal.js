@@ -19,6 +19,8 @@ import {
   Typography,
   IconButton,
   CircularProgress,
+  Checkbox,
+  FormControlLabel,
 } from "@material-ui/core";
 import { makeStyles } from "@material-ui/core/styles";
 import CloudUploadIcon from "@material-ui/icons/CloudUpload";
@@ -161,12 +163,16 @@ function QAImportModal({ isOpen, onClose, patientList, userProfile, onSuccess })
   const [file, setFile] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [employeeList, setEmployeeList] = useState([]);
+  const [useSamePatientCode, setUseSamePatientCode] = useState(false);
+  const [bulkPatientId, setBulkPatientId] = useState("");
 
   useEffect(() => {
     if (!isOpen) {
       // Reset state when modal closes
       setImportRows([]);
       setFile(null);
+      setUseSamePatientCode(false);
+      setBulkPatientId("");
     } else {
       // Fetch employees when modal opens
       fetchEmployees();
@@ -309,6 +315,34 @@ function QAImportModal({ isOpen, onClose, patientList, userProfile, onSuccess })
           : row
       )
     );
+  };
+
+  const handleBulkPatientChange = (patientId) => {
+    setBulkPatientId(patientId);
+    if (useSamePatientCode) {
+      const patient = patientList.find((p) => p.id === patientId);
+      setImportRows((prev) =>
+        prev.map((row) => ({
+          ...row,
+          patientId: patient?.id || null,
+          patientCd: patient?.patientCd || null,
+        }))
+      );
+    }
+  };
+
+  const handleUseSamePatientCodeChange = (checked) => {
+    setUseSamePatientCode(checked);
+    if (checked && bulkPatientId) {
+      const patient = patientList.find((p) => p.id === bulkPatientId);
+      setImportRows((prev) =>
+        prev.map((row) => ({
+          ...row,
+          patientId: patient?.id || null,
+          patientCd: patient?.patientCd || null,
+        }))
+      );
+    }
   };
 
   const handleDisciplineChange = (rowIndex, employeeId) => {
@@ -555,6 +589,35 @@ function QAImportModal({ isOpen, onClose, patientList, userProfile, onSuccess })
             <Typography variant="body2" style={{ marginBottom: 12, fontWeight: 500 }}>
               File: <strong>{file?.name}</strong>
             </Typography>
+
+            <Box display="flex" justifyContent="flex-end" alignItems="center" style={{ gap: 12, marginBottom: 12 }}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={useSamePatientCode}
+                    onChange={(e) => handleUseSamePatientCodeChange(e.target.checked)}
+                    color="primary"
+                  />
+                }
+                label="Use Patient Code"
+              />
+              <FormControl size="small" variant="outlined" className={classes.selectControl} disabled={!useSamePatientCode}>
+                <Select
+                  value={bulkPatientId}
+                  onChange={(e) => handleBulkPatientChange(e.target.value)}
+                  displayEmpty
+                >
+                  <MenuItem value="" disabled>
+                    <em>— Select Patient —</em>
+                  </MenuItem>
+                  {patientList.map((patient) => (
+                    <MenuItem key={patient.id} value={patient.id}>
+                      {patient.patientCd}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
 
             <TableContainer component={Paper} className={classes.tableContainer}>
               <Table stickyHeader size="small">
