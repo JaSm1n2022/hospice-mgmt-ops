@@ -15,9 +15,10 @@ import GetAppIcon from "@material-ui/icons/GetApp";
 import PrintIcon from "@material-ui/icons/Print";
 import AssignmentTurnedInIcon from "@material-ui/icons/AssignmentTurnedIn";
 import HospiceTable from "components/Table/HospiceTable";
+import CustomSingleAutoComplete from "components/AutoComplete/CustomSingleAutoComplete";
 import moment from "moment";
 import { SupaContext } from "App";
-import { ACTION_STATUSES } from "utils/constants";
+import { ACTION_STATUSES, QA_TYPE, DEFAULT_ITEM } from "utils/constants";
 import TOAST from "modules/toastManager";
 import * as XLSX from "xlsx";
 import { pdf } from "@react-pdf/renderer";
@@ -85,6 +86,7 @@ function QAMonitoring(props) {
   const [employeeList, setEmployeeList] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
+  const [qaTypeFilter, setQaTypeFilter] = useState(DEFAULT_ITEM);
   const [selectedRows, setSelectedRows] = useState([]);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isChangeStatusModalOpen, setIsChangeStatusModalOpen] = useState(false);
@@ -252,24 +254,27 @@ function QAMonitoring(props) {
     }
   }, [props.qaList]);
 
-  // Handle search filtering
+  // Handle search + QA Type filtering
   useEffect(() => {
-    if (!searchText.trim()) {
-      setFilteredData(dataSource);
-      return;
+    let filtered = dataSource;
+
+    if (qaTypeFilter && qaTypeFilter.value) {
+      filtered = filtered.filter((item) => item.qa_type === qaTypeFilter.value);
     }
 
-    const lowerSearch = searchText.toLowerCase();
-    const filtered = dataSource.filter((item) => {
-      const patientMatch = item.patientCd?.toLowerCase().includes(lowerSearch);
-      const reviewerMatch = item.reviewer_name?.toLowerCase().includes(lowerSearch);
-      const disciplineMatch = item.discipline_name?.toLowerCase().includes(lowerSearch);
-      return patientMatch || reviewerMatch || disciplineMatch;
-    });
+    if (searchText.trim()) {
+      const lowerSearch = searchText.toLowerCase();
+      filtered = filtered.filter((item) => {
+        const patientMatch = item.patientCd?.toLowerCase().includes(lowerSearch);
+        const reviewerMatch = item.reviewer_name?.toLowerCase().includes(lowerSearch);
+        const disciplineMatch = item.discipline_name?.toLowerCase().includes(lowerSearch);
+        return patientMatch || reviewerMatch || disciplineMatch;
+      });
+    }
 
     setFilteredData(filtered);
     setSelectedRows([]); // Clear selection when filtering
-  }, [searchText, dataSource]);
+  }, [searchText, qaTypeFilter, dataSource]);
 
   // Handle patient list response
   useEffect(() => {
@@ -559,6 +564,15 @@ function QAMonitoring(props) {
                   onChange={(e) => setSearchText(e.target.value)}
                   style={{ minWidth: 300, flex: 1 }}
                 />
+                <Box style={{ minWidth: 220 }}>
+                  <CustomSingleAutoComplete
+                    placeholder="QA Type"
+                    label="QA Type"
+                    value={qaTypeFilter}
+                    onSelectHandler={(item) => setQaTypeFilter(item || DEFAULT_ITEM)}
+                    options={QA_TYPE}
+                  />
+                </Box>
                 <Box display="flex" gap={1}>
                   {selectedRows.length > 0 && (
                     <Button
