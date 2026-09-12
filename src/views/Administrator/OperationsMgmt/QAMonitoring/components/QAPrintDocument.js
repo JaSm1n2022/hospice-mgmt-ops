@@ -97,8 +97,8 @@ const styles = StyleSheet.create({
     borderRightWidth: 0,
   },
   summarySection: {
-    marginTop: 8,
-    width: "60%",
+    marginTop: 10,
+    width: "70%",
   },
   summaryTitle: {
     fontSize: 8,
@@ -244,6 +244,15 @@ const QAPrintDocument = ({ qaRecords }) => {
     page.records.length > 0
   );
 
+  // Build final doc items: each patient's data pages followed by a dedicated summary page
+  const docItems = [];
+  validPages.forEach((page) => {
+    docItems.push({ type: "data", page });
+    if (page.pageNum === page.totalPages) {
+      docItems.push({ type: "summary", patientCd: page.patientCd });
+    }
+  });
+
   console.log('QA Print Debug:', {
     totalRecords: qaRecords.length,
     groupedPatientsCount: sortedPatients.length,
@@ -335,6 +344,9 @@ const QAPrintDocument = ({ qaRecords }) => {
 
     return (
       <View style={styles.summarySection}>
+        <Text style={styles.patientHeader}>
+          Patient: {patientCd}
+        </Text>
         <Text style={styles.summaryTitle}>Summary by QA Type</Text>
         <View style={styles.summaryTable}>
           <View style={styles.summaryHeaderRow}>
@@ -374,8 +386,8 @@ const QAPrintDocument = ({ qaRecords }) => {
 
   return (
     <Document>
-      {validPages.map((page, pageIndex) => (
-        <Page key={pageIndex} size="A4" orientation="landscape" style={styles.page} wrap>
+      {docItems.map((item, itemIndex) => (
+        <Page key={itemIndex} size="A4" orientation="landscape" style={styles.page} wrap>
           <View style={styles.header} fixed>
             <Text style={styles.title}>
               QA Monitoring Report
@@ -388,25 +400,29 @@ const QAPrintDocument = ({ qaRecords }) => {
             </Text>
           </View>
 
-          <View style={styles.patientSection}>
-            <Text style={styles.patientHeader}>
-              Patient: {page.patientCd} ({page.totalRecords} total record{page.totalRecords !== 1 ? "s" : ""} - Page {page.pageNum} of {page.totalPages})
-            </Text>
+          {item.type === "data" ? (
+            <View style={styles.patientSection}>
+              <Text style={styles.patientHeader}>
+                Patient: {item.page.patientCd} ({item.page.totalRecords} total record{item.page.totalRecords !== 1 ? "s" : ""} - Page {item.page.pageNum} of {item.page.totalPages})
+              </Text>
 
-            <View style={styles.table}>
-              {renderTableHeader()}
-              {page.records.map((record, idx) => renderDataRow(record, idx))}
+              <View style={styles.table}>
+                {renderTableHeader()}
+                {item.page.records.map((record, idx) => renderDataRow(record, idx))}
+              </View>
             </View>
-
-            {page.pageNum === page.totalPages && renderPatientSummary(page.patientCd)}
-          </View>
+          ) : (
+            <View style={styles.patientSection}>
+              {renderPatientSummary(item.patientCd)}
+            </View>
+          )}
 
           <View style={styles.footer} fixed>
             <Text>
               This document was generated automatically. Please verify all information before use.
             </Text>
             <Text style={{ marginTop: 2 }}>
-              Page {pageIndex + 1} of {validPages.length} | Total Patients: {sortedPatients.length} | Total Records: {qaRecords.length}
+              Page {itemIndex + 1} of {docItems.length} | Total Patients: {sortedPatients.length} | Total Records: {qaRecords.length}
             </Text>
           </View>
         </Page>
