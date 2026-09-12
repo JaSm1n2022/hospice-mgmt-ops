@@ -96,6 +96,59 @@ const styles = StyleSheet.create({
   lastCell: {
     borderRightWidth: 0,
   },
+  summarySection: {
+    marginTop: 8,
+    width: "60%",
+  },
+  summaryTitle: {
+    fontSize: 8,
+    fontWeight: "bold",
+    marginBottom: 4,
+    color: "#9c27b0",
+  },
+  summaryTable: {
+    display: "table",
+    width: "100%",
+    borderStyle: "solid",
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+  summaryHeaderRow: {
+    flexDirection: "row",
+    backgroundColor: "#f5f5f5",
+    borderBottomWidth: 1,
+    borderBottomColor: "#999",
+    borderBottomStyle: "solid",
+    minHeight: 18,
+  },
+  summaryRow: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderBottomColor: "#ddd",
+    borderBottomStyle: "solid",
+    minHeight: 16,
+  },
+  summaryHeaderCell: {
+    padding: 3,
+    fontSize: 7,
+    fontWeight: "bold",
+    flex: 1,
+    borderRightWidth: 1,
+    borderRightColor: "#999",
+    borderRightStyle: "solid",
+    textAlign: "left",
+    justifyContent: "center",
+  },
+  summaryCell: {
+    padding: 3,
+    fontSize: 7,
+    flex: 1,
+    borderRightWidth: 1,
+    borderRightColor: "#ddd",
+    borderRightStyle: "solid",
+    textAlign: "left",
+    justifyContent: "center",
+  },
   footer: {
     position: "absolute",
     bottom: 15,
@@ -261,6 +314,46 @@ const QAPrintDocument = ({ qaRecords }) => {
     </View>
   );
 
+  // Render summary of completed/pending counts by QA Type for a patient
+  const renderPatientSummary = (patientCd) => {
+    const records = groupedRecords[patientCd] || [];
+    const summaryMap = {};
+
+    records.forEach((record) => {
+      const type = record.qa_type || "Unknown";
+      if (!summaryMap[type]) {
+        summaryMap[type] = { completed: 0, pending: 0 };
+      }
+      if (record.qa_status === "Complete") {
+        summaryMap[type].completed += 1;
+      } else {
+        summaryMap[type].pending += 1;
+      }
+    });
+
+    const types = Object.keys(summaryMap).sort();
+
+    return (
+      <View style={styles.summarySection}>
+        <Text style={styles.summaryTitle}>Summary by QA Type</Text>
+        <View style={styles.summaryTable}>
+          <View style={styles.summaryHeaderRow}>
+            <Text style={[styles.summaryHeaderCell, { flex: 1.5 }]}>QA Type</Text>
+            <Text style={[styles.summaryHeaderCell, { flex: 1 }]}>Completed</Text>
+            <Text style={[styles.summaryHeaderCell, { flex: 1, ...styles.lastCell }]}>Pending</Text>
+          </View>
+          {types.map((type, idx) => (
+            <View key={idx} style={styles.summaryRow}>
+              <Text style={[styles.summaryCell, { flex: 1.5 }]}>{type}</Text>
+              <Text style={[styles.summaryCell, { flex: 1 }]}>{summaryMap[type].completed}</Text>
+              <Text style={[styles.summaryCell, { flex: 1, ...styles.lastCell }]}>{summaryMap[type].pending}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  };
+
   // Return empty document if no pages
   if (validPages.length === 0) {
     return (
@@ -304,6 +397,8 @@ const QAPrintDocument = ({ qaRecords }) => {
               {renderTableHeader()}
               {page.records.map((record, idx) => renderDataRow(record, idx))}
             </View>
+
+            {page.pageNum === page.totalPages && renderPatientSummary(page.patientCd)}
           </View>
 
           <View style={styles.footer} fixed>
