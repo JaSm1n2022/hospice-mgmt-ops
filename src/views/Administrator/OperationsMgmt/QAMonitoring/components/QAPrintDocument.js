@@ -253,6 +253,11 @@ const QAPrintDocument = ({ qaRecords }) => {
     }
   });
 
+  // Append one final combined summary item with all patients' summaries together
+  if (sortedPatients.length > 0) {
+    docItems.push({ type: "grand-summary" });
+  }
+
   console.log('QA Print Debug:', {
     totalRecords: qaRecords.length,
     groupedPatientsCount: sortedPatients.length,
@@ -331,8 +336,9 @@ const QAPrintDocument = ({ qaRecords }) => {
     records.forEach((record) => {
       const type = record.qa_type || "Unknown";
       if (!summaryMap[type]) {
-        summaryMap[type] = { completed: 0, pending: 0 };
+        summaryMap[type] = { records: 0, completed: 0, pending: 0 };
       }
+      summaryMap[type].records += 1;
       if (record.qa_status === "Complete") {
         summaryMap[type].completed += 1;
       } else {
@@ -345,18 +351,20 @@ const QAPrintDocument = ({ qaRecords }) => {
     return (
       <View style={styles.summarySection}>
         <Text style={styles.patientHeader}>
-          Patient: {patientCd}
+          Patient: {patientCd} ({records.length} total record{records.length !== 1 ? "s" : ""})
         </Text>
         <Text style={styles.summaryTitle}>Summary by QA Type</Text>
         <View style={styles.summaryTable}>
           <View style={styles.summaryHeaderRow}>
             <Text style={[styles.summaryHeaderCell, { flex: 1.5 }]}>QA Type</Text>
+            <Text style={[styles.summaryHeaderCell, { flex: 1 }]}># Records</Text>
             <Text style={[styles.summaryHeaderCell, { flex: 1 }]}>Completed</Text>
             <Text style={[styles.summaryHeaderCell, { flex: 1, ...styles.lastCell }]}>Pending</Text>
           </View>
           {types.map((type, idx) => (
             <View key={idx} style={styles.summaryRow}>
               <Text style={[styles.summaryCell, { flex: 1.5 }]}>{type}</Text>
+              <Text style={[styles.summaryCell, { flex: 1 }]}>{summaryMap[type].records}</Text>
               <Text style={[styles.summaryCell, { flex: 1 }]}>{summaryMap[type].completed}</Text>
               <Text style={[styles.summaryCell, { flex: 1, ...styles.lastCell }]}>{summaryMap[type].pending}</Text>
             </View>
@@ -365,6 +373,84 @@ const QAPrintDocument = ({ qaRecords }) => {
       </View>
     );
   };
+
+  // Render one combined summary page listing every patient's summary table together
+  const renderGrandSummary = () => (
+    <View>
+      <Text style={styles.patientHeader}>
+        Overall Summary - All Patients
+      </Text>
+
+      <View style={[styles.summarySection, { width: "100%" }]} wrap={false}>
+        <Text style={styles.summaryTitle}>Patient Totals</Text>
+        <View style={styles.summaryTable}>
+          <View style={styles.summaryHeaderRow}>
+            <Text style={[styles.summaryHeaderCell, { flex: 1.5 }]}>Patient</Text>
+            <Text style={[styles.summaryHeaderCell, { flex: 1 }]}># Records</Text>
+            <Text style={[styles.summaryHeaderCell, { flex: 1 }]}>Completed</Text>
+            <Text style={[styles.summaryHeaderCell, { flex: 1, ...styles.lastCell }]}>Pending</Text>
+          </View>
+          {sortedPatients.map((patientCd, idx) => {
+            const records = groupedRecords[patientCd] || [];
+            const completed = records.filter((r) => r.qa_status === "Complete").length;
+            const pending = records.length - completed;
+            return (
+              <View key={idx} style={styles.summaryRow}>
+                <Text style={[styles.summaryCell, { flex: 1.5 }]}>{patientCd}</Text>
+                <Text style={[styles.summaryCell, { flex: 1 }]}>{records.length}</Text>
+                <Text style={[styles.summaryCell, { flex: 1 }]}>{completed}</Text>
+                <Text style={[styles.summaryCell, { flex: 1, ...styles.lastCell }]}>{pending}</Text>
+              </View>
+            );
+          })}
+        </View>
+      </View>
+
+      {sortedPatients.map((patientCd, idx) => {
+        const records = groupedRecords[patientCd] || [];
+        const summaryMap = {};
+
+        records.forEach((record) => {
+          const type = record.qa_type || "Unknown";
+          if (!summaryMap[type]) {
+            summaryMap[type] = { records: 0, completed: 0, pending: 0 };
+          }
+          summaryMap[type].records += 1;
+          if (record.qa_status === "Complete") {
+            summaryMap[type].completed += 1;
+          } else {
+            summaryMap[type].pending += 1;
+          }
+        });
+
+        const types = Object.keys(summaryMap).sort();
+
+        return (
+          <View key={idx} style={styles.summarySection} wrap={false}>
+            <Text style={[styles.summaryTitle, { fontSize: 8 }]}>
+              Patient: {patientCd} ({records.length} total record{records.length !== 1 ? "s" : ""})
+            </Text>
+            <View style={styles.summaryTable}>
+              <View style={styles.summaryHeaderRow}>
+                <Text style={[styles.summaryHeaderCell, { flex: 1.5 }]}>QA Type</Text>
+                <Text style={[styles.summaryHeaderCell, { flex: 1 }]}># Records</Text>
+                <Text style={[styles.summaryHeaderCell, { flex: 1 }]}>Completed</Text>
+                <Text style={[styles.summaryHeaderCell, { flex: 1, ...styles.lastCell }]}>Pending</Text>
+              </View>
+              {types.map((type, tIdx) => (
+                <View key={tIdx} style={styles.summaryRow}>
+                  <Text style={[styles.summaryCell, { flex: 1.5 }]}>{type}</Text>
+                  <Text style={[styles.summaryCell, { flex: 1 }]}>{summaryMap[type].records}</Text>
+                  <Text style={[styles.summaryCell, { flex: 1 }]}>{summaryMap[type].completed}</Text>
+                  <Text style={[styles.summaryCell, { flex: 1, ...styles.lastCell }]}>{summaryMap[type].pending}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        );
+      })}
+    </View>
+  );
 
   // Return empty document if no pages
   if (validPages.length === 0) {
@@ -411,9 +497,13 @@ const QAPrintDocument = ({ qaRecords }) => {
                 {item.page.records.map((record, idx) => renderDataRow(record, idx))}
               </View>
             </View>
-          ) : (
+          ) : item.type === "summary" ? (
             <View style={styles.patientSection}>
               {renderPatientSummary(item.patientCd)}
+            </View>
+          ) : (
+            <View style={styles.patientSection}>
+              {renderGrandSummary()}
             </View>
           )}
 
