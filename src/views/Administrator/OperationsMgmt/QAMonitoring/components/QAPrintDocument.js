@@ -403,6 +403,23 @@ const QAPrintDocument = ({ qaRecords }) => {
               </View>
             );
           })}
+          {(() => {
+            const allGroupedRecords = sortedPatients.reduce(
+              (acc, patientCd) => acc.concat(groupedRecords[patientCd] || []),
+              []
+            );
+            const totalRecords = allGroupedRecords.length;
+            const totalCompleted = allGroupedRecords.filter((r) => r.qa_status === "Complete").length;
+            const totalPending = totalRecords - totalCompleted;
+            return (
+              <View style={[styles.summaryRow, { backgroundColor: "#f5f5f5" }]}>
+                <Text style={[styles.summaryCell, { flex: 1.5, fontWeight: "bold" }]}>Total</Text>
+                <Text style={[styles.summaryCell, { flex: 1, fontWeight: "bold" }]}>{totalRecords}</Text>
+                <Text style={[styles.summaryCell, { flex: 1, fontWeight: "bold" }]}>{totalCompleted}</Text>
+                <Text style={[styles.summaryCell, { flex: 1, fontWeight: "bold", ...styles.lastCell }]}>{totalPending}</Text>
+              </View>
+            );
+          })()}
         </View>
       </View>
 
