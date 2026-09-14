@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
   },
 });
 
-const QAPrintDocument = ({ qaRecords, patientList = [] }) => {
+const QAPrintDocument = ({ qaRecords, patientList = [], summaryOnly = false }) => {
   const ROWS_PER_PAGE = 20;
 
   // Build a lookup of patientCd -> Active/Inactive status from the patients table
@@ -255,12 +255,14 @@ const QAPrintDocument = ({ qaRecords, patientList = [] }) => {
 
   // Build final doc items: each patient's data pages followed by a dedicated summary page
   const docItems = [];
-  validPages.forEach((page) => {
-    docItems.push({ type: "data", page });
-    if (page.pageNum === page.totalPages) {
-      docItems.push({ type: "summary", patientCd: page.patientCd });
-    }
-  });
+  if (!summaryOnly) {
+    validPages.forEach((page) => {
+      docItems.push({ type: "data", page });
+      if (page.pageNum === page.totalPages) {
+        docItems.push({ type: "summary", patientCd: page.patientCd });
+      }
+    });
+  }
 
   // Append one final combined summary item with all patients' summaries together
   if (sortedPatients.length > 0) {
@@ -394,7 +396,15 @@ const QAPrintDocument = ({ qaRecords, patientList = [] }) => {
   };
 
   // Render one combined summary page listing every patient's summary table together
-  const renderGrandSummary = () => (
+  const renderGrandSummary = () => {
+    const patientsSortedByStatus = [...sortedPatients].sort((a, b) => {
+      const statusA = getPatientStatus(a);
+      const statusB = getPatientStatus(b);
+      if (statusA === statusB) return a.localeCompare(b);
+      return statusA.localeCompare(statusB);
+    });
+
+    return (
     <View>
       <Text style={styles.patientHeader}>
         Overall Summary - All Patients
@@ -410,20 +420,27 @@ const QAPrintDocument = ({ qaRecords, patientList = [] }) => {
             <Text style={[styles.summaryHeaderCell, { flex: 1 }]}>Completed</Text>
             <Text style={[styles.summaryHeaderCell, { flex: 1, ...styles.lastCell }]}>Pending</Text>
           </View>
-          {sortedPatients.map((patientCd, idx) => {
-            const records = groupedRecords[patientCd] || [];
-            const completed = records.filter((r) => r.qa_status === "Complete").length;
-            const pending = records.length - completed;
-            return (
-              <View key={idx} style={styles.summaryRow}>
-                <Text style={[styles.summaryCell, { flex: 1.5 }]}>{patientCd}</Text>
-                <Text style={[styles.summaryCell, { flex: 1 }]}>{getPatientStatus(patientCd)}</Text>
-                <Text style={[styles.summaryCell, { flex: 1 }]}>{records.length}</Text>
-                <Text style={[styles.summaryCell, { flex: 1 }]}>{completed}</Text>
-                <Text style={[styles.summaryCell, { flex: 1, ...styles.lastCell }]}>{pending}</Text>
-              </View>
-            );
-          })}
+          {patientsSortedByStatus
+            .map((patientCd, idx) => {
+              const records = groupedRecords[patientCd] || [];
+              const completed = records.filter((r) => r.qa_status === "Complete").length;
+              const pending = records.length - completed;
+              const status = getPatientStatus(patientCd);
+              const isInactive = status === "Inactive";
+              return (
+                <View key={idx} style={styles.summaryRow}>
+                  <Text style={[styles.summaryCell, { flex: 1.5 }]}>
+                    {patientCd}{isInactive ? "*" : ""}
+                  </Text>
+                  <Text style={[styles.summaryCell, { flex: 1 }, isInactive ? { color: "red" } : {}]}>
+                    {status}
+                  </Text>
+                  <Text style={[styles.summaryCell, { flex: 1 }]}>{records.length}</Text>
+                  <Text style={[styles.summaryCell, { flex: 1 }]}>{completed}</Text>
+                  <Text style={[styles.summaryCell, { flex: 1, ...styles.lastCell }]}>{pending}</Text>
+                </View>
+              );
+            })}
           {(() => {
             const allGroupedRecords = sortedPatients.reduce(
               (acc, patientCd) => acc.concat(groupedRecords[patientCd] || []),
@@ -445,20 +462,26 @@ const QAPrintDocument = ({ qaRecords, patientList = [] }) => {
         </View>
       </View>
 
-      {sortedPatients.map((patientCd, idx) => {
+      {patientsSortedByStatus.map((patientCd, idx) => {
         const records = groupedRecords[patientCd] || [];
         const summaryMap = {};
 
         records.forEach((record) => {
           const type = record.qa_type || "Unknown";
           if (!summaryMap[type]) {
-            summaryMap[type] = { records: 0, completed: 0, pending: 0 };
+            summaryMap[type] = { records: 0, completed: 0, pending: 0, lastSourceDate: null };
           }
           summaryMap[type].records += 1;
           if (record.qa_status === "Complete") {
             summaryMap[type].completed += 1;
           } else {
             summaryMap[type].pending += 1;
+          }
+          if (record.qa_source_dt) {
+            const sourceDate = moment(record.qa_source_dt);
+            if (sourceDate.isValid() && (!summaryMap[type].lastSourceDate || sourceDate.isAfter(summaryMap[type].lastSourceDate))) {
+              summaryMap[type].lastSourceDate = sourceDate;
+            }
           }
         });
 
@@ -474,14 +497,18 @@ const QAPrintDocument = ({ qaRecords, patientList = [] }) => {
                 <Text style={[styles.summaryHeaderCell, { flex: 1.5 }]}>QA Type</Text>
                 <Text style={[styles.summaryHeaderCell, { flex: 1 }]}># Records</Text>
                 <Text style={[styles.summaryHeaderCell, { flex: 1 }]}>Completed</Text>
-                <Text style={[styles.summaryHeaderCell, { flex: 1, ...styles.lastCell }]}>Pending</Text>
+                <Text style={[styles.summaryHeaderCell, { flex: 1 }]}>Pending</Text>
+                <Text style={[styles.summaryHeaderCell, { flex: 1.2, ...styles.lastCell }]}>Last Source Date</Text>
               </View>
               {types.map((type, tIdx) => (
                 <View key={tIdx} style={styles.summaryRow}>
                   <Text style={[styles.summaryCell, { flex: 1.5 }]}>{type}</Text>
                   <Text style={[styles.summaryCell, { flex: 1 }]}>{summaryMap[type].records}</Text>
                   <Text style={[styles.summaryCell, { flex: 1 }]}>{summaryMap[type].completed}</Text>
-                  <Text style={[styles.summaryCell, { flex: 1, ...styles.lastCell }]}>{summaryMap[type].pending}</Text>
+                  <Text style={[styles.summaryCell, { flex: 1 }]}>{summaryMap[type].pending}</Text>
+                  <Text style={[styles.summaryCell, { flex: 1.2, ...styles.lastCell }]}>
+                    {summaryMap[type].lastSourceDate ? summaryMap[type].lastSourceDate.format("MM/DD/YYYY") : ""}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -489,7 +516,8 @@ const QAPrintDocument = ({ qaRecords, patientList = [] }) => {
         );
       })}
     </View>
-  );
+    );
+  };
 
   // Return empty document if no pages
   if (validPages.length === 0) {
@@ -515,10 +543,12 @@ const QAPrintDocument = ({ qaRecords, patientList = [] }) => {
         <Page key={itemIndex} size="A4" orientation="landscape" style={styles.page} wrap>
           <View style={styles.header} fixed>
             <Text style={styles.title}>
-              QA Monitoring Report
+              QA Monitoring Report{summaryOnly ? " - Summary" : ""}
             </Text>
             <Text style={styles.subtitle}>
-              Quality Assurance Records Grouped by Patient
+              {summaryOnly
+                ? "Overall Summary - All Patients"
+                : "Quality Assurance Records Grouped by Patient"}
             </Text>
             <Text style={styles.generated}>
               Generated: {moment().format("MM/DD/YYYY hh:mm A")}

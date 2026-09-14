@@ -502,6 +502,20 @@ function QAMonitoring(props) {
     }
   };
 
+  const handlePrintSummaryPDF = async () => {
+    try {
+      const doc = <QAPrintDocument qaRecords={filteredData} patientList={patientList} summaryOnly />;
+      const asPdf = pdf(doc);
+      const blob = await asPdf.toBlob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+      TOAST.ok("Summary PDF generated successfully");
+    } catch (error) {
+      console.error("Error generating summary PDF:", error);
+      TOAST.error("Failed to generate summary PDF. Please try again.");
+    }
+  };
+
   const handlePrintQATasks = async () => {
     try {
       const doc = <QATasksPrintDocument qaRecords={filteredData} />;
@@ -600,7 +614,15 @@ function QAMonitoring(props) {
                     onClick={handlePrintPDF}
                     startIcon={<PrintIcon />}
                   >
-                    Print PDF
+                    Full Report
+                  </Button>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handlePrintSummaryPDF}
+                    startIcon={<PrintIcon />}
+                  >
+                    Summary Report
                   </Button>
                 </Box>
               </Box>
