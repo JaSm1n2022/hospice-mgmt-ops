@@ -345,13 +345,19 @@ const QAPrintDocument = ({ qaRecords, patientList = [] }) => {
     records.forEach((record) => {
       const type = record.qa_type || "Unknown";
       if (!summaryMap[type]) {
-        summaryMap[type] = { records: 0, completed: 0, pending: 0 };
+        summaryMap[type] = { records: 0, completed: 0, pending: 0, lastSourceDate: null };
       }
       summaryMap[type].records += 1;
       if (record.qa_status === "Complete") {
         summaryMap[type].completed += 1;
       } else {
         summaryMap[type].pending += 1;
+      }
+      if (record.qa_source_dt) {
+        const sourceDate = moment(record.qa_source_dt);
+        if (sourceDate.isValid() && (!summaryMap[type].lastSourceDate || sourceDate.isAfter(summaryMap[type].lastSourceDate))) {
+          summaryMap[type].lastSourceDate = sourceDate;
+        }
       }
     });
 
@@ -368,14 +374,18 @@ const QAPrintDocument = ({ qaRecords, patientList = [] }) => {
             <Text style={[styles.summaryHeaderCell, { flex: 1.5 }]}>QA Type</Text>
             <Text style={[styles.summaryHeaderCell, { flex: 1 }]}># Records</Text>
             <Text style={[styles.summaryHeaderCell, { flex: 1 }]}>Completed</Text>
-            <Text style={[styles.summaryHeaderCell, { flex: 1, ...styles.lastCell }]}>Pending</Text>
+            <Text style={[styles.summaryHeaderCell, { flex: 1 }]}>Pending</Text>
+            <Text style={[styles.summaryHeaderCell, { flex: 1.2, ...styles.lastCell }]}>Last Source Date</Text>
           </View>
           {types.map((type, idx) => (
             <View key={idx} style={styles.summaryRow}>
               <Text style={[styles.summaryCell, { flex: 1.5 }]}>{type}</Text>
               <Text style={[styles.summaryCell, { flex: 1 }]}>{summaryMap[type].records}</Text>
               <Text style={[styles.summaryCell, { flex: 1 }]}>{summaryMap[type].completed}</Text>
-              <Text style={[styles.summaryCell, { flex: 1, ...styles.lastCell }]}>{summaryMap[type].pending}</Text>
+              <Text style={[styles.summaryCell, { flex: 1 }]}>{summaryMap[type].pending}</Text>
+              <Text style={[styles.summaryCell, { flex: 1.2, ...styles.lastCell }]}>
+                {summaryMap[type].lastSourceDate ? summaryMap[type].lastSourceDate.format("MM/DD/YYYY") : ""}
+              </Text>
             </View>
           ))}
         </View>
