@@ -490,7 +490,7 @@ function QAMonitoring(props) {
 
   const handlePrintPDF = async () => {
     try {
-      const doc = <QAPrintDocument qaRecords={filteredData} />;
+      const doc = <QAPrintDocument qaRecords={filteredData} patientList={patientList} />;
       const asPdf = pdf(doc);
       const blob = await asPdf.toBlob();
       const url = URL.createObjectURL(blob);

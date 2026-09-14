@@ -162,8 +162,17 @@ const styles = StyleSheet.create({
   },
 });
 
-const QAPrintDocument = ({ qaRecords }) => {
+const QAPrintDocument = ({ qaRecords, patientList = [] }) => {
   const ROWS_PER_PAGE = 20;
+
+  // Build a lookup of patientCd -> Active/Inactive status from the patients table
+  const patientStatusMap = {};
+  (patientList || []).forEach((p) => {
+    if (p && p.patientCd) {
+      patientStatusMap[p.patientCd.trim()] = p.status || "Unknown";
+    }
+  });
+  const getPatientStatus = (patientCd) => patientStatusMap[patientCd] || "Unknown";
 
   // Group records by patient and sort by source date
   const groupByPatient = () => {
@@ -351,7 +360,7 @@ const QAPrintDocument = ({ qaRecords }) => {
     return (
       <View style={styles.summarySection}>
         <Text style={styles.patientHeader}>
-          Patient: {patientCd} ({records.length} total record{records.length !== 1 ? "s" : ""})
+          Patient: {patientCd} - {getPatientStatus(patientCd)} ({records.length} total record{records.length !== 1 ? "s" : ""})
         </Text>
         <Text style={styles.summaryTitle}>Summary by QA Type</Text>
         <View style={styles.summaryTable}>
@@ -386,6 +395,7 @@ const QAPrintDocument = ({ qaRecords }) => {
         <View style={styles.summaryTable}>
           <View style={styles.summaryHeaderRow}>
             <Text style={[styles.summaryHeaderCell, { flex: 1.5 }]}>Patient</Text>
+            <Text style={[styles.summaryHeaderCell, { flex: 1 }]}>Status</Text>
             <Text style={[styles.summaryHeaderCell, { flex: 1 }]}># Records</Text>
             <Text style={[styles.summaryHeaderCell, { flex: 1 }]}>Completed</Text>
             <Text style={[styles.summaryHeaderCell, { flex: 1, ...styles.lastCell }]}>Pending</Text>
@@ -397,6 +407,7 @@ const QAPrintDocument = ({ qaRecords }) => {
             return (
               <View key={idx} style={styles.summaryRow}>
                 <Text style={[styles.summaryCell, { flex: 1.5 }]}>{patientCd}</Text>
+                <Text style={[styles.summaryCell, { flex: 1 }]}>{getPatientStatus(patientCd)}</Text>
                 <Text style={[styles.summaryCell, { flex: 1 }]}>{records.length}</Text>
                 <Text style={[styles.summaryCell, { flex: 1 }]}>{completed}</Text>
                 <Text style={[styles.summaryCell, { flex: 1, ...styles.lastCell }]}>{pending}</Text>
@@ -414,6 +425,7 @@ const QAPrintDocument = ({ qaRecords }) => {
             return (
               <View style={[styles.summaryRow, { backgroundColor: "#f5f5f5" }]}>
                 <Text style={[styles.summaryCell, { flex: 1.5, fontWeight: "bold" }]}>Total</Text>
+                <Text style={[styles.summaryCell, { flex: 1, fontWeight: "bold" }]}></Text>
                 <Text style={[styles.summaryCell, { flex: 1, fontWeight: "bold" }]}>{totalRecords}</Text>
                 <Text style={[styles.summaryCell, { flex: 1, fontWeight: "bold" }]}>{totalCompleted}</Text>
                 <Text style={[styles.summaryCell, { flex: 1, fontWeight: "bold", ...styles.lastCell }]}>{totalPending}</Text>
@@ -445,7 +457,7 @@ const QAPrintDocument = ({ qaRecords }) => {
         return (
           <View key={idx} style={styles.summarySection} wrap={false}>
             <Text style={[styles.summaryTitle, { fontSize: 8 }]}>
-              Patient: {patientCd} ({records.length} total record{records.length !== 1 ? "s" : ""})
+              Patient: {patientCd} - {getPatientStatus(patientCd)} ({records.length} total record{records.length !== 1 ? "s" : ""})
             </Text>
             <View style={styles.summaryTable}>
               <View style={styles.summaryHeaderRow}>
@@ -506,7 +518,7 @@ const QAPrintDocument = ({ qaRecords }) => {
           {item.type === "data" ? (
             <View style={styles.patientSection}>
               <Text style={styles.patientHeader}>
-                Patient: {item.page.patientCd} ({item.page.totalRecords} total record{item.page.totalRecords !== 1 ? "s" : ""} - Page {item.page.pageNum} of {item.page.totalPages})
+                Patient: {item.page.patientCd} - {getPatientStatus(item.page.patientCd)} ({item.page.totalRecords} total record{item.page.totalRecords !== 1 ? "s" : ""} - Page {item.page.pageNum} of {item.page.totalPages})
               </Text>
 
               <View style={styles.table}>
