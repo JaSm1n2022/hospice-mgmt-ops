@@ -239,8 +239,8 @@ function DmeManagement() {
 
           // Filter patients based on DME equipment and EOC status
           const now = new Date();
-          const sixtyDaysAgo = new Date(
-            now.getTime() - 60 * 24 * 60 * 60 * 1000
+          const eocThresholdDate = new Date(
+            now.getTime() - 120 * 24 * 60 * 60 * 1000
           );
 
           const filteredPatients = patientList.filter((patient) => {
@@ -261,8 +261,8 @@ function DmeManagement() {
             // Parse EOC date
             const eocDate = new Date(patient.eoc_dt);
 
-            // Exclude patients who have been EOC for more than 60 days
-            return eocDate >= sixtyDaysAgo;
+            // Exclude patients who have been EOC for more than 120 days
+            return eocDate >= eocThresholdDate;
           });
 
           // Format patient data for the iframe
@@ -340,14 +340,14 @@ function DmeManagement() {
 
         // Filter and send patient data
         const now = new Date();
-        const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+        const eocThresholdDate = new Date(now.getTime() - 120 * 24 * 60 * 60 * 1000);
 
         const filteredPatients = patientList.filter((patient) => {
           // const hasDme = patient.dme && Array.isArray(patient.dme) && patient.dme.length > 0;
           // if (!hasDme) return false;
           if (!patient.eoc) return true;
           const eocDate = new Date(patient.eoc);
-          return eocDate >= sixtyDaysAgo;
+          return eocDate >= eocThresholdDate;
         });
 
         const patientCodes = filteredPatients.map((patient) => ({

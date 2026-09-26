@@ -584,6 +584,11 @@ function QAMonitoring(props) {
                     label="QA Type"
                     value={qaTypeFilter}
                     onSelectHandler={(item) => setQaTypeFilter(item || DEFAULT_ITEM)}
+                    onChangeHandler={(e) => {
+                      if (!e.target.value) {
+                        setQaTypeFilter(DEFAULT_ITEM);
+                      }
+                    }}
                     options={QA_TYPE}
                   />
                 </Box>
