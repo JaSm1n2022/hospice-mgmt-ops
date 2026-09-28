@@ -1253,6 +1253,13 @@ export const SERVICE_TYPE = [
     category: "service",
     id: "Delivery",
   },
+  {
+    name: "Discharge",
+    value: "Discharge",
+    label: "Discharge",
+    category: "service",
+    id: "Discharge",
+  },
 ];
 export const PATIENT_STATUS = [
   {
