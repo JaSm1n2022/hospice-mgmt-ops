@@ -1253,13 +1253,6 @@ export const SERVICE_TYPE = [
     category: "service",
     id: "Delivery",
   },
-  {
-    name: "Discharge",
-    value: "Discharge",
-    label: "Discharge",
-    category: "service",
-    id: "Discharge",
-  },
 ];
 export const PATIENT_STATUS = [
   {
@@ -1437,6 +1430,14 @@ export const EMPLOYEE_SERVICE_TYPE = [
     value: "Fixed Rate/Semi-Monthly",
     category: "serviceType",
     code: "FRSM",
+  },
+  {
+    id: 106,
+    name: "Discharge",
+    label: "Discharge",
+    value: "Discharge",
+    category: "serviceType",
+    code: "DC",
   },
   {
     id: 0,
