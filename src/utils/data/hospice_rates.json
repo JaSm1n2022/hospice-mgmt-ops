@@ -68,5 +68,40 @@
             "location_rule_rhc_chc": "use_beneficiary_residence_county",
             "location_rule_gip_irc": "use_facility_location_county"
         }
+    },
+    {
+        "fy": 2027,
+        "start_date": "2026-10-01",
+        "end_date": "2027-09-30",
+        "state": "NV",
+        "county": "Clark",
+        "cbsa": "29820",
+        "aggregate_cap": 36174.75,
+        "wage_index": "GET FROM FY2027 CMS WAGE INDEX FILE",
+        "rates_national": {
+            "rhc_days_1_60": 236.35,
+            "rhc_days_61_plus": 186.35,
+            "chc_full_day": 1726.50,
+            "chc_hourly": 71.94,
+            "irc": 545.98,
+            "gip": 1231.63
+        },
+        "labor_share": {
+            "rhc": 0.66,
+            "chc": 0.752,
+            "irc": 0.61,
+            "gip": 0.635
+        },
+        "non_labor_share": {
+            "rhc": 0.34,
+            "chc": 0.248,
+            "irc": 0.39,
+            "gip": 0.365
+        },
+        "notes": {
+            "apply_wage_index_to": "labor_portion_only",
+            "location_rule_rhc_chc": "use_beneficiary_residence_county",
+            "location_rule_gip_irc": "use_facility_location_county"
+        }
     }
 ]
