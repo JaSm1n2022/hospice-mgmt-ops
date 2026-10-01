@@ -1839,6 +1839,7 @@ export const MEDICARE_CAP_AMOUNT = [
   { from: "2023-10-01", to: "2024-09-30", amount: 33494 },
   { from: "2024-10-01", to: "2025-09-30", amount: 34465.34 },
   { from: "2025-10-01", to: "2026-09-30", amount: 35361.44 },
+  { from: "2026-10-01", to: "2027-09-30", amount: 36174.75 },
 ];
 
 // Overhead Forecast Constants - DEFAULT VALUES ONLY
