@@ -23,6 +23,7 @@ import {
 } from "@material-ui/icons";
 import moment from "moment";
 import PrintPatientModal from "./PrintPatientModal";
+import Helper from "utils/helper";
 
 const useStyles = makeStyles((theme) => ({
   card: {
@@ -124,31 +125,16 @@ const MedicareCard = ({ data }) => {
   const isActive = !data.eoc || data.eoc === "N/A";
   const statusText = isActive ? "Active" : "Inactive";
 
-  // Determine which FY period the patient belongs to based on SOC
-  // FY 2024: 2023-10-01 to 2024-09-30 (ends in 2024)
-  // FY 2025: 2024-10-01 to 2025-09-30 (ends in 2025)
-  // FY 2026: 2025-10-01 to 2026-09-30 (ends in 2026)
+  // Determine which FY period the patient belongs to based on SOC.
+  // Always reflects the patient's own admission FY (Oct 1 - Sep 30),
+  // independent of the dashboard's "last 2 years" display window.
   const getFiscalYear = () => {
     if (!data.soc) return null;
-    const socDate = new Date(`${data.soc} 17:00`);
-    const fy2024Start = new Date("2023-10-01 17:00");
-    const fy2024End = new Date("2024-09-30 17:00");
-    const fy2025Start = new Date("2024-10-01 17:00");
-    const fy2025End = new Date("2025-09-30 17:00");
-    const fy2026Start = new Date("2025-10-01 17:00");
-    const fy2026End = new Date("2026-09-30 17:00");
-
-    if (socDate >= fy2024Start && socDate <= fy2024End) {
-      return "FY2024";
-    } else if (socDate >= fy2025Start && socDate <= fy2025End) {
-      return "FY2025";
-    } else if (socDate >= fy2026Start && socDate <= fy2026End) {
-      return "FY2026";
-    }
-    return null;
+    return Helper.getFiscalYearForDate(`${data.soc} 17:00`);
   };
 
-  const fiscalYear = getFiscalYear();
+  const fiscalYearNumber = getFiscalYear();
+  const fiscalYear = fiscalYearNumber ? `FY${fiscalYearNumber}` : null;
 
   // Get benefit labels as sequential periods starting from admitted benefit
   const getBenefitLabels = () => {
@@ -335,21 +321,11 @@ const MedicareCard = ({ data }) => {
           <>
             <Typography className={classes.sectionTitle}>
               <AttachMoney className={classes.icon} />
-              Fiscal Year Cap (Admitted in{" "}
-              {fiscalYear === "FY2024"
-                ? "FY 2024"
-                : fiscalYear === "FY2025"
-                ? "FY 2025"
-                : "FY 2026"}
-              )
+              Fiscal Year Cap (Admitted in FY {fiscalYearNumber})
             </Typography>
             <div className={classes.dataRow}>
               <span className={classes.label}>
-                {fiscalYear === "FY2024"
-                  ? "FY 2024 Cap:"
-                  : fiscalYear === "FY2025"
-                  ? "FY 2025 Cap:"
-                  : "FY 2026 Cap:"}
+                FY {fiscalYearNumber} Cap:
               </span>
               <span className={classes.value}>
                 {formatCurrency(data.firstPeriodCap)}
@@ -358,11 +334,7 @@ const MedicareCard = ({ data }) => {
             {data.secondPeriodDays > 0 && data.secondPeriodCap && (
               <div className={classes.dataRow}>
                 <span className={classes.label}>
-                  {fiscalYear === "FY2024"
-                    ? "FY 2025 Cap (Continued):"
-                    : fiscalYear === "FY2025"
-                    ? "FY 2026 Cap (Continued):"
-                    : "FY 2027 Cap (Continued):"}
+                  FY {fiscalYearNumber + 1} Cap (Continued):
                 </span>
                 <span className={classes.value}>
                   {formatCurrency(data.secondPeriodCap)}
@@ -478,11 +450,7 @@ const MedicareCard = ({ data }) => {
         {fiscalYear && (
           <>
             <Typography className={classes.sectionTitle}>
-              {fiscalYear === "FY2024"
-                ? "FY 2024 Breakdown"
-                : fiscalYear === "FY2025"
-                ? "FY 2025 Breakdown"
-                : "FY 2026 Breakdown"}
+              FY {fiscalYearNumber} Breakdown
             </Typography>
             <div className={classes.dataRow}>
               <span className={classes.label}>Accumulated Days:</span>
@@ -522,11 +490,7 @@ const MedicareCard = ({ data }) => {
           <>
             <Divider className={classes.divider} />
             <Typography className={classes.sectionTitle}>
-              {fiscalYear === "FY2024"
-                ? "FY 2025 Breakdown (Continued)"
-                : fiscalYear === "FY2025"
-                ? "FY 2026 Breakdown (Continued)"
-                : "FY 2027 Breakdown (Continued)"}
+              FY {fiscalYearNumber + 1} Breakdown (Continued)
             </Typography>
             <div className={classes.dataRow}>
               <span className={classes.label}>Accumulated Days:</span>

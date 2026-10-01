@@ -117,67 +117,67 @@ const MedicareV2OverviewDocument = ({ summaryData, totalRevenue }) => {
           </View>
         </View>
 
-        {/* FY 2025 Summary */}
-        <Text style={styles.sectionTitle}>FY 2025 Summary</Text>
+        {/* Previous FY Summary */}
+        <Text style={styles.sectionTitle}>FY {summaryData.prevFY} Summary</Text>
         <View style={styles.summaryBox}>
           <Text style={styles.subsectionTitle}>Admissions & Discharges</Text>
           <View style={styles.row}>
             <Text style={styles.label}>Admissions:</Text>
-            <Text style={styles.value}>{summaryData.fy2025AdmittedCount}</Text>
+            <Text style={styles.value}>{summaryData.prevFYAdmittedCount}</Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Discharges:</Text>
-            <Text style={styles.value}>{summaryData.fy2025DischargedCount}</Text>
+            <Text style={styles.value}>{summaryData.prevFYDischargedCount}</Text>
           </View>
 
           <Text style={styles.subsectionTitle}>Cap Analysis</Text>
           <View style={styles.row}>
             <Text style={styles.label}>Aggregate Cap:</Text>
-            <Text style={styles.value}>{formatCurrency(summaryData.fy2025TotalAggregate)}</Text>
+            <Text style={styles.value}>{formatCurrency(summaryData.prevFYTotalAggregate)}</Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Used Cap:</Text>
-            <Text style={styles.value}>{formatCurrency(summaryData.fy2025TotalUsed)}</Text>
+            <Text style={styles.value}>{formatCurrency(summaryData.prevFYTotalUsed)}</Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Available Cap:</Text>
-            <Text style={styles.value}>{formatCurrency(summaryData.fy2025TotalAvailable)}</Text>
+            <Text style={styles.value}>{formatCurrency(summaryData.prevFYTotalAvailable)}</Text>
           </View>
           <View style={styles.rowHighlighted}>
             <Text style={styles.label}>Available Cap Ready to Use:</Text>
-            <Text style={styles.value}>{formatCurrency(summaryData.fy2025AvailableCapReadyToUse)}</Text>
+            <Text style={styles.value}>{formatCurrency(summaryData.prevFYAvailableCapReadyToUse)}</Text>
           </View>
         </View>
 
-        {/* FY 2026 Summary */}
-        <Text style={styles.sectionTitle}>FY 2026 Summary</Text>
+        {/* Current FY Summary */}
+        <Text style={styles.sectionTitle}>FY {summaryData.currFY} Summary</Text>
         <View style={styles.summaryBox}>
           <Text style={styles.subsectionTitle}>Admissions & Discharges</Text>
           <View style={styles.row}>
             <Text style={styles.label}>Admissions:</Text>
-            <Text style={styles.value}>{summaryData.fy2026AdmittedCount}</Text>
+            <Text style={styles.value}>{summaryData.currFYAdmittedCount}</Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Discharges:</Text>
-            <Text style={styles.value}>{summaryData.fy2026DischargedCount}</Text>
+            <Text style={styles.value}>{summaryData.currFYDischargedCount}</Text>
           </View>
 
           <Text style={styles.subsectionTitle}>Cap Analysis</Text>
           <View style={styles.row}>
             <Text style={styles.label}>Aggregate Cap:</Text>
-            <Text style={styles.value}>{formatCurrency(summaryData.fy2026TotalAggregate)}</Text>
+            <Text style={styles.value}>{formatCurrency(summaryData.currFYTotalAggregate)}</Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Used Cap:</Text>
-            <Text style={styles.value}>{formatCurrency(summaryData.fy2026TotalUsed)}</Text>
+            <Text style={styles.value}>{formatCurrency(summaryData.currFYTotalUsed)}</Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Available Cap:</Text>
-            <Text style={styles.value}>{formatCurrency(summaryData.fy2026TotalAvailable)}</Text>
+            <Text style={styles.value}>{formatCurrency(summaryData.currFYTotalAvailable)}</Text>
           </View>
           <View style={styles.rowHighlighted}>
             <Text style={styles.label}>Available Cap Ready to Use:</Text>
-            <Text style={styles.value}>{formatCurrency(summaryData.fy2026AvailableCapReadyToUse)}</Text>
+            <Text style={styles.value}>{formatCurrency(summaryData.currFYAvailableCapReadyToUse)}</Text>
           </View>
         </View>
 
@@ -195,7 +195,7 @@ const MedicareV2OverviewDocument = ({ summaryData, totalRevenue }) => {
         </View>
 
         <View style={styles.footer}>
-          <Text>Medicare Cap Overview Report - Summary of Patient Overview, FY 2025 & FY 2026, and Total Revenue</Text>
+          <Text>Medicare Cap Overview Report - Summary of Patient Overview, FY {summaryData.prevFY} & FY {summaryData.currFY}, and Total Revenue</Text>
         </View>
       </Page>
     </Document>

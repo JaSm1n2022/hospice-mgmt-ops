@@ -456,27 +456,35 @@ class MedicareHandler {
     return items;
   }
 
-  static calculateFiscalYearProjection(items) {
-    // Get fiscal year end date
+  static calculateFiscalYearProjection(items, customProjectionEndDate) {
+    // Get the actual fiscal year end date (Sep 30), used to determine FY
+    // boundaries for death-discharge eligibility, regardless of any custom
+    // projection target date supplied below.
     const currentDate = moment();
     const currentYear = currentDate.year();
-    const fiscalYearEnd = moment(`${currentYear}-09-30`);
-    if (currentDate.isAfter(fiscalYearEnd)) {
-      fiscalYearEnd.add(1, "year");
+    const actualFiscalYearEnd = moment(`${currentYear}-09-30`);
+    if (currentDate.isAfter(actualFiscalYearEnd)) {
+      actualFiscalYearEnd.add(1, "year");
     }
 
-    // Process active patients (project to 09/30)
+    // The projection target date: defaults to the fiscal year end (09/30),
+    // but can be overridden (e.g. for a custom "FY Range Projection").
+    const fiscalYearEnd = customProjectionEndDate
+      ? moment(customProjectionEndDate)
+      : actualFiscalYearEnd;
+
+    // Process active patients (project to the target end date)
     const activePatients = items.filter((item) => !item.eoc || item.eoc === "N/A");
 
     // Process death discharge patients with available cap (include current available cap)
     const deathDischargePatients = items.filter((item) => {
       if (!item.eoc || item.eoc === "N/A") return false;
 
-      // Check if death discharge and within the target fiscal year
+      // Check if death discharge and within the actual fiscal year
       const isDeathDischarge = item.eoc_discharge === "Death Discharge";
       const eocDate = moment(item.eoc, "YYYY-MM-DD");
-      const fyStart = moment(fiscalYearEnd).subtract(1, "year").add(1, "day");
-      const isWithinFY = eocDate.isSameOrAfter(fyStart) && eocDate.isSameOrBefore(fiscalYearEnd);
+      const fyStart = moment(actualFiscalYearEnd).subtract(1, "year").add(1, "day");
+      const isWithinFY = eocDate.isSameOrAfter(fyStart) && eocDate.isSameOrBefore(actualFiscalYearEnd);
 
       // Check if has available cap
       const totalAvailableCap = parseFloat(item.availableCapFirstPeriod || 0) +

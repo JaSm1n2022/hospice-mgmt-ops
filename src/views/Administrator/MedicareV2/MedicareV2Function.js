@@ -13,6 +13,7 @@ import MedicareCard from "./components/MedicareCard";
 import SummaryStats from "./components/SummaryStats";
 import PrintOverviewModal from "./components/PrintOverviewModal";
 import PrintFiscalYearProjectionModal from "../MedicareCap/Available/components/PrintFiscalYearProjectionModal";
+import FYRangeProjectionModal from "./components/FYRangeProjectionModal";
 import PrintCurrentFYSummaryModal from "../MedicareCap/Available/components/PrintCurrentFYSummaryModal";
 import { connect } from "react-redux";
 
@@ -31,7 +32,7 @@ import {
   Typography,
   Button,
 } from "@material-ui/core";
-import { Search, AttachMoney, Print, TrendingUp, Assessment } from "@material-ui/icons";
+import { Search, AttachMoney, Print, TrendingUp, Assessment, DateRange } from "@material-ui/icons";
 
 import { attemptToFetchPatient } from "store/actions/patientAction";
 import { resetFetchPatientState } from "store/actions/patientAction";
@@ -39,6 +40,7 @@ import { resetFetchPatientState } from "store/actions/patientAction";
 import { patientListStateSelector } from "store/selectors/patientSelector";
 import { profileListStateSelector } from "store/selectors/profileSelector";
 import { SupaContext } from "App";
+import Helper from "utils/helper";
 
 const styles = {
   cardCategoryWhite: {
@@ -121,6 +123,7 @@ function MedicareV2Function(props) {
   const [fiscalYear, setFiscalYear] = useState("");
   const [isPrintOverviewModalOpen, setIsPrintOverviewModalOpen] = useState(false);
   const [isFiscalYearProjectionModalOpen, setIsFiscalYearProjectionModalOpen] = useState(false);
+  const [isFYRangeProjectionModalOpen, setIsFYRangeProjectionModalOpen] = useState(false);
   const [isCurrentFYSummaryModalOpen, setIsCurrentFYSummaryModalOpen] = useState(false);
 
   useEffect(() => {
@@ -185,26 +188,12 @@ function MedicareV2Function(props) {
       });
     }
 
-    // Filter by Fiscal Year
+    // Filter by Fiscal Year (e.g. "FY2026")
     if (fy) {
+      const fyNumber = parseInt(fy.replace("FY", ""), 10);
       filtered = filtered.filter((data) => {
         if (!data.soc) return false;
-        const socDate = new Date(`${data.soc} 17:00`);
-
-        if (fy === "FY2024") {
-          const fy2024Start = new Date("2023-10-01 17:00");
-          const fy2024End = new Date("2024-09-30 17:00");
-          return socDate >= fy2024Start && socDate <= fy2024End;
-        } else if (fy === "FY2025") {
-          const fy2025Start = new Date("2024-10-01 17:00");
-          const fy2025End = new Date("2025-09-30 17:00");
-          return socDate >= fy2025Start && socDate <= fy2025End;
-        } else if (fy === "FY2026") {
-          const fy2026Start = new Date("2025-10-01 17:00");
-          const fy2026End = new Date("2026-09-30 17:00");
-          return socDate >= fy2026Start && socDate <= fy2026End;
-        }
-        return true;
+        return Helper.getFiscalYearForDate(`${data.soc} 17:00`) === fyNumber;
       });
     }
 
@@ -261,112 +250,81 @@ function MedicareV2Function(props) {
 
   const totalRevenue = calculateTotalRevenue();
 
+  // Dashboard always shows the last 2 fiscal years (current FY + previous FY),
+  // computed dynamically from today's date (FY = Oct 1 - Sep 30).
+  const currFY = Helper.getCurrentFiscalYear();
+  const prevFY = currFY - 1;
+
   // Calculate summary statistics for PDF (same logic as SummaryStats component)
   const calculateSummaryStats = () => {
+    const empty = {
+      totalPatients: 0,
+      totalActive: 0,
+      totalInactive: 0,
+      prevFY,
+      currFY,
+      prevFYTotalAggregate: 0,
+      prevFYTotalUsed: 0,
+      prevFYTotalAvailable: 0,
+      prevFYAvailableCapReadyToUse: 0,
+      prevFYAdmittedCount: 0,
+      prevFYDischargedCount: 0,
+      currFYTotalAggregate: 0,
+      currFYTotalUsed: 0,
+      currFYTotalAvailable: 0,
+      currFYAvailableCapReadyToUse: 0,
+      currFYAdmittedCount: 0,
+      currFYDischargedCount: 0,
+    };
+
     if (!dataSource || dataSource.length === 0) {
-      return {
-        totalPatients: 0,
-        totalActive: 0,
-        totalInactive: 0,
-        fy2025TotalAggregate: 0,
-        fy2025TotalUsed: 0,
-        fy2025TotalAvailable: 0,
-        fy2025AvailableCapReadyToUse: 0,
-        fy2025AdmittedCount: 0,
-        fy2025DischargedCount: 0,
-        fy2026TotalAggregate: 0,
-        fy2026TotalUsed: 0,
-        fy2026TotalAvailable: 0,
-        fy2026AvailableCapReadyToUse: 0,
-        fy2026AdmittedCount: 0,
-        fy2026DischargedCount: 0,
-      };
+      return empty;
     }
 
-    return dataSource.reduce(
-      (acc, patient) => {
-        acc.totalPatients += 1;
+    return dataSource.reduce((acc, patient) => {
+      acc.totalPatients += 1;
 
-        if (!patient.eoc || patient.eoc === "N/A") {
-          acc.totalActive += 1;
-        } else {
-          acc.totalInactive += 1;
-        }
-
-        if (patient.soc) {
-          const socDate = new Date(`${patient.soc} 17:00`);
-          const fy2025Start = new Date("2024-10-01 17:00");
-          const fy2025End = new Date("2025-09-30 17:00");
-          const fy2026Start = new Date("2025-10-01 17:00");
-          const fy2026End = new Date("2026-09-30 17:00");
-
-          if (socDate >= fy2025Start && socDate <= fy2025End) {
-            const allowedCap = parseFloat(patient.allowedCapFirstPeriod || 0);
-
-            if (allowedCap > 0) {
-              acc.fy2025TotalAggregate += parseFloat(patient.firstPeriodCap || 0);
-              acc.fy2025TotalUsed += parseFloat(patient.usedCapFirstPeriod || 0) + parseFloat(patient.usedCapSecondPeriod || 0);
-              acc.fy2025TotalAvailable += parseFloat(patient.availableCapFirstPeriod || 0);
-            }
-
-            if (
-              patient.eoc_discharge === "Death Discharge" &&
-              parseFloat(patient.availableCapFirstPeriod || 0) > 0
-            ) {
-              acc.fy2025AvailableCapReadyToUse += parseFloat(patient.availableCapFirstPeriod || 0);
-            }
-
-            acc.fy2025AdmittedCount += 1;
-
-            if (patient.eoc && patient.eoc !== "N/A") {
-              acc.fy2025DischargedCount += 1;
-            }
-          }
-
-          if (socDate >= fy2026Start && socDate <= fy2026End) {
-            const allowedCap = parseFloat(patient.allowedCapFirstPeriod || 0);
-
-            if (allowedCap > 0) {
-              acc.fy2026TotalAggregate += parseFloat(patient.firstPeriodCap || 0);
-              acc.fy2026TotalUsed += parseFloat(patient.usedCapFirstPeriod || 0) + parseFloat(patient.usedCapSecondPeriod || 0);
-              acc.fy2026TotalAvailable += parseFloat(patient.availableCapFirstPeriod || 0);
-            }
-
-            if (
-              patient.eoc_discharge === "Death Discharge" &&
-              parseFloat(patient.availableCapFirstPeriod || 0) > 0
-            ) {
-              acc.fy2026AvailableCapReadyToUse += parseFloat(patient.availableCapFirstPeriod || 0);
-            }
-
-            acc.fy2026AdmittedCount += 1;
-
-            if (patient.eoc && patient.eoc !== "N/A") {
-              acc.fy2026DischargedCount += 1;
-            }
-          }
-        }
-
-        return acc;
-      },
-      {
-        totalPatients: 0,
-        totalActive: 0,
-        totalInactive: 0,
-        fy2025TotalAggregate: 0,
-        fy2025TotalUsed: 0,
-        fy2025TotalAvailable: 0,
-        fy2025AvailableCapReadyToUse: 0,
-        fy2025AdmittedCount: 0,
-        fy2025DischargedCount: 0,
-        fy2026TotalAggregate: 0,
-        fy2026TotalUsed: 0,
-        fy2026TotalAvailable: 0,
-        fy2026AvailableCapReadyToUse: 0,
-        fy2026AdmittedCount: 0,
-        fy2026DischargedCount: 0,
+      if (!patient.eoc || patient.eoc === "N/A") {
+        acc.totalActive += 1;
+      } else {
+        acc.totalInactive += 1;
       }
-    );
+
+      if (patient.soc) {
+        const patientFY = Helper.getFiscalYearForDate(`${patient.soc} 17:00`);
+        const prefix =
+          patientFY === prevFY ? "prevFY" : patientFY === currFY ? "currFY" : null;
+
+        if (prefix) {
+          const allowedCap = parseFloat(patient.allowedCapFirstPeriod || 0);
+
+          if (allowedCap > 0) {
+            acc[`${prefix}TotalAggregate`] += parseFloat(patient.firstPeriodCap || 0);
+            acc[`${prefix}TotalUsed`] +=
+              parseFloat(patient.usedCapFirstPeriod || 0) +
+              parseFloat(patient.usedCapSecondPeriod || 0);
+            acc[`${prefix}TotalAvailable`] += parseFloat(patient.availableCapFirstPeriod || 0);
+          }
+
+          if (
+            patient.eoc_discharge === "Death Discharge" &&
+            parseFloat(patient.availableCapFirstPeriod || 0) > 0
+          ) {
+            acc[`${prefix}AvailableCapReadyToUse`] += parseFloat(
+              patient.availableCapFirstPeriod || 0
+            );
+          }
+
+          acc[`${prefix}AdmittedCount`] += 1;
+
+          if (patient.eoc && patient.eoc !== "N/A") {
+            acc[`${prefix}DischargedCount`] += 1;
+          }
+        }
+      }
+
+      return acc;
+    }, empty);
   };
 
   const printOverviewHandler = () => {
@@ -399,6 +357,27 @@ function MedicareV2Function(props) {
 
   const closeFiscalYearProjectionModal = () => {
     setIsFiscalYearProjectionModalOpen(false);
+  };
+
+  const fyRangeProjectionHandler = () => {
+    const activePatients = dataSource.filter((p) => !p.eoc || p.eoc === "N/A");
+    const deathDischargeWithCap = dataSource.filter((p) => {
+      if (!p.eoc || p.eoc === "N/A") return false;
+      const isDeathDischarge = p.eoc_discharge === "Death Discharge";
+      const totalAvailableCap = parseFloat(p.availableCapFirstPeriod || 0) +
+                                 parseFloat(p.availableCapSecondPeriod || 0);
+      return isDeathDischarge && totalAvailableCap > 0;
+    });
+
+    if (activePatients.length === 0 && deathDischargeWithCap.length === 0) {
+      alert("No eligible patients found. FY Range Projection requires active patients or death discharge patients with available cap.");
+      return;
+    }
+    setIsFYRangeProjectionModalOpen(true);
+  };
+
+  const closeFYRangeProjectionModal = () => {
+    setIsFYRangeProjectionModalOpen(false);
   };
 
   const currentFYSummaryHandler = () => {
@@ -439,6 +418,12 @@ function MedicareV2Function(props) {
       <PrintFiscalYearProjectionModal
         isOpen={isFiscalYearProjectionModalOpen}
         onClose={closeFiscalYearProjectionModal}
+        patientsData={dataSource}
+        handler={MedicareHandler}
+      />
+      <FYRangeProjectionModal
+        isOpen={isFYRangeProjectionModalOpen}
+        onClose={closeFYRangeProjectionModal}
         patientsData={dataSource}
         handler={MedicareHandler}
       />
@@ -487,6 +472,18 @@ function MedicareV2Function(props) {
                         onClick={fiscalYearProjectionHandler}
                       >
                         Fiscal Year Projection
+                      </Button>
+                      <Button
+                        variant="contained"
+                        style={{
+                          backgroundColor: "white",
+                          color: "#4caf50",
+                          fontWeight: "500",
+                        }}
+                        startIcon={<DateRange />}
+                        onClick={fyRangeProjectionHandler}
+                      >
+                        FY Range Projection
                       </Button>
                       <Button
                         variant="contained"
@@ -575,9 +572,8 @@ function MedicareV2Function(props) {
                           <MenuItem value="">
                             <em>All</em>
                           </MenuItem>
-                          <MenuItem value="FY2024">FY 2024</MenuItem>
-                          <MenuItem value="FY2025">FY 2025</MenuItem>
-                          <MenuItem value="FY2026">FY 2026</MenuItem>
+                          <MenuItem value={`FY${prevFY}`}>FY {prevFY}</MenuItem>
+                          <MenuItem value={`FY${currFY}`}>FY {currFY}</MenuItem>
                         </Select>
                       </FormControl>
                     </GridItem>

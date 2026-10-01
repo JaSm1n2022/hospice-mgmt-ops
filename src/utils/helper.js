@@ -272,6 +272,37 @@ class Helper {
       throw error;
     }
   }
+
+  /**
+   * Returns the Medicare hospice cap fiscal year (Oct 1 - Sep 30) for a given date.
+   * The FY is identified by the calendar year in which it ends.
+   * e.g. 2025-10-15 -> FY2026, 2026-09-30 -> FY2026, 2026-10-01 -> FY2027
+   * @param {String | Date} date -
+   * @returns {Number} - fiscal year (e.g. 2026)
+   */
+  static getFiscalYearForDate(date) {
+    const d = moment(date);
+    return d.month() >= 9 ? d.year() + 1 : d.year();
+  }
+
+  /**
+   * Returns the current Medicare hospice cap fiscal year based on today's date.
+   * @returns {Number} - fiscal year (e.g. 2027)
+   */
+  static getCurrentFiscalYear() {
+    return Helper.getFiscalYearForDate(moment());
+  }
+
+  /**
+   * Returns the start date (10/01) of the current Medicare hospice cap
+   * fiscal year, in YYYY-MM-DD format.
+   * e.g. if current FY is 2027 -> "2026-10-01"
+   * @returns {String} - YYYY-MM-DD
+   */
+  static getCurrentFiscalYearStartDate() {
+    const currFY = Helper.getCurrentFiscalYear();
+    return moment(`${currFY - 1}-10-01`).format("YYYY-MM-DD");
+  }
 }
 
 export default Helper;

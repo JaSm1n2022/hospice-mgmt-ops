@@ -10,6 +10,7 @@ import {
   PersonAdd,
   CheckCircle,
 } from "@material-ui/icons";
+import Helper from "utils/helper";
 
 const useStyles = makeStyles((theme) => ({
   summaryContainer: {
@@ -86,135 +87,85 @@ const SummaryStats = ({ data }) => {
     })}`;
   };
 
-  // Calculate totals - aggregate caps, patient counts, admissions, and discharges by FY
+  // Dashboard always shows the last 2 fiscal years (current FY + previous FY),
+  // computed dynamically from today's date (FY = Oct 1 - Sep 30).
+  const currFY = Helper.getCurrentFiscalYear();
+  const prevFY = currFY - 1;
+
+  const emptyTotals = () => ({
+    totalPatients: 0,
+    totalActive: 0,
+    totalInactive: 0,
+    prevFYTotalAggregate: 0,
+    prevFYTotalUsed: 0,
+    prevFYTotalAvailable: 0,
+    prevFYAvailableCapReadyToUse: 0,
+    prevFYAdmittedCount: 0,
+    prevFYDischargedCount: 0,
+    currFYTotalAggregate: 0,
+    currFYTotalUsed: 0,
+    currFYTotalAvailable: 0,
+    currFYAvailableCapReadyToUse: 0,
+    currFYAdmittedCount: 0,
+    currFYDischargedCount: 0,
+  });
+
+  // Calculate totals - aggregate caps, patient counts, admissions, and discharges
+  // for the last 2 fiscal years (prevFY and currFY)
   const calculateTotals = () => {
     if (!data || data.length === 0) {
-      return {
-        totalPatients: 0,
-        totalActive: 0,
-        totalInactive: 0,
-        fy2025TotalAggregate: 0,
-        fy2025TotalUsed: 0,
-        fy2025TotalAvailable: 0,
-        fy2025AvailableCapReadyToUse: 0,
-        fy2025AdmittedCount: 0,
-        fy2025DischargedCount: 0,
-        fy2026TotalAggregate: 0,
-        fy2026TotalUsed: 0,
-        fy2026TotalAvailable: 0,
-        fy2026AvailableCapReadyToUse: 0,
-        fy2026AdmittedCount: 0,
-        fy2026DischargedCount: 0,
-      };
+      return emptyTotals();
     }
 
-    const totals = data.reduce(
-      (acc, patient) => {
-        // Count total patients
-        acc.totalPatients += 1;
+    const totals = data.reduce((acc, patient) => {
+      // Count total patients
+      acc.totalPatients += 1;
 
-        // Count active vs inactive (inactive = has EOC date)
-        if (!patient.eoc || patient.eoc === "N/A") {
-          acc.totalActive += 1;
-        } else {
-          acc.totalInactive += 1;
-        }
-
-        // FY 2025: 2024-10-01 to 2025-09-30 (ends in 2025)
-        // FY 2026: 2025-10-01 to 2026-09-30 (ends in 2026)
-        // Only aggregate if patient's SOC is within each FY period
-        if (patient.soc) {
-          const socDate = new Date(`${patient.soc} 17:00`);
-          const fy2025Start = new Date("2024-10-01 17:00");
-          const fy2025End = new Date("2025-09-30 17:00");
-          const fy2026Start = new Date("2025-10-01 17:00");
-          const fy2026End = new Date("2026-09-30 17:00");
-
-          // Check if SOC is in FY 2025 (2024-10-01 to 2025-09-30)
-          if (socDate >= fy2025Start && socDate <= fy2025End) {
-            // Exclude patients from aggregate cap calculations if:
-            // 1. Their allowed cap is "0.00" (meaning prior hospice exceeded cap or total usage exceeded cap)
-            const allowedCap = parseFloat(patient.allowedCapFirstPeriod || 0);
-
-            if (allowedCap > 0) {
-              // Only aggregate the admission FY cap (firstPeriodCap), not continuation caps
-              acc.fy2025TotalAggregate += parseFloat(patient.firstPeriodCap || 0);
-              // Include both first and second period usage for total used cap
-              acc.fy2025TotalUsed += parseFloat(patient.usedCapFirstPeriod || 0) + parseFloat(patient.usedCapSecondPeriod || 0);
-              acc.fy2025TotalAvailable += parseFloat(patient.availableCapFirstPeriod || 0);
-            }
-
-            // Calculate Available Cap Ready to Use (death discharge patients only, positive available cap only)
-            if (
-              patient.eoc_discharge === "Death Discharge" &&
-              parseFloat(patient.availableCapFirstPeriod || 0) > 0
-            ) {
-              acc.fy2025AvailableCapReadyToUse += parseFloat(
-                patient.availableCapFirstPeriod || 0
-              );
-            }
-
-            acc.fy2025AdmittedCount += 1;
-
-            // Count discharges (any patient admitted in FY 2025 who has EOC - is inactive)
-            if (patient.eoc && patient.eoc !== "N/A") {
-              acc.fy2025DischargedCount += 1;
-            }
-          }
-
-          // Check if SOC is in FY 2026 (2025-10-01 to 2026-09-30)
-          if (socDate >= fy2026Start && socDate <= fy2026End) {
-            // Exclude patients from aggregate cap calculations if:
-            // 1. Their allowed cap is "0.00" (meaning prior hospice exceeded cap or total usage exceeded cap)
-            const allowedCap = parseFloat(patient.allowedCapFirstPeriod || 0);
-
-            if (allowedCap > 0) {
-              // Only aggregate the admission FY cap (firstPeriodCap), not continuation caps
-              acc.fy2026TotalAggregate += parseFloat(patient.firstPeriodCap || 0);
-              // Include both first and second period usage for total used cap
-              acc.fy2026TotalUsed += parseFloat(patient.usedCapFirstPeriod || 0) + parseFloat(patient.usedCapSecondPeriod || 0);
-              acc.fy2026TotalAvailable += parseFloat(patient.availableCapFirstPeriod || 0);
-            }
-
-            // Calculate Available Cap Ready to Use (death discharge patients only, positive available cap only)
-            if (
-              patient.eoc_discharge === "Death Discharge" &&
-              parseFloat(patient.availableCapFirstPeriod || 0) > 0
-            ) {
-              acc.fy2026AvailableCapReadyToUse += parseFloat(
-                patient.availableCapFirstPeriod || 0
-              );
-            }
-
-            acc.fy2026AdmittedCount += 1;
-
-            // Count discharges (any patient admitted in FY 2026 who has EOC - is inactive)
-            if (patient.eoc && patient.eoc !== "N/A") {
-              acc.fy2026DischargedCount += 1;
-            }
-          }
-        }
-
-        return acc;
-      },
-      {
-        totalPatients: 0,
-        totalActive: 0,
-        totalInactive: 0,
-        fy2025TotalAggregate: 0,
-        fy2025TotalUsed: 0,
-        fy2025TotalAvailable: 0,
-        fy2025AvailableCapReadyToUse: 0,
-        fy2025AdmittedCount: 0,
-        fy2025DischargedCount: 0,
-        fy2026TotalAggregate: 0,
-        fy2026TotalUsed: 0,
-        fy2026TotalAvailable: 0,
-        fy2026AvailableCapReadyToUse: 0,
-        fy2026AdmittedCount: 0,
-        fy2026DischargedCount: 0,
+      // Count active vs inactive (inactive = has EOC date)
+      if (!patient.eoc || patient.eoc === "N/A") {
+        acc.totalActive += 1;
+      } else {
+        acc.totalInactive += 1;
       }
-    );
+
+      if (patient.soc) {
+        const patientFY = Helper.getFiscalYearForDate(`${patient.soc} 17:00`);
+        const allowedCap = parseFloat(patient.allowedCapFirstPeriod || 0);
+        const usedTotal =
+          parseFloat(patient.usedCapFirstPeriod || 0) +
+          parseFloat(patient.usedCapSecondPeriod || 0);
+        const isDeathDischargeWithCap =
+          patient.eoc_discharge === "Death Discharge" &&
+          parseFloat(patient.availableCapFirstPeriod || 0) > 0;
+        const isDischarged = patient.eoc && patient.eoc !== "N/A";
+
+        const prefix =
+          patientFY === prevFY ? "prevFY" : patientFY === currFY ? "currFY" : null;
+
+        if (prefix) {
+          if (allowedCap > 0) {
+            // Only aggregate the admission FY cap (firstPeriodCap), not continuation caps
+            acc[`${prefix}TotalAggregate`] += parseFloat(patient.firstPeriodCap || 0);
+            acc[`${prefix}TotalUsed`] += usedTotal;
+            acc[`${prefix}TotalAvailable`] += parseFloat(patient.availableCapFirstPeriod || 0);
+          }
+
+          if (isDeathDischargeWithCap) {
+            acc[`${prefix}AvailableCapReadyToUse`] += parseFloat(
+              patient.availableCapFirstPeriod || 0
+            );
+          }
+
+          acc[`${prefix}AdmittedCount`] += 1;
+
+          if (isDischarged) {
+            acc[`${prefix}DischargedCount`] += 1;
+          }
+        }
+      }
+
+      return acc;
+    }, emptyTotals());
 
     return totals;
   };
@@ -272,7 +223,7 @@ const SummaryStats = ({ data }) => {
       </Grid>
 
       <Typography className={classes.sectionTitle}>
-        FY 2025 Summary
+        FY {prevFY} Summary
       </Typography>
       <Grid container spacing={2} style={{ marginBottom: 24 }}>
         <Grid item xs={12} sm={6} md={4} style={{ flexBasis: '20%', maxWidth: '20%' }}>
@@ -284,7 +235,7 @@ const SummaryStats = ({ data }) => {
               Admissions
             </Typography>
             <Typography className={classes.value}>
-              {totals.fy2025AdmittedCount}
+              {totals.prevFYAdmittedCount}
             </Typography>
           </Paper>
         </Grid>
@@ -298,7 +249,7 @@ const SummaryStats = ({ data }) => {
               Discharges
             </Typography>
             <Typography className={classes.value}>
-              {totals.fy2025DischargedCount}
+              {totals.prevFYDischargedCount}
             </Typography>
           </Paper>
         </Grid>
@@ -312,7 +263,7 @@ const SummaryStats = ({ data }) => {
               Aggregate Cap
             </Typography>
             <Typography className={classes.value}>
-              {formatCurrency(totals.fy2025TotalAggregate)}
+              {formatCurrency(totals.prevFYTotalAggregate)}
             </Typography>
           </Paper>
         </Grid>
@@ -326,7 +277,7 @@ const SummaryStats = ({ data }) => {
               Used Cap
             </Typography>
             <Typography className={classes.value}>
-              {formatCurrency(totals.fy2025TotalUsed)}
+              {formatCurrency(totals.prevFYTotalUsed)}
             </Typography>
           </Paper>
         </Grid>
@@ -340,7 +291,7 @@ const SummaryStats = ({ data }) => {
               Available Cap
             </Typography>
             <Typography className={classes.value}>
-              {formatCurrency(totals.fy2025TotalAvailable)}
+              {formatCurrency(totals.prevFYTotalAvailable)}
             </Typography>
           </Paper>
         </Grid>
@@ -354,14 +305,14 @@ const SummaryStats = ({ data }) => {
               Available Cap Ready to Use
             </Typography>
             <Typography className={classes.value}>
-              {formatCurrency(totals.fy2025AvailableCapReadyToUse)}
+              {formatCurrency(totals.prevFYAvailableCapReadyToUse)}
             </Typography>
           </Paper>
         </Grid>
       </Grid>
 
       <Typography className={classes.sectionTitle}>
-        FY 2026 Summary
+        FY {currFY} Summary
       </Typography>
       <Grid container spacing={2}>
         <Grid item xs={12} sm={6} md={4} style={{ flexBasis: '20%', maxWidth: '20%' }}>
@@ -373,7 +324,7 @@ const SummaryStats = ({ data }) => {
               Admissions
             </Typography>
             <Typography className={classes.value}>
-              {totals.fy2026AdmittedCount}
+              {totals.currFYAdmittedCount}
             </Typography>
           </Paper>
         </Grid>
@@ -387,7 +338,7 @@ const SummaryStats = ({ data }) => {
               Discharges
             </Typography>
             <Typography className={classes.value}>
-              {totals.fy2026DischargedCount}
+              {totals.currFYDischargedCount}
             </Typography>
           </Paper>
         </Grid>
@@ -401,7 +352,7 @@ const SummaryStats = ({ data }) => {
               Aggregate Cap
             </Typography>
             <Typography className={classes.value}>
-              {formatCurrency(totals.fy2026TotalAggregate)}
+              {formatCurrency(totals.currFYTotalAggregate)}
             </Typography>
           </Paper>
         </Grid>
@@ -415,7 +366,7 @@ const SummaryStats = ({ data }) => {
               Used Cap
             </Typography>
             <Typography className={classes.value}>
-              {formatCurrency(totals.fy2026TotalUsed)}
+              {formatCurrency(totals.currFYTotalUsed)}
             </Typography>
           </Paper>
         </Grid>
@@ -429,7 +380,7 @@ const SummaryStats = ({ data }) => {
               Available Cap
             </Typography>
             <Typography className={classes.value}>
-              {formatCurrency(totals.fy2026TotalAvailable)}
+              {formatCurrency(totals.currFYTotalAvailable)}
             </Typography>
           </Paper>
         </Grid>
@@ -443,7 +394,7 @@ const SummaryStats = ({ data }) => {
               Available Cap Ready to Use
             </Typography>
             <Typography className={classes.value}>
-              {formatCurrency(totals.fy2026AvailableCapReadyToUse)}
+              {formatCurrency(totals.currFYAvailableCapReadyToUse)}
             </Typography>
           </Paper>
         </Grid>
