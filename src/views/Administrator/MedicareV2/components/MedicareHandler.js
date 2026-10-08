@@ -646,6 +646,65 @@ class MedicareHandler {
     // Combine active projections and death discharge patients
     return [...activeProjections, ...deathDischargeProjections];
   }
+
+  /**
+   * FY Exceed Projection: projects cap usage/deficit from the current fiscal
+   * year's start (10/01) through a custom target end date (e.g. 10/01 + N days).
+   *
+   * For patients admitted in a PRIOR fiscal year who are still active (i.e. their
+   * stay crosses the 10/01 FY boundary), any deficit accrued BEFORE 10/01 is
+   * already resolved/settled via the aggregate cap pool and is therefore zeroed
+   * out here - only the portion of the stay occurring on/after 10/01 (the
+   * current FY) is counted toward the "exceed cap" determination.
+   *
+   * The per-diem apportionment methodology itself (allowed cap prorated by
+   * (period days / total days including prior hospice) * aggregate cap) is
+   * NOT changed - we simply reuse the already-apportioned "second period"
+   * (current FY) figures as the sole result for crossover patients. Patients
+   * whose entire stay already falls within the current FY (no crossover) are
+   * left untouched, since their "first period" already represents the full
+   * current-FY-only window.
+   */
+  static calculateFYExceedProjection(items, rangeEndDate) {
+    const rangeStart = moment(rangeEndDate).startOf("day");
+    const currentFYStartYear = rangeStart.month() >= 9 ? rangeStart.year() : rangeStart.year() - 1;
+    const fyStartMoment = moment(`${currentFYStartYear}-10-01`);
+    const rangeEndMoment = moment(rangeEndDate);
+
+    const rawProjections = this.calculateFiscalYearProjection(items, rangeEndDate);
+
+    return rawProjections
+      .filter((p) => {
+        // Death discharge patients were filtered against the FULL fiscal
+        // year (10/01 - 09/30) by calculateFiscalYearProjection. For the
+        // FY Exceed Projection we narrow this further to only the requested
+        // 10/01 -> rangeEndDate window.
+        if (!p.isDeathDischarge) return true;
+        const eocDate = moment(p.eoc, "YYYY-MM-DD");
+        return eocDate.isSameOrAfter(fyStartMoment) && eocDate.isSameOrBefore(rangeEndMoment);
+      })
+      .map((p) => {
+        const hasCrossoverPeriod = parseFloat(p.projectedSecondPeriodDays || 0) > 0;
+
+        if (!hasCrossoverPeriod) {
+          // Entire stay is already within the current FY - nothing to zero out.
+          return p;
+        }
+
+        // Zero out the pre-10/01 (prior FY) portion; promote the already
+        // apportioned current-FY (second period) figures as the sole totals.
+        return {
+          ...p,
+          projectedFirstPeriodDays: 0,
+          projectedUsedCapFirstPeriod: "0.00",
+          projectedAllowedCapFirstPeriod: "0.00",
+          projectedAvailableCapFirstPeriod: "0.00",
+          projectedTotalDays: p.projectedSecondPeriodDays,
+          projectedTotalClaim: p.projectedUsedCapSecondPeriod,
+          projectedTotalAvailableCap: p.projectedAvailableCapSecondPeriod,
+        };
+      });
+  }
 }
 
 export default MedicareHandler;

@@ -115,7 +115,7 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-function FYRangeProjectionModal({ isOpen, onClose, patientsData, handler }) {
+function FYExceedProjectionModal({ isOpen, onClose, patientsData, handler }) {
   const classes = useStyles();
   const [modalStyle] = React.useState(getModalStyle);
   const [error, setError] = React.useState(null);
@@ -153,6 +153,10 @@ function FYRangeProjectionModal({ isOpen, onClose, patientsData, handler }) {
   }
 
   const projectionHandler = handler || AvailableHandler;
+  const calculateProjection =
+    typeof projectionHandler.calculateFYExceedProjection === "function"
+      ? projectionHandler.calculateFYExceedProjection.bind(projectionHandler)
+      : projectionHandler.calculateFiscalYearProjection.bind(projectionHandler);
 
   const fyStartDate = Helper.getCurrentFiscalYearStartDate();
   const rangeEndDate = submittedDays
@@ -166,10 +170,7 @@ function FYRangeProjectionModal({ isOpen, onClose, patientsData, handler }) {
   let fileName = "";
 
   if (submittedDays) {
-    const projectedData = projectionHandler.calculateFiscalYearProjection(
-      patientsData,
-      rangeEndDate
-    );
+    const projectedData = calculateProjection(patientsData, rangeEndDate);
 
     const activePatients = projectedData.filter((p) => p.isActiveProjection);
     const deathDischargePatients = projectedData.filter((p) => p.isDeathDischarge);
@@ -177,6 +178,12 @@ function FYRangeProjectionModal({ isOpen, onClose, patientsData, handler }) {
     const eocNonDeathPatients = patientsData.filter((p) => {
       if (!p.eoc || p.eoc === "N/A") return false;
       if (p.eoc_discharge === "Death Discharge") return false;
+
+      const eocDate = moment(p.eoc, "YYYY-MM-DD");
+      const isWithinRange =
+        eocDate.isSameOrAfter(moment(fyStartDate)) &&
+        eocDate.isSameOrBefore(rangeEndDate);
+      if (!isWithinRange) return false;
 
       const totalAvailableCap =
         parseFloat(p.availableCapFirstPeriod || 0) +
@@ -248,7 +255,7 @@ function FYRangeProjectionModal({ isOpen, onClose, patientsData, handler }) {
 
     isCapAvailable = parseFloat(summary.totalProjectedAvailableCap) >= 0;
 
-    fileName = `Medicare_Cap_FY_Range_Projection_${moment().format(
+    fileName = `Medicare_Cap_FY_Exceed_Projection_${moment().format(
       "YYYY-MM-DD_HHmmss"
     )}.pdf`;
 
@@ -274,7 +281,7 @@ function FYRangeProjectionModal({ isOpen, onClose, patientsData, handler }) {
     >
       <div style={modalStyle} className={classes.paper}>
         <div className={classes.header}>
-          <h3 style={{ margin: 0 }}>FY Range Projection</h3>
+          <h3 style={{ margin: 0 }}>FY Exceed Projection</h3>
           <Clear className={classes.closeButton} onClick={handleClose} />
         </div>
         <div className={classes.content}>
@@ -474,7 +481,7 @@ function FYRangeProjectionModal({ isOpen, onClose, patientsData, handler }) {
                         ) : (
                           <>
                             <GetApp />
-                            Download FY Range Projection PDF
+                            Download FY Exceed Projection PDF
                           </>
                         );
                       }}
@@ -485,7 +492,11 @@ function FYRangeProjectionModal({ isOpen, onClose, patientsData, handler }) {
                     This report projects patient Medicare cap usage from{" "}
                     {summary.rangeStart} through {summary.rangeEnd} ({submittedDays}{" "}
                     day{submittedDays === 1 ? "" : "s"} from the start of the
-                    current fiscal year). Includes: (1) Summary overview, (2)
+                    current fiscal year). Any cap deficit accrued prior to
+                    10/01 (the current fiscal year start) is excluded/treated
+                    as zero, since it is already resolved via the aggregate
+                    cap pool - only the current fiscal year portion is used to
+                    determine exceeded cap. Includes: (1) Summary overview, (2)
                     Detailed breakdowns for patients with available cap, patients
                     exceeding cap, EOC non-death patients, and death discharge
                     patients, (3) Individual patient details sorted by available
@@ -502,4 +513,4 @@ function FYRangeProjectionModal({ isOpen, onClose, patientsData, handler }) {
   );
 }
 
-export default FYRangeProjectionModal;
+export default FYExceedProjectionModal;

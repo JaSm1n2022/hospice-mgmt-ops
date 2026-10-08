@@ -126,6 +126,14 @@ const styles = StyleSheet.create({
 });
 
 const FiscalYearProjectionDocument = ({ patientsData, originalPatientsData, summary, summaryOnly }) => {
+  // Short label for the "Proj. Days by" column header.
+  // Reflects the actual projection target date (summary.fiscalYearEnd):
+  // the real fiscal year end (09/30) for a standard Fiscal Year Projection,
+  // or the custom computed date (e.g. 10/01 + N days) for an FY Range Projection.
+  const projectionDaysLabel = summary?.fiscalYearEnd
+    ? moment(summary.fiscalYearEnd).format("MM/DD")
+    : "FY End";
+
   const formatCurrency = (value) => {
     if (!value) return "$0.00";
     const numValue = parseFloat(value);
@@ -197,7 +205,7 @@ const FiscalYearProjectionDocument = ({ patientsData, originalPatientsData, summ
 
         <View style={{ marginTop: 20, marginBottom: 10 }}>
           <Text style={{ fontSize: 11, color: "#666", marginBottom: 10 }}>
-            These active patients are projected to have available cap by the fiscal year end (09/30).
+            These active patients are projected to have available cap by {projectionDaysLabel}.
             This cap can be used for additional services or offset other patients' costs.
           </Text>
         </View>
@@ -221,7 +229,7 @@ const FiscalYearProjectionDocument = ({ patientsData, originalPatientsData, summ
             Current Days
           </Text>
           <Text style={{ flex: 0.8, fontSize: 10, fontWeight: "bold", color: "#333", textAlign: "right" }}>
-            Proj. Days by 09/30
+            Proj. Days by {projectionDaysLabel}
           </Text>
           <Text style={{ flex: 1, fontSize: 10, fontWeight: "bold", color: "#333", textAlign: "right" }}>
             Proj. Used Cap
@@ -353,58 +361,80 @@ const FiscalYearProjectionDocument = ({ patientsData, originalPatientsData, summ
           backgroundColor: "#f5f5f5",
           padding: 6
         }}>
-          <Text style={{ flex: 1.2, fontSize: 10, fontWeight: "bold", color: "#333" }}>
+          <Text style={{ flex: 1.1, fontSize: 10, fontWeight: "bold", color: "#333" }}>
             Patient ID
           </Text>
-          <Text style={{ flex: 1, fontSize: 10, fontWeight: "bold", color: "#333" }}>
+          <Text style={{ flex: 0.9, fontSize: 10, fontWeight: "bold", color: "#333" }}>
             SOC
           </Text>
-          <Text style={{ flex: 0.7, fontSize: 10, fontWeight: "bold", color: "#333", textAlign: "right" }}>
+          <Text style={{ flex: 0.6, fontSize: 10, fontWeight: "bold", color: "#333", textAlign: "right" }}>
             Current Days
           </Text>
-          <Text style={{ flex: 0.8, fontSize: 10, fontWeight: "bold", color: "#333", textAlign: "right" }}>
-            Proj. Days by 09/30
+          <Text style={{ flex: 0.7, fontSize: 10, fontWeight: "bold", color: "#333", textAlign: "right" }}>
+            Proj. Days by {projectionDaysLabel}
+          </Text>
+          <Text style={{ flex: 0.9, fontSize: 10, fontWeight: "bold", color: "#333", textAlign: "right" }}>
+            1st Period Deficit
+          </Text>
+          <Text style={{ flex: 0.9, fontSize: 10, fontWeight: "bold", color: "#333", textAlign: "right" }}>
+            2nd Period Deficit
           </Text>
           <Text style={{ flex: 1, fontSize: 10, fontWeight: "bold", color: "#333", textAlign: "right" }}>
-            Proj. Used Cap
-          </Text>
-          <Text style={{ flex: 1.1, fontSize: 10, fontWeight: "bold", color: "#333", textAlign: "right" }}>
-            Cap Deficit
+            Total Deficit
           </Text>
         </View>
 
         {/* Table Rows */}
-        {patientsExceedingCap.map((patient, index) => (
-          <View
-            key={patient.id || index}
-            style={{
-              flexDirection: "row",
-              borderBottom: "1px solid #ddd",
-              paddingVertical: 6,
-              paddingHorizontal: 6,
-              backgroundColor: index % 2 === 0 ? "#ffffff" : "#f9f9f9"
-            }}
-          >
-            <Text style={{ flex: 1.2, fontSize: 9, color: "#333" }}>
-              {patient.patientCd || "N/A"}
-            </Text>
-            <Text style={{ flex: 1, fontSize: 9, color: "#333" }}>
-              {patient.soc || "N/A"}
-            </Text>
-            <Text style={{ flex: 0.7, fontSize: 9, color: "#333", textAlign: "right" }}>
-              {patient.totalDayCare || "0"}
-            </Text>
-            <Text style={{ flex: 0.8, fontSize: 9, color: "#333", textAlign: "right" }}>
-              {patient.projectedTotalDays || "0"}
-            </Text>
-            <Text style={{ flex: 1, fontSize: 9, color: "#666", textAlign: "right" }}>
-              {formatCurrency(patient.projectedTotalClaim)}
-            </Text>
-            <Text style={{ flex: 1.1, fontSize: 9, color: "#ff6600", fontWeight: "bold", textAlign: "right" }}>
-              {formatCurrency(patient.projectedTotalAvailableCap)}
-            </Text>
-          </View>
-        ))}
+        {patientsExceedingCap.map((patient, index) => {
+          const firstPeriodDeficit = parseFloat(patient.projectedAvailableCapFirstPeriod || 0);
+          const secondPeriodDeficit = parseFloat(patient.projectedAvailableCapSecondPeriod || 0);
+          return (
+            <View
+              key={patient.id || index}
+              style={{
+                flexDirection: "row",
+                borderBottom: "1px solid #ddd",
+                paddingVertical: 6,
+                paddingHorizontal: 6,
+                backgroundColor: index % 2 === 0 ? "#ffffff" : "#f9f9f9"
+              }}
+            >
+              <Text style={{ flex: 1.1, fontSize: 9, color: "#333" }}>
+                {patient.patientCd || "N/A"}
+              </Text>
+              <Text style={{ flex: 0.9, fontSize: 9, color: "#333" }}>
+                {patient.soc || "N/A"}
+              </Text>
+              <Text style={{ flex: 0.6, fontSize: 9, color: "#333", textAlign: "right" }}>
+                {patient.totalDayCare || "0"}
+              </Text>
+              <Text style={{ flex: 0.7, fontSize: 9, color: "#333", textAlign: "right" }}>
+                {patient.projectedTotalDays || "0"}
+              </Text>
+              <Text style={{
+                flex: 0.9,
+                fontSize: 9,
+                textAlign: "right",
+                color: firstPeriodDeficit < 0 ? "#ff6600" : "#666",
+                fontWeight: firstPeriodDeficit < 0 ? "bold" : "normal",
+              }}>
+                {formatCurrency(firstPeriodDeficit)}
+              </Text>
+              <Text style={{
+                flex: 0.9,
+                fontSize: 9,
+                textAlign: "right",
+                color: secondPeriodDeficit < 0 ? "#ff6600" : "#666",
+                fontWeight: secondPeriodDeficit < 0 ? "bold" : "normal",
+              }}>
+                {patient.projectedSecondPeriodDays > 0 ? formatCurrency(secondPeriodDeficit) : "N/A"}
+              </Text>
+              <Text style={{ flex: 1, fontSize: 9, color: "#ff6600", fontWeight: "bold", textAlign: "right" }}>
+                {formatCurrency(patient.projectedTotalAvailableCap)}
+              </Text>
+            </View>
+          );
+        })}
 
         {/* Summary Row */}
         <View style={{
@@ -415,15 +445,20 @@ const FiscalYearProjectionDocument = ({ patientsData, originalPatientsData, summ
           paddingHorizontal: 6,
           backgroundColor: "#fff3cd"
         }}>
-          <Text style={{ flex: 3.7, fontSize: 10, fontWeight: "bold", color: "#333", textAlign: "right", paddingRight: 10 }}>
+          <Text style={{ flex: 4.2, fontSize: 10, fontWeight: "bold", color: "#333", textAlign: "right", paddingRight: 10 }}>
             TOTAL ({patientsExceedingCap.length} patients):
           </Text>
-          <Text style={{ flex: 1, fontSize: 10, fontWeight: "bold", color: "#666", textAlign: "right", paddingRight: 10 }}>
+          <Text style={{ flex: 0.9, fontSize: 9, fontWeight: "bold", color: "#666", textAlign: "right", paddingRight: 6 }}>
             {formatCurrency(
-              patientsExceedingCap.reduce((sum, p) => sum + parseFloat(p.projectedTotalClaim || 0), 0)
+              patientsExceedingCap.reduce((sum, p) => sum + parseFloat(p.projectedAvailableCapFirstPeriod || 0), 0)
             )}
           </Text>
-          <Text style={{ flex: 1.1, fontSize: 11, fontWeight: "bold", color: "#ff6600", textAlign: "right" }}>
+          <Text style={{ flex: 0.9, fontSize: 9, fontWeight: "bold", color: "#666", textAlign: "right", paddingRight: 6 }}>
+            {formatCurrency(
+              patientsExceedingCap.reduce((sum, p) => sum + parseFloat(p.projectedAvailableCapSecondPeriod || 0), 0)
+            )}
+          </Text>
+          <Text style={{ flex: 1, fontSize: 11, fontWeight: "bold", color: "#ff6600", textAlign: "right" }}>
             {formatCurrency(totalExceedingAmount)}
           </Text>
         </View>

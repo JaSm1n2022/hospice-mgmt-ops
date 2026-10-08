@@ -13,7 +13,7 @@ import MedicareCard from "./components/MedicareCard";
 import SummaryStats from "./components/SummaryStats";
 import PrintOverviewModal from "./components/PrintOverviewModal";
 import PrintFiscalYearProjectionModal from "../MedicareCap/Available/components/PrintFiscalYearProjectionModal";
-import FYRangeProjectionModal from "./components/FYRangeProjectionModal";
+import FYExceedProjectionModal from "./components/FYExceedProjectionModal";
 import PrintCurrentFYSummaryModal from "../MedicareCap/Available/components/PrintCurrentFYSummaryModal";
 import { connect } from "react-redux";
 
@@ -123,7 +123,7 @@ function MedicareV2Function(props) {
   const [fiscalYear, setFiscalYear] = useState("");
   const [isPrintOverviewModalOpen, setIsPrintOverviewModalOpen] = useState(false);
   const [isFiscalYearProjectionModalOpen, setIsFiscalYearProjectionModalOpen] = useState(false);
-  const [isFYRangeProjectionModalOpen, setIsFYRangeProjectionModalOpen] = useState(false);
+  const [isFYExceedProjectionModalOpen, setIsFYExceedProjectionModalOpen] = useState(false);
   const [isCurrentFYSummaryModalOpen, setIsCurrentFYSummaryModalOpen] = useState(false);
 
   useEffect(() => {
@@ -359,7 +359,7 @@ function MedicareV2Function(props) {
     setIsFiscalYearProjectionModalOpen(false);
   };
 
-  const fyRangeProjectionHandler = () => {
+  const fyExceedProjectionHandler = () => {
     const activePatients = dataSource.filter((p) => !p.eoc || p.eoc === "N/A");
     const deathDischargeWithCap = dataSource.filter((p) => {
       if (!p.eoc || p.eoc === "N/A") return false;
@@ -370,14 +370,14 @@ function MedicareV2Function(props) {
     });
 
     if (activePatients.length === 0 && deathDischargeWithCap.length === 0) {
-      alert("No eligible patients found. FY Range Projection requires active patients or death discharge patients with available cap.");
+      alert("No eligible patients found. FY Exceed Projection requires active patients or death discharge patients with available cap.");
       return;
     }
-    setIsFYRangeProjectionModalOpen(true);
+    setIsFYExceedProjectionModalOpen(true);
   };
 
-  const closeFYRangeProjectionModal = () => {
-    setIsFYRangeProjectionModalOpen(false);
+  const closeFYExceedProjectionModal = () => {
+    setIsFYExceedProjectionModalOpen(false);
   };
 
   const currentFYSummaryHandler = () => {
@@ -421,9 +421,9 @@ function MedicareV2Function(props) {
         patientsData={dataSource}
         handler={MedicareHandler}
       />
-      <FYRangeProjectionModal
-        isOpen={isFYRangeProjectionModalOpen}
-        onClose={closeFYRangeProjectionModal}
+      <FYExceedProjectionModal
+        isOpen={isFYExceedProjectionModalOpen}
+        onClose={closeFYExceedProjectionModal}
         patientsData={dataSource}
         handler={MedicareHandler}
       />
@@ -481,9 +481,9 @@ function MedicareV2Function(props) {
                           fontWeight: "500",
                         }}
                         startIcon={<DateRange />}
-                        onClick={fyRangeProjectionHandler}
+                        onClick={fyExceedProjectionHandler}
                       >
-                        FY Range Projection
+                        FY Exceed Projection
                       </Button>
                       <Button
                         variant="contained"
