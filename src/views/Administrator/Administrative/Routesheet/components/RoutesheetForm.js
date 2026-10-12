@@ -166,7 +166,6 @@ function RoutesheetForm(props) {
   const [mileage, setMileage] = useState(0);
   const [totalMileageReimbursement, setTotalMileageReimbursement] = useState(0);
   const [notes, setNotes] = useState("");
-  const [otherService, setOtherService] = useState("");
   const [isMileageRate, setIsMileageRate] = useState(false);
   const [contractRate, setContractRate] = useState(0);
   const [approvedPayment, setApprovedPayment] = useState(0);
@@ -191,10 +190,6 @@ function RoutesheetForm(props) {
     message: "",
   });
   const [signatureError, setSignatureError] = useState({
-    isError: false,
-    message: "",
-  });
-  const [otherServiceError, setOtherServiceError] = useState({
     isError: false,
     message: "",
   });
@@ -324,7 +319,6 @@ function RoutesheetForm(props) {
       setClientService(item);
       setServiceError({ isError: false, message: "" });
       setContractRateHandler(patient?.name, item);
-      setOtherServiceError({ isError: false, message: "" });
     } else if (item.category === "user") {
       console.log("[autoCompleteGeneralHander] Employee selected:", item);
       setEmployee(item);
@@ -379,17 +373,6 @@ function RoutesheetForm(props) {
       setComments(target.value);
     }
 
-    if (target.name === "otherService") {
-      setOtherService(target.value);
-      if (target.value) {
-        setOtherServiceError({ isError: false, message: "" });
-      } else {
-        setOtherServiceError({
-          isError: true,
-          message: "Other service is required.",
-        });
-      }
-    }
     if (target.name === "mileage") {
       setMileage(target.value);
       approvedPaymentHandler(target.value, contractRate);
@@ -527,45 +510,42 @@ function RoutesheetForm(props) {
     setEmployeeError({ isError: false, message: "" });
     setClientError({ isError: false, message: "" });
     setSignatureError({ isError: false, message: "" });
-    setOtherServiceError({ isError: false, message: "" });
 
     let isValid = true;
 
     if (!employee?.id) {
+      console.log("[VALIDATE] FAILED: Employee is required.", employee);
       setEmployeeError({ isError: true, message: "Employee is required." });
       isValid = false;
     }
 
     if (!clientService?.name) {
+      console.log("[VALIDATE] FAILED: Service is required.", clientService);
       setServiceError({ isError: true, message: "Service is required." });
 
       isValid = false;
     }
 
     if (isClientRequiredHandler() && !patient?.patientCd) {
+      console.log("[VALIDATE] FAILED: Client is required.", patient);
       setClientError({ isError: true, message: "Client is required." });
       isValid = false;
     }
 
     if (!isSigned) {
+      console.log("[VALIDATE] FAILED: Client signature is required. isSigned =", isSigned);
       setSignatureError({ isError: true, message: "Client signature is required." });
-      isValid = false;
-    }
-
-    if (
-      clientService &&
-      clientService?.name?.toLowerCase() === "other" &&
-      !otherService
-    ) {
-      setOtherServiceError({ isError: true, message: "Field is required." });
       isValid = false;
     }
 
     // Validate "Other" comments
     if (comments === "Other" && !otherComments.trim()) {
+      console.log("[VALIDATE] FAILED: Other comment is required.", otherComments);
       setOtherCommentsError({ isError: true, message: "Please specify other comment." });
       isValid = false;
     }
+
+    console.log("[VALIDATE] isValid =", isValid);
 
     if (!isValid) {
       return;
@@ -605,7 +585,7 @@ function RoutesheetForm(props) {
       approvedPayment: approvedPayment || contractRate,
       serviceRateType: currentContract?.serviceRateType || "",
       serviceNotes: notes || "",
-      mileageRate: currentContract.mileageRate || 0,
+      mileageRate: currentContract?.mileageRate || 0,
       mileageMaxReimbursement: currentContract?.maxReimbursement || 0,
       mileageCost: mileage * currentContract?.mileageRate || 0,
       totalMileageReimbursement: totalMileageReimbursement,
@@ -656,7 +636,7 @@ function RoutesheetForm(props) {
     });
 
     if (clientService?.name?.toLowerCase() === "other") {
-      params.service = otherService || "Other";
+      params.service = "Other";
       params.serviceCd = "Other";
     } else {
       const serviceInfo = serviceList.find(
@@ -734,26 +714,6 @@ function RoutesheetForm(props) {
                     />
                   )}
                 </Grid>
-
-                {clientService === "Other" && (
-                  <Grid item xs={12} sm={12} md={3}>
-                    <CustomTextField
-                      name="otherService"
-                      placeholder="Other service here"
-                      label="Other Service"
-                      onChange={inputHandler}
-                      value={otherService}
-                    />
-                    {otherServiceError.isError && (
-                      <SnackbarContent
-                        message={otherServiceError.message}
-                        color="rose"
-                        close
-                        icon={AddAlertOutlined}
-                      />
-                    )}
-                  </Grid>
-                )}
 
                 <Grid
                   item
