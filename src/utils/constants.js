@@ -1577,11 +1577,11 @@ export const EMPLOYEE_SERVICE_TYPE = [
   },
   {
     id: 13,
-    name: "Inservice Meeting",
-    label: "Inservice Meeting",
-    value: "Inservice Meeting",
+    name: "In-Service",
+    label: "In-Service",
+    value: "In-Service",
     category: "serviceType",
-    code: "INS",
+    code: "IN",
   },
   {
     id: 14,
