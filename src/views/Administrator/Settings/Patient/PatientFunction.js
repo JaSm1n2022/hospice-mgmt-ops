@@ -26,6 +26,8 @@ import * as FileSaver from "file-saver";
 
 import PatientForm from "./components/Form";
 import PrintAssessmentTrendsModal from "./components/PrintAssessmentTrendsModal";
+import PrintADCModal from "./components/PrintADCModal";
+import PrintADCGroupByMonthModal from "./components/PrintADCGroupByMonthModal";
 import { attemptToUpdatePatient } from "store/actions/patientAction";
 
 import { patientListStateSelector } from "store/selectors/patientSelector";
@@ -110,6 +112,8 @@ function PatientFunction(props) {
   const [isAddGroupButtons, setIsAddGroupButtons] = useState(false);
   const [keywordValue, setKeywordValue] = useState("");
   const [isAssessmentTrendsModalOpen, setIsAssessmentTrendsModalOpen] = useState(false);
+  const [isADCModalOpen, setIsADCModalOpen] = useState(false);
+  const [isADCGroupByMonthModalOpen, setIsADCGroupByMonthModalOpen] = useState(false);
   const [logoBase64, setLogoBase64] = useState(null);
 
   const showNotification = (place, color, msg) => {
@@ -832,6 +836,24 @@ function PatientFunction(props) {
                         <Print className={classes.icons} /> Assessment Trends
                       </Button>
 
+                      <Button
+                        color="primary"
+                        className={classes.marginRight}
+                        onClick={() => setIsADCModalOpen(true)}
+                        disabled={!dataSource || dataSource.length === 0}
+                      >
+                        <Print className={classes.icons} /> ADC
+                      </Button>
+
+                      <Button
+                        color="primary"
+                        className={classes.marginRight}
+                        onClick={() => setIsADCGroupByMonthModalOpen(true)}
+                        disabled={!dataSource || dataSource.length === 0}
+                      >
+                        <Print className={classes.icons} /> Census Group By Month
+                      </Button>
+
                       {isAddGroupButtons && (
                         <Button
                           color="success"
@@ -895,6 +917,22 @@ function PatientFunction(props) {
         <PrintAssessmentTrendsModal
           isOpen={isAssessmentTrendsModalOpen}
           onClose={() => setIsAssessmentTrendsModalOpen(false)}
+          patientsData={dataSource}
+          logoBase64={logoBase64}
+        />
+      )}
+      {isADCModalOpen && (
+        <PrintADCModal
+          isOpen={isADCModalOpen}
+          onClose={() => setIsADCModalOpen(false)}
+          patientsData={dataSource}
+          logoBase64={logoBase64}
+        />
+      )}
+      {isADCGroupByMonthModalOpen && (
+        <PrintADCGroupByMonthModal
+          isOpen={isADCGroupByMonthModalOpen}
+          onClose={() => setIsADCGroupByMonthModalOpen(false)}
           patientsData={dataSource}
           logoBase64={logoBase64}
         />
