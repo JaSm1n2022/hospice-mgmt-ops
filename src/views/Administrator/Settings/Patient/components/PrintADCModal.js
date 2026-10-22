@@ -221,7 +221,7 @@ function PrintADCModal({ isOpen, onClose, patientsData, logoBase64 }) {
               <span className={classes.statLabel}>
                 {isYTD ? "Year-to-Date ADC" : "Average Daily Census (ADC)"}:
               </span>
-              <span className={classes.statValue}>{adc.toFixed(2)}</span>
+              <span className={classes.statValue}>{Math.round(adc)}</span>
             </div>
             <div className={classes.statRow}>
               <span className={classes.statLabel}>Total On Service ({year}):</span>

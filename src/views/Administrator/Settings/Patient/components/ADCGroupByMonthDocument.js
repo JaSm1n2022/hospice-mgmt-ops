@@ -272,7 +272,7 @@ const ADCGroupByMonthDocument = ({ patientsData, logoBase64, selectedYear }) => 
         <View style={styles.summaryBox}>
           <Text style={styles.summaryText}>Coverage: {coverageLabel}</Text>
           <Text style={styles.summaryText}>
-            {isYTD ? "Year-to-Date ADC" : "Average Daily Census (ADC)"}: {adc.toFixed(2)}
+            {isYTD ? "Year-to-Date ADC" : "Average Daily Census (ADC)"}: {Math.round(adc)}
           </Text>
           <Text style={styles.summaryText}>Total Admission: {sumArray(soc)}</Text>
           <Text style={styles.summaryText}>Total Death Discharge: {sumArray(deathDischarge)}</Text>
@@ -303,12 +303,12 @@ const ADCGroupByMonthDocument = ({ patientsData, logoBase64, selectedYear }) => 
               </Text>
               {row.values.map((val, idx) => (
                 <Text key={idx} style={[styles.columnCell, styles.colMonth]}>
-                  {row.isDecimal ? val.toFixed(2) : val}
+                  {row.isDecimal ? Math.round(val) : val}
                 </Text>
               ))}
               <Text style={[styles.totalCell, styles.colTotal]}>
                 {row.isDecimal
-                  ? (row.total !== undefined ? row.total : sumArray(row.values)).toFixed(2)
+                  ? Math.round(row.total !== undefined ? row.total : sumArray(row.values))
                   : sumArray(row.values)}
               </Text>
             </View>

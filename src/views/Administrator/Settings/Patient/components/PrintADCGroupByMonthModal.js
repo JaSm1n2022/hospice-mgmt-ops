@@ -362,7 +362,7 @@ function PrintADCGroupByMonthModal({ isOpen, onClose, patientsData, logoBase64 }
               <span className={classes.statLabel}>
                 {isYTD ? "Year-to-Date ADC" : "Average Daily Census (ADC)"}:
               </span>
-              <span className={classes.statValue}>{adc.toFixed(2)}</span>
+              <span className={classes.statValue}>{Math.round(adc)}</span>
             </div>
             <div className={classes.statRow}>
               <span className={classes.statLabel}>Total Admission:</span>
@@ -407,12 +407,12 @@ function PrintADCGroupByMonthModal({ isOpen, onClose, patientsData, logoBase64 }
                     <td className={classes.tdCategory}>{row.label}</td>
                     {row.values.map((val, idx) => (
                       <td key={idx} className={classes.td}>
-                        {row.isDecimal ? val.toFixed(2) : val}
+                        {row.isDecimal ? Math.round(val) : val}
                       </td>
                     ))}
                     <td className={classes.tdTotal}>
                       {row.isDecimal
-                        ? (row.total !== undefined ? row.total : sumArray(row.values)).toFixed(2)
+                        ? Math.round(row.total !== undefined ? row.total : sumArray(row.values))
                         : sumArray(row.values)}
                     </td>
                   </tr>

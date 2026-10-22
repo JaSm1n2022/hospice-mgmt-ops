@@ -219,7 +219,7 @@ const ADCDocument = ({ patientsData, logoBase64, selectedYear }) => {
         <View style={styles.summaryBox}>
           <Text style={styles.summaryText}>Coverage: {coverageLabel}</Text>
           <Text style={styles.summaryText}>
-            {isYTD ? "Year-to-Date ADC" : "Average Daily Census (ADC)"}: {adc.toFixed(2)}
+            {isYTD ? "Year-to-Date ADC" : "Average Daily Census (ADC)"}: {Math.round(adc)}
           </Text>
           <Text style={styles.summaryText}>Total Clients On Service ({year}): {inScope.length}</Text>
           <Text style={styles.summaryText}>Active Patients: {activePatients.length}</Text>
