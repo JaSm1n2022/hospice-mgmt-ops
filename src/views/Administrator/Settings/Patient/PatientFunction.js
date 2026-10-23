@@ -1089,24 +1089,6 @@ function PatientFunction(props) {
                       <Button
                         color="primary"
                         className={classes.marginRight}
-                        onClick={() => setIsADCModalOpen(true)}
-                        disabled={!dataSource || dataSource.length === 0}
-                      >
-                        <Print className={classes.icons} /> ADC
-                      </Button>
-
-                      <Button
-                        color="primary"
-                        className={classes.marginRight}
-                        onClick={() => setIsADCGroupByMonthModalOpen(true)}
-                        disabled={!dataSource || dataSource.length === 0}
-                      >
-                        <Print className={classes.icons} /> Census Group By Month
-                      </Button>
-
-                      <Button
-                        color="primary"
-                        className={classes.marginRight}
                         onClick={() => setIsHospiceCensusUtilizationModalOpen(true)}
                         disabled={!dataSource || dataSource.length === 0}
                       >
