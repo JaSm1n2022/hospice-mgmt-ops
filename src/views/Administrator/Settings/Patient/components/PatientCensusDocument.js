@@ -211,7 +211,8 @@ const styles = StyleSheet.create({
   locationLineBold: {
     fontSize: 7.5,
     fontWeight: "bold",
-    color: INK,
+    color: "#000000",
+    textTransform: "uppercase",
     marginBottom: 1,
   },
   emptyText: {
@@ -442,7 +443,7 @@ const PatientCensusDocument = ({
                     <>
                       {row.locationName ? (
                         <Text style={styles.locationLineBold}>
-                          {row.locationName}
+                          {row.locationName.toUpperCase()}
                         </Text>
                       ) : null}
                       {row.locationAddress ? (

@@ -391,10 +391,10 @@ function UploadAdditionalInfoModal({ isOpen, onClose, patientOptions, onImport }
                       #
                     </TableCell>
                     <TableCell className={classes.headerCell} style={{ minWidth: 160 }}>
-                      Patient (Excel)
+                      Patient
                     </TableCell>
                     <TableCell className={classes.headerCell} style={{ minWidth: 160 }}>
-                      Dx (Excel)
+                      Dx
                     </TableCell>
                     <TableCell className={classes.headerCell} style={{ minWidth: 160 }}>
                       Location Name
