@@ -89,14 +89,14 @@ const useStyles = makeStyles((theme) => ({
     fontSize: "12px",
   },
   th: {
-    backgroundColor: "#e91e63",
+    backgroundColor: "#4caf50",
     color: "white",
     padding: "6px 4px",
     textAlign: "center",
     whiteSpace: "nowrap",
   },
   thCategory: {
-    backgroundColor: "#e91e63",
+    backgroundColor: "#4caf50",
     color: "white",
     padding: "6px 8px",
     textAlign: "left",
@@ -138,6 +138,9 @@ const useStyles = makeStyles((theme) => ({
     "&:hover": {
       backgroundColor: "#d81b60",
     },
+  },
+  rowHighlight: {
+    backgroundColor: "#c8e6c9",
   },
   errorText: {
     color: "#d32f2f",
@@ -403,7 +406,10 @@ function PrintADCGroupByMonthModal({ isOpen, onClose, patientsData, logoBase64 }
               </thead>
               <tbody>
                 {rows.map((row) => (
-                  <tr key={row.label}>
+                  <tr
+                    key={row.label}
+                    className={row.label === "ADC" ? classes.rowHighlight : undefined}
+                  >
                     <td className={classes.tdCategory}>{row.label}</td>
                     {row.values.map((val, idx) => (
                       <td key={idx} className={classes.td}>

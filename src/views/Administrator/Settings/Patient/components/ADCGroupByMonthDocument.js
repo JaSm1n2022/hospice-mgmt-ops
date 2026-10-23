@@ -8,13 +8,15 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   header: {
+    marginHorizontal: -24,
+    marginTop: -24,
     marginBottom: 20,
   },
   logo: {
     width: "100%",
-    height: 60,
+    height: 80,
     marginBottom: 10,
-    objectFit: "contain",
+    objectFit: "cover",
   },
   mainTitle: {
     fontSize: 20,
@@ -24,9 +26,9 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   subTitle: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: "bold",
-    color: "#555",
+    color: "#000",
     textAlign: "center",
     marginBottom: 20,
   },
@@ -40,12 +42,18 @@ const styles = StyleSheet.create({
     marginBottom: 5,
     color: "#333",
   },
+  coverageText: {
+    fontSize: 11,
+    fontWeight: "bold",
+    marginBottom: 5,
+    color: "#000",
+  },
   table: {
     marginTop: 5,
   },
   tableHeader: {
     flexDirection: "row",
-    backgroundColor: "#e91e63",
+    backgroundColor: "#4caf50",
     paddingVertical: 8,
   },
   tableRow: {
@@ -56,6 +64,12 @@ const styles = StyleSheet.create({
   tableRowAlt: {
     flexDirection: "row",
     backgroundColor: "#fafafa",
+    borderBottom: "1px solid #ddd",
+    paddingVertical: 6,
+  },
+  tableRowHighlight: {
+    flexDirection: "row",
+    backgroundColor: "#c8e6c9",
     borderBottom: "1px solid #ddd",
     paddingVertical: 6,
   },
@@ -270,7 +284,7 @@ const ADCGroupByMonthDocument = ({ patientsData, logoBase64, selectedYear }) => 
         </View>
 
         <View style={styles.summaryBox}>
-          <Text style={styles.summaryText}>Coverage: {coverageLabel}</Text>
+          <Text style={styles.coverageText}>Coverage: {coverageLabel}</Text>
           <Text style={styles.summaryText}>
             {isYTD ? "Year-to-Date ADC" : "Average Daily Census (ADC)"}: {Math.round(adc)}
           </Text>
@@ -296,7 +310,13 @@ const ADCGroupByMonthDocument = ({ patientsData, logoBase64, selectedYear }) => 
           {rows.map((row, index) => (
             <View
               key={row.label}
-              style={index % 2 === 0 ? styles.tableRow : styles.tableRowAlt}
+              style={
+                row.label === "ADC"
+                  ? styles.tableRowHighlight
+                  : index % 2 === 0
+                  ? styles.tableRow
+                  : styles.tableRowAlt
+              }
             >
               <Text style={[styles.categoryCell, styles.colCategory]}>
                 {row.label}

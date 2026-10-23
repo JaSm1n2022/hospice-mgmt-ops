@@ -28,6 +28,9 @@ import PatientForm from "./components/Form";
 import PrintAssessmentTrendsModal from "./components/PrintAssessmentTrendsModal";
 import PrintADCModal from "./components/PrintADCModal";
 import PrintADCGroupByMonthModal from "./components/PrintADCGroupByMonthModal";
+import PrintUnduplicatedAdmissionsModal from "./components/PrintUnduplicatedAdmissionsModal";
+import PrintUnduplicatedAdmissionsByLocationModal from "./components/PrintUnduplicatedAdmissionsByLocationModal";
+import PatientCensusModal from "./components/PatientCensusModal";
 import { attemptToUpdatePatient } from "store/actions/patientAction";
 
 import { patientListStateSelector } from "store/selectors/patientSelector";
@@ -45,6 +48,9 @@ import FilterTable from "components/Table/FilterTable";
 import { attemptToFetchLocation } from "store/actions/locationAction";
 import { resetFetchLocationState } from "store/actions/locationAction";
 import { locationListStateSelector } from "store/selectors/locationSelector";
+import { attemptToFetchAssignment } from "store/actions/assignmentAction";
+import { resetFetchAssignmentState } from "store/actions/assignmentAction";
+import { assignmentListStateSelector } from "store/selectors/assignmentSelector";
 import { profileListStateSelector } from "store/selectors/profileSelector";
 import { SupaContext } from "App";
 import Snackbar from "components/Snackbar/Snackbar";
@@ -84,9 +90,11 @@ let productList = [];
 let grandTotal = 0.0;
 let originalSource = undefined;
 let locationList = [];
+let assignmentList = [];
 
 let isListPatientDone = false;
 let isListLocationDone = false;
+let isListAssignmentDone = false;
 function PatientFunction(props) {
   const classes = useStyles();
   const [tc, setTC] = useState(false);
@@ -114,6 +122,9 @@ function PatientFunction(props) {
   const [isAssessmentTrendsModalOpen, setIsAssessmentTrendsModalOpen] = useState(false);
   const [isADCModalOpen, setIsADCModalOpen] = useState(false);
   const [isADCGroupByMonthModalOpen, setIsADCGroupByMonthModalOpen] = useState(false);
+  const [isUnduplicatedAdmissionsModalOpen, setIsUnduplicatedAdmissionsModalOpen] = useState(false);
+  const [isUnduplicatedAdmissionsByLocationModalOpen, setIsUnduplicatedAdmissionsByLocationModalOpen] = useState(false);
+  const [isPatientCensusModalOpen, setIsPatientCensusModalOpen] = useState(false);
   const [logoBase64, setLogoBase64] = useState(null);
 
   const showNotification = (place, color, msg) => {
@@ -191,6 +202,7 @@ function PatientFunction(props) {
     if (context.userProfile?.companyId) {
       props.listPatients({ companyId: context.userProfile?.companyId });
       props.listLocations({ companyId: context.userProfile?.companyId });
+      props.listAssignments({ companyId: context.userProfile?.companyId });
     }
 
     // Load logo for PDF generation
@@ -375,6 +387,12 @@ function PatientFunction(props) {
     locationList = props.locations.data;
     isListLocationDone = true;
     props.resetListLocations();
+  }
+
+  if (props.assignments && props.assignments.status === ACTION_STATUSES.SUCCEED) {
+    assignmentList = props.assignments.data;
+    isListAssignmentDone = true;
+    props.resetListAssignments();
   }
 
   const filterRecordHandler = (keyword) => {
@@ -787,6 +805,61 @@ function PatientFunction(props) {
     printWindow.document.close();
   };
 
+  const EXCLUDED_DISCIPLINES = [
+    "nurse practitioner",
+    "np",
+    "admission nurse",
+  ];
+
+  const DISCIPLINE_LABEL_MAP = {
+    "certified nurse assistant": "HA",
+    "registered nurse": "RN",
+    "medical director": "MD",
+  };
+
+  const relabelDiscipline = (value) => {
+    if (!value) return value;
+    const mapped = DISCIPLINE_LABEL_MAP[value.trim().toLowerCase()];
+    return mapped || value;
+  };
+
+  const buildPatientCensusData = () => {
+    const activePatients = (dataSource || []).filter((p) => !p.eoc);
+    return activePatients.map((patient) => {
+      const patientAssignments = (assignmentList || []).filter((a) => {
+        if (a.patientId !== patient.id) return false;
+        const name = (a.disciplineName || "").trim().toLowerCase();
+        const position = (a.disciplinePosition || "").trim().toLowerCase();
+        return (
+          !EXCLUDED_DISCIPLINES.includes(name) &&
+          !EXCLUDED_DISCIPLINES.includes(position)
+        );
+      });
+      const disciplines = patientAssignments.map((a) => ({
+        name: a.disciplineName || "N/A",
+        position: relabelDiscipline(a.disciplinePosition) || "",
+        frequency:
+          a.frequencyVisit != null
+            ? `${a.frequencyVisit}/${a.visitType || "Week"}`
+            : "N/A",
+      }));
+      return {
+        id: patient.id,
+        patientCd: patient.patientCd,
+        patientName: `${patient.fn || ""} ${patient.ln || ""}`.trim(),
+        soc: patient.soc,
+        levelOfCare: patient.level_of_care || "RC",
+        admittingDiagnosis: "",
+        disciplines,
+        locationName: "",
+        locationAddress: "",
+        locationCity: "",
+        locationState: "",
+        locationPostal: "",
+      };
+    });
+  };
+
   return (
     <>
       {tc && (
@@ -802,7 +875,7 @@ function PatientFunction(props) {
           />
         </div>
       )}
-      {!isListLocationDone || !isListPatientDone ? (
+      {!isListLocationDone || !isListPatientDone || !isListAssignmentDone ? (
         <div align="center">
           <CircularProgress></CircularProgress>Loading...
         </div>
@@ -817,7 +890,7 @@ function PatientFunction(props) {
               </CardHeader>
               <CardBody>
                 <GridContainer alignItems="center" style={{ paddingLeft: 12 }}>
-                  <Grid item xs={12} md={6}>
+                  <Grid item xs={12}>
                     <div style={{ display: "inline-flex", gap: 10, flexWrap: "wrap" }}>
                       <Button
                         color="info"
@@ -854,6 +927,34 @@ function PatientFunction(props) {
                         <Print className={classes.icons} /> Census Group By Month
                       </Button>
 
+                      <Button
+                        color="primary"
+                        className={classes.marginRight}
+                        onClick={() => setIsUnduplicatedAdmissionsModalOpen(true)}
+                        disabled={!dataSource || dataSource.length === 0}
+                      >
+                        <Print className={classes.icons} /> Unduplicated admissions per
+                        Medicare Provider
+                      </Button>
+
+                      <Button
+                        color="primary"
+                        className={classes.marginRight}
+                        onClick={() => setIsUnduplicatedAdmissionsByLocationModalOpen(true)}
+                      >
+                        <Print className={classes.icons} /> Unduplicated Admission
+                        By Multiple Location
+                      </Button>
+
+                      <Button
+                        color="primary"
+                        className={classes.marginRight}
+                        onClick={() => setIsPatientCensusModalOpen(true)}
+                        disabled={!dataSource || dataSource.length === 0}
+                      >
+                        <Print className={classes.icons} /> Patient Census
+                      </Button>
+
                       {isAddGroupButtons && (
                         <Button
                           color="success"
@@ -866,23 +967,24 @@ function PatientFunction(props) {
                       )}
                     </div>
                   </Grid>
-
+                </GridContainer>
+                <GridContainer alignItems="center">
                   <Grid
                     item
                     xs={12}
-                    md={6}
                     style={{
                       display: "flex",
-                      justifyContent: "flex-end",
-                      paddingRight: 20,
+                      justifyContent: "flex-start",
                     }}
                   >
-                    <FilterTable
-                      filterRecordHandler={filterRecordHandler}
-                      isNoDate={true}
-                      main={false}
-                      search={12}
-                    />
+                    <div style={{ width: "50%", marginLeft: 20, marginRight: 20 }}>
+                      <FilterTable
+                        filterRecordHandler={filterRecordHandler}
+                        isNoDate={true}
+                        main={false}
+                        search={12}
+                      />
+                    </div>
                   </Grid>
                 </GridContainer>
                 <HospiceTable
@@ -937,6 +1039,27 @@ function PatientFunction(props) {
           logoBase64={logoBase64}
         />
       )}
+      {isUnduplicatedAdmissionsModalOpen && (
+        <PrintUnduplicatedAdmissionsModal
+          isOpen={isUnduplicatedAdmissionsModalOpen}
+          onClose={() => setIsUnduplicatedAdmissionsModalOpen(false)}
+          patientsData={dataSource}
+          logoBase64={logoBase64}
+        />
+      )}
+      {isUnduplicatedAdmissionsByLocationModalOpen && (
+        <PrintUnduplicatedAdmissionsByLocationModal
+          isOpen={isUnduplicatedAdmissionsByLocationModalOpen}
+          onClose={() => setIsUnduplicatedAdmissionsByLocationModalOpen(false)}
+        />
+      )}
+      {isPatientCensusModalOpen && (
+        <PatientCensusModal
+          isOpen={isPatientCensusModalOpen}
+          onClose={() => setIsPatientCensusModalOpen(false)}
+          censusData={buildPatientCensusData()}
+        />
+      )}
     </>
   );
 }
@@ -947,12 +1070,15 @@ const mapStateToProps = (store) => ({
   updatePatientState: patientUpdateStateSelector(store),
   deletePatientState: patientDeleteStateSelector(store),
   locations: locationListStateSelector(store),
+  assignments: assignmentListStateSelector(store),
   profileState: profileListStateSelector(store),
 });
 
 const mapDispatchToProps = (dispatch) => ({
   listLocations: (data) => dispatch(attemptToFetchLocation(data)),
   resetListLocations: () => dispatch(resetFetchLocationState()),
+  listAssignments: (data) => dispatch(attemptToFetchAssignment(data)),
+  resetListAssignments: () => dispatch(resetFetchAssignmentState()),
   listPatients: (data) => dispatch(attemptToFetchPatient(data)),
   resetListPatients: () => dispatch(resetFetchPatientState()),
   createPatient: (data) => dispatch(attemptToCreatePatient(data)),
