@@ -28,9 +28,13 @@ import PatientForm from "./components/Form";
 import PrintAssessmentTrendsModal from "./components/PrintAssessmentTrendsModal";
 import PrintADCModal from "./components/PrintADCModal";
 import PrintADCGroupByMonthModal from "./components/PrintADCGroupByMonthModal";
+import PrintHospiceCensusUtilizationModal from "./components/PrintHospiceCensusUtilizationModal";
+import PrintPatientDispositionCensusModal from "./components/PrintPatientDispositionCensusModal";
+import PrintMonthlyADCReportModal from "./components/PrintMonthlyADCReportModal";
 import PrintUnduplicatedAdmissionsModal from "./components/PrintUnduplicatedAdmissionsModal";
 import PrintUnduplicatedAdmissionsByLocationModal from "./components/PrintUnduplicatedAdmissionsByLocationModal";
 import PatientCensusModal from "./components/PatientCensusModal";
+import PatientScheduledVisitsModal from "./components/PatientScheduledVisitsModal";
 import { attemptToUpdatePatient } from "store/actions/patientAction";
 
 import { patientListStateSelector } from "store/selectors/patientSelector";
@@ -51,6 +55,9 @@ import { locationListStateSelector } from "store/selectors/locationSelector";
 import { attemptToFetchAssignment } from "store/actions/assignmentAction";
 import { resetFetchAssignmentState } from "store/actions/assignmentAction";
 import { assignmentListStateSelector } from "store/selectors/assignmentSelector";
+import { attemptToFetchRoutesheet } from "store/actions/routesheetAction";
+import { resetFetchRoutesheetState } from "store/actions/routesheetAction";
+import { routesheetListStateSelector } from "store/selectors/routesheetSelector";
 import { profileListStateSelector } from "store/selectors/profileSelector";
 import { SupaContext } from "App";
 import Snackbar from "components/Snackbar/Snackbar";
@@ -91,10 +98,12 @@ let grandTotal = 0.0;
 let originalSource = undefined;
 let locationList = [];
 let assignmentList = [];
+let routesheetList = [];
 
 let isListPatientDone = false;
 let isListLocationDone = false;
 let isListAssignmentDone = false;
+let isListRoutesheetDone = false;
 function PatientFunction(props) {
   const classes = useStyles();
   const [tc, setTC] = useState(false);
@@ -122,9 +131,13 @@ function PatientFunction(props) {
   const [isAssessmentTrendsModalOpen, setIsAssessmentTrendsModalOpen] = useState(false);
   const [isADCModalOpen, setIsADCModalOpen] = useState(false);
   const [isADCGroupByMonthModalOpen, setIsADCGroupByMonthModalOpen] = useState(false);
+  const [isHospiceCensusUtilizationModalOpen, setIsHospiceCensusUtilizationModalOpen] = useState(false);
+  const [isPatientDispositionCensusModalOpen, setIsPatientDispositionCensusModalOpen] = useState(false);
+  const [isMonthlyADCReportModalOpen, setIsMonthlyADCReportModalOpen] = useState(false);
   const [isUnduplicatedAdmissionsModalOpen, setIsUnduplicatedAdmissionsModalOpen] = useState(false);
   const [isUnduplicatedAdmissionsByLocationModalOpen, setIsUnduplicatedAdmissionsByLocationModalOpen] = useState(false);
   const [isPatientCensusModalOpen, setIsPatientCensusModalOpen] = useState(false);
+  const [isPatientScheduledVisitsModalOpen, setIsPatientScheduledVisitsModalOpen] = useState(false);
   const [logoBase64, setLogoBase64] = useState(null);
 
   const showNotification = (place, color, msg) => {
@@ -203,6 +216,11 @@ function PatientFunction(props) {
       props.listPatients({ companyId: context.userProfile?.companyId });
       props.listLocations({ companyId: context.userProfile?.companyId });
       props.listAssignments({ companyId: context.userProfile?.companyId });
+      props.listRoutesheets({
+        companyId: context.userProfile?.companyId,
+        from: moment().startOf("day").format("YYYY-MM-DD"),
+        to: moment().startOf("day").add(30, "days").format("YYYY-MM-DD"),
+      });
     }
 
     // Load logo for PDF generation
@@ -393,6 +411,12 @@ function PatientFunction(props) {
     assignmentList = props.assignments.data;
     isListAssignmentDone = true;
     props.resetListAssignments();
+  }
+
+  if (props.routesheets && props.routesheets.status === ACTION_STATUSES.SUCCEED) {
+    routesheetList = props.routesheets.data || [];
+    isListRoutesheetDone = true;
+    props.resetListRoutesheets();
   }
 
   const filterRecordHandler = (keyword) => {
@@ -860,6 +884,159 @@ function PatientFunction(props) {
     });
   };
 
+  const SCHEDULE_DISCIPLINE_SYNONYMS = {
+    rn: "RN",
+    "registered nurse": "RN",
+    "rn case manager": "RN",
+    "registered nurse case manager": "RN",
+    cna: "CNA",
+    "certified nurse assistant": "CNA",
+    "certified nursing assistant": "CNA",
+    "case manager": "Case Manager",
+    cm: "Case Manager",
+    msw: "MSW",
+    "medical social worker": "MSW",
+    chaplain: "Chaplain",
+  };
+
+  const normalizeScheduleDiscipline = (position, name) => {
+    const posKey = (position || "").trim().toLowerCase();
+    const nameKey = (name || "").trim().toLowerCase();
+    return (
+      SCHEDULE_DISCIPLINE_SYNONYMS[posKey] ||
+      SCHEDULE_DISCIPLINE_SYNONYMS[nameKey] ||
+      null
+    );
+  };
+
+  const buildPatientScheduledVisitsData = (periodStartInput, periodEndInput) => {
+    const reportStart = periodStartInput
+      ? moment(periodStartInput).startOf("day")
+      : moment().startOf("day");
+    const reportEnd = periodEndInput
+      ? moment(periodEndInput).startOf("day")
+      : moment(reportStart).add(29, "days");
+
+    const activePatients = (dataSource || []).filter((p) => !p.eoc);
+
+    let totalConfirmed = 0;
+    let totalProjected = 0;
+
+    const patients = activePatients
+      .map((patient) => {
+        const patientAssignments = (assignmentList || []).filter(
+          (a) => a.patientId === patient.id
+        );
+
+        const disciplines = [];
+
+        patientAssignments.forEach((a) => {
+          const normalized = normalizeScheduleDiscipline(
+            a.disciplinePosition,
+            a.disciplineName
+          );
+          if (!normalized) return;
+
+          const frequencyLabel =
+            a.frequencyVisit != null
+              ? `${a.frequencyVisit}/${a.visitType || "Week"}`
+              : "N/A";
+
+          const days = Array.isArray(a.dayOfTheWeek) ? a.dayOfTheWeek : [];
+          const freq = parseInt(a.frequencyVisit, 10) || 0;
+
+          const projectedDates = [];
+          let needsConfirmation = false;
+
+          if (days.length > 0) {
+            const cursor = moment(reportStart);
+            const monthlyLimit =
+              a.visitType === "Month" && freq > 0 ? freq : null;
+            while (cursor.isSameOrBefore(reportEnd, "day")) {
+              const dayLabel = cursor.format("ddd");
+              if (days.includes(dayLabel)) {
+                projectedDates.push(moment(cursor));
+                if (monthlyLimit && projectedDates.length >= monthlyLimit) {
+                  break;
+                }
+              }
+              cursor.add(1, "day");
+            }
+          } else if (a.visitType === "Month") {
+            needsConfirmation = true;
+          }
+
+          const matchingRoutesheets = (routesheetList || []).filter((rs) => {
+            const samePatient = rs.patientCd === patient.patientCd;
+            const sameDiscipline = rs.requestorId === a.disciplineId;
+            const rsDate = rs.dosStart || rs.dos;
+            const inWindow =
+              rsDate &&
+              moment(rsDate).isSameOrAfter(reportStart, "day") &&
+              moment(rsDate).isSameOrBefore(reportEnd, "day");
+            return samePatient && sameDiscipline && inWindow;
+          });
+
+          const confirmedDateKeys = new Set(
+            matchingRoutesheets.map((rs) =>
+              moment(rs.dosStart || rs.dos).format("YYYY-MM-DD")
+            )
+          );
+
+          const visits = projectedDates.map((d) => {
+            const key = d.format("YYYY-MM-DD");
+            const isConfirmed = confirmedDateKeys.has(key);
+            if (isConfirmed) {
+              confirmedDateKeys.delete(key);
+              totalConfirmed += 1;
+            } else {
+              totalProjected += 1;
+            }
+            return {
+              date: d.toDate(),
+              status: isConfirmed ? "confirmed" : "projected",
+            };
+          });
+
+          confirmedDateKeys.forEach((key) => {
+            visits.push({
+              date: moment(key, "YYYY-MM-DD").toDate(),
+              status: "confirmed",
+            });
+            totalConfirmed += 1;
+          });
+
+          visits.sort((a1, b1) => moment(a1.date).diff(moment(b1.date)));
+
+          disciplines.push({
+            disciplinePosition: normalized,
+            disciplineName: a.disciplineName || "Unassigned",
+            frequencyLabel,
+            needsConfirmation,
+            visits,
+          });
+        });
+
+        return {
+          id: patient.id,
+          patientCd: patient.patientCd,
+          patientName: `${patient.fn || ""} ${patient.ln || ""}`.trim(),
+          careLocation: patient.careType || "",
+          disciplines,
+        };
+      })
+      .filter((p) => p.disciplines.length > 0);
+
+    return {
+      periodStart: reportStart.toDate(),
+      periodEnd: reportEnd.toDate(),
+      totalPatients: patients.length,
+      totalConfirmed,
+      totalProjected,
+      patients,
+    };
+  };
+
   return (
     <>
       {tc && (
@@ -930,6 +1107,35 @@ function PatientFunction(props) {
                       <Button
                         color="primary"
                         className={classes.marginRight}
+                        onClick={() => setIsHospiceCensusUtilizationModalOpen(true)}
+                        disabled={!dataSource || dataSource.length === 0}
+                      >
+                        <Print className={classes.icons} /> Hospice Census &
+                        Utilization Report
+                      </Button>
+
+                      <Button
+                        color="primary"
+                        className={classes.marginRight}
+                        onClick={() => setIsPatientDispositionCensusModalOpen(true)}
+                        disabled={!dataSource || dataSource.length === 0}
+                      >
+                        <Print className={classes.icons} /> Patient Disposition
+                        Census
+                      </Button>
+
+                      <Button
+                        color="primary"
+                        className={classes.marginRight}
+                        onClick={() => setIsMonthlyADCReportModalOpen(true)}
+                        disabled={!dataSource || dataSource.length === 0}
+                      >
+                        <Print className={classes.icons} /> Monthly ADC Report
+                      </Button>
+
+                      <Button
+                        color="primary"
+                        className={classes.marginRight}
                         onClick={() => setIsUnduplicatedAdmissionsModalOpen(true)}
                         disabled={!dataSource || dataSource.length === 0}
                       >
@@ -953,6 +1159,16 @@ function PatientFunction(props) {
                         disabled={!dataSource || dataSource.length === 0}
                       >
                         <Print className={classes.icons} /> Patient Census
+                      </Button>
+
+                      <Button
+                        color="primary"
+                        className={classes.marginRight}
+                        onClick={() => setIsPatientScheduledVisitsModalOpen(true)}
+                        disabled={!dataSource || dataSource.length === 0}
+                      >
+                        <Print className={classes.icons} /> Patient Scheduled
+                        Visits
                       </Button>
 
                       {isAddGroupButtons && (
@@ -1039,6 +1255,27 @@ function PatientFunction(props) {
           logoBase64={logoBase64}
         />
       )}
+      {isHospiceCensusUtilizationModalOpen && (
+        <PrintHospiceCensusUtilizationModal
+          isOpen={isHospiceCensusUtilizationModalOpen}
+          onClose={() => setIsHospiceCensusUtilizationModalOpen(false)}
+          patientsData={dataSource}
+        />
+      )}
+      {isPatientDispositionCensusModalOpen && (
+        <PrintPatientDispositionCensusModal
+          isOpen={isPatientDispositionCensusModalOpen}
+          onClose={() => setIsPatientDispositionCensusModalOpen(false)}
+          patientsData={dataSource}
+        />
+      )}
+      {isMonthlyADCReportModalOpen && (
+        <PrintMonthlyADCReportModal
+          isOpen={isMonthlyADCReportModalOpen}
+          onClose={() => setIsMonthlyADCReportModalOpen(false)}
+          patientsData={dataSource}
+        />
+      )}
       {isUnduplicatedAdmissionsModalOpen && (
         <PrintUnduplicatedAdmissionsModal
           isOpen={isUnduplicatedAdmissionsModalOpen}
@@ -1060,6 +1297,13 @@ function PatientFunction(props) {
           censusData={buildPatientCensusData()}
         />
       )}
+      {isPatientScheduledVisitsModalOpen && (
+        <PatientScheduledVisitsModal
+          isOpen={isPatientScheduledVisitsModalOpen}
+          onClose={() => setIsPatientScheduledVisitsModalOpen(false)}
+          buildScheduleData={buildPatientScheduledVisitsData}
+        />
+      )}
     </>
   );
 }
@@ -1071,6 +1315,7 @@ const mapStateToProps = (store) => ({
   deletePatientState: patientDeleteStateSelector(store),
   locations: locationListStateSelector(store),
   assignments: assignmentListStateSelector(store),
+  routesheets: routesheetListStateSelector(store),
   profileState: profileListStateSelector(store),
 });
 
@@ -1079,6 +1324,8 @@ const mapDispatchToProps = (dispatch) => ({
   resetListLocations: () => dispatch(resetFetchLocationState()),
   listAssignments: (data) => dispatch(attemptToFetchAssignment(data)),
   resetListAssignments: () => dispatch(resetFetchAssignmentState()),
+  listRoutesheets: (data) => dispatch(attemptToFetchRoutesheet(data)),
+  resetListRoutesheets: () => dispatch(resetFetchRoutesheetState()),
   listPatients: (data) => dispatch(attemptToFetchPatient(data)),
   resetListPatients: () => dispatch(resetFetchPatientState()),
   createPatient: (data) => dispatch(attemptToCreatePatient(data)),
