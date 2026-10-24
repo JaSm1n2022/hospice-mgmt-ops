@@ -357,7 +357,9 @@ const BereavementRecipientsDocument = ({
               </Text>
             </View>
             <View style={{ alignItems: "flex-end" }}>
-              <Text style={styles.preparedDateLabel}>Date Prepared:</Text>
+              <Text style={styles.preparedDateLabel}>
+                Date Prepared: {moment().format("MM/DD/YYYY")}
+              </Text>
               <View style={styles.preparedDateLine} />
             </View>
           </View>
