@@ -265,12 +265,16 @@ function BereavementTimelineFunction(props) {
           moment(m.dueDate).isAfter(moment(latest.dueDate)) ? m : latest
         );
 
+        const bereavementType =
+          lastLetter.month === 0 ? "Initial" : `Month ${lastLetter.month}`;
+
         return {
           id: patient.id,
           patientCd: patient.patientCd || "N/A",
           patientName: patient.patientName,
           dateOfDeath: patient.dateOfDeath,
           lastLetterDate: lastLetter.dueDate,
+          bereavementType,
           bereavementRecipientName: "",
           bereavementRecipientRelationship: "",
         };

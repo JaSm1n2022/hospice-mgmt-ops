@@ -123,7 +123,14 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 const EXCEL_FIELD_ALIASES = {
-  patient: ["Patient", "Patient Code", "PatientCd", "Patient Cd", "Patient Name"],
+  patientCode: ["Patient Code", "PatientCd", "Patient Cd"],
+  patientName: [
+    "Patient",
+    "Patient Name",
+    "Deceased Patient",
+    "Patient Full Name",
+    "Name",
+  ],
   recipientName: [
     "Bereavement Recipient",
     "Recipient",
@@ -168,33 +175,33 @@ function UploadBereavementAdditionalInfoModal({
     }
   }, [isOpen]);
 
-  const matchPatient = (rawPatientValue) => {
-    if (!rawPatientValue) return null;
-    const value = rawPatientValue.toString().trim().toLowerCase();
+  const matchPatient = (rawCodeValue, rawNameValue) => {
     const list = patientOptions || [];
+    const codeValue = (rawCodeValue || "").toString().trim().toLowerCase();
+    const nameValue = (rawNameValue || "").toString().trim().toLowerCase();
 
-    let match = list.find((p) => (p.patientCd || "").toLowerCase() === value);
+    let match = null;
 
-    if (!match) {
-      match = list.find((p) => (p.patientName || "").toLowerCase() === value);
+    if (codeValue) {
+      match = list.find((p) => (p.patientCd || "").toLowerCase() === codeValue);
     }
 
-    if (!match) {
+    if (!match && nameValue) {
+      match = list.find((p) => (p.patientName || "").toLowerCase() === nameValue);
+    }
+
+    if (!match && nameValue) {
       match = list.find(
         (p) =>
-          (p.patientName || "").toLowerCase().includes(value) ||
-          (value &&
-            value.includes((p.patientName || "").toLowerCase()) &&
+          (p.patientName || "").toLowerCase().includes(nameValue) ||
+          (nameValue.includes((p.patientName || "").toLowerCase()) &&
             p.patientName)
       );
     }
 
     if (!match) {
-      const first3Chars = rawPatientValue
-        .toString()
-        .trim()
-        .substring(0, 3)
-        .toUpperCase();
+      const fallbackRaw = codeValue || nameValue;
+      const first3Chars = fallbackRaw.substring(0, 3).toUpperCase();
       if (first3Chars) {
         match = list.find((p) =>
           (p.patientCd || "").toUpperCase().startsWith(first3Chars)
@@ -222,12 +229,14 @@ function UploadBereavementAdditionalInfoModal({
       }
 
       const rows = jsonData.map((excelRow, index) => {
-        const patientRaw = readExcelValue(excelRow, "patient");
-        const matched = matchPatient(patientRaw);
+        const patientCodeRaw = readExcelValue(excelRow, "patientCode");
+        const patientNameRaw = readExcelValue(excelRow, "patientName");
+        const matched = matchPatient(patientCodeRaw, patientNameRaw);
 
         return {
           id: index,
-          patientRaw,
+          patientRaw: patientNameRaw || patientCodeRaw,
+          patientName: patientNameRaw || patientCodeRaw || "",
           patientId: matched ? matched.id : null,
           patientCd: matched ? matched.patientCd : null,
           recipientName: readExcelValue(excelRow, "recipientName"),
@@ -253,6 +262,7 @@ function UploadBereavementAdditionalInfoModal({
               ...row,
               patientId: patient?.id || null,
               patientCd: patient?.patientCd || null,
+              patientName: row.patientName || patient?.patientName || "",
             }
           : row
       )
@@ -281,6 +291,7 @@ function UploadBereavementAdditionalInfoModal({
 
     const mapped = importRows.map((row) => ({
       patientId: row.patientId,
+      patientName: row.patientName,
       bereavementRecipientName: row.recipientName,
       bereavementRecipientRelationship: row.relationship,
     }));
@@ -337,8 +348,8 @@ function UploadBereavementAdditionalInfoModal({
                 Expected Excel Columns:
               </Typography>
               <Typography variant="body2">
-                <strong>Patient</strong>, <strong>Recipient</strong>,{" "}
-                <strong>Relationship</strong>
+                <strong>Patient Code</strong>, <strong>Patient Name</strong>,{" "}
+                <strong>Recipient</strong>, <strong>Relationship</strong>
               </Typography>
               <Typography
                 variant="body2"
@@ -409,7 +420,7 @@ function UploadBereavementAdditionalInfoModal({
                       >
                         <TableCell className={classes.tableCell}>{index + 1}</TableCell>
                         <TableCell className={`${classes.tableCell} ${classes.previewColumn}`}>
-                          {row.patientRaw || "—"}
+                          {row.patientName || row.patientRaw || "—"}
                         </TableCell>
                         <TableCell className={`${classes.tableCell} ${classes.previewColumn}`}>
                           {row.recipientName || "—"}

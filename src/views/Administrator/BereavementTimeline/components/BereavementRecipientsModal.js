@@ -42,6 +42,7 @@ function BereavementRecipientsModal({ isOpen, onClose, recipients, startDate, en
       (importedRows || []).forEach((info) => {
         next[info.patientId] = {
           ...(next[info.patientId] || {}),
+          ...(info.patientName ? { patientName: info.patientName } : {}),
           bereavementRecipientName: info.bereavementRecipientName,
           bereavementRecipientRelationship: info.bereavementRecipientRelationship,
         };
@@ -49,6 +50,16 @@ function BereavementRecipientsModal({ isOpen, onClose, recipients, startDate, en
       return next;
     });
     setIsUploadModalOpen(false);
+  };
+
+  const handleFieldChange = (rowId, field, value) => {
+    setAdditionalInfoMap((prev) => ({
+      ...prev,
+      [rowId]: {
+        ...(prev[rowId] || {}),
+        [field]: value,
+      },
+    }));
   };
 
   const handlePrint = async () => {
@@ -109,6 +120,7 @@ function BereavementRecipientsModal({ isOpen, onClose, recipients, startDate, en
                   <TableCell>Bereavement Recipient</TableCell>
                   <TableCell>Relationship</TableCell>
                   <TableCell>Last Letter Date</TableCell>
+                  <TableCell>Bereavement Type</TableCell>
                   <TableCell>Date of Death</TableCell>
                 </TableRow>
               </TableHead>
@@ -117,18 +129,52 @@ function BereavementRecipientsModal({ isOpen, onClose, recipients, startDate, en
                   mergedRows.map((row, idx) => (
                     <TableRow key={row.id || idx} hover>
                       <TableCell>{row.patientCd}</TableCell>
-                      <TableCell>{row.patientName}</TableCell>
-                      <TableCell>{row.bereavementRecipientName || "-"}</TableCell>
                       <TableCell>
-                        {row.bereavementRecipientRelationship || "-"}
+                        <TextField
+                          value={row.patientName || ""}
+                          onChange={(e) =>
+                            handleFieldChange(row.id, "patientName", e.target.value)
+                          }
+                          placeholder="Patient name"
+                          fullWidth
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <TextField
+                          value={row.bereavementRecipientName || ""}
+                          onChange={(e) =>
+                            handleFieldChange(
+                              row.id,
+                              "bereavementRecipientName",
+                              e.target.value
+                            )
+                          }
+                          placeholder="Recipient name"
+                          fullWidth
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <TextField
+                          value={row.bereavementRecipientRelationship || ""}
+                          onChange={(e) =>
+                            handleFieldChange(
+                              row.id,
+                              "bereavementRecipientRelationship",
+                              e.target.value
+                            )
+                          }
+                          placeholder="Relationship"
+                          fullWidth
+                        />
                       </TableCell>
                       <TableCell>{formatDate(row.lastLetterDate)}</TableCell>
+                      <TableCell>{row.bereavementType || "-"}</TableCell>
                       <TableCell>{formatDate(row.dateOfDeath)}</TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} align="center">
+                    <TableCell colSpan={7} align="center">
                       No bereavement recipients found for the selected date
                       range.
                     </TableCell>

@@ -152,11 +152,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   colIdx: { width: "5%" },
-  colCode: { width: "13%" },
-  colName: { width: "20%" },
+  colName: { width: "24%" },
   colRecipient: { width: "20%" },
   colRelationship: { width: "14%" },
-  colLastLetter: { width: "14%" },
+  colLastLetter: { width: "13%" },
+  colType: { width: "10%" },
   colDod: { width: "14%" },
   emptyRow: {
     paddingVertical: 14,
@@ -285,20 +285,20 @@ const BereavementRecipientsDocument = ({
           <View style={styles.table}>
             <View style={styles.tableHeaderRow} fixed>
               <Text style={[styles.tableHeaderCell, styles.colIdx]}>#</Text>
-              <Text style={[styles.tableHeaderCell, styles.colCode]}>
-                PATIENT CODE
-              </Text>
               <Text style={[styles.tableHeaderCell, styles.colName]}>
                 DECEASED PATIENT
               </Text>
               <Text style={[styles.tableHeaderCell, styles.colRecipient]}>
-                BEREAVEMENT RECIPIENT
+                RECIPIENT
               </Text>
               <Text style={[styles.tableHeaderCell, styles.colRelationship]}>
                 RELATIONSHIP
               </Text>
               <Text style={[styles.tableHeaderCell, styles.colLastLetter]}>
-                LAST LETTER DATE
+                LAST LETTER
+              </Text>
+              <Text style={[styles.tableHeaderCell, styles.colType]}>
+                TYPE
               </Text>
               <Text style={[styles.tableHeaderCell, styles.colDod]}>
                 DATE OF DEATH
@@ -321,9 +321,6 @@ const BereavementRecipientsDocument = ({
                   <Text style={[styles.tableCellMuted, styles.colIdx]}>
                     {idx + 1}
                   </Text>
-                  <Text style={[styles.tableCell, styles.colCode]}>
-                    {row.patientCd}
-                  </Text>
                   <Text style={[styles.tableCell, styles.colName]}>
                     {row.patientName}
                   </Text>
@@ -335,6 +332,9 @@ const BereavementRecipientsDocument = ({
                   </Text>
                   <Text style={[styles.tableCell, styles.colLastLetter]}>
                     {formatDate(row.lastLetterDate)}
+                  </Text>
+                  <Text style={[styles.tableCell, styles.colType]}>
+                    {row.bereavementType || "-"}
                   </Text>
                   <Text style={[styles.tableCell, styles.colDod]}>
                     {formatDate(row.dateOfDeath)}
