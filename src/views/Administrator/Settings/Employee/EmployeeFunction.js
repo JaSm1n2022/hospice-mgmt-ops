@@ -19,11 +19,12 @@ import CardHeader from "components/Card/CardHeader.js";
 import CardBody from "components/Card/CardBody.js";
 import Button from "components/CustomButtons/Button.js";
 import HospiceTable from "components/Table/HospiceTable";
-import { ImportExport } from "@material-ui/icons";
+import { ImportExport, Print } from "@material-ui/icons";
 import Helper from "utils/helper";
 import * as FileSaver from "file-saver";
 
 import EmployeeForm from "./components/Form";
+import PrintPersonnelListModal from "./components/PrintPersonnelListModal";
 import { attemptToUpdateEmployee } from "store/actions/employeeAction";
 import { employeeListStateSelector } from "store/selectors/employeeSelector";
 import { employeeCreateStateSelector } from "store/selectors/employeeSelector";
@@ -101,6 +102,7 @@ function EmployeeFunction(props) {
   const [mode, setMode] = useState("create");
   const [isAddGroupButtons, setIsAddGroupButtons] = useState(false);
   const [keywordValue, setKeywordValue] = useState("");
+  const [isPersonnelListModalOpen, setIsPersonnelListModalOpen] = useState(false);
 
   const showNotification = (place, color, msg) => {
     setMessage(msg);
@@ -406,6 +408,15 @@ function EmployeeFunction(props) {
                       <AddIcon className={classes.icons} /> Add Employee
                     </Button>
 
+                    <Button
+                      color="primary"
+                      className={classes.marginRight}
+                      onClick={() => setIsPersonnelListModalOpen(true)}
+                      disabled={!dataSource || dataSource.length === 0}
+                    >
+                      <Print className={classes.icons} /> Personnel List
+                    </Button>
+
                     {isAddGroupButtons && (
                       <Button
                         color="success"
@@ -449,6 +460,13 @@ function EmployeeFunction(props) {
           </Card>
         </GridItem>
       </GridContainer>
+      {isPersonnelListModalOpen && (
+        <PrintPersonnelListModal
+          isOpen={isPersonnelListModalOpen}
+          onClose={() => setIsPersonnelListModalOpen(false)}
+          employeesData={dataSource}
+        />
+      )}
       {isFormModal && (
         <EmployeeForm
           filterRecordHandler={filterRecordHandler}

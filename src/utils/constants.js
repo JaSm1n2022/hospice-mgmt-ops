@@ -784,6 +784,30 @@ export const EMPLOYEE_TYPE = [
     value: "Per Diem",
     code: "perDiem",
   },
+  {
+    id: "directCareContractor",
+    category: "employee",
+    name: "Direct-Care Contractor",
+    label: "Direct-Care Contractor",
+    value: "Direct-Care Contractor",
+    code: "directCareContractor",
+  },
+  {
+    id: "contractor",
+    category: "employee",
+    name: "Contractor",
+    label: "Contractor",
+    value: "Contractor",
+    code: "contractor",
+  },
+  {
+    id: "volunteer",
+    category: "employee",
+    name: "Volunteer",
+    label: "Volunteer",
+    value: "Volunteer",
+    code: "volunteer",
+  },
 ];
 export const EMPLOYEE_CLASSIFICATION = [
   {
@@ -1267,6 +1291,16 @@ export const PATIENT_STATUS = [
     label: "InActive",
     category: "patientStatus",
   },
+];
+export const RELATIONSHIP_OPTIONS = [
+  { name: "Spouse", value: "Spouse", label: "Spouse", category: "relationship" },
+  { name: "Child", value: "Child", label: "Child", category: "relationship" },
+  { name: "Parent", value: "Parent", label: "Parent", category: "relationship" },
+  { name: "Sibling", value: "Sibling", label: "Sibling", category: "relationship" },
+  { name: "Grandchild", value: "Grandchild", label: "Grandchild", category: "relationship" },
+  { name: "Friend", value: "Friend", label: "Friend", category: "relationship" },
+  { name: "Caregiver", value: "Caregiver", label: "Caregiver", category: "relationship" },
+  { name: "Other", value: "Other", label: "Other", category: "relationship" },
 ];
 export const OFFICE_PARTICULAR = [
   "Regular Paper",

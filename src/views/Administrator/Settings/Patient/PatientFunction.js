@@ -29,6 +29,7 @@ import PrintAssessmentTrendsModal from "./components/PrintAssessmentTrendsModal"
 import PrintADCModal from "./components/PrintADCModal";
 import PrintADCGroupByMonthModal from "./components/PrintADCGroupByMonthModal";
 import PrintHospiceCensusUtilizationModal from "./components/PrintHospiceCensusUtilizationModal";
+import PrintCHCCensusModal from "./components/PrintCHCCensusModal";
 import PrintPatientDispositionCensusModal from "./components/PrintPatientDispositionCensusModal";
 import PrintMonthlyADCReportModal from "./components/PrintMonthlyADCReportModal";
 import PrintUnduplicatedAdmissionsModal from "./components/PrintUnduplicatedAdmissionsModal";
@@ -132,6 +133,7 @@ function PatientFunction(props) {
   const [isADCModalOpen, setIsADCModalOpen] = useState(false);
   const [isADCGroupByMonthModalOpen, setIsADCGroupByMonthModalOpen] = useState(false);
   const [isHospiceCensusUtilizationModalOpen, setIsHospiceCensusUtilizationModalOpen] = useState(false);
+  const [isCHCCensusModalOpen, setIsCHCCensusModalOpen] = useState(false);
   const [isPatientDispositionCensusModalOpen, setIsPatientDispositionCensusModalOpen] = useState(false);
   const [isMonthlyADCReportModalOpen, setIsMonthlyADCReportModalOpen] = useState(false);
   const [isUnduplicatedAdmissionsModalOpen, setIsUnduplicatedAdmissionsModalOpen] = useState(false);
@@ -1099,6 +1101,15 @@ function PatientFunction(props) {
                       <Button
                         color="primary"
                         className={classes.marginRight}
+                        onClick={() => setIsCHCCensusModalOpen(true)}
+                        disabled={!dataSource || dataSource.length === 0}
+                      >
+                        <Print className={classes.icons} /> CHC Census
+                      </Button>
+
+                      <Button
+                        color="primary"
+                        className={classes.marginRight}
                         onClick={() => setIsPatientDispositionCensusModalOpen(true)}
                         disabled={!dataSource || dataSource.length === 0}
                       >
@@ -1241,6 +1252,13 @@ function PatientFunction(props) {
         <PrintHospiceCensusUtilizationModal
           isOpen={isHospiceCensusUtilizationModalOpen}
           onClose={() => setIsHospiceCensusUtilizationModalOpen(false)}
+          patientsData={dataSource}
+        />
+      )}
+      {isCHCCensusModalOpen && (
+        <PrintCHCCensusModal
+          isOpen={isCHCCensusModalOpen}
+          onClose={() => setIsCHCCensusModalOpen(false)}
           patientsData={dataSource}
         />
       )}

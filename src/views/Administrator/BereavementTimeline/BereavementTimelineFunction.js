@@ -39,9 +39,11 @@ import {
   CheckCircle as CheckCircleIcon,
   AddAlert,
   Print as PrintIcon,
+  People as PeopleIcon,
 } from "@material-ui/icons";
 import { pdf } from "@react-pdf/renderer";
 import BereavementPrintDocument from "./components/BereavementPrintDocument";
+import BereavementRecipientsModal from "./components/BereavementRecipientsModal";
 import Snackbar from "components/Snackbar/Snackbar";
 import { attemptToFetchPatient } from "store/actions/patientAction";
 import { resetFetchPatientState } from "store/actions/patientAction";
@@ -155,6 +157,16 @@ function BereavementTimelineFunction(props) {
   const [endDate, setEndDate] = useState(
     moment().add(3, "months").format("YYYY-MM-DD")
   );
+  const [recipientsDateRangeDialogOpen, setRecipientsDateRangeDialogOpen] =
+    useState(false);
+  const [recipientsStartDate, setRecipientsStartDate] = useState(
+    moment().subtract(12, "months").format("YYYY-MM-DD")
+  );
+  const [recipientsEndDate, setRecipientsEndDate] = useState(
+    moment().format("YYYY-MM-DD")
+  );
+  const [recipientsModalOpen, setRecipientsModalOpen] = useState(false);
+  const [recipients, setRecipients] = useState([]);
 
   const showNotification = (place, color, msg) => {
     setMessage(msg);
@@ -232,6 +244,66 @@ function BereavementTimelineFunction(props) {
   const formatDate = (date) => {
     if (!date) return "N/A";
     return moment(date).format("MM/DD/YYYY");
+  };
+
+  const computeRecipients = (source, rangeStartDate, rangeEndDate) => {
+    const rangeStart = moment(rangeStartDate).startOf("day");
+    const rangeEnd = moment(rangeEndDate).endOf("day");
+
+    return (source || [])
+      .map((patient) => {
+        const eligibleMilestones = (patient.milestones || []).filter(
+          (m) =>
+            m.month <= 12 &&
+            m.completed &&
+            moment(m.dueDate).isBetween(rangeStart, rangeEnd, null, "[]")
+        );
+
+        if (eligibleMilestones.length === 0) return null;
+
+        const lastLetter = eligibleMilestones.reduce((latest, m) =>
+          moment(m.dueDate).isAfter(moment(latest.dueDate)) ? m : latest
+        );
+
+        return {
+          id: patient.id,
+          patientCd: patient.patientCd || "N/A",
+          patientName: patient.patientName,
+          dateOfDeath: patient.dateOfDeath,
+          lastLetterDate: lastLetter.dueDate,
+          bereavementRecipientName: "",
+          bereavementRecipientRelationship: "",
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => moment(b.lastLetterDate).diff(moment(a.lastLetterDate)));
+  };
+
+  useEffect(() => {
+    if (recipientsModalOpen) {
+      setRecipients(
+        computeRecipients(dataSource, recipientsStartDate, recipientsEndDate)
+      );
+    }
+  }, [dataSource]);
+
+  const handleBereavementRecipientsClick = () => {
+    setRecipientsDateRangeDialogOpen(true);
+  };
+
+  const handleRecipientsDateRangeCancel = () => {
+    setRecipientsDateRangeDialogOpen(false);
+  };
+
+  const handleGenerateRecipients = () => {
+    const list = computeRecipients(
+      dataSource,
+      recipientsStartDate,
+      recipientsEndDate
+    );
+    setRecipients(list);
+    setRecipientsDateRangeDialogOpen(false);
+    setRecipientsModalOpen(true);
   };
 
   const getFilteredData = () => {
@@ -509,6 +581,15 @@ function BereavementTimelineFunction(props) {
                         size="small"
                       >
                         Print Timeline
+                      </Button>
+                      <Button
+                        variant="contained"
+                        color="secondary"
+                        startIcon={<PeopleIcon />}
+                        onClick={handleBereavementRecipientsClick}
+                        size="small"
+                      >
+                        Bereavement Recipients
                       </Button>
                       <Box
                         style={{
@@ -857,6 +938,70 @@ function BereavementTimelineFunction(props) {
               </Button>
             </DialogActions>
           </Dialog>
+
+          {/* Date Range Dialog for Bereavement Recipients */}
+          <Dialog
+            open={recipientsDateRangeDialogOpen}
+            onClose={handleRecipientsDateRangeCancel}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogTitle>Bereavement Recipients - Date Range</DialogTitle>
+            <DialogContent>
+              <Box mt={2}>
+                <TextField
+                  label="From Date"
+                  type="date"
+                  value={recipientsStartDate}
+                  onChange={(e) => setRecipientsStartDate(e.target.value)}
+                  fullWidth
+                  InputLabelProps={{
+                    shrink: true,
+                  }}
+                  margin="normal"
+                />
+                <TextField
+                  label="To Date"
+                  type="date"
+                  value={recipientsEndDate}
+                  onChange={(e) => setRecipientsEndDate(e.target.value)}
+                  fullWidth
+                  InputLabelProps={{
+                    shrink: true,
+                  }}
+                  margin="normal"
+                />
+                <Box mt={2} p={2} bgcolor="#f5f5f5" borderRadius={1}>
+                  <Typography variant="body2" color="textSecondary">
+                    Lists patients who received a bereavement letter (Month 0
+                    to Month 12) within the selected date range.
+                  </Typography>
+                </Box>
+              </Box>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleRecipientsDateRangeCancel} color="secondary">
+                Cancel
+              </Button>
+              <Button
+                onClick={handleGenerateRecipients}
+                color="primary"
+                variant="contained"
+              >
+                Generate List
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          {recipientsModalOpen && (
+            <BereavementRecipientsModal
+              isOpen={recipientsModalOpen}
+              onClose={() => setRecipientsModalOpen(false)}
+              recipients={recipients}
+              startDate={recipientsStartDate}
+              endDate={recipientsEndDate}
+            />
+          )}
         </div>
       )}
     </>
