@@ -3,6 +3,8 @@ import React, { useEffect, useState } from "react";
 import {
   Avatar,
   Button,
+  Checkbox,
+  FormControlLabel,
   Grid,
   Tooltip,
   Typography,
@@ -343,7 +345,7 @@ function DistributionForm(props) {
     console.log("[Print Handler]", generalForm, detailForm);
   };
   const validateFormHandler = () => {
-    if (!generalForm.patientCd) {
+    if (!generalForm.isCarStock && !generalForm.patientCd) {
       TOAST.error("Client Name is required");
       return;
     }
@@ -351,7 +353,7 @@ function DistributionForm(props) {
       TOAST.error("Requestor is required");
       return;
     }
-    if (!generalForm.facility) {
+    if (!generalForm.isCarStock && !generalForm.facility) {
       TOAST.error("location is required");
       return;
     }
@@ -585,6 +587,28 @@ function DistributionForm(props) {
           >
             <Typography variant="h6">General Information</Typography>
             <Grid container spacing={1} direction="row">
+              <Grid item xs={12} md={3} sm={12}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={generalForm.isCarStock || false}
+                      onChange={(e) => {
+                        inputGeneralHandler({
+                          target: {
+                            name: "isCarStock",
+                            value: e.target.checked,
+                          },
+                        });
+                      }}
+                      color="primary"
+                      disabled={
+                        props.mode && props.mode === "view" ? true : false
+                      }
+                    />
+                  }
+                  label="Car Stock"
+                />
+              </Grid>
               {general.map((item) => {
                 return (
                   <Grid item xs={12} md={3} sm={12}>
