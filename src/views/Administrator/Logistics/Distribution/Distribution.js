@@ -177,6 +177,7 @@ const Distribution = (props) => {
     patientName: "",
     location: "",
     datePickup: moment().format("YYYY-MM-DD"),
+    isCarStock: false,
     generalForm: null,
     detailForm: null,
   });
@@ -841,10 +842,14 @@ const Distribution = (props) => {
     }
   };
   const openPdfDialogHandler = (generalForm, detailForm) => {
+    const isCarStock = !!generalForm.isCarStock;
     setPdfDialogData({
-      patientName: generalForm.patientCd || generalForm.patientName || "",
+      patientName: isCarStock
+        ? "Car Stock"
+        : generalForm.patientCd || generalForm.patientName || "",
       location: generalForm.facility || "",
       datePickup: moment().format("YYYY-MM-DD"),
+      isCarStock,
       generalForm: generalForm,
       detailForm: detailForm,
     });
@@ -890,6 +895,7 @@ const Distribution = (props) => {
         stock_status: payload.stockStatus,
         group_id: groupId,
         unit_uom: payload.unitDistribution,
+        is_car_stock: general.isCarStock || false,
       };
       if (mode === "edit" && payload.distributionId) {
         params.id = payload.distributionId;
@@ -1933,12 +1939,13 @@ const Distribution = (props) => {
               <TextField
                 label="Client Name"
                 type="text"
-                value={pdfDialogData.patientName}
+                value={pdfDialogData.isCarStock ? "Car Stock" : pdfDialogData.patientName}
                 onChange={(e) =>
                   setPdfDialogData({ ...pdfDialogData, patientName: e.target.value })
                 }
                 fullWidth
-                autoFocus
+                autoFocus={!pdfDialogData.isCarStock}
+                disabled={pdfDialogData.isCarStock}
                 placeholder="Enter patient name"
                 InputLabelProps={{
                   shrink: true,
@@ -1982,7 +1989,7 @@ const Distribution = (props) => {
           </Button>
           <Button
             onClick={async () => {
-              if (!pdfDialogData.patientName.trim()) {
+              if (!pdfDialogData.isCarStock && !pdfDialogData.patientName.trim()) {
                 TOAST.error("Please enter patient name");
                 return;
               }
@@ -2018,7 +2025,11 @@ const Distribution = (props) => {
                 // Generate PDF
                 const doc = (
                   <PrintOrdersPdfDocument
-                    patientName={pdfDialogData.patientName}
+                    patientName={
+                      pdfDialogData.isCarStock
+                        ? "Car Stock"
+                        : pdfDialogData.patientName
+                    }
                     selectedData={selectedData}
                     productList={productList}
                     location={pdfDialogData.location}

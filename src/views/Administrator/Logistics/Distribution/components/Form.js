@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 
 import {
   Avatar,
+  Checkbox,
+  FormControlLabel,
   Grid,
   Tooltip,
   Typography,
@@ -185,7 +187,9 @@ function DistributionForm(props) {
       name: "patient",
       options: [...props.patientList],
       disabled:
-        (props.mode && props.mode === "view") || !generalForm.selectedCategory
+        (props.mode && props.mode === "view") ||
+        !generalForm.selectedCategory ||
+        generalForm.isCarStock
           ? true
           : false,
     },
@@ -358,6 +362,7 @@ function DistributionForm(props) {
         ? `${generalFm.patient.careType}-${generalFm.patient.locationCd}`
         : "";
       generalFm.position = generalFm.requestor?.position;
+      generalFm.isCarStock = !!generalFm.is_car_stock;
       const detailFm = generalFm.details ? generalFm.details : [generalFm];
       detailFm.forEach((e) => {
         e.unitDistribution = e.unit_uom
@@ -380,7 +385,7 @@ function DistributionForm(props) {
       TOAST.error("Category is required");
       return;
     }
-    if (!generalForm.patientCd) {
+    if (!generalForm.isCarStock && !generalForm.patientCd) {
       TOAST.error("Client Name is required");
       return;
     }
@@ -388,7 +393,7 @@ function DistributionForm(props) {
       TOAST.error("Requestor is required");
       return;
     }
-    if (!generalForm.facility) {
+    if (!generalForm.isCarStock && !generalForm.facility) {
       TOAST.error("location is required");
       return;
     }
@@ -442,6 +447,12 @@ function DistributionForm(props) {
     console.log("[Target General]", target, generalForm);
     const source = { ...generalForm };
     source[target.name] = target.value;
+    if (target.name === "isCarStock" && target.value) {
+      source.patient = undefined;
+      source.patientCd = undefined;
+      source.patientId = undefined;
+      source.facility = "-";
+    }
     setGeneralForm(source);
   };
   const inputDetailHandler = ({ target }, source) => {
@@ -744,7 +755,42 @@ function DistributionForm(props) {
                   direction="row"
                   style={{ paddingBottom: 20 }}
                 >
-                  {general.map((item) => {
+                  <Grid item xs={12} md={3} sm={12}>
+                    <CustomSingleAutoComplete
+                      {...general.find((item) => item.id === "category")}
+                      value={generalForm.category}
+                      onSelectHandler={autoCompleteGeneralInputHander}
+                      onChangeHandler={onChangeGeneralInputHandler}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={3} sm={12}>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={generalForm.isCarStock || false}
+                          onChange={(e) => {
+                            inputGeneralHandler({
+                              target: {
+                                name: "isCarStock",
+                                value: e.target.checked,
+                              },
+                            });
+                          }}
+                          color="primary"
+                          disabled={
+                            (props.mode && props.mode === "view") ||
+                            !generalForm.selectedCategory
+                              ? true
+                              : false
+                          }
+                        />
+                      }
+                      label="Car Stock"
+                    />
+                  </Grid>
+                  {general
+                    .filter((item) => item.id !== "category")
+                    .map((item) => {
                     return (
                       <Grid item xs={12} md={3} sm={12}>
                         {item.component === "textfield" ? (
