@@ -933,8 +933,12 @@ function OverheadForecast(props) {
     const netIncome = projectedRevenue - totalExpenses;
 
     // Potential Expense Overstatement Adjustment
+    // Always applied as an improvement to net income (expenses may be
+    // overstated, so actual results should be better, not worse):
+    // - If net income is positive, this increases it.
+    // - If net income is negative (a loss), this reduces the loss.
     const expenseAdjPerc = getOverheadValue("EXPENSE_ADJ", overheadTableData);
-    const potentialExpenseAdj = netIncome * expenseAdjPerc;
+    const potentialExpenseAdj = Math.abs(netIncome) * expenseAdjPerc;
 
     // Potential Adjusted Net Income
     const potentialAdjustedNetIncome = netIncome + potentialExpenseAdj;
@@ -1105,6 +1109,18 @@ function OverheadForecast(props) {
               position.includes("chaplain");
 
             if (isRecertificationStaff) {
+              // MSW and Chaplain recert notes are covered by their routine
+              // visit, so there is no additional cost for recertification.
+              // Still display them in the breakdown with a $0 amount.
+              const isRoutineVisitCovered =
+                position.includes("msw") || position.includes("chaplain");
+
+              if (isRoutineVisitCovered) {
+                addEmployeeToDetails(employee, 0, `Recertification Visit (BP${benefitPeriod}) - Covered by Routine Visit`);
+                processedEmployeeIds.add(employeeId);
+                return;
+              }
+
               // Find "Recertification Visit" contract for this employee
               let recertContract = contracts.find(
                 (c) =>
