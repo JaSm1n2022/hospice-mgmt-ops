@@ -958,10 +958,15 @@ const Distribution = (props) => {
     if (keyword) {
       temp = temp.filter(
         (data) =>
-          data.description.toLowerCase().indexOf(keyword.toLowerCase()) !==
-            -1 ||
-          data.patientCd.toLowerCase().indexOf(keyword.toLowerCase()) !== -1 ||
-          data.requestor.toLowerCase().indexOf(keyword.toLowerCase()) !== -1
+          (data.description || "")
+            .toLowerCase()
+            .indexOf(keyword.toLowerCase()) !== -1 ||
+          (data.patientCd || "")
+            .toLowerCase()
+            .indexOf(keyword.toLowerCase()) !== -1 ||
+          (data.requestor || "")
+            .toLowerCase()
+            .indexOf(keyword.toLowerCase()) !== -1
       );
     }
 
