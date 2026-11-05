@@ -292,10 +292,10 @@ const BereavementPrintDocument = ({ patients, startDate, endDate }) => {
           sortedMonths.map((monthKey, index) => {
             const monthData = patientsByMonth[monthKey];
             return (
-              <View key={monthKey} style={styles.monthSection} wrap={false}>
+              <View key={monthKey} style={styles.monthSection}>
                 <Text style={styles.monthTitle}>{monthData.label}</Text>
                 {monthData.patients.map((patient, patientIndex) => (
-                  <View key={patientIndex} style={styles.patientRow}>
+                  <View key={patientIndex} style={styles.patientRow} wrap={false}>
                     <Text style={styles.patientHeader}>
                       {patient.patientCd} {patient.patientName ? `- ${patient.patientName}` : ""}
                       {patient.bereavementCompleted && " [COMPLETED]"}

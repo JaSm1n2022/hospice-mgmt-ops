@@ -422,10 +422,15 @@ function BereavementTimelineFunction(props) {
 
   const handlePrintSummary = async () => {
     try {
+      console.log("[BereavementPrint] submit clicked", { startDate, endDate });
       setDateRangeDialogOpen(false);
 
       // Use the currently filtered data
       const filteredPatients = getFilteredData();
+      console.log(
+        "[BereavementPrint] filteredPatients count:",
+        filteredPatients.length
+      );
 
       if (filteredPatients.length === 0) {
         showNotification(
@@ -436,6 +441,7 @@ function BereavementTimelineFunction(props) {
         return;
       }
 
+      console.log("[BereavementPrint] building document element");
       const doc = (
         <BereavementPrintDocument
           patients={filteredPatients}
@@ -443,12 +449,19 @@ function BereavementTimelineFunction(props) {
           endDate={endDate}
         />
       );
+
+      console.log("[BereavementPrint] creating pdf instance");
       const asPdf = pdf(doc);
+
+      console.log("[BereavementPrint] starting toBlob() - this is where it hangs if frozen");
       const blob = await asPdf.toBlob();
+      console.log("[BereavementPrint] toBlob() finished, blob size:", blob.size);
+
       const url = URL.createObjectURL(blob);
+      console.log("[BereavementPrint] opening blob url");
       window.open(url, "_blank");
     } catch (error) {
-      console.error("Error generating PDF:", error);
+      console.error("[BereavementPrint] Error generating PDF:", error);
       showNotification(
         "tc",
         "danger",
