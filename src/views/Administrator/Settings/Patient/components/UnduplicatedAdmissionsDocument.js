@@ -331,15 +331,33 @@ const styles = StyleSheet.create({
   },
 });
 
-const MONTHS = [
-  "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
-  "JUL", "AUG", "SEP", "OCT", "NOV", "DEC",
-];
-
 const sumArray = (arr) => arr.reduce((a, b) => a + b, 0);
 
-const buildUnduplicatedAdmissions = (patientsData, year) => {
-  const admissionsByMonth = new Array(12).fill(0);
+const buildMonthBuckets = (periodStart, periodEnd) => {
+  const buckets = [];
+  const cursor = moment(periodStart).startOf("month");
+  const last = moment(periodEnd).startOf("month");
+
+  while (cursor.isSameOrBefore(last, "month")) {
+    buckets.push({
+      year: cursor.year(),
+      month: cursor.month(),
+      label: cursor.format("MMM").toUpperCase(),
+      fullLabel: cursor.format("MMM YY").toUpperCase(),
+    });
+    cursor.add(1, "month");
+  }
+
+  return buckets;
+};
+
+const buildUnduplicatedAdmissions = (patientsData, periodStart, periodEnd) => {
+  const buckets = buildMonthBuckets(periodStart, periodEnd);
+  const admissionsByMonth = new Array(buckets.length).fill(0);
+  const bucketIndexByKey = new Map(
+    buckets.map((b, idx) => [`${b.year}-${b.month}`, idx])
+  );
+
   let totalAdmissions = 0;
   let patientsWithMultipleAdmissions = 0;
 
@@ -347,9 +365,16 @@ const buildUnduplicatedAdmissions = (patientsData, year) => {
     if (patient.insurance !== "Traditional Medicare") return;
     if (!patient.soc) return;
     const socDate = moment(patient.soc);
-    if (socDate.year() !== year) return;
+    if (
+      socDate.isBefore(periodStart, "day") ||
+      socDate.isAfter(periodEnd, "day")
+    )
+      return;
 
-    admissionsByMonth[socDate.month()] += 1;
+    const idx = bucketIndexByKey.get(`${socDate.year()}-${socDate.month()}`);
+    if (idx === undefined) return;
+
+    admissionsByMonth[idx] += 1;
     totalAdmissions += 1;
 
     const noOfAdmission =
@@ -362,29 +387,37 @@ const buildUnduplicatedAdmissions = (patientsData, year) => {
     }
   });
 
-  return { admissionsByMonth, totalAdmissions, patientsWithMultipleAdmissions };
+  return { buckets, admissionsByMonth, totalAdmissions, patientsWithMultipleAdmissions };
 };
 
 const UnduplicatedAdmissionsDocument = ({
   patientsData,
   logoBase64,
-  selectedYear,
+  periodFrom,
+  periodTo,
   ccn,
   preparedBy,
   reviewedBy,
   isFinal,
 }) => {
-  const year = parseInt(selectedYear, 10);
-  const yearStart = moment(`${year}-01-01`).startOf("day");
-  const yearEnd = moment(`${year}-12-31`).endOf("day");
+  const periodStart = moment(periodFrom).startOf("day");
+  const periodEndRaw = moment(periodTo).endOf("day");
   const today = moment().endOf("day");
-  const periodEnd = moment.min(yearEnd, today);
-  const isPartialYear = periodEnd.isBefore(yearEnd, "day");
-  const partialMonthIndex = isPartialYear ? periodEnd.month() : -1;
-  const coverageLabel = `${yearStart.format("MMM D, YYYY")} – ${periodEnd.format("MMM D, YYYY")}`;
+  const periodEnd = moment.min(periodEndRaw, today);
+  const isPartialPeriod = periodEndRaw.isAfter(today, "day");
+  const coverageLabel = `${periodStart.format("MMM D, YYYY")} – ${periodEndRaw.format("MMM D, YYYY")}`;
 
-  const { admissionsByMonth, totalAdmissions, patientsWithMultipleAdmissions } =
-    buildUnduplicatedAdmissions(patientsData, year);
+  const { buckets, admissionsByMonth, totalAdmissions, patientsWithMultipleAdmissions } =
+    buildUnduplicatedAdmissions(patientsData, periodStart, periodEndRaw);
+
+  const spansMultipleYears =
+    buckets.length > 0 && buckets[0].year !== buckets[buckets.length - 1].year;
+  const badgeYearLabel =
+    buckets.length > 0
+      ? spansMultipleYears
+        ? `${buckets[0].year}–${buckets[buckets.length - 1].year}`
+        : `${buckets[0].year}`
+      : `${periodStart.year()}`;
 
   const statusLabel = isFinal ? "FINAL" : "DRAFT";
   const footerStatusText = isFinal
@@ -410,13 +443,13 @@ const UnduplicatedAdmissionsDocument = ({
           </View>
           <View style={styles.headerBadge}>
             <Text style={styles.headerBadgeText}>SURVEY PREP</Text>
-            <Text style={styles.headerBadgeStatus}>{statusLabel} {year}</Text>
+            <Text style={styles.headerBadgeStatus}>{statusLabel} {badgeYearLabel}</Text>
           </View>
         </View>
 
         <Text style={styles.title}>Unduplicated Hospice Admissions</Text>
         <Text style={styles.subtitle}>
-          PER MEDICARE PROVIDER NUMBER  |  MONTHLY SUMMARY  |  {statusLabel} {year}
+          PER MEDICARE PROVIDER NUMBER  |  MONTHLY SUMMARY  |  {statusLabel} {badgeYearLabel}
         </Text>
         <View style={styles.goldRule} />
 
@@ -425,7 +458,7 @@ const UnduplicatedAdmissionsDocument = ({
             <Text style={styles.summaryLabel}>REPORTING PERIOD</Text>
             <Text style={styles.summaryValue}>
               {coverageLabel}
-              {isPartialYear ? " *" : ""}
+              {isPartialPeriod ? " *" : ""}
             </Text>
           </View>
           <View style={styles.summaryBox}>
@@ -442,13 +475,20 @@ const UnduplicatedAdmissionsDocument = ({
           <Text style={styles.tableSectionTitle}>MONTHLY ADMISSION BREAKDOWN</Text>
 
           <View style={styles.chipRow}>
-            {MONTHS.map((m, idx) => (
-              <View key={m} style={styles.monthChip}>
-                <Text style={styles.monthChipText}>
-                  {m}{idx === partialMonthIndex ? "*" : ""}
-                </Text>
-              </View>
-            ))}
+            {buckets.map((b) => {
+              const isPartialMonth =
+                isPartialPeriod &&
+                b.year === periodEnd.year() &&
+                b.month === periodEnd.month();
+              return (
+                <View key={`${b.year}-${b.month}`} style={styles.monthChip}>
+                  <Text style={styles.monthChipText}>
+                    {spansMultipleYears ? b.fullLabel : b.label}
+                    {isPartialMonth ? "*" : ""}
+                  </Text>
+                </View>
+              );
+            })}
             <View style={styles.totalChipHeader}>
               <Text style={styles.monthChipText}>TOTAL</Text>
             </View>
@@ -456,7 +496,11 @@ const UnduplicatedAdmissionsDocument = ({
 
           <View style={styles.chipRow}>
             {admissionsByMonth.map((val, idx) => {
-              const isFuture = idx > periodEnd.month() && year === today.year();
+              const b = buckets[idx];
+              const isFuture =
+                isPartialPeriod &&
+                (b.year > periodEnd.year() ||
+                  (b.year === periodEnd.year() && b.month > periodEnd.month()));
               return (
                 <View key={idx} style={isFuture ? styles.valueChipDimmed : styles.valueChip}>
                   <Text style={isFuture ? styles.valueChipTextDimmed : styles.valueChipText}>
@@ -487,15 +531,15 @@ const UnduplicatedAdmissionsDocument = ({
           </Text>
         </View>
 
-        {isPartialYear && (
+        {isPartialPeriod && (
           <Text style={styles.footnote}>
             *Partial period: data included through {periodEnd.format("MMMM D, YYYY")}.
           </Text>
         )}
         {!isFinal && (
           <Text style={styles.footnote}>
-            Regenerate for the exact 12-month ACHC survey reporting period before
-            final submission.
+            Regenerate for the exact ACHC survey reporting period before final
+            submission.
           </Text>
         )}
 

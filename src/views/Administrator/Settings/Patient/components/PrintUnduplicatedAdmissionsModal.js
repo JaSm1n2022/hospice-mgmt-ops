@@ -10,7 +10,6 @@ import {
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import { Clear, GetApp } from "@material-ui/icons";
 import moment from "moment";
-import CustomSelect from "components/Select/CustomSelect";
 import CustomTextField from "components/TextField/CustomTextField";
 import UnduplicatedAdmissionsDocument from "./UnduplicatedAdmissionsDocument";
 
@@ -64,8 +63,15 @@ const useStyles = makeStyles((theme) => ({
     fontSize: "14px",
     color: "#666",
   },
-  yearField: {
+  dateRangeRow: {
+    display: "flex",
+    gap: "15px",
     marginBottom: "20px",
+    flexWrap: "wrap",
+  },
+  dateField: {
+    flex: "1 1 200px",
+    minWidth: "180px",
     maxWidth: "250px",
   },
   fieldsRow: {
@@ -167,15 +173,33 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const MONTHS = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-];
-
 const sumArray = (arr) => arr.reduce((a, b) => a + b, 0);
 
-const buildUnduplicatedAdmissions = (patientsData, year) => {
-  const admissionsByMonth = new Array(12).fill(0);
+const buildMonthBuckets = (periodStart, periodEnd) => {
+  const buckets = [];
+  const cursor = moment(periodStart).startOf("month");
+  const last = moment(periodEnd).startOf("month");
+
+  while (cursor.isSameOrBefore(last, "month")) {
+    buckets.push({
+      year: cursor.year(),
+      month: cursor.month(),
+      label: cursor.format("MMM"),
+      fullLabel: cursor.format("MMM YYYY"),
+    });
+    cursor.add(1, "month");
+  }
+
+  return buckets;
+};
+
+const buildUnduplicatedAdmissions = (patientsData, periodStart, periodEnd) => {
+  const buckets = buildMonthBuckets(periodStart, periodEnd);
+  const admissionsByMonth = new Array(buckets.length).fill(0);
+  const bucketIndexByKey = new Map(
+    buckets.map((b, idx) => [`${b.year}-${b.month}`, idx])
+  );
+
   let totalAdmissions = 0;
   let patientsWithMultipleAdmissions = 0;
 
@@ -183,9 +207,16 @@ const buildUnduplicatedAdmissions = (patientsData, year) => {
     if (patient.insurance !== "Traditional Medicare") return;
     if (!patient.soc) return;
     const socDate = moment(patient.soc);
-    if (socDate.year() !== year) return;
+    if (
+      socDate.isBefore(periodStart, "day") ||
+      socDate.isAfter(periodEnd, "day")
+    )
+      return;
 
-    admissionsByMonth[socDate.month()] += 1;
+    const idx = bucketIndexByKey.get(`${socDate.year()}-${socDate.month()}`);
+    if (idx === undefined) return;
+
+    admissionsByMonth[idx] += 1;
     totalAdmissions += 1;
 
     const noOfAdmission =
@@ -198,25 +229,19 @@ const buildUnduplicatedAdmissions = (patientsData, year) => {
     }
   });
 
-  return { admissionsByMonth, totalAdmissions, patientsWithMultipleAdmissions };
+  return { buckets, admissionsByMonth, totalAdmissions, patientsWithMultipleAdmissions };
 };
-
-function buildYearOptions() {
-  const currentYear = moment().year();
-  const options = [];
-  for (let y = currentYear; y >= currentYear - 10; y--) {
-    options.push({ value: y, name: `${y}`, description: `${y}` });
-  }
-  return options;
-}
-
-const yearOptions = buildYearOptions();
 
 function PrintUnduplicatedAdmissionsModal({ isOpen, onClose, patientsData, logoBase64 }) {
   const classes = useStyles();
   const [modalStyle] = React.useState(getModalStyle);
   const [error, setError] = React.useState(null);
-  const [selectedYear, setSelectedYear] = React.useState(moment().year());
+  const [periodFrom, setPeriodFrom] = React.useState(
+    moment().startOf("year").format("YYYY-MM-DD")
+  );
+  const [periodTo, setPeriodTo] = React.useState(
+    moment().format("YYYY-MM-DD")
+  );
   const [ccn, setCcn] = React.useState("");
   const [preparedBy, setPreparedBy] = React.useState("");
   const [reviewedBy, setReviewedBy] = React.useState("");
@@ -226,25 +251,39 @@ function PrintUnduplicatedAdmissionsModal({ isOpen, onClose, patientsData, logoB
     return null;
   }
 
-  const handleYearChange = (event) => {
-    setSelectedYear(event.target.value);
+  const handlePeriodFromChange = (event) => {
+    const value = event.target.value;
+    setPeriodFrom(value);
+    if (value && periodTo && moment(value).isAfter(moment(periodTo))) {
+      setPeriodTo(value);
+    }
     setError(null);
   };
 
-  const year = parseInt(selectedYear, 10);
-  const yearStart = moment(`${year}-01-01`).startOf("day");
-  const yearEnd = moment(`${year}-12-31`).endOf("day");
-  const today = moment().endOf("day");
-  const periodEnd = moment.min(yearEnd, today);
-  const coverageLabel = `${yearStart.format("MMMM YYYY")} - ${periodEnd.format("MMMM YYYY")}`;
+  const handlePeriodToChange = (event) => {
+    const value = event.target.value;
+    setPeriodTo(value);
+    if (value && periodFrom && moment(value).isBefore(moment(periodFrom))) {
+      setPeriodFrom(value);
+    }
+    setError(null);
+  };
 
-  const { admissionsByMonth, totalAdmissions, patientsWithMultipleAdmissions } =
-    buildUnduplicatedAdmissions(patientsData, year);
+  const periodStart = moment(periodFrom).startOf("day");
+  const periodEnd = moment(periodTo).endOf("day");
+  const coverageLabel = `${periodStart.format("MMMM D, YYYY")} - ${periodEnd.format("MMMM D, YYYY")}`;
+
+  const { buckets, admissionsByMonth, totalAdmissions, patientsWithMultipleAdmissions } =
+    buildUnduplicatedAdmissions(patientsData, periodStart, periodEnd);
+
+  const spansMultipleYears =
+    buckets.length > 0 &&
+    buckets[0].year !== buckets[buckets.length - 1].year;
 
   const rows = [{ label: "Unduplicated Admissions", values: admissionsByMonth }];
 
   const statusLabel = isFinal ? "FINAL" : "DRAFT";
-  const fileName = `Unduplicated_Admissions_${ccn || "ALL"}_${yearStart.format(
+  const fileName = `Unduplicated_Admissions_${ccn || "ALL"}_${periodStart.format(
     "YYYY-MM-DD"
   )}_to_${periodEnd.format("YYYY-MM-DD")}_${statusLabel}.pdf`;
 
@@ -257,19 +296,29 @@ function PrintUnduplicatedAdmissionsModal({ isOpen, onClose, patientsData, logoB
         </div>
         <div className={classes.content}>
           <Typography className={classes.description}>
-            Select a fiscal year to generate a monthly breakdown of unduplicated admissions
+            Select a date range to generate a monthly breakdown of unduplicated admissions
             per Medicare provider.
           </Typography>
 
-          <div className={classes.yearField}>
-            <CustomSelect
-              label="Year"
-              name="year"
-              placeholder="Select Year"
-              value={selectedYear}
-              options={yearOptions}
-              onChange={handleYearChange}
-            />
+          <div className={classes.dateRangeRow}>
+            <div className={classes.dateField}>
+              <CustomTextField
+                label="Period Start"
+                type="date"
+                name="periodFrom"
+                value={periodFrom}
+                onChange={handlePeriodFromChange}
+              />
+            </div>
+            <div className={classes.dateField}>
+              <CustomTextField
+                label="Period End"
+                type="date"
+                name="periodTo"
+                value={periodTo}
+                onChange={handlePeriodToChange}
+              />
+            </div>
           </div>
 
           <div className={classes.fieldsRow}>
@@ -337,8 +386,10 @@ function PrintUnduplicatedAdmissionsModal({ isOpen, onClose, patientsData, logoB
               <thead>
                 <tr>
                   <th className={classes.thCategory}>Category</th>
-                  {MONTHS.map((m) => (
-                    <th key={m} className={classes.th}>{m}</th>
+                  {buckets.map((b) => (
+                    <th key={`${b.year}-${b.month}`} className={classes.th}>
+                      {spansMultipleYears ? b.fullLabel : b.label}
+                    </th>
                   ))}
                   <th className={classes.th}>Total</th>
                 </tr>
@@ -360,12 +411,13 @@ function PrintUnduplicatedAdmissionsModal({ isOpen, onClose, patientsData, logoB
           </div>
 
           <PDFDownloadLink
-            key={`${year}-${ccn}-${preparedBy}-${reviewedBy}-${isFinal}`}
+            key={`${periodFrom}-${periodTo}-${ccn}-${preparedBy}-${reviewedBy}-${isFinal}`}
             document={
               <UnduplicatedAdmissionsDocument
                 patientsData={patientsData}
                 logoBase64={logoBase64}
-                selectedYear={year}
+                periodFrom={periodFrom}
+                periodTo={periodTo}
                 ccn={ccn}
                 preparedBy={preparedBy}
                 reviewedBy={reviewedBy}
