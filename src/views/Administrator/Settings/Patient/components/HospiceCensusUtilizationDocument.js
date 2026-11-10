@@ -316,44 +316,71 @@ const styles = StyleSheet.create({
   },
 });
 
-const MONTHS = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-];
-
 const matchesReason = (reason, keywords) => {
   if (!reason) return false;
   const lower = reason.toLowerCase();
   return keywords.some((k) => lower.includes(k));
 };
 
-const buildMonthlyCounts = (patientsData, year) => {
-  const soc = new Array(12).fill(0);
-  const deathDischarge = new Array(12).fill(0);
-  const revocation = new Array(12).fill(0);
-  const liveDischarge = new Array(12).fill(0);
-  const transfer = new Array(12).fill(0);
+const sumArray = (arr) => arr.reduce((a, b) => a + b, 0);
+
+const buildMonthBuckets = (periodStart, periodEnd) => {
+  const buckets = [];
+  const cursor = moment(periodStart).startOf("month");
+  const last = moment(periodEnd).startOf("month");
+
+  while (cursor.isSameOrBefore(last, "month")) {
+    buckets.push({
+      year: cursor.year(),
+      month: cursor.month(),
+      label: cursor.format("MMM"),
+      fullLabel: cursor.format("MMM YY"),
+    });
+    cursor.add(1, "month");
+  }
+
+  return buckets;
+};
+
+const buildMonthlyCounts = (patientsData, buckets, periodStart, periodEnd) => {
+  const n = buckets.length;
+  const soc = new Array(n).fill(0);
+  const deathDischarge = new Array(n).fill(0);
+  const revocation = new Array(n).fill(0);
+  const liveDischarge = new Array(n).fill(0);
+  const transfer = new Array(n).fill(0);
+  const bucketIndexByKey = new Map(
+    buckets.map((b, idx) => [`${b.year}-${b.month}`, idx])
+  );
 
   (patientsData || []).forEach((patient) => {
     if (patient.soc) {
       const socDate = moment(patient.soc);
-      if (socDate.year() === year) {
-        soc[socDate.month()]++;
+      if (
+        !socDate.isBefore(periodStart, "day") &&
+        !socDate.isAfter(periodEnd, "day")
+      ) {
+        const idx = bucketIndexByKey.get(`${socDate.year()}-${socDate.month()}`);
+        if (idx !== undefined) soc[idx]++;
       }
     }
 
     if (patient.eoc) {
       const eocDate = moment(patient.eoc);
-      if (eocDate.year() === year) {
+      if (
+        !eocDate.isBefore(periodStart, "day") &&
+        !eocDate.isAfter(periodEnd, "day")
+      ) {
+        const idx = bucketIndexByKey.get(`${eocDate.year()}-${eocDate.month()}`);
+        if (idx === undefined) return;
         const reason = patient.eoc_discharge;
-        const monthIdx = eocDate.month();
 
         if (matchesReason(reason, ["death"])) {
-          deathDischarge[monthIdx]++;
+          deathDischarge[idx]++;
         } else if (matchesReason(reason, ["revocation"])) {
-          revocation[monthIdx]++;
+          revocation[idx]++;
         } else if (matchesReason(reason, ["transfer"])) {
-          transfer[monthIdx]++;
+          transfer[idx]++;
         } else if (
           matchesReason(reason, [
             "extended prognosis",
@@ -361,7 +388,7 @@ const buildMonthlyCounts = (patientsData, year) => {
             "discharge for cause",
           ])
         ) {
-          liveDischarge[monthIdx]++;
+          liveDischarge[idx]++;
         }
       }
     }
@@ -370,17 +397,15 @@ const buildMonthlyCounts = (patientsData, year) => {
   return { soc, deathDischarge, revocation, liveDischarge, transfer };
 };
 
-const sumArray = (arr) => arr.reduce((a, b) => a + b, 0);
-
-const computeADC = (patientsData, yearStart, yearEnd) => {
+const computeADC = (patientsData, periodStart, periodEndRaw) => {
   const today = moment().endOf("day");
-  const periodEnd = moment.min(yearEnd, today);
+  const periodEnd = moment.min(periodEndRaw, today);
 
-  if (periodEnd.isBefore(yearStart, "day")) {
-    return { adc: 0, isYTD: false, periodEnd };
+  if (periodEnd.isBefore(periodStart, "day")) {
+    return { adc: 0, isPartialPeriod: false, periodEnd };
   }
 
-  const daysInPeriod = periodEnd.diff(yearStart, "days") + 1;
+  const daysInPeriod = periodEnd.diff(periodStart, "days") + 1;
   let totalPatientDays = 0;
 
   (patientsData || []).forEach((patient) => {
@@ -388,10 +413,10 @@ const computeADC = (patientsData, yearStart, yearEnd) => {
     const soc = moment(patient.soc);
     const eoc = patient.eoc ? moment(patient.eoc) : null;
 
-    if (soc.isAfter(yearEnd)) return;
-    if (eoc && eoc.isBefore(yearStart)) return;
+    if (soc.isAfter(periodEndRaw)) return;
+    if (eoc && eoc.isBefore(periodStart)) return;
 
-    const effStart = moment.max(soc, yearStart);
+    const effStart = moment.max(soc, periodStart);
     const effEnd = eoc ? moment.min(eoc, periodEnd) : periodEnd;
 
     if (effEnd.isSameOrAfter(effStart, "day")) {
@@ -400,26 +425,27 @@ const computeADC = (patientsData, yearStart, yearEnd) => {
   });
 
   const adc = daysInPeriod > 0 ? totalPatientDays / daysInPeriod : 0;
-  const isYTD = periodEnd.isBefore(yearEnd, "day");
+  const isPartialPeriod = periodEnd.isBefore(periodEndRaw, "day");
 
-  return { adc, isYTD, periodEnd };
+  return { adc, isPartialPeriod, periodEnd };
 };
 
-const computeMonthlyADC = (patientsData, year) => {
+const computeMonthlyADC = (patientsData, buckets, periodStart, periodEndRaw) => {
   const today = moment().endOf("day");
-  const adcByMonth = new Array(12).fill(0);
+  const adcByMonth = new Array(buckets.length).fill(0);
 
-  for (let m = 0; m < 12; m++) {
-    const monthStart = moment([year, m, 1]).startOf("day");
-    const monthEnd = moment(monthStart).endOf("month");
-    const periodEnd = moment.min(monthEnd, today);
+  buckets.forEach((b, idx) => {
+    const bucketMonthStart = moment([b.year, b.month, 1]).startOf("day");
+    const bucketMonthEnd = moment(bucketMonthStart).endOf("month");
+    const rangeStart = moment.max(bucketMonthStart, periodStart);
+    const rangeEnd = moment.min(bucketMonthEnd, periodEndRaw, today);
 
-    if (periodEnd.isBefore(monthStart, "day")) {
-      adcByMonth[m] = 0;
-      continue;
+    if (rangeEnd.isBefore(rangeStart, "day")) {
+      adcByMonth[idx] = 0;
+      return;
     }
 
-    const daysInPeriod = periodEnd.diff(monthStart, "days") + 1;
+    const daysInPeriod = rangeEnd.diff(rangeStart, "days") + 1;
     let totalPatientDays = 0;
 
     (patientsData || []).forEach((patient) => {
@@ -427,19 +453,19 @@ const computeMonthlyADC = (patientsData, year) => {
       const soc = moment(patient.soc);
       const eoc = patient.eoc ? moment(patient.eoc) : null;
 
-      if (soc.isAfter(monthEnd)) return;
-      if (eoc && eoc.isBefore(monthStart)) return;
+      if (soc.isAfter(rangeEnd)) return;
+      if (eoc && eoc.isBefore(rangeStart)) return;
 
-      const effStart = moment.max(soc, monthStart);
-      const effEnd = eoc ? moment.min(eoc, periodEnd) : periodEnd;
+      const effStart = moment.max(soc, rangeStart);
+      const effEnd = eoc ? moment.min(eoc, rangeEnd) : rangeEnd;
 
       if (effEnd.isSameOrAfter(effStart, "day")) {
         totalPatientDays += effEnd.diff(effStart, "days") + 1;
       }
     });
 
-    adcByMonth[m] = daysInPeriod > 0 ? totalPatientDays / daysInPeriod : 0;
-  }
+    adcByMonth[idx] = daysInPeriod > 0 ? totalPatientDays / daysInPeriod : 0;
+  });
 
   return adcByMonth;
 };
@@ -465,14 +491,15 @@ const buildNiceMax = (max) => {
   return Math.ceil(max / 5) * 5;
 };
 
-const CensusTrendChart = ({ values, numMonthsToShow }) => {
-  const availableValues = values.slice(0, numMonthsToShow);
+const CensusTrendChart = ({ values, buckets, numBucketsToShow, spansMultipleYears }) => {
+  const availableValues = values.slice(0, numBucketsToShow);
   const niceMax = buildNiceMax(Math.max(...availableValues, 0));
   const plotWidth = PLOT_RIGHT - PLOT_LEFT;
   const plotHeight = PLOT_BOTTOM - PLOT_TOP;
-  const numPoints = 12;
+  const numPoints = buckets.length || 1;
+  const xDenom = Math.max(numPoints - 1, 1);
 
-  const xAt = (i) => PLOT_LEFT + (i * plotWidth) / (numPoints - 1);
+  const xAt = (i) => PLOT_LEFT + (i * plotWidth) / xDenom;
   const yAt = (v) => PLOT_BOTTOM - (v / niceMax) * plotHeight;
 
   const gridSteps = niceMax / 5;
@@ -508,17 +535,17 @@ const CensusTrendChart = ({ values, numMonthsToShow }) => {
         </React.Fragment>
       ))}
 
-      {MONTHS.map((m, i) => (
+      {buckets.map((b, i) => (
         <Text
-          key={m}
+          key={`${b.year}-${b.month}`}
           x={xAt(i)}
           y={PLOT_BOTTOM + 14}
           textAnchor="middle"
-          fill={i < numMonthsToShow ? NAVY : NAVY_SOFT}
+          fill={i < numBucketsToShow ? NAVY : NAVY_SOFT}
           fontSize={7}
-          fontWeight={i < numMonthsToShow ? "bold" : "normal"}
+          fontWeight={i < numBucketsToShow ? "bold" : "normal"}
         >
-          {m.toUpperCase()}
+          {(spansMultipleYears ? b.fullLabel : b.label).toUpperCase()}
         </Text>
       ))}
 
@@ -542,23 +569,32 @@ const CensusTrendChart = ({ values, numMonthsToShow }) => {
 
 const HospiceCensusUtilizationDocument = ({
   patientsData,
-  selectedYear,
+  periodFrom,
+  periodTo,
   ccn,
   preparedBy,
   reviewedBy,
 }) => {
-  const year = parseInt(selectedYear, 10);
-  const yearStart = moment(`${year}-01-01`).startOf("day");
-  const yearEnd = moment(`${year}-12-31`).endOf("day");
+  const periodStart = moment(periodFrom).startOf("day");
+  const periodEndRaw = moment(periodTo).endOf("day");
+  const buckets = buildMonthBuckets(periodStart, periodEndRaw);
+  const spansMultipleYears =
+    buckets.length > 0 && buckets[0].year !== buckets[buckets.length - 1].year;
 
   const { soc, deathDischarge, revocation, liveDischarge, transfer } = buildMonthlyCounts(
     patientsData,
-    year
+    buckets,
+    periodStart,
+    periodEndRaw
   );
-  const { adc, isYTD, periodEnd } = computeADC(patientsData, yearStart, yearEnd);
-  const adcByMonth = computeMonthlyADC(patientsData, year);
+  const { adc, isPartialPeriod, periodEnd } = computeADC(patientsData, periodStart, periodEndRaw);
+  const adcByMonth = computeMonthlyADC(patientsData, buckets, periodStart, periodEndRaw);
 
-  const numMonthsToShow = periodEnd.year() === year ? periodEnd.month() + 1 : 12;
+  const numBucketsToShow = buckets.filter(
+    (b) =>
+      b.year < periodEnd.year() ||
+      (b.year === periodEnd.year() && b.month <= periodEnd.month())
+  ).length;
 
   const totalAdmissions = sumArray(soc);
   const totalDeath = sumArray(deathDischarge);
@@ -570,10 +606,14 @@ const HospiceCensusUtilizationDocument = ({
   const activePatients = (patientsData || []).filter((patient) => {
     if (!patient.soc) return false;
     const socDate = moment(patient.soc);
-    return socDate.year() === year && !patient.eoc;
+    return (
+      !socDate.isBefore(periodStart, "day") &&
+      !socDate.isAfter(periodEndRaw, "day") &&
+      !patient.eoc
+    );
   }).length;
 
-  const coverageLabel = `${yearStart.format("MMM D")} \u2013 ${periodEnd.format("MMM D, YYYY")}`;
+  const coverageLabel = `${periodStart.format("MMM D, YYYY")} \u2013 ${periodEndRaw.format("MMM D, YYYY")}`;
   const dispositionSummary = buildDispositionSummary(
     totalDeath,
     totalRevocation,
@@ -636,8 +676,8 @@ const HospiceCensusUtilizationDocument = ({
             <View style={styles.infoCol}>
               <Text style={styles.infoLabel}>REPORT TYPE</Text>
               <Text style={styles.infoValue}>
-                {isYTD ? "Year-to-Date" : "Full Year"}
-                {isYTD ? ` \u00B7 ${periodEnd.format("MMMM")} partial` : ""}
+                {isPartialPeriod ? "Period-to-Date" : "Full Period"}
+                {isPartialPeriod ? ` \u00B7 ${periodEnd.format("MMMM D")} partial` : ""}
               </Text>
             </View>
             <View style={styles.infoCol}>
@@ -661,17 +701,17 @@ const HospiceCensusUtilizationDocument = ({
             </View>
             <View style={styles.summaryCard}>
               <Text style={styles.summaryLabel}>
-                {isYTD ? "YTD ADC" : "FULL-YEAR ADC"}
+                {isPartialPeriod ? "PERIOD-TO-DATE ADC" : "AVERAGE DAILY CENSUS"}
               </Text>
               <Text style={styles.summaryValue}>{Math.round(adc)}</Text>
               <Text style={styles.summarySub}>
-                {isYTD ? "Year-to-date average" : "Full-year average"}
+                {isPartialPeriod ? "Period-to-date average" : "Full-period average"}
               </Text>
             </View>
             <View style={[styles.summaryCard, styles.summaryCardLast]}>
               <Text style={styles.summaryLabel}>ACTIVE PATIENTS</Text>
               <Text style={styles.summaryValue}>{activePatients}</Text>
-              <Text style={styles.summarySub}>Admitted in {year}, no discharge</Text>
+              <Text style={styles.summarySub}>Admitted in period, no discharge</Text>
             </View>
           </View>
 
@@ -679,9 +719,9 @@ const HospiceCensusUtilizationDocument = ({
           <View style={styles.table}>
             <View style={styles.tableHeaderRow} fixed>
               <Text style={[styles.thCategory, styles.colCategory]}>MEASURE</Text>
-              {MONTHS.map((m) => (
-                <Text key={m} style={[styles.th, styles.colMonth]}>
-                  {m.toUpperCase()}
+              {buckets.map((b) => (
+                <Text key={`${b.year}-${b.month}`} style={[styles.th, styles.colMonth]}>
+                  {(spansMultipleYears ? b.fullLabel : b.label).toUpperCase()}
                 </Text>
               ))}
               <Text style={[styles.th, styles.colTotal]}>TOTAL</Text>
@@ -707,7 +747,7 @@ const HospiceCensusUtilizationDocument = ({
                   {row.label}
                 </Text>
                 {row.values.map((val, idx) => {
-                  const isFuture = row.isDecimal && idx >= numMonthsToShow;
+                  const isFuture = row.isDecimal && idx >= numBucketsToShow;
                   return (
                     <Text
                       key={idx}
@@ -731,12 +771,12 @@ const HospiceCensusUtilizationDocument = ({
             <Text style={styles.noteText}>
               ADC is a patient-day weighted measure; monthly values above are rounded for display.
             </Text>
-            {isYTD && (
+            {isPartialPeriod && (
               <Text style={styles.noteText}>
-                {MONTHS[numMonthsToShow]
-                  ? `${MONTHS[numMonthsToShow]}\u2013Dec are not yet reported.`
+                {buckets[numBucketsToShow]
+                  ? `${(spansMultipleYears ? buckets[numBucketsToShow].fullLabel : buckets[numBucketsToShow].label)}\u2013${(spansMultipleYears ? buckets[buckets.length - 1].fullLabel : buckets[buckets.length - 1].label)} are not yet reported.`
                   : ""}
-                {" "}Totals reflect data entered to date, not a validated rolling 12-month ACHC
+                {" "}Totals reflect data entered to date, not a validated full-period ACHC
                 extract.
               </Text>
             )}
@@ -766,7 +806,12 @@ const HospiceCensusUtilizationDocument = ({
             <Text style={styles.sectionHeaderNote}>Average Daily Census (ADC)</Text>
           </View>
           <View style={styles.chartBox}>
-            <CensusTrendChart values={adcByMonth} numMonthsToShow={numMonthsToShow} />
+            <CensusTrendChart
+              values={adcByMonth}
+              buckets={buckets}
+              numBucketsToShow={numBucketsToShow}
+              spansMultipleYears={spansMultipleYears}
+            />
           </View>
         </View>
 

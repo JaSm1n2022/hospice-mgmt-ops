@@ -3,7 +3,6 @@ import { Modal, makeStyles, CircularProgress, Typography } from "@material-ui/co
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import { Clear, GetApp } from "@material-ui/icons";
 import moment from "moment";
-import CustomSelect from "components/Select/CustomSelect";
 import CustomTextField from "components/TextField/CustomTextField";
 import HospiceCensusUtilizationDocument from "./HospiceCensusUtilizationDocument";
 
@@ -67,6 +66,10 @@ const useStyles = makeStyles((theme) => ({
   },
   fieldItem: {
     minWidth: "200px",
+  },
+  dateField: {
+    minWidth: "200px",
+    maxWidth: "250px",
   },
   stats: {
     backgroundColor: "#f5f5f5",
@@ -157,44 +160,71 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const MONTHS = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-];
-
 const matchesReason = (reason, keywords) => {
   if (!reason) return false;
   const lower = reason.toLowerCase();
   return keywords.some((k) => lower.includes(k));
 };
 
-const buildMonthlyCounts = (patientsData, year) => {
-  const soc = new Array(12).fill(0);
-  const deathDischarge = new Array(12).fill(0);
-  const revocation = new Array(12).fill(0);
-  const liveDischarge = new Array(12).fill(0);
-  const transfer = new Array(12).fill(0);
+const sumArray = (arr) => arr.reduce((a, b) => a + b, 0);
+
+const buildMonthBuckets = (periodStart, periodEnd) => {
+  const buckets = [];
+  const cursor = moment(periodStart).startOf("month");
+  const last = moment(periodEnd).startOf("month");
+
+  while (cursor.isSameOrBefore(last, "month")) {
+    buckets.push({
+      year: cursor.year(),
+      month: cursor.month(),
+      label: cursor.format("MMM"),
+      fullLabel: cursor.format("MMM YY"),
+    });
+    cursor.add(1, "month");
+  }
+
+  return buckets;
+};
+
+const buildMonthlyCounts = (patientsData, buckets, periodStart, periodEnd) => {
+  const n = buckets.length;
+  const soc = new Array(n).fill(0);
+  const deathDischarge = new Array(n).fill(0);
+  const revocation = new Array(n).fill(0);
+  const liveDischarge = new Array(n).fill(0);
+  const transfer = new Array(n).fill(0);
+  const bucketIndexByKey = new Map(
+    buckets.map((b, idx) => [`${b.year}-${b.month}`, idx])
+  );
 
   (patientsData || []).forEach((patient) => {
     if (patient.soc) {
       const socDate = moment(patient.soc);
-      if (socDate.year() === year) {
-        soc[socDate.month()]++;
+      if (
+        !socDate.isBefore(periodStart, "day") &&
+        !socDate.isAfter(periodEnd, "day")
+      ) {
+        const idx = bucketIndexByKey.get(`${socDate.year()}-${socDate.month()}`);
+        if (idx !== undefined) soc[idx]++;
       }
     }
 
     if (patient.eoc) {
       const eocDate = moment(patient.eoc);
-      if (eocDate.year() === year) {
+      if (
+        !eocDate.isBefore(periodStart, "day") &&
+        !eocDate.isAfter(periodEnd, "day")
+      ) {
+        const idx = bucketIndexByKey.get(`${eocDate.year()}-${eocDate.month()}`);
+        if (idx === undefined) return;
         const reason = patient.eoc_discharge;
-        const monthIdx = eocDate.month();
 
         if (matchesReason(reason, ["death"])) {
-          deathDischarge[monthIdx]++;
+          deathDischarge[idx]++;
         } else if (matchesReason(reason, ["revocation"])) {
-          revocation[monthIdx]++;
+          revocation[idx]++;
         } else if (matchesReason(reason, ["transfer"])) {
-          transfer[monthIdx]++;
+          transfer[idx]++;
         } else if (
           matchesReason(reason, [
             "extended prognosis",
@@ -202,7 +232,7 @@ const buildMonthlyCounts = (patientsData, year) => {
             "discharge for cause",
           ])
         ) {
-          liveDischarge[monthIdx]++;
+          liveDischarge[idx]++;
         }
       }
     }
@@ -211,17 +241,15 @@ const buildMonthlyCounts = (patientsData, year) => {
   return { soc, deathDischarge, revocation, liveDischarge, transfer };
 };
 
-const sumArray = (arr) => arr.reduce((a, b) => a + b, 0);
-
-const computeADC = (patientsData, yearStart, yearEnd) => {
+const computeADC = (patientsData, periodStart, periodEndRaw) => {
   const today = moment().endOf("day");
-  const periodEnd = moment.min(yearEnd, today);
+  const periodEnd = moment.min(periodEndRaw, today);
 
-  if (periodEnd.isBefore(yearStart, "day")) {
-    return { adc: 0, isYTD: false, periodEnd };
+  if (periodEnd.isBefore(periodStart, "day")) {
+    return { adc: 0, isPartialPeriod: false, periodEnd };
   }
 
-  const daysInPeriod = periodEnd.diff(yearStart, "days") + 1;
+  const daysInPeriod = periodEnd.diff(periodStart, "days") + 1;
   let totalPatientDays = 0;
 
   (patientsData || []).forEach((patient) => {
@@ -229,10 +257,10 @@ const computeADC = (patientsData, yearStart, yearEnd) => {
     const soc = moment(patient.soc);
     const eoc = patient.eoc ? moment(patient.eoc) : null;
 
-    if (soc.isAfter(yearEnd)) return;
-    if (eoc && eoc.isBefore(yearStart)) return;
+    if (soc.isAfter(periodEndRaw)) return;
+    if (eoc && eoc.isBefore(periodStart)) return;
 
-    const effStart = moment.max(soc, yearStart);
+    const effStart = moment.max(soc, periodStart);
     const effEnd = eoc ? moment.min(eoc, periodEnd) : periodEnd;
 
     if (effEnd.isSameOrAfter(effStart, "day")) {
@@ -241,26 +269,27 @@ const computeADC = (patientsData, yearStart, yearEnd) => {
   });
 
   const adc = daysInPeriod > 0 ? totalPatientDays / daysInPeriod : 0;
-  const isYTD = periodEnd.isBefore(yearEnd, "day");
+  const isPartialPeriod = periodEnd.isBefore(periodEndRaw, "day");
 
-  return { adc, isYTD, periodEnd };
+  return { adc, isPartialPeriod, periodEnd };
 };
 
-const computeMonthlyADC = (patientsData, year) => {
+const computeMonthlyADC = (patientsData, buckets, periodStart, periodEndRaw) => {
   const today = moment().endOf("day");
-  const adcByMonth = new Array(12).fill(0);
+  const adcByMonth = new Array(buckets.length).fill(0);
 
-  for (let m = 0; m < 12; m++) {
-    const monthStart = moment([year, m, 1]).startOf("day");
-    const monthEnd = moment(monthStart).endOf("month");
-    const periodEnd = moment.min(monthEnd, today);
+  buckets.forEach((b, idx) => {
+    const bucketMonthStart = moment([b.year, b.month, 1]).startOf("day");
+    const bucketMonthEnd = moment(bucketMonthStart).endOf("month");
+    const rangeStart = moment.max(bucketMonthStart, periodStart);
+    const rangeEnd = moment.min(bucketMonthEnd, periodEndRaw, today);
 
-    if (periodEnd.isBefore(monthStart, "day")) {
-      adcByMonth[m] = 0;
-      continue;
+    if (rangeEnd.isBefore(rangeStart, "day")) {
+      adcByMonth[idx] = 0;
+      return;
     }
 
-    const daysInPeriod = periodEnd.diff(monthStart, "days") + 1;
+    const daysInPeriod = rangeEnd.diff(rangeStart, "days") + 1;
     let totalPatientDays = 0;
 
     (patientsData || []).forEach((patient) => {
@@ -268,39 +297,33 @@ const computeMonthlyADC = (patientsData, year) => {
       const soc = moment(patient.soc);
       const eoc = patient.eoc ? moment(patient.eoc) : null;
 
-      if (soc.isAfter(monthEnd)) return;
-      if (eoc && eoc.isBefore(monthStart)) return;
+      if (soc.isAfter(rangeEnd)) return;
+      if (eoc && eoc.isBefore(rangeStart)) return;
 
-      const effStart = moment.max(soc, monthStart);
-      const effEnd = eoc ? moment.min(eoc, periodEnd) : periodEnd;
+      const effStart = moment.max(soc, rangeStart);
+      const effEnd = eoc ? moment.min(eoc, rangeEnd) : rangeEnd;
 
       if (effEnd.isSameOrAfter(effStart, "day")) {
         totalPatientDays += effEnd.diff(effStart, "days") + 1;
       }
     });
 
-    adcByMonth[m] = daysInPeriod > 0 ? totalPatientDays / daysInPeriod : 0;
-  }
+    adcByMonth[idx] = daysInPeriod > 0 ? totalPatientDays / daysInPeriod : 0;
+  });
 
   return adcByMonth;
 };
-
-function buildYearOptions() {
-  const currentYear = moment().year();
-  const options = [];
-  for (let y = currentYear; y >= currentYear - 10; y--) {
-    options.push({ value: y, name: `${y}`, description: `${y}` });
-  }
-  return options;
-}
-
-const yearOptions = buildYearOptions();
 
 function PrintHospiceCensusUtilizationModal({ isOpen, onClose, patientsData }) {
   const classes = useStyles();
   const [modalStyle] = React.useState(getModalStyle);
   const [error, setError] = React.useState(null);
-  const [selectedYear, setSelectedYear] = React.useState(moment().year());
+  const [periodFrom, setPeriodFrom] = React.useState(
+    moment().startOf("year").format("YYYY-MM-DD")
+  );
+  const [periodTo, setPeriodTo] = React.useState(
+    moment().format("YYYY-MM-DD")
+  );
   const [ccn, setCcn] = React.useState("");
   const [preparedBy, setPreparedBy] = React.useState("");
   const [reviewedBy, setReviewedBy] = React.useState("");
@@ -309,21 +332,39 @@ function PrintHospiceCensusUtilizationModal({ isOpen, onClose, patientsData }) {
     return null;
   }
 
-  const handleYearChange = (event) => {
-    setSelectedYear(event.target.value);
+  const handlePeriodFromChange = (event) => {
+    const value = event.target.value;
+    setPeriodFrom(value);
+    if (value && periodTo && moment(value).isAfter(moment(periodTo))) {
+      setPeriodTo(value);
+    }
     setError(null);
   };
 
-  const year = parseInt(selectedYear, 10);
-  const yearStart = moment(`${year}-01-01`).startOf("day");
-  const yearEnd = moment(`${year}-12-31`).endOf("day");
+  const handlePeriodToChange = (event) => {
+    const value = event.target.value;
+    setPeriodTo(value);
+    if (value && periodFrom && moment(value).isBefore(moment(periodFrom))) {
+      setPeriodFrom(value);
+    }
+    setError(null);
+  };
+
+  const periodStart = moment(periodFrom).startOf("day");
+  const periodEndRaw = moment(periodTo).endOf("day");
+  const buckets = buildMonthBuckets(periodStart, periodEndRaw);
+  const spansMultipleYears =
+    buckets.length > 0 && buckets[0].year !== buckets[buckets.length - 1].year;
+
   const { soc, deathDischarge, revocation, liveDischarge, transfer } = buildMonthlyCounts(
     patientsData,
-    year
+    buckets,
+    periodStart,
+    periodEndRaw
   );
 
-  const { adc, isYTD, periodEnd } = computeADC(patientsData, yearStart, yearEnd);
-  const adcByMonth = computeMonthlyADC(patientsData, year);
+  const { adc, isPartialPeriod, periodEnd } = computeADC(patientsData, periodStart, periodEndRaw);
+  const adcByMonth = computeMonthlyADC(patientsData, buckets, periodStart, periodEndRaw);
 
   const rows = [
     { label: "Admissions", values: soc },
@@ -337,11 +378,17 @@ function PrintHospiceCensusUtilizationModal({ isOpen, onClose, patientsData }) {
   const activePatients = (patientsData || []).filter((patient) => {
     if (!patient.soc) return false;
     const socDate = moment(patient.soc);
-    return socDate.year() === year && !patient.eoc;
+    return (
+      !socDate.isBefore(periodStart, "day") &&
+      !socDate.isAfter(periodEndRaw, "day") &&
+      !patient.eoc
+    );
   }).length;
-  const coverageLabel = `${yearStart.format("MMMM YYYY")} - ${periodEnd.format("MMMM YYYY")}`;
+  const coverageLabel = `${periodStart.format("MMMM D, YYYY")} - ${periodEndRaw.format("MMMM D, YYYY")}`;
 
-  const fileName = `Hospice_Census_Utilization_${year}_${moment().format("YYYY-MM-DD_HHmmss")}.pdf`;
+  const fileName = `Hospice_Census_Utilization_${periodStart.format(
+    "YYYY-MM-DD"
+  )}_to_${periodEndRaw.format("YYYY-MM-DD")}_${moment().format("YYYY-MM-DD_HHmmss")}.pdf`;
 
   return (
     <Modal open={isOpen} onClose={onClose}>
@@ -352,20 +399,28 @@ function PrintHospiceCensusUtilizationModal({ isOpen, onClose, patientsData }) {
         </div>
         <div className={classes.content}>
           <Typography className={classes.description}>
-            Select a fiscal year to generate a Hospice Census &amp; Utilization report summarizing
+            Select a date range to generate a Hospice Census &amp; Utilization report summarizing
             Admissions, Death Discharges, Revocations, Live Discharges, Transfers, and Average Daily
             Census (ADC).
           </Typography>
 
           <div className={classes.fieldsRow}>
-            <div className={classes.fieldItem}>
-              <CustomSelect
-                label="Year"
-                name="year"
-                placeholder="Select Year"
-                value={selectedYear}
-                options={yearOptions}
-                onChange={handleYearChange}
+            <div className={classes.dateField}>
+              <CustomTextField
+                label="Period Start"
+                type="date"
+                name="periodFrom"
+                value={periodFrom}
+                onChange={handlePeriodFromChange}
+              />
+            </div>
+            <div className={classes.dateField}>
+              <CustomTextField
+                label="Period End"
+                type="date"
+                name="periodTo"
+                value={periodTo}
+                onChange={handlePeriodToChange}
               />
             </div>
             <div className={classes.fieldItem}>
@@ -401,7 +456,7 @@ function PrintHospiceCensusUtilizationModal({ isOpen, onClose, patientsData }) {
             </div>
             <div className={classes.statRow}>
               <span className={classes.statLabel}>
-                {isYTD ? "Year-to-Date ADC" : "Full-Year ADC"}:
+                {isPartialPeriod ? "Period-to-Date ADC" : "Average Daily Census (ADC)"}:
               </span>
               <span className={classes.statValue}>{Math.round(adc)}</span>
             </div>
@@ -436,8 +491,10 @@ function PrintHospiceCensusUtilizationModal({ isOpen, onClose, patientsData }) {
               <thead>
                 <tr>
                   <th className={classes.thCategory}>Measure</th>
-                  {MONTHS.map((m) => (
-                    <th key={m} className={classes.th}>{m}</th>
+                  {buckets.map((b) => (
+                    <th key={`${b.year}-${b.month}`} className={classes.th}>
+                      {spansMultipleYears ? b.fullLabel : b.label}
+                    </th>
                   ))}
                   <th className={classes.th}>Total</th>
                 </tr>
@@ -466,11 +523,12 @@ function PrintHospiceCensusUtilizationModal({ isOpen, onClose, patientsData }) {
           </div>
 
           <PDFDownloadLink
-            key={`${year}-${ccn}-${preparedBy}-${reviewedBy}`}
+            key={`${periodFrom}-${periodTo}-${ccn}-${preparedBy}-${reviewedBy}`}
             document={
               <HospiceCensusUtilizationDocument
                 patientsData={patientsData}
-                selectedYear={year}
+                periodFrom={periodFrom}
+                periodTo={periodTo}
                 ccn={ccn}
                 preparedBy={preparedBy}
                 reviewedBy={reviewedBy}
