@@ -397,6 +397,70 @@ const buildMonthlyCounts = (patientsData, buckets, periodStart, periodEnd) => {
   return { soc, deathDischarge, revocation, liveDischarge, transfer };
 };
 
+const computePatientDaysByMonth = (patientsData, buckets, periodStart, periodEndRaw) => {
+  const n = buckets.length;
+  const byMonth = new Array(n).fill(0);
+
+  buckets.forEach((b, idx) => {
+    const bucketMonthStart = moment([b.year, b.month, 1]).startOf("day");
+    const bucketMonthEnd = moment(bucketMonthStart).endOf("month");
+    const rangeStart = moment.max(bucketMonthStart, periodStart);
+    const rangeEnd = moment.min(bucketMonthEnd, periodEndRaw);
+
+    if (rangeEnd.isBefore(rangeStart, "day")) {
+      byMonth[idx] = 0;
+      return;
+    }
+
+    let total = 0;
+
+    (patientsData || []).forEach((patient) => {
+      if (!patient.soc) return;
+      const soc = moment(patient.soc);
+      const eoc = patient.eoc ? moment(patient.eoc) : null;
+
+      const start = moment.max(soc, rangeStart);
+      const end = moment.min(eoc || rangeEnd, rangeEnd);
+
+      const days = end.diff(start, "days") + 1;
+      if (days > 0) total += days;
+    });
+
+    byMonth[idx] = total;
+  });
+
+  return byMonth;
+};
+
+const buildMedicareCapNewBeneficiaries = (patientsData, buckets, periodStart, periodEnd) => {
+  const n = buckets.length;
+  const counts = new Array(n).fill(0);
+  const bucketIndexByKey = new Map(
+    buckets.map((b, idx) => [`${b.year}-${b.month}`, idx])
+  );
+
+  (patientsData || []).forEach((patient) => {
+    if (!patient.soc) return;
+    if (patient.insurance !== "Traditional Medicare") return;
+
+    const admittedBenefit = parseInt(patient.admitted_benefits_period || 1);
+    if (admittedBenefit !== 1) return;
+
+    const socDate = moment(patient.soc);
+    if (
+      socDate.isBefore(periodStart, "day") ||
+      socDate.isAfter(periodEnd, "day")
+    ) {
+      return;
+    }
+
+    const idx = bucketIndexByKey.get(`${socDate.year()}-${socDate.month()}`);
+    if (idx !== undefined) counts[idx]++;
+  });
+
+  return counts;
+};
+
 const computeADC = (patientsData, periodStart, periodEndRaw) => {
   const today = moment().endOf("day");
   const periodEnd = moment.min(periodEndRaw, today);
@@ -428,6 +492,50 @@ const computeADC = (patientsData, periodStart, periodEndRaw) => {
   const isPartialPeriod = periodEnd.isBefore(periodEndRaw, "day");
 
   return { adc, isPartialPeriod, periodEnd };
+};
+
+const computeALOS = (patientsData, buckets, periodStart, periodEndRaw) => {
+  const n = buckets.length;
+  const sumByMonth = new Array(n).fill(0);
+  const countByMonth = new Array(n).fill(0);
+  const avgByMonth = new Array(n).fill(0);
+  const bucketIndexByKey = new Map(
+    buckets.map((b, idx) => [`${b.year}-${b.month}`, idx])
+  );
+
+  let overallSum = 0;
+  let overallCount = 0;
+
+  (patientsData || []).forEach((patient) => {
+    if (!patient.soc || !patient.eoc) return;
+    const eocDate = moment(patient.eoc);
+    if (
+      eocDate.isBefore(periodStart, "day") ||
+      eocDate.isAfter(periodEndRaw, "day")
+    ) {
+      return;
+    }
+
+    const socDate = moment(patient.soc);
+    const los = eocDate.diff(socDate, "days");
+    if (los < 0) return;
+
+    const idx = bucketIndexByKey.get(`${eocDate.year()}-${eocDate.month()}`);
+    if (idx === undefined) return;
+
+    sumByMonth[idx] += los;
+    countByMonth[idx] += 1;
+    overallSum += los;
+    overallCount += 1;
+  });
+
+  for (let i = 0; i < n; i++) {
+    avgByMonth[i] = countByMonth[i] > 0 ? sumByMonth[i] / countByMonth[i] : 0;
+  }
+
+  const overallAvg = overallCount > 0 ? overallSum / overallCount : 0;
+
+  return { avgByMonth, overallAvg, overallCount };
 };
 
 const computeMonthlyADC = (patientsData, buckets, periodStart, periodEndRaw) => {
@@ -589,6 +697,26 @@ const HospiceCensusUtilizationDocument = ({
   );
   const { adc, isPartialPeriod, periodEnd } = computeADC(patientsData, periodStart, periodEndRaw);
   const adcByMonth = computeMonthlyADC(patientsData, buckets, periodStart, periodEndRaw);
+  const { avgByMonth: alosByMonth, overallAvg: alos, overallCount: totalDischarges } = computeALOS(
+    patientsData,
+    buckets,
+    periodStart,
+    periodEndRaw
+  );
+  const patientDaysByMonth = computePatientDaysByMonth(
+    patientsData,
+    buckets,
+    periodStart,
+    periodEndRaw
+  );
+  const totalPatientDays = sumArray(patientDaysByMonth);
+  const medicareCapNewBeneficiaries = buildMedicareCapNewBeneficiaries(
+    patientsData,
+    buckets,
+    periodStart,
+    periodEndRaw
+  );
+  const totalMedicareCapNewBeneficiaries = sumArray(medicareCapNewBeneficiaries);
 
   const numBucketsToShow = buckets.filter(
     (b) =>
@@ -623,10 +751,22 @@ const HospiceCensusUtilizationDocument = ({
 
   const rows = [
     { label: "Admissions", values: soc, total: totalAdmissions },
+    {
+      label: "Medicare cap: new beneficiaries",
+      values: medicareCapNewBeneficiaries,
+      total: totalMedicareCapNewBeneficiaries,
+    },
     { label: "Death discharges", values: deathDischarge, total: totalDeath },
     { label: "Revocations", values: revocation, total: totalRevocation },
     { label: "Live discharges", values: liveDischarge, total: totalLive },
     { label: "Transfers", values: transfer, total: totalTransfer },
+    {
+      label: "Average length of stay (days)",
+      values: alosByMonth,
+      total: alos,
+      isDecimal: true,
+    },
+    { label: "Patient days", values: patientDaysByMonth, total: totalPatientDays },
     {
       label: "Average daily census",
       values: adcByMonth,
@@ -700,6 +840,13 @@ const HospiceCensusUtilizationDocument = ({
               <Text style={styles.summarySub}>{dispositionSummary}</Text>
             </View>
             <View style={styles.summaryCard}>
+              <Text style={styles.summaryLabel}>AVG. LENGTH OF STAY</Text>
+              <Text style={styles.summaryValue}>{Math.round(alos)}</Text>
+              <Text style={styles.summarySub}>
+                {totalDischarges} discharge{totalDischarges === 1 ? "" : "s"}, days
+              </Text>
+            </View>
+            <View style={styles.summaryCard}>
               <Text style={styles.summaryLabel}>
                 {isPartialPeriod ? "PERIOD-TO-DATE ADC" : "AVERAGE DAILY CENSUS"}
               </Text>
@@ -769,7 +916,8 @@ const HospiceCensusUtilizationDocument = ({
           <View style={styles.notesBlock}>
             <Text style={styles.notesTitle}>REPORT NOTES</Text>
             <Text style={styles.noteText}>
-              ADC is a patient-day weighted measure; monthly values above are rounded for display.
+              ADC is a patient-day weighted measure. ALOS reflects SOC-to-EOC days for patients
+              discharged in each month; monthly values above are rounded for display.
             </Text>
             {isPartialPeriod && (
               <Text style={styles.noteText}>

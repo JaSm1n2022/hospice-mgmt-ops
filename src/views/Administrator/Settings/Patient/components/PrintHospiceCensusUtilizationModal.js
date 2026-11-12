@@ -241,6 +241,70 @@ const buildMonthlyCounts = (patientsData, buckets, periodStart, periodEnd) => {
   return { soc, deathDischarge, revocation, liveDischarge, transfer };
 };
 
+const computePatientDaysByMonth = (patientsData, buckets, periodStart, periodEndRaw) => {
+  const n = buckets.length;
+  const byMonth = new Array(n).fill(0);
+
+  buckets.forEach((b, idx) => {
+    const bucketMonthStart = moment([b.year, b.month, 1]).startOf("day");
+    const bucketMonthEnd = moment(bucketMonthStart).endOf("month");
+    const rangeStart = moment.max(bucketMonthStart, periodStart);
+    const rangeEnd = moment.min(bucketMonthEnd, periodEndRaw);
+
+    if (rangeEnd.isBefore(rangeStart, "day")) {
+      byMonth[idx] = 0;
+      return;
+    }
+
+    let total = 0;
+
+    (patientsData || []).forEach((patient) => {
+      if (!patient.soc) return;
+      const soc = moment(patient.soc);
+      const eoc = patient.eoc ? moment(patient.eoc) : null;
+
+      const start = moment.max(soc, rangeStart);
+      const end = moment.min(eoc || rangeEnd, rangeEnd);
+
+      const days = end.diff(start, "days") + 1;
+      if (days > 0) total += days;
+    });
+
+    byMonth[idx] = total;
+  });
+
+  return byMonth;
+};
+
+const buildMedicareCapNewBeneficiaries = (patientsData, buckets, periodStart, periodEnd) => {
+  const n = buckets.length;
+  const counts = new Array(n).fill(0);
+  const bucketIndexByKey = new Map(
+    buckets.map((b, idx) => [`${b.year}-${b.month}`, idx])
+  );
+
+  (patientsData || []).forEach((patient) => {
+    if (!patient.soc) return;
+    if (patient.insurance !== "Traditional Medicare") return;
+
+    const admittedBenefit = parseInt(patient.admitted_benefits_period || 1);
+    if (admittedBenefit !== 1) return;
+
+    const socDate = moment(patient.soc);
+    if (
+      socDate.isBefore(periodStart, "day") ||
+      socDate.isAfter(periodEnd, "day")
+    ) {
+      return;
+    }
+
+    const idx = bucketIndexByKey.get(`${socDate.year()}-${socDate.month()}`);
+    if (idx !== undefined) counts[idx]++;
+  });
+
+  return counts;
+};
+
 const computeADC = (patientsData, periodStart, periodEndRaw) => {
   const today = moment().endOf("day");
   const periodEnd = moment.min(periodEndRaw, today);
@@ -272,6 +336,50 @@ const computeADC = (patientsData, periodStart, periodEndRaw) => {
   const isPartialPeriod = periodEnd.isBefore(periodEndRaw, "day");
 
   return { adc, isPartialPeriod, periodEnd };
+};
+
+const computeALOS = (patientsData, buckets, periodStart, periodEndRaw) => {
+  const n = buckets.length;
+  const sumByMonth = new Array(n).fill(0);
+  const countByMonth = new Array(n).fill(0);
+  const avgByMonth = new Array(n).fill(0);
+  const bucketIndexByKey = new Map(
+    buckets.map((b, idx) => [`${b.year}-${b.month}`, idx])
+  );
+
+  let overallSum = 0;
+  let overallCount = 0;
+
+  (patientsData || []).forEach((patient) => {
+    if (!patient.soc || !patient.eoc) return;
+    const eocDate = moment(patient.eoc);
+    if (
+      eocDate.isBefore(periodStart, "day") ||
+      eocDate.isAfter(periodEndRaw, "day")
+    ) {
+      return;
+    }
+
+    const socDate = moment(patient.soc);
+    const los = eocDate.diff(socDate, "days");
+    if (los < 0) return;
+
+    const idx = bucketIndexByKey.get(`${eocDate.year()}-${eocDate.month()}`);
+    if (idx === undefined) return;
+
+    sumByMonth[idx] += los;
+    countByMonth[idx] += 1;
+    overallSum += los;
+    overallCount += 1;
+  });
+
+  for (let i = 0; i < n; i++) {
+    avgByMonth[i] = countByMonth[i] > 0 ? sumByMonth[i] / countByMonth[i] : 0;
+  }
+
+  const overallAvg = overallCount > 0 ? overallSum / overallCount : 0;
+
+  return { avgByMonth, overallAvg, overallCount };
 };
 
 const computeMonthlyADC = (patientsData, buckets, periodStart, periodEndRaw) => {
@@ -365,13 +473,41 @@ function PrintHospiceCensusUtilizationModal({ isOpen, onClose, patientsData }) {
 
   const { adc, isPartialPeriod, periodEnd } = computeADC(patientsData, periodStart, periodEndRaw);
   const adcByMonth = computeMonthlyADC(patientsData, buckets, periodStart, periodEndRaw);
+  const { avgByMonth: alosByMonth, overallAvg: alos, overallCount: totalDischarges } = computeALOS(
+    patientsData,
+    buckets,
+    periodStart,
+    periodEndRaw
+  );
+  const patientDaysByMonth = computePatientDaysByMonth(
+    patientsData,
+    buckets,
+    periodStart,
+    periodEndRaw
+  );
+  const totalPatientDays = sumArray(patientDaysByMonth);
+  const medicareCapNewBeneficiaries = buildMedicareCapNewBeneficiaries(
+    patientsData,
+    buckets,
+    periodStart,
+    periodEndRaw
+  );
+  const totalMedicareCapNewBeneficiaries = sumArray(medicareCapNewBeneficiaries);
 
   const rows = [
     { label: "Admissions", values: soc },
+    { label: "Medicare Cap: New Beneficiaries", values: medicareCapNewBeneficiaries },
     { label: "Death Discharges", values: deathDischarge },
     { label: "Revocations", values: revocation },
     { label: "Live Discharges", values: liveDischarge },
     { label: "Transfers", values: transfer },
+    {
+      label: "Average Length of Stay (Days)",
+      values: alosByMonth,
+      isDecimal: true,
+      total: alos,
+    },
+    { label: "Patient Days", values: patientDaysByMonth },
     { label: "Average Daily Census", values: adcByMonth, isDecimal: true, total: adc },
   ];
 
@@ -465,6 +601,10 @@ function PrintHospiceCensusUtilizationModal({ isOpen, onClose, patientsData }) {
               <span className={classes.statValue}>{sumArray(soc)}</span>
             </div>
             <div className={classes.statRow}>
+              <span className={classes.statLabel}>Medicare Cap: New Beneficiaries:</span>
+              <span className={classes.statValue}>{totalMedicareCapNewBeneficiaries}</span>
+            </div>
+            <div className={classes.statRow}>
               <span className={classes.statLabel}>Total Death Discharges:</span>
               <span className={classes.statValue}>{sumArray(deathDischarge)}</span>
             </div>
@@ -479,6 +619,18 @@ function PrintHospiceCensusUtilizationModal({ isOpen, onClose, patientsData }) {
             <div className={classes.statRow}>
               <span className={classes.statLabel}>Total Transfers:</span>
               <span className={classes.statValue}>{sumArray(transfer)}</span>
+            </div>
+            <div className={classes.statRow}>
+              <span className={classes.statLabel}>Average Length of Stay (Days):</span>
+              <span className={classes.statValue}>{Math.round(alos)}</span>
+            </div>
+            <div className={classes.statRow}>
+              <span className={classes.statLabel}>Total Discharges:</span>
+              <span className={classes.statValue}>{totalDischarges}</span>
+            </div>
+            <div className={classes.statRow}>
+              <span className={classes.statLabel}>Total Patient Days:</span>
+              <span className={classes.statValue}>{totalPatientDays}</span>
             </div>
             <div className={classes.statRow}>
               <span className={classes.statLabel}>Active Patients:</span>
