@@ -30,8 +30,15 @@ import {
   Select,
   MenuItem,
   Box,
+  Grid,
 } from "@material-ui/core";
-import { Edit as EditIcon, Check as CheckIcon } from "@material-ui/icons";
+import {
+  Edit as EditIcon,
+  Check as CheckIcon,
+  Print as PrintIcon,
+} from "@material-ui/icons";
+import { pdf } from "@react-pdf/renderer";
+import HopeReportDocument from "./components/HopeReportDocument";
 import { attemptToFetchPatient } from "store/actions/patientAction";
 import { resetFetchPatientState } from "store/actions/patientAction";
 import { attemptToUpdatePatient } from "store/actions/patientAction";
@@ -41,6 +48,7 @@ import { patientUpdateStateSelector } from "store/selectors/patientSelector";
 import { profileListStateSelector } from "store/selectors/profileSelector";
 import { SupaContext } from "App";
 import moment from "moment";
+import CustomDatePicker from "components/Date/CustomDatePicker";
 
 const styles = {
   cardCategoryWhite: {
@@ -96,6 +104,46 @@ let patientList = [];
 let isProcessDone = true;
 let isPatientListDone = true;
 
+const SYMPTOM_OPTIONS = ["N/A", "Mild", "Moderate", "Severe"];
+
+const IQIES_MILESTONES = [
+  { key: "admission", label: "Admission (HOPE-A)" },
+  { key: "huv1", label: "HUV1" },
+  { key: "huv2", label: "HUV2" },
+  { key: "discharge", label: "Discharge (HOPE-D)" },
+];
+
+const hasIqiesError = (formData) =>
+  IQIES_MILESTONES.some(
+    (m) => formData[`iqies_${m.key}_result`] === "Error"
+  );
+
+const buildIqiesExceptionPayload = (formData, milestoneKey) => {
+  if (formData[`iqies_${milestoneKey}_result`] !== "Error") {
+    return null;
+  }
+
+  const issueAffectedRecords = (
+    formData[`iqies_${milestoneKey}_issue_affected_records`] || ""
+  ).trim();
+  const rootCause = (
+    formData[`iqies_${milestoneKey}_root_cause`] || ""
+  ).trim();
+  const actionOwner = (
+    formData[`iqies_${milestoneKey}_action_owner`] || ""
+  ).trim();
+
+  if (!issueAffectedRecords && !rootCause && !actionOwner) {
+    return null;
+  }
+
+  return {
+    issue_affected_records: issueAffectedRecords,
+    root_cause: rootCause,
+    action_owner: actionOwner,
+  };
+};
+
 function HopeFunction(props) {
   const context = useContext(SupaContext);
   const classes = useStyles();
@@ -108,8 +156,52 @@ function HopeFunction(props) {
     first_symptom: "",
     second_symptom: "",
     third_symptom: "",
+    sfv_admission_dt: null,
+    sfv_huv1_completed_dt: null,
+    sfv_huv2_completed_dt: null,
+    huv1_completed_dt: null,
+    huv2_completed_dt: null,
+    hope_discharge_dt: null,
+    hope_discharge_reason: "",
+    iqies_admission_result: "",
+    iqies_admission_accepted_date: null,
+    iqies_huv1_result: "",
+    iqies_huv1_accepted_dt: null,
+    iqies_huv2_result: "",
+    iqies_huv2_accepted_dt: null,
+    iqies_discharge_result: "",
+    iqies_discharge_accepted_dt: null,
+    iqies_admission_issue_affected_records: "",
+    iqies_admission_root_cause: "",
+    iqies_admission_action_owner: "",
+    iqies_huv1_issue_affected_records: "",
+    iqies_huv1_root_cause: "",
+    iqies_huv1_action_owner: "",
+    iqies_huv2_issue_affected_records: "",
+    iqies_huv2_root_cause: "",
+    iqies_huv2_action_owner: "",
+    iqies_discharge_issue_affected_records: "",
+    iqies_discharge_root_cause: "",
+    iqies_discharge_action_owner: "",
+    hope_report_admission_dt: null,
+    hope_report_huv1_dt: null,
+    hope_report_huv2_dt: null,
+    hope_report_discharge_dt: null,
+    hope_report_admission_code: "",
+    hope_report_huv1_code: "",
+    hope_report_huv2_code: "",
+    hope_report_discharge_code: "",
   });
   const [hopeCompletedFilter, setHopeCompletedFilter] = useState("both"); // "both", "yes", "no"
+  const [printDialogOpen, setPrintDialogOpen] = useState(false);
+  const [printTargetPatient, setPrintTargetPatient] = useState(null);
+  const [printFormData, setPrintFormData] = useState({
+    reportDate: null,
+    preparedBy: "Jasmin Angela Velasco, Admin Mgr",
+    administrator: "Marivic Eleno, RN",
+    patientName: "",
+    caseManager: "",
+  });
 
   useEffect(() => {
     console.log("Hope - loading patient data");
@@ -140,6 +232,48 @@ function HopeFunction(props) {
                 first_symptom: editFormData.first_symptom,
                 second_symptom: editFormData.second_symptom,
                 third_symptom: editFormData.third_symptom,
+                sfv_admission_dt: editFormData.sfv_admission_dt,
+                sfv_huv1_completed_dt: editFormData.sfv_huv1_completed_dt,
+                sfv_huv2_completed_dt: editFormData.sfv_huv2_completed_dt,
+                huv1_completed_dt: editFormData.huv1_completed_dt,
+                huv2_completed_dt: editFormData.huv2_completed_dt,
+                hope_discharge_dt: editFormData.hope_discharge_dt,
+                hope_discharge_reason: editFormData.hope_discharge_reason,
+                iqies_admission_result: editFormData.iqies_admission_result || null,
+                iqies_admission_accepted_date:
+                  editFormData.iqies_admission_accepted_date,
+                iqies_huv1_result: editFormData.iqies_huv1_result || null,
+                iqies_huv1_accepted_dt: editFormData.iqies_huv1_accepted_dt,
+                iqies_huv2_result: editFormData.iqies_huv2_result || null,
+                iqies_huv2_accepted_dt: editFormData.iqies_huv2_accepted_dt,
+                iqies_discharge_result:
+                  editFormData.iqies_discharge_result || null,
+                iqies_discharge_accepted_dt:
+                  editFormData.iqies_discharge_accepted_dt,
+                iqies_admission_exceptions_correction:
+                  buildIqiesExceptionPayload(editFormData, "admission"),
+                iqies_huv1_exceptions_correction: buildIqiesExceptionPayload(
+                  editFormData,
+                  "huv1"
+                ),
+                iqies_huv2_exceptions_correction: buildIqiesExceptionPayload(
+                  editFormData,
+                  "huv2"
+                ),
+                iqies_discharge_exceptions_correction:
+                  buildIqiesExceptionPayload(editFormData, "discharge"),
+                hope_report_admission_dt:
+                  editFormData.hope_report_admission_dt,
+                hope_report_huv1_dt: editFormData.hope_report_huv1_dt,
+                hope_report_huv2_dt: editFormData.hope_report_huv2_dt,
+                hope_report_discharge_dt:
+                  editFormData.hope_report_discharge_dt,
+                hope_report_admission_code:
+                  editFormData.hope_report_admission_code,
+                hope_report_huv1_code: editFormData.hope_report_huv1_code,
+                hope_report_huv2_code: editFormData.hope_report_huv2_code,
+                hope_report_discharge_code:
+                  editFormData.hope_report_discharge_code,
               }
             : p
         )
@@ -228,13 +362,127 @@ function HopeFunction(props) {
 
   const handleEditClick = (patient) => {
     setSelectedPatient(patient);
+    const admissionExceptions =
+      patient.iqies_admission_exceptions_correction || {};
+    const huv1Exceptions = patient.iqies_huv1_exceptions_correction || {};
+    const huv2Exceptions = patient.iqies_huv2_exceptions_correction || {};
+    const dischargeExceptions =
+      patient.iqies_discharge_exceptions_correction || {};
     setEditFormData({
       is_hope_completed: patient.is_hope_completed || false,
       first_symptom: patient.first_symptom || "",
       second_symptom: patient.second_symptom || "",
       third_symptom: patient.third_symptom || "",
+      sfv_admission_dt: patient.sfv_admission_dt || null,
+      sfv_huv1_completed_dt: patient.sfv_huv1_completed_dt || null,
+      sfv_huv2_completed_dt: patient.sfv_huv2_completed_dt || null,
+      huv1_completed_dt: patient.huv1_completed_dt || null,
+      huv2_completed_dt: patient.huv2_completed_dt || null,
+      hope_discharge_dt: patient.hope_discharge_dt || null,
+      hope_discharge_reason: patient.hope_discharge_reason || "",
+      iqies_admission_result: patient.iqies_admission_result || "",
+      iqies_admission_accepted_date:
+        patient.iqies_admission_accepted_date || null,
+      iqies_huv1_result: patient.iqies_huv1_result || "",
+      iqies_huv1_accepted_dt: patient.iqies_huv1_accepted_dt || null,
+      iqies_huv2_result: patient.iqies_huv2_result || "",
+      iqies_huv2_accepted_dt: patient.iqies_huv2_accepted_dt || null,
+      iqies_discharge_result: patient.iqies_discharge_result || "",
+      iqies_discharge_accepted_dt:
+        patient.iqies_discharge_accepted_dt || null,
+      iqies_admission_issue_affected_records:
+        admissionExceptions.issue_affected_records || "",
+      iqies_admission_root_cause: admissionExceptions.root_cause || "",
+      iqies_admission_action_owner: admissionExceptions.action_owner || "",
+      iqies_huv1_issue_affected_records:
+        huv1Exceptions.issue_affected_records || "",
+      iqies_huv1_root_cause: huv1Exceptions.root_cause || "",
+      iqies_huv1_action_owner: huv1Exceptions.action_owner || "",
+      iqies_huv2_issue_affected_records:
+        huv2Exceptions.issue_affected_records || "",
+      iqies_huv2_root_cause: huv2Exceptions.root_cause || "",
+      iqies_huv2_action_owner: huv2Exceptions.action_owner || "",
+      iqies_discharge_issue_affected_records:
+        dischargeExceptions.issue_affected_records || "",
+      iqies_discharge_root_cause: dischargeExceptions.root_cause || "",
+      iqies_discharge_action_owner: dischargeExceptions.action_owner || "",
+      hope_report_admission_dt: patient.hope_report_admission_dt || null,
+      hope_report_huv1_dt: patient.hope_report_huv1_dt || null,
+      hope_report_huv2_dt: patient.hope_report_huv2_dt || null,
+      hope_report_discharge_dt: patient.hope_report_discharge_dt || null,
+      hope_report_admission_code: patient.hope_report_admission_code || "",
+      hope_report_huv1_code: patient.hope_report_huv1_code || "",
+      hope_report_huv2_code: patient.hope_report_huv2_code || "",
+      hope_report_discharge_code: patient.hope_report_discharge_code || "",
     });
     setEditDialogOpen(true);
+  };
+
+  const handlePrintClick = (patient) => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+    setPrintTargetPatient(patient);
+    setPrintFormData({
+      reportDate: `${year}-${month}-${day}`,
+      preparedBy: "Jasmin Angela Velasco, Admin Mgr",
+      administrator: "Marivic Eleno, RN",
+      patientName: patient?.patientCd || "",
+      caseManager: patient?.case_manager || "",
+    });
+    setPrintDialogOpen(true);
+  };
+
+  const handleClosePrintDialog = () => {
+    setPrintDialogOpen(false);
+    setPrintTargetPatient(null);
+  };
+
+  const handlePrintFieldChange = (field, value) => {
+    setPrintFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const handlePrintDateChange = (value) => {
+    if (!value) {
+      handlePrintFieldChange("reportDate", null);
+      return;
+    }
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, "0");
+    const day = String(value.getDate()).padStart(2, "0");
+    handlePrintFieldChange("reportDate", `${year}-${month}-${day}`);
+  };
+
+  const handleConfirmPrint = async () => {
+    if (!printTargetPatient) return;
+    try {
+      const doc = (
+        <HopeReportDocument
+          patient={printTargetPatient}
+          reportDate={
+            printFormData.reportDate
+              ? new Date(printFormData.reportDate + "T12:00:00")
+              : new Date()
+          }
+          preparedBy={printFormData.preparedBy}
+          administrator={printFormData.administrator}
+          patientName={printFormData.patientName}
+          caseManager={printFormData.caseManager}
+        />
+      );
+      const asPdf = pdf(doc);
+      const blob = await asPdf.toBlob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+      handleClosePrintDialog();
+    } catch (error) {
+      console.error("Error generating HOPE report PDF:", error);
+      alert("Failed to generate HOPE report PDF. Please try again.");
+    }
   };
 
   const handleCloseDialog = () => {
@@ -242,11 +490,36 @@ function HopeFunction(props) {
     setSelectedPatient(null);
   };
 
+  const SYMPTOM_TO_SFV_FIELD = {
+    first_symptom: "sfv_admission_dt",
+    second_symptom: "sfv_huv1_completed_dt",
+    third_symptom: "sfv_huv2_completed_dt",
+  };
+
   const handleFormChange = (field, value) => {
-    setEditFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    setEditFormData((prev) => {
+      const next = {
+        ...prev,
+        [field]: value,
+      };
+      const sfvField = SYMPTOM_TO_SFV_FIELD[field];
+      if (sfvField && ["N/A", "Mild"].includes(value)) {
+        next[sfvField] = null;
+      }
+      return next;
+    });
+  };
+
+  const handleDateFormChange = (value, field) => {
+    if (!value) {
+      handleFormChange(field, null);
+      return;
+    }
+    // Extract local date parts to avoid timezone issues
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, "0");
+    const day = String(value.getDate()).padStart(2, "0");
+    handleFormChange(field, `${year}-${month}-${day}`);
   };
 
   const handleSaveChanges = () => {
@@ -258,6 +531,49 @@ function HopeFunction(props) {
       first_symptom: editFormData.first_symptom,
       second_symptom: editFormData.second_symptom,
       third_symptom: editFormData.third_symptom,
+      sfv_admission_dt: editFormData.sfv_admission_dt || null,
+      sfv_huv1_completed_dt: editFormData.sfv_huv1_completed_dt || null,
+      sfv_huv2_completed_dt: editFormData.sfv_huv2_completed_dt || null,
+      huv1_completed_dt: editFormData.huv1_completed_dt || null,
+      huv2_completed_dt: editFormData.huv2_completed_dt || null,
+      hope_discharge_dt: editFormData.hope_discharge_dt || null,
+      hope_discharge_reason: editFormData.hope_discharge_reason || null,
+      iqies_admission_result: editFormData.iqies_admission_result || null,
+      iqies_admission_accepted_date:
+        editFormData.iqies_admission_accepted_date || null,
+      iqies_huv1_result: editFormData.iqies_huv1_result || null,
+      iqies_huv1_accepted_dt: editFormData.iqies_huv1_accepted_dt || null,
+      iqies_huv2_result: editFormData.iqies_huv2_result || null,
+      iqies_huv2_accepted_dt: editFormData.iqies_huv2_accepted_dt || null,
+      iqies_discharge_result: editFormData.iqies_discharge_result || null,
+      iqies_discharge_accepted_dt:
+        editFormData.iqies_discharge_accepted_dt || null,
+      iqies_admission_exceptions_correction: buildIqiesExceptionPayload(
+        editFormData,
+        "admission"
+      ),
+      iqies_huv1_exceptions_correction: buildIqiesExceptionPayload(
+        editFormData,
+        "huv1"
+      ),
+      iqies_huv2_exceptions_correction: buildIqiesExceptionPayload(
+        editFormData,
+        "huv2"
+      ),
+      iqies_discharge_exceptions_correction: buildIqiesExceptionPayload(
+        editFormData,
+        "discharge"
+      ),
+      hope_report_admission_dt: editFormData.hope_report_admission_dt || null,
+      hope_report_huv1_dt: editFormData.hope_report_huv1_dt || null,
+      hope_report_huv2_dt: editFormData.hope_report_huv2_dt || null,
+      hope_report_discharge_dt: editFormData.hope_report_discharge_dt || null,
+      hope_report_admission_code:
+        editFormData.hope_report_admission_code || null,
+      hope_report_huv1_code: editFormData.hope_report_huv1_code || null,
+      hope_report_huv2_code: editFormData.hope_report_huv2_code || null,
+      hope_report_discharge_code:
+        editFormData.hope_report_discharge_code || null,
       companyId: context.userProfile?.companyId,
       updatedUser: {
         name: context.userProfile.name,
@@ -410,6 +726,14 @@ function HopeFunction(props) {
                                   >
                                     <EditIcon fontSize="small" />
                                   </IconButton>
+                                  <IconButton
+                                    size="small"
+                                    color="primary"
+                                    onClick={() => handlePrintClick(patient)}
+                                    title="Print HOPE report"
+                                  >
+                                    <PrintIcon fontSize="small" />
+                                  </IconButton>
                                 </TableCell>
                                 <TableCell
                                   className={classes.tableCell}
@@ -499,7 +823,7 @@ function HopeFunction(props) {
           <Dialog
             open={editDialogOpen}
             onClose={handleCloseDialog}
-            maxWidth="sm"
+            maxWidth="md"
             fullWidth
           >
             <DialogTitle>
@@ -519,42 +843,386 @@ function HopeFunction(props) {
                   }
                   label="HOPE Completed"
                 />
-                <TextField
-                  fullWidth
-                  label="Symptoms 1 (Between Admit Date and SVF Due)"
-                  value={editFormData.first_symptom}
-                  onChange={(e) =>
-                    handleFormChange("first_symptom", e.target.value)
-                  }
-                  margin="normal"
-                  variant="outlined"
-                  multiline
-                  rows={2}
-                />
-                <TextField
-                  fullWidth
-                  label="Symptoms 2 (Between HUV Date and SFV Due)"
-                  value={editFormData.second_symptom}
-                  onChange={(e) =>
-                    handleFormChange("second_symptom", e.target.value)
-                  }
-                  margin="normal"
-                  variant="outlined"
-                  multiline
-                  rows={2}
-                />
-                <TextField
-                  fullWidth
-                  label="Symptoms 3 (Between HUV2 Date and SFV Due)"
-                  value={editFormData.third_symptom}
-                  onChange={(e) =>
-                    handleFormChange("third_symptom", e.target.value)
-                  }
-                  margin="normal"
-                  variant="outlined"
-                  multiline
-                  rows={2}
-                />
+                <Box mt={2} mb={1}>
+                  <strong>Admission / SFV1</strong>
+                </Box>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={4}>
+                    <TextField
+                      fullWidth
+                      label="Admission Date (SOC)"
+                      value={
+                        selectedPatient?.soc
+                          ? formatDate(selectedPatient.soc)
+                          : "N/A"
+                      }
+                      margin="none"
+                      variant="outlined"
+                      InputLabelProps={{ shrink: true }}
+                      disabled
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <FormControl fullWidth variant="outlined" margin="none">
+                      <InputLabel shrink>Symptom 1</InputLabel>
+                      <Select
+                        label="Symptom 1"
+                        notched
+                        value={editFormData.first_symptom || ""}
+                        onChange={(e) =>
+                          handleFormChange("first_symptom", e.target.value)
+                        }
+                        displayEmpty
+                      >
+                        <MenuItem value="">
+                          <em>Select</em>
+                        </MenuItem>
+                        {SYMPTOM_OPTIONS.map((opt) => (
+                          <MenuItem key={opt} value={opt}>
+                            {opt}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <CustomDatePicker
+                      label="SFV Admission Visit"
+                      name="sfv_admission_dt"
+                      value={
+                        editFormData.sfv_admission_dt
+                          ? new Date(editFormData.sfv_admission_dt + "T12:00:00")
+                          : null
+                      }
+                      onChange={handleDateFormChange}
+                      noDefault={true}
+                    />
+                  </Grid>
+                </Grid>
+
+                <Box mt={2} mb={1}>
+                  <strong>HUV1 / SFV2</strong>
+                </Box>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={4}>
+                    <CustomDatePicker
+                      label="HUV1 Completed Date"
+                      name="huv1_completed_dt"
+                      value={
+                        editFormData.huv1_completed_dt
+                          ? new Date(editFormData.huv1_completed_dt + "T12:00:00")
+                          : null
+                      }
+                      onChange={handleDateFormChange}
+                      noDefault={true}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <FormControl fullWidth variant="outlined" margin="none">
+                      <InputLabel shrink>Symptom 2</InputLabel>
+                      <Select
+                        label="Symptom 2"
+                        notched
+                        value={editFormData.second_symptom || ""}
+                        onChange={(e) =>
+                          handleFormChange("second_symptom", e.target.value)
+                        }
+                        displayEmpty
+                      >
+                        <MenuItem value="">
+                          <em>Select</em>
+                        </MenuItem>
+                        {SYMPTOM_OPTIONS.map((opt) => (
+                          <MenuItem key={opt} value={opt}>
+                            {opt}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <CustomDatePicker
+                      label="SFV HUV1 Visit"
+                      name="sfv_huv1_completed_dt"
+                      value={
+                        editFormData.sfv_huv1_completed_dt
+                          ? new Date(
+                              editFormData.sfv_huv1_completed_dt + "T12:00:00"
+                            )
+                          : null
+                      }
+                      onChange={handleDateFormChange}
+                      noDefault={true}
+                    />
+                  </Grid>
+                </Grid>
+
+                <Box mt={2} mb={1}>
+                  <strong>HUV2 / SFV3</strong>
+                </Box>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={4}>
+                    <CustomDatePicker
+                      label="HUV2 Completed Date"
+                      name="huv2_completed_dt"
+                      value={
+                        editFormData.huv2_completed_dt
+                          ? new Date(editFormData.huv2_completed_dt + "T12:00:00")
+                          : null
+                      }
+                      onChange={handleDateFormChange}
+                      noDefault={true}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <FormControl fullWidth variant="outlined" margin="none">
+                      <InputLabel shrink>Symptom 3</InputLabel>
+                      <Select
+                        label="Symptom 3"
+                        notched
+                        value={editFormData.third_symptom || ""}
+                        onChange={(e) =>
+                          handleFormChange("third_symptom", e.target.value)
+                        }
+                        displayEmpty
+                      >
+                        <MenuItem value="">
+                          <em>Select</em>
+                        </MenuItem>
+                        {SYMPTOM_OPTIONS.map((opt) => (
+                          <MenuItem key={opt} value={opt}>
+                            {opt}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <CustomDatePicker
+                      label="SFV HUV2 Visit"
+                      name="sfv_huv2_completed_dt"
+                      value={
+                        editFormData.sfv_huv2_completed_dt
+                          ? new Date(
+                              editFormData.sfv_huv2_completed_dt + "T12:00:00"
+                            )
+                          : null
+                      }
+                      onChange={handleDateFormChange}
+                      noDefault={true}
+                    />
+                  </Grid>
+                </Grid>
+
+                <Box mt={2} mb={1}>
+                  <strong>Discharge</strong>
+                </Box>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <CustomDatePicker
+                      label="HOPE Discharge Date"
+                      name="hope_discharge_dt"
+                      value={
+                        editFormData.hope_discharge_dt
+                          ? new Date(editFormData.hope_discharge_dt + "T12:00:00")
+                          : null
+                      }
+                      onChange={handleDateFormChange}
+                      noDefault={true}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      fullWidth
+                      label="HOPE Discharge Reason"
+                      value={editFormData.hope_discharge_reason}
+                      onChange={(e) =>
+                        handleFormChange("hope_discharge_reason", e.target.value)
+                      }
+                      margin="none"
+                      variant="outlined"
+                    />
+                  </Grid>
+                </Grid>
+
+                <Box mt={2} mb={1}>
+                  <strong>Hope Report</strong>
+                </Box>
+                {IQIES_MILESTONES.map((m) => {
+                  const hrDateField = `hope_report_${m.key}_dt`;
+                  const hrCodeField = `hope_report_${m.key}_code`;
+
+                  return (
+                    <Grid container spacing={2} key={`hope-report-${m.key}`}>
+                      <Grid item xs={12} sm={4}>
+                        <TextField
+                          fullWidth
+                          label="Record"
+                          value={m.label}
+                          margin="none"
+                          variant="outlined"
+                          disabled
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={4}>
+                        <CustomDatePicker
+                          label="Date"
+                          name={hrDateField}
+                          value={
+                            editFormData[hrDateField]
+                              ? new Date(editFormData[hrDateField] + "T12:00:00")
+                              : null
+                          }
+                          onChange={handleDateFormChange}
+                          noDefault={true}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={4}>
+                        <TextField
+                          fullWidth
+                          label="Submission Code"
+                          value={editFormData[hrCodeField]}
+                          onChange={(e) =>
+                            handleFormChange(hrCodeField, e.target.value)
+                          }
+                          margin="none"
+                          variant="outlined"
+                        />
+                      </Grid>
+                    </Grid>
+                  );
+                })}
+
+                <Box mt={2} mb={1}>
+                  <strong>iQIES Submission</strong>
+                </Box>
+                {IQIES_MILESTONES.map((m) => {
+                  const dateField =
+                    m.key === "admission"
+                      ? "iqies_admission_accepted_date"
+                      : `iqies_${m.key}_accepted_dt`;
+                  const resultField = `iqies_${m.key}_result`;
+                  const issueField = `iqies_${m.key}_issue_affected_records`;
+                  const rootCauseField = `iqies_${m.key}_root_cause`;
+                  const actionOwnerField = `iqies_${m.key}_action_owner`;
+                  const isError = editFormData[resultField] === "Error";
+
+                  return (
+                    <React.Fragment key={m.key}>
+                      <Grid container spacing={2}>
+                        <Grid item xs={12} sm={4}>
+                          <TextField
+                            fullWidth
+                            label="Record"
+                            value={m.label}
+                            margin="none"
+                            variant="outlined"
+                            disabled
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={4}>
+                          <CustomDatePicker
+                            label="Accepted Date"
+                            name={dateField}
+                            value={
+                              editFormData[dateField]
+                                ? new Date(editFormData[dateField] + "T12:00:00")
+                                : null
+                            }
+                            onChange={handleDateFormChange}
+                            noDefault={true}
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={4}>
+                          <FormControl
+                            fullWidth
+                            variant="outlined"
+                            margin="none"
+                          >
+                            <InputLabel shrink>Result</InputLabel>
+                            <Select
+                              label="Result"
+                              notched
+                              value={editFormData[resultField] || ""}
+                              onChange={(e) =>
+                                handleFormChange(resultField, e.target.value)
+                              }
+                              displayEmpty
+                            >
+                              <MenuItem value="">
+                                <em>Select</em>
+                              </MenuItem>
+                              <MenuItem value="Accepted">Accepted</MenuItem>
+                              <MenuItem value="Error">Error</MenuItem>
+                            </Select>
+                          </FormControl>
+                        </Grid>
+                      </Grid>
+
+                      {isError && (
+                        <Box
+                          mt={1}
+                          mb={2}
+                          pl={2}
+                          pr={2}
+                          pt={2}
+                          pb={1}
+                          style={{
+                            backgroundColor: "#FFF7F0",
+                            border: "1px solid #F0D5B8",
+                            borderRadius: 4,
+                          }}
+                        >
+                          <Box mb={1}>
+                            <strong>
+                              {m.label} &mdash; Exceptions and Corrective
+                              Action
+                            </strong>
+                          </Box>
+                          <TextField
+                            fullWidth
+                            label="Issue / Affected Records"
+                            value={editFormData[issueField]}
+                            onChange={(e) =>
+                              handleFormChange(issueField, e.target.value)
+                            }
+                            margin="normal"
+                            variant="outlined"
+                            multiline
+                            rows={2}
+                          />
+                          <TextField
+                            fullWidth
+                            label="Root Cause"
+                            value={editFormData[rootCauseField]}
+                            onChange={(e) =>
+                              handleFormChange(rootCauseField, e.target.value)
+                            }
+                            margin="normal"
+                            variant="outlined"
+                            multiline
+                            rows={2}
+                          />
+                          <TextField
+                            fullWidth
+                            label="Action / Owner"
+                            value={editFormData[actionOwnerField]}
+                            onChange={(e) =>
+                              handleFormChange(
+                                actionOwnerField,
+                                e.target.value
+                              )
+                            }
+                            margin="normal"
+                            variant="outlined"
+                            multiline
+                            rows={2}
+                          />
+                        </Box>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
               </div>
             </DialogContent>
             <DialogActions>
@@ -567,6 +1235,87 @@ function HopeFunction(props) {
                 variant="contained"
               >
                 Save Changes
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          {/* Print Report Dialog */}
+          <Dialog
+            open={printDialogOpen}
+            onClose={handleClosePrintDialog}
+            maxWidth="xs"
+            fullWidth
+          >
+            <DialogTitle>
+              Print HOPE Report - {printTargetPatient?.patientCd || "N/A"}
+            </DialogTitle>
+            <DialogContent>
+              <div style={{ paddingTop: "10px" }}>
+                <CustomDatePicker
+                  label="Report Date"
+                  name="reportDate"
+                  value={
+                    printFormData.reportDate
+                      ? new Date(printFormData.reportDate + "T12:00:00")
+                      : null
+                  }
+                  onChange={handlePrintDateChange}
+                  noDefault={true}
+                />
+                <TextField
+                  fullWidth
+                  label="Patient Name"
+                  value={printFormData.patientName}
+                  onChange={(e) =>
+                    handlePrintFieldChange("patientName", e.target.value)
+                  }
+                  margin="normal"
+                  variant="outlined"
+                  helperText="Overwrites the patient name shown on the PDF"
+                />
+                <TextField
+                  fullWidth
+                  label="Case Manager"
+                  value={printFormData.caseManager}
+                  onChange={(e) =>
+                    handlePrintFieldChange("caseManager", e.target.value)
+                  }
+                  margin="normal"
+                  variant="outlined"
+                  helperText="Overwrites the case manager shown on the PDF"
+                />
+                <TextField
+                  fullWidth
+                  label="Prepared By"
+                  value={printFormData.preparedBy}
+                  onChange={(e) =>
+                    handlePrintFieldChange("preparedBy", e.target.value)
+                  }
+                  margin="normal"
+                  variant="outlined"
+                />
+                <TextField
+                  fullWidth
+                  label="Administrator"
+                  value={printFormData.administrator}
+                  onChange={(e) =>
+                    handlePrintFieldChange("administrator", e.target.value)
+                  }
+                  margin="normal"
+                  variant="outlined"
+                />
+              </div>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleClosePrintDialog} color="default">
+                Cancel
+              </Button>
+              <Button
+                onClick={handleConfirmPrint}
+                color="primary"
+                variant="contained"
+              >
+                Generate PDF
               </Button>
             </DialogActions>
           </Dialog>
