@@ -30,7 +30,7 @@ const STATUS_META = {
 };
 
 const fmt = (d) => (d ? moment(d).format("MM/DD/YYYY") : "—");
-const fmtShort = (d) => (d ? moment(d).format("MM/DD") : "—");
+const fmtShort = (d) => (d ? moment(d).format("MM/DD/YY") : "—");
 const fmtOrNA = (d, isNA) => (d ? fmt(d) : isNA ? "Not Required" : "—");
 const textOrNA = (text, isNA) =>
   text ? text : isNA ? "Not Required" : "—";

@@ -36,9 +36,11 @@ import {
   Edit as EditIcon,
   Check as CheckIcon,
   Print as PrintIcon,
+  Assessment as AssessmentIcon,
 } from "@material-ui/icons";
 import { pdf } from "@react-pdf/renderer";
 import HopeReportDocument from "./components/HopeReportDocument";
+import HopeSummaryReportDocument from "./components/HopeSummaryReportDocument";
 import { attemptToFetchPatient } from "store/actions/patientAction";
 import { resetFetchPatientState } from "store/actions/patientAction";
 import { attemptToUpdatePatient } from "store/actions/patientAction";
@@ -201,6 +203,12 @@ function HopeFunction(props) {
     administrator: "Marivic Eleno, RN",
     patientName: "",
     caseManager: "",
+  });
+  const [summaryPrintDialogOpen, setSummaryPrintDialogOpen] = useState(false);
+  const [summaryPrintFormData, setSummaryPrintFormData] = useState({
+    reportDate: null,
+    preparedBy: "Jasmin Angela Velasco (Admin Mgr)",
+    reviewedApprovedBy: "Marivic Eleno, RN (Administrator)",
   });
 
   useEffect(() => {
@@ -490,6 +498,66 @@ function HopeFunction(props) {
     setSelectedPatient(null);
   };
 
+  const handleOpenSummaryPrintDialog = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+    setSummaryPrintFormData({
+      reportDate: `${year}-${month}-${day}`,
+      preparedBy: "Jasmin Angela Velasco (Admin Mgr)",
+      reviewedApprovedBy: "Marivic Eleno, RN (Administrator)",
+    });
+    setSummaryPrintDialogOpen(true);
+  };
+
+  const handleCloseSummaryPrintDialog = () => {
+    setSummaryPrintDialogOpen(false);
+  };
+
+  const handleSummaryPrintFieldChange = (field, value) => {
+    setSummaryPrintFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const handleSummaryPrintDateChange = (value) => {
+    if (!value) {
+      handleSummaryPrintFieldChange("reportDate", null);
+      return;
+    }
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, "0");
+    const day = String(value.getDate()).padStart(2, "0");
+    handleSummaryPrintFieldChange("reportDate", `${year}-${month}-${day}`);
+  };
+
+  const handleConfirmSummaryPrint = async () => {
+    try {
+      const doc = (
+        <HopeSummaryReportDocument
+          patients={getFilteredData()}
+          reportDate={
+            summaryPrintFormData.reportDate
+              ? new Date(summaryPrintFormData.reportDate + "T12:00:00")
+              : new Date()
+          }
+          preparedBy={summaryPrintFormData.preparedBy}
+          reviewedApprovedBy={summaryPrintFormData.reviewedApprovedBy}
+        />
+      );
+      const asPdf = pdf(doc);
+      const blob = await asPdf.toBlob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+      handleCloseSummaryPrintDialog();
+    } catch (error) {
+      console.error("Error generating HOPE summary report PDF:", error);
+      alert("Failed to generate HOPE summary report PDF. Please try again.");
+    }
+  };
+
   const SYMPTOM_TO_SFV_FIELD = {
     first_symptom: "sfv_admission_dt",
     second_symptom: "sfv_huv1_completed_dt",
@@ -608,7 +676,12 @@ function HopeFunction(props) {
                   </p>
                 </CardHeader>
                 <CardBody>
-                  <Box mb={2}>
+                  <Box
+                    mb={2}
+                    display="flex"
+                    justifyContent="space-between"
+                    alignItems="center"
+                  >
                     <FormControl
                       variant="outlined"
                       size="small"
@@ -625,6 +698,14 @@ function HopeFunction(props) {
                         <MenuItem value="no">No</MenuItem>
                       </Select>
                     </FormControl>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      startIcon={<AssessmentIcon />}
+                      onClick={handleOpenSummaryPrintDialog}
+                    >
+                      HOPE Report
+                    </Button>
                   </Box>
                   <TableContainer
                     component={Paper}
@@ -1312,6 +1393,66 @@ function HopeFunction(props) {
               </Button>
               <Button
                 onClick={handleConfirmPrint}
+                color="primary"
+                variant="contained"
+              >
+                Generate PDF
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          {/* Summary Print Report Dialog */}
+          <Dialog
+            open={summaryPrintDialogOpen}
+            onClose={handleCloseSummaryPrintDialog}
+            maxWidth="xs"
+            fullWidth
+          >
+            <DialogTitle>Print HOPE Report</DialogTitle>
+            <DialogContent>
+              <div style={{ paddingTop: "10px" }}>
+                <CustomDatePicker
+                  label="Report Date"
+                  name="reportDate"
+                  value={
+                    summaryPrintFormData.reportDate
+                      ? new Date(summaryPrintFormData.reportDate + "T12:00:00")
+                      : null
+                  }
+                  onChange={handleSummaryPrintDateChange}
+                  noDefault={true}
+                />
+                <TextField
+                  fullWidth
+                  label="Prepared By"
+                  value={summaryPrintFormData.preparedBy}
+                  onChange={(e) =>
+                    handleSummaryPrintFieldChange("preparedBy", e.target.value)
+                  }
+                  margin="normal"
+                  variant="outlined"
+                />
+                <TextField
+                  fullWidth
+                  label="Reviewed and Approved By"
+                  value={summaryPrintFormData.reviewedApprovedBy}
+                  onChange={(e) =>
+                    handleSummaryPrintFieldChange(
+                      "reviewedApprovedBy",
+                      e.target.value
+                    )
+                  }
+                  margin="normal"
+                  variant="outlined"
+                />
+              </div>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleCloseSummaryPrintDialog} color="default">
+                Cancel
+              </Button>
+              <Button
+                onClick={handleConfirmSummaryPrint}
                 color="primary"
                 variant="contained"
               >
