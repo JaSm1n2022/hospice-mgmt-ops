@@ -809,6 +809,24 @@ export const EMPLOYEE_TYPE = [
     code: "volunteer",
   },
 ];
+export const EMPLOYEE_WORKER_CLASSIFICATION = [
+  {
+    id: "w2",
+    category: "workerClassification",
+    name: "W2",
+    label: "W2",
+    value: "W2",
+    code: "w2",
+  },
+  {
+    id: "1099",
+    category: "workerClassification",
+    name: "1099",
+    label: "1099",
+    value: "1099",
+    code: "1099",
+  },
+];
 export const EMPLOYEE_CLASSIFICATION = [
   {
     id: "directCare",

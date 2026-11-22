@@ -67,6 +67,24 @@ const useStyles = makeStyles((theme) => ({
 const CHECKLIST_STRUCTURE = {
   section1: {
     title: "Section 1: Application Documents",
+    sectionFields: [
+      {
+        key: "reportTo",
+        label: "Report To",
+        type: "multiselect",
+        options: [
+          "Administrator",
+          "DPCS",
+          "Case Manager",
+          "Volunteer Coordinator",
+          "Community Liaison Director",
+          "Governing Body",
+          "Corporate Compliance Officer",
+          "Administrative Manager",
+          "Medical Director",
+        ],
+      },
+    ],
     items: [
       {
         key: "applicationForm",
@@ -83,6 +101,10 @@ const CHECKLIST_STRUCTURE = {
         key: "licenseVerification",
         label: "License Verification",
         hasExpiration: true,
+        extraFields: [
+          { key: "number", label: "License Number", type: "text" },
+          { key: "verifiedDate", label: "License Verified Date", type: "date" },
+        ],
       },
       { key: "diploma", label: "Diploma", hasExpiration: false },
       {
@@ -101,17 +123,52 @@ const CHECKLIST_STRUCTURE = {
     items: [
       { key: "jobDescription", label: "Job Description", hasExpiration: false },
       { key: "offerLetter", label: "Offer Letter", hasExpiration: false },
-      { key: "orientation", label: "Orientation", hasExpiration: false },
-      { key: "competency", label: "Competency", hasExpiration: false },
+      {
+        key: "orientation",
+        label: "Orientation",
+        hasExpiration: false,
+        extraFields: [{ key: "date", label: "Orientation Date", type: "date" }],
+      },
+      {
+        key: "competency",
+        label: "Competency",
+        hasExpiration: false,
+        extraFields: [
+          { key: "initialDate", label: "Initial Competency Date", type: "date" },
+          { key: "lastDate", label: "Last Competency Date", type: "date" },
+        ],
+      },
+      {
+        key: "competencyEvaluation",
+        label: "Competency Evaluation (Hands-on Skills)",
+        hasExpiration: false,
+      },
       {
         key: "performanceEvaluations",
         label: "Performance Evaluations",
         hasExpiration: false,
+        extraFields: [
+          { key: "date", label: "Performance Evaluation Date", type: "date" },
+        ],
+      },
+      {
+        key: "contract",
+        label: "Contract",
+        hasExpiration: true,
+        expirationLabel: "Contract Expiration",
+        extraFields: [{ key: "date", label: "Contract Date", type: "date" }],
       },
     ],
   },
   section4: {
     title: "Section 4: Policies & Agreements",
+    sectionFields: [
+      {
+        key: "policyAcknowledgeDate",
+        label: "Policy & Agreement Acknowledge Date",
+        type: "date",
+      },
+    ],
     items: [
       {
         key: "confidentiality",
@@ -165,22 +222,54 @@ const CHECKLIST_STRUCTURE = {
         label: "CEUs (Continuing Education Units)",
         hasExpiration: false,
       },
+      {
+        key: "inserviceHours",
+        label: "In-Service Hours (Last 12 Months)",
+        hasExpiration: false,
+        extraFields: [
+          { key: "hours", label: "Hours (Last 12 Months)", type: "text" },
+        ],
+      },
+      {
+        key: "lastTraining",
+        label: "Last Training",
+        hasExpiration: false,
+        extraFields: [
+          { key: "date", label: "Last Training Date", type: "date" },
+          { key: "topic", label: "Topic", type: "text" },
+        ],
+      },
     ],
   },
   section6: {
     title: "Section 6: Health & Background",
     items: [
-      { key: "physicalExam", label: "Physical Exam", hasExpiration: false },
+      {
+        key: "physicalExam",
+        label: "Physical Exam",
+        hasExpiration: false,
+        extraFields: [
+          { key: "date", label: "Physical Exam Date", type: "date" },
+        ],
+      },
       {
         key: "hepatitisB",
         label: "Hepatitis B Vaccination",
         hasExpiration: false,
       },
-      { key: "tbCxr", label: "TB/CXR (Chest X-Ray)", hasExpiration: false },
+      {
+        key: "tbCxr",
+        label: "TB/CXR (Chest X-Ray)",
+        hasExpiration: false,
+        extraFields: [{ key: "date", label: "TB/CXR Date", type: "date" }],
+      },
       {
         key: "tbQuestionnaire",
         label: "TB Questionnaire",
         hasExpiration: false,
+        extraFields: [
+          { key: "date", label: "TB Questionnaire Date", type: "date" },
+        ],
       },
       {
         key: "criminalHistory",
@@ -196,6 +285,9 @@ const CHECKLIST_STRUCTURE = {
         key: "backgroundCheck",
         label: "Background Check (NABS)",
         hasExpiration: false,
+        extraFields: [
+          { key: "date", label: "Background Check Date", type: "date" },
+        ],
       },
     ],
   },
@@ -227,11 +319,15 @@ const ChecklistModal = ({
     const initialData = {};
     Object.keys(CHECKLIST_STRUCTURE).forEach((sectionKey) => {
       const section = CHECKLIST_STRUCTURE[sectionKey];
+      (section.sectionFields || []).forEach((field) => {
+        initialData[field.key] = field.type === "multiselect" ? [] : null;
+      });
       section.items.forEach((checkItem) => {
-        initialData[checkItem.key] = {
-          checked: false,
-          expirationDate: null,
-        };
+        const fieldState = { checked: false, expirationDate: null };
+        (checkItem.extraFields || []).forEach((field) => {
+          fieldState[field.key] = null;
+        });
+        initialData[checkItem.key] = fieldState;
       });
     });
     return initialData;
@@ -270,6 +366,46 @@ const ChecklistModal = ({
         ...checklistData[itemKey],
         expirationDate: event.target.value,
       },
+    });
+  };
+
+  const handleExtraFieldChange = (itemKey, fieldKey) => (event) => {
+    setChecklistData({
+      ...checklistData,
+      [itemKey]: {
+        ...checklistData[itemKey],
+        [fieldKey]: event.target.value,
+      },
+    });
+  };
+
+  const handleSectionFieldChange = (fieldKey) => (event) => {
+    setChecklistData({
+      ...checklistData,
+      [fieldKey]: event.target.value,
+    });
+  };
+
+  const handleSectionEmployeeSelect = (fieldKey) => (employee) => {
+    setChecklistData({
+      ...checklistData,
+      [fieldKey]: employee,
+    });
+  };
+
+  const handleSectionEmployeeChange = (fieldKey) => (event) => {
+    if (!event.target.value) {
+      setChecklistData({
+        ...checklistData,
+        [fieldKey]: null,
+      });
+    }
+  };
+
+  const handleSectionMultiSelectChange = (fieldKey) => (event) => {
+    setChecklistData({
+      ...checklistData,
+      [fieldKey]: event.target.value,
     });
   };
 
@@ -394,7 +530,7 @@ const ChecklistModal = ({
             <Grid item xs={12}>
               <TextField
                 type="date"
-                label="Expiration Date"
+                label={checkItem.expirationLabel || "Expiration Date"}
                 value={itemData.expirationDate || ""}
                 onChange={handleExpirationDateChange(checkItem.key)}
                 className={classes.expirationField}
@@ -418,7 +554,97 @@ const ChecklistModal = ({
               />
             </Grid>
           )}
+          {(checkItem.extraFields || []).map((field) =>
+            itemData.checked ? (
+              <Grid item xs={12} key={field.key}>
+                <TextField
+                  type={field.type}
+                  label={field.label}
+                  value={itemData[field.key] || ""}
+                  onChange={handleExtraFieldChange(checkItem.key, field.key)}
+                  className={classes.expirationField}
+                  InputLabelProps={
+                    field.type === "date" ? { shrink: true } : undefined
+                  }
+                  fullWidth
+                  style={{ maxWidth: "300px" }}
+                  helperText={
+                    itemData.checked && !itemData[field.key]
+                      ? "Recommended"
+                      : ""
+                  }
+                />
+              </Grid>
+            ) : null
+          )}
         </Grid>
+      </Box>
+    );
+  };
+
+  const renderSectionField = (field) => {
+    if (field.type === "multiselect") {
+      const selectedValues = checklistData[field.key] || [];
+      return (
+        <Box key={field.key} mb={2} style={{ maxWidth: "400px" }}>
+          <FormControl fullWidth variant="outlined" margin="dense">
+            <InputLabel>{field.label}</InputLabel>
+            <Select
+              multiple
+              label={field.label}
+              value={selectedValues}
+              onChange={handleSectionMultiSelectChange(field.key)}
+              renderValue={(selected) => (
+                <Box display="flex" flexWrap="wrap">
+                  {selected.map((value) => (
+                    <Chip
+                      key={value}
+                      label={value}
+                      size="small"
+                      style={{ margin: "2px" }}
+                    />
+                  ))}
+                </Box>
+              )}
+            >
+              {(field.options || []).map((option) => (
+                <MenuItem key={option} value={option}>
+                  {option}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
+      );
+    }
+    if (field.type === "employee") {
+      return (
+        <Box key={field.key} mb={2} style={{ maxWidth: "300px" }}>
+          <Typography variant="body2" style={{ marginBottom: "4px" }}>
+            {field.label}
+          </Typography>
+          <CustomSingleAutoComplete
+            placeholder={field.label}
+            options={employeeList || []}
+            value={checklistData[field.key] || null}
+            onSelectHandler={handleSectionEmployeeSelect(field.key)}
+            onChangeHandler={handleSectionEmployeeChange(field.key)}
+          />
+        </Box>
+      );
+    }
+
+    return (
+      <Box key={field.key} mb={2}>
+        <TextField
+          type={field.type}
+          label={field.label}
+          value={checklistData[field.key] || ""}
+          onChange={handleSectionFieldChange(field.key)}
+          InputLabelProps={field.type === "date" ? { shrink: true } : undefined}
+          fullWidth
+          style={{ maxWidth: "300px" }}
+        />
       </Box>
     );
   };
@@ -439,6 +665,9 @@ const ChecklistModal = ({
         </AccordionSummary>
         <AccordionDetails>
           <Box style={{ width: "100%" }}>
+            {(section.sectionFields || []).map((field) =>
+              renderSectionField(field)
+            )}
             {section.items.map((checkItem) => renderChecklistItem(checkItem))}
           </Box>
         </AccordionDetails>

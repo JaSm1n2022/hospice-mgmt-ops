@@ -84,6 +84,7 @@ const useStyles = makeStyles(styles);
 // Define checklist structure for calculating section statuses
 const CHECKLIST_STRUCTURE = {
   section1: {
+    sectionFields: [{ key: "reportTo" }],
     items: [
       { key: "applicationForm", hasExpiration: false, mandatory: true },
       { key: "resume", hasExpiration: false, mandatory: true },
@@ -91,7 +92,12 @@ const CHECKLIST_STRUCTURE = {
   },
   section2: {
     items: [
-      { key: "licenseVerification", hasExpiration: true, mandatory: true },
+      {
+        key: "licenseVerification",
+        hasExpiration: true,
+        hasNumber: true,
+        mandatory: true,
+      },
       { key: "diploma", hasExpiration: false, mandatory: true },
       { key: "pli", hasExpiration: true, mandatory: false },
       { key: "ssc", hasExpiration: false, mandatory: true },
@@ -106,10 +112,13 @@ const CHECKLIST_STRUCTURE = {
       { key: "offerLetter", hasExpiration: false, mandatory: true },
       { key: "orientation", hasExpiration: false, mandatory: true },
       { key: "competency", hasExpiration: false, mandatory: true },
+      { key: "competencyEvaluation", hasExpiration: false, mandatory: true },
       { key: "performanceEvaluations", hasExpiration: false, mandatory: true },
+      { key: "contract", hasExpiration: true, mandatory: false },
     ],
   },
   section4: {
+    sectionFields: [{ key: "policyAcknowledgeDate" }],
     items: [
       { key: "confidentiality", hasExpiration: false, mandatory: true },
       { key: "eSig", hasExpiration: false, mandatory: true },
@@ -126,6 +135,8 @@ const CHECKLIST_STRUCTURE = {
       { key: "inServicesHire", hasExpiration: false, mandatory: false },
       { key: "inServicesAnnual", hasExpiration: false, mandatory: false },
       { key: "ceus", hasExpiration: false, mandatory: false },
+      { key: "inserviceHours", hasExpiration: false, mandatory: false },
+      { key: "lastTraining", hasExpiration: false, mandatory: false },
     ],
   },
   section6: {
@@ -604,6 +615,15 @@ function HROnboardingChecklistFunction(props) {
     const sections = {};
     Object.keys(CHECKLIST_STRUCTURE).forEach((sectionKey) => {
       const sectionData = {};
+      (CHECKLIST_STRUCTURE[sectionKey].sectionFields || []).forEach((field) => {
+        const fieldValue = data.checklistData[field.key];
+        const hasValue = Array.isArray(fieldValue)
+          ? fieldValue.length > 0
+          : !!fieldValue;
+        if (hasValue) {
+          sectionData[field.key] = fieldValue;
+        }
+      });
       CHECKLIST_STRUCTURE[sectionKey].items.forEach((item) => {
         if (data.checklistData[item.key]) {
           sectionData[item.key] = data.checklistData[item.key];

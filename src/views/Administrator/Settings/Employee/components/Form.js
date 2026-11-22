@@ -13,6 +13,7 @@ import Card from "components/Card/Card";
 import CardBody from "components/Card/CardBody";
 import { useTheme } from "@material-ui/core";
 import { EMPLOYEE_TYPE } from "utils/constants";
+import { EMPLOYEE_WORKER_CLASSIFICATION } from "utils/constants";
 import { EMPLOYEE_POSITION } from "utils/constants";
 import { EMPLOYEE_STATUS } from "utils/constants";
 import CardHeader from "components/Card/CardHeader";
@@ -85,6 +86,17 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 const general = [
+  {
+    id: "workerClassification",
+    component: "singlecomplete",
+    placeholder: "Employee Classification *",
+    label: "Employee Classification *",
+    name: "workerClassification",
+    //disabled: props.mode && props.mode === 'view' ? true : false,
+    value: DEFAULT_ITEM,
+    cols: 4,
+    options: EMPLOYEE_WORKER_CLASSIFICATION,
+  },
   {
     id: "employeeType",
     component: "singlecomplete",
@@ -214,6 +226,9 @@ function EmployeeForm(props) {
       console.log("[items]", props.item);
 
       const generalFm = { ...props.item };
+      generalFm.workerClassification = EMPLOYEE_WORKER_CLASSIFICATION.find(
+        (c) => c.value === generalFm.workerClassification
+      );
       generalFm.employeeType = EMPLOYEE_TYPE.find(
         (c) => c.value === generalFm.employeeType
       );
@@ -250,6 +265,16 @@ function EmployeeForm(props) {
           generalForm[temp.name] &&
           !generalForm[temp.name].name) ||
         (temp.name === "position" && !generalForm[temp.name])
+      ) {
+        isValid = false;
+        temp.isError = true;
+        temp.errorMsg = `${temp.label} is required.`;
+      }
+      if (
+        (temp.name === "workerClassification" &&
+          generalForm[temp.name] &&
+          !generalForm[temp.name].name) ||
+        (temp.name === "workerClassification" && !generalForm[temp.name])
       ) {
         isValid = false;
         temp.isError = true;
@@ -306,6 +331,12 @@ function EmployeeForm(props) {
     console.log("[src autocomplete]", src, item);
     if (item.category === "employee") {
       src["employeeType"] = item;
+    } else if (item.category === "workerClassification") {
+      src["workerClassification"] = item;
+      const tempList = [...components];
+      const wcObj = tempList.find((c) => c.name === "workerClassification");
+      wcObj.isError = false;
+      wcObj.errorMsg = "";
     } else if (item.category === "position") {
       src["position"] = item;
       const tempList = [...components];

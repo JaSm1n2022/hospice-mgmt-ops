@@ -25,6 +25,7 @@ import * as FileSaver from "file-saver";
 
 import EmployeeForm from "./components/Form";
 import PrintPersonnelListModal from "./components/PrintPersonnelListModal";
+import PrintRosterModal from "./components/PrintRosterModal";
 import { attemptToUpdateEmployee } from "store/actions/employeeAction";
 import { employeeListStateSelector } from "store/selectors/employeeSelector";
 import { employeeCreateStateSelector } from "store/selectors/employeeSelector";
@@ -37,6 +38,11 @@ import { resetCreateEmployeeState } from "store/actions/employeeAction";
 import { resetUpdateEmployeeState } from "store/actions/employeeAction";
 import { attemptToDeleteEmployee } from "store/actions/employeeAction";
 import { resetDeleteEmployeeState } from "store/actions/employeeAction";
+import { employeeChecklistListStateSelector } from "store/selectors/employeeChecklistSelector";
+import {
+  attemptToFetchEmployeeChecklist,
+  resetFetchEmployeeChecklistState,
+} from "store/actions/employeeChecklistAction";
 import FilterTable from "components/Table/FilterTable";
 import { profileListStateSelector } from "store/selectors/profileSelector";
 import { SupaContext } from "App";
@@ -103,6 +109,9 @@ function EmployeeFunction(props) {
   const [isAddGroupButtons, setIsAddGroupButtons] = useState(false);
   const [keywordValue, setKeywordValue] = useState("");
   const [isPersonnelListModalOpen, setIsPersonnelListModalOpen] = useState(false);
+  const [isRosterModalOpen, setIsRosterModalOpen] = useState(false);
+  const [checklistDataSource, setChecklistDataSource] = useState([]);
+  const [isChecklistCollection, setIsChecklistCollection] = useState(true);
 
   const showNotification = (place, color, msg) => {
     setMessage(msg);
@@ -168,18 +177,38 @@ function EmployeeFunction(props) {
       props.resetDeleteEmployee();
       setIsDeleteEmployeeCollection(true);
     }
+
+    if (
+      !isChecklistCollection &&
+      props.checklists &&
+      props.checklists.status === ACTION_STATUSES.SUCCEED
+    ) {
+      props.resetListChecklists();
+      setIsChecklistCollection(true);
+    }
   }, [
     isDeleteEmployeeCollection,
     isUpdateEmployeeCollection,
     isCreateEmployeeCollection,
     isEmployeesCollection,
+    isChecklistCollection,
   ]);
   useEffect(() => {
     console.log("list Employees");
     if (context.userProfile?.companyId) {
       props.listEmployees({ companyId: context.userProfile?.companyId });
+      props.listChecklists({ companyId: context.userProfile?.companyId });
     }
   }, []);
+
+  if (
+    isChecklistCollection &&
+    props.checklists &&
+    props.checklists.status === ACTION_STATUSES.SUCCEED
+  ) {
+    setChecklistDataSource(props.checklists.data || []);
+    setIsChecklistCollection(false);
+  }
 
   const sortByWorth = (items) => {
     items.sort((a, b) => {
@@ -250,6 +279,7 @@ function EmployeeFunction(props) {
       employeeId: payload.employeeId,
       phone: payload.phone,
       employeeType: payload.employeeType.value,
+      workerClassification: payload.workerClassification?.value,
       name: `${payload.fn} ${payload.ln}`,
       fn: payload.fn,
       ln: payload.ln,
@@ -417,6 +447,15 @@ function EmployeeFunction(props) {
                       <Print className={classes.icons} /> Personnel List
                     </Button>
 
+                    <Button
+                      color="primary"
+                      className={classes.marginRight}
+                      onClick={() => setIsRosterModalOpen(true)}
+                      disabled={!dataSource || dataSource.length === 0}
+                    >
+                      <Print className={classes.icons} /> Roster
+                    </Button>
+
                     {isAddGroupButtons && (
                       <Button
                         color="success"
@@ -467,6 +506,14 @@ function EmployeeFunction(props) {
           employeesData={dataSource}
         />
       )}
+      {isRosterModalOpen && (
+        <PrintRosterModal
+          isOpen={isRosterModalOpen}
+          onClose={() => setIsRosterModalOpen(false)}
+          employeesData={dataSource}
+          checklistsData={checklistDataSource}
+        />
+      )}
       {isFormModal && (
         <EmployeeForm
           filterRecordHandler={filterRecordHandler}
@@ -490,6 +537,7 @@ const mapStateToProps = (store) => ({
   updateEmployeeState: employeeUpdateStateSelector(store),
   deleteEmployeeState: employeeDeleteStateSelector(store),
   profileState: profileListStateSelector(store),
+  checklists: employeeChecklistListStateSelector(store),
 });
 
 const mapDispatchToProps = (dispatch) => ({
@@ -501,6 +549,8 @@ const mapDispatchToProps = (dispatch) => ({
   resetUpdateEmployee: () => dispatch(resetUpdateEmployeeState()),
   deleteEmployee: (data) => dispatch(attemptToDeleteEmployee(data)),
   resetDeleteEmployee: () => dispatch(resetDeleteEmployeeState()),
+  listChecklists: (data) => dispatch(attemptToFetchEmployeeChecklist(data)),
+  resetListChecklists: () => dispatch(resetFetchEmployeeChecklistState()),
 });
 
 export default connect(mapStateToProps, mapDispatchToProps)(EmployeeFunction);

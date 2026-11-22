@@ -122,6 +122,13 @@ const styles = StyleSheet.create({
   },
 });
 
+const SECTION_FIELDS = {
+  section1: [{ key: "reportTo", label: "Report To", type: "multiselect" }],
+  section4: [
+    { key: "policyAcknowledgeDate", label: "Policy & Agreement Acknowledge Date", type: "date" },
+  ],
+};
+
 const SECTION_LABELS = {
   section1: "Section 1: Application Materials",
   section2: "Section 2: Licenses & Credentials",
@@ -147,7 +154,9 @@ const ITEM_LABELS = {
   offerLetter: "Offer Letter",
   orientation: "Orientation",
   competency: "Competency Assessment",
+  competencyEvaluation: "Competency Evaluation (Hands-on Skills)",
   performanceEvaluations: "Performance Evaluations",
+  contract: "Contract",
   confidentiality: "Confidentiality Agreement",
   eSig: "E-Signature Policy",
   fieldPractices: "Field Practices",
@@ -159,6 +168,8 @@ const ITEM_LABELS = {
   inServicesHire: "In-Services (At Hire)",
   inServicesAnnual: "In-Services (Annual)",
   ceus: "CEUs (Continuing Education Units)",
+  inserviceHours: "In-Service Hours (Last 12 Months)",
+  lastTraining: "Last Training",
   physicalExam: "Physical Exam",
   hepatitisB: "Hepatitis B Vaccination",
   tbCxr: "TB CXR (Chest X-Ray)",
@@ -240,6 +251,18 @@ const ChecklistPrintAllDocument = ({ employeesData }) => {
     return false;
   };
 
+  const EXTRA_DATE_FIELDS = [
+    { key: "verifiedDate", label: "Verified" },
+    { key: "initialDate", label: "Initial" },
+    { key: "lastDate", label: "Last" },
+    { key: "date", label: "Date" },
+  ];
+  const EXTRA_TEXT_FIELDS = [
+    { key: "number", label: "#" },
+    { key: "hours", label: "Hours" },
+    { key: "topic", label: "Topic" },
+  ];
+
   const renderItem = (itemKey, itemData, sectionKey, employeePosition) => {
     const isChecked = itemData && itemData.checked;
     const hasExpiration = itemData && itemData.expirationDate;
@@ -274,6 +297,13 @@ const ChecklistPrintAllDocument = ({ employeesData }) => {
           ]}
         />
         <Text style={styles.itemText}>{ITEM_LABELS[itemKey] || itemKey}</Text>
+        {EXTRA_TEXT_FIELDS.map((field) =>
+          itemData && itemData[field.key] ? (
+            <Text style={styles.expirationText} key={field.key}>
+              {field.label}: {itemData[field.key]}
+            </Text>
+          ) : null
+        )}
         {hasExpiration && (
           <>
             <Text style={styles.expirationText}>
@@ -282,7 +312,35 @@ const ChecklistPrintAllDocument = ({ employeesData }) => {
             {isExpired && <Text style={styles.alertIcon}>⚠</Text>}
           </>
         )}
+        {EXTRA_DATE_FIELDS.map((field) =>
+          itemData && itemData[field.key] ? (
+            <Text style={styles.expirationText} key={field.key}>
+              {field.label}: {moment(itemData[field.key]).format("MM/DD/YYYY")}
+            </Text>
+          ) : null
+        )}
       </View>
+    );
+  };
+
+  const renderSectionFieldValue = (field, sectionData) => {
+    const rawValue = sectionData[field.key];
+    if (!rawValue || (Array.isArray(rawValue) && rawValue.length === 0)) {
+      return null;
+    }
+    const displayValue =
+      field.type === "date"
+        ? moment(rawValue).format("MM/DD/YYYY")
+        : field.type === "multiselect" && Array.isArray(rawValue)
+        ? rawValue.join(", ")
+        : typeof rawValue === "object"
+        ? rawValue.label || rawValue.name || rawValue.value || ""
+        : rawValue;
+    if (!displayValue) return null;
+    return (
+      <Text style={styles.expirationText} key={field.key}>
+        {field.label}: {displayValue}
+      </Text>
     );
   };
 
@@ -291,14 +349,20 @@ const ChecklistPrintAllDocument = ({ employeesData }) => {
       return null;
     }
 
+    const fields = SECTION_FIELDS[sectionKey] || [];
+    const fieldKeys = fields.map((f) => f.key);
+
     return (
       <View style={styles.section} key={sectionKey}>
         <Text style={styles.sectionTitle}>
           {SECTION_LABELS[sectionKey] || sectionKey}
         </Text>
-        {Object.keys(sectionData).map((itemKey) =>
-          renderItem(itemKey, sectionData[itemKey], sectionKey, employeePosition)
-        )}
+        {fields.map((field) => renderSectionFieldValue(field, sectionData))}
+        {Object.keys(sectionData)
+          .filter((itemKey) => !fieldKeys.includes(itemKey))
+          .map((itemKey) =>
+            renderItem(itemKey, sectionData[itemKey], sectionKey, employeePosition)
+          )}
       </View>
     );
   };

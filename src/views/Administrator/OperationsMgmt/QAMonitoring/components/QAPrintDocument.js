@@ -189,12 +189,15 @@ const QAPrintDocument = ({ qaRecords, patientList = [], summaryOnly = false }) =
       }
     });
 
-    // Sort records within each patient by QA Type
+    // Sort records within each patient by Source Date descending
     Object.keys(grouped).forEach((patientKey) => {
       grouped[patientKey].sort((a, b) => {
-        const typeA = a.qa_type || "";
-        const typeB = b.qa_type || "";
-        return typeA.localeCompare(typeB);
+        const dateA = a.qa_source_dt ? moment(a.qa_source_dt) : null;
+        const dateB = b.qa_source_dt ? moment(b.qa_source_dt) : null;
+        if (!dateA && !dateB) return 0;
+        if (!dateA) return 1;
+        if (!dateB) return -1;
+        return dateB.valueOf() - dateA.valueOf();
       });
     });
 
