@@ -45,6 +45,8 @@ function BereavementRecipientsModal({ isOpen, onClose, recipients, startDate, en
           ...(info.patientName ? { patientName: info.patientName } : {}),
           bereavementRecipientName: info.bereavementRecipientName,
           bereavementRecipientRelationship: info.bereavementRecipientRelationship,
+          bereavementRecipientAddress: info.bereavementRecipientAddress,
+          bereavementRecipientPhone: info.bereavementRecipientPhone,
         };
       });
       return next;
@@ -119,6 +121,8 @@ function BereavementRecipientsModal({ isOpen, onClose, recipients, startDate, en
                   <TableCell>Patient Name</TableCell>
                   <TableCell>Bereavement Recipient</TableCell>
                   <TableCell>Relationship</TableCell>
+                  <TableCell>Address</TableCell>
+                  <TableCell>Phone</TableCell>
                   <TableCell>Last Letter Date</TableCell>
                   <TableCell>Bereavement Type</TableCell>
                   <TableCell>Date of Death</TableCell>
@@ -167,6 +171,34 @@ function BereavementRecipientsModal({ isOpen, onClose, recipients, startDate, en
                           fullWidth
                         />
                       </TableCell>
+                      <TableCell>
+                        <TextField
+                          value={row.bereavementRecipientAddress || ""}
+                          onChange={(e) =>
+                            handleFieldChange(
+                              row.id,
+                              "bereavementRecipientAddress",
+                              e.target.value
+                            )
+                          }
+                          placeholder="Address"
+                          fullWidth
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <TextField
+                          value={row.bereavementRecipientPhone || ""}
+                          onChange={(e) =>
+                            handleFieldChange(
+                              row.id,
+                              "bereavementRecipientPhone",
+                              e.target.value
+                            )
+                          }
+                          placeholder="Phone"
+                          fullWidth
+                        />
+                      </TableCell>
                       <TableCell>{formatDate(row.lastLetterDate)}</TableCell>
                       <TableCell>{row.bereavementType || "-"}</TableCell>
                       <TableCell>{formatDate(row.dateOfDeath)}</TableCell>
@@ -174,7 +206,7 @@ function BereavementRecipientsModal({ isOpen, onClose, recipients, startDate, en
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7} align="center">
+                    <TableCell colSpan={9} align="center">
                       No bereavement recipients found for the selected date
                       range.
                     </TableCell>

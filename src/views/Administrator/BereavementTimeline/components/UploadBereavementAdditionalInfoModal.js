@@ -138,6 +138,8 @@ const EXCEL_FIELD_ALIASES = {
     "Bereavement Recipient Name",
   ],
   relationship: ["Relationship", "Relation"],
+  address: ["Address", "Recipient Address", "Contact Address"],
+  phone: ["Phone", "Phone Number", "Contact Phone", "Recipient Phone"],
 };
 
 function normalizeHeader(key) {
@@ -241,6 +243,8 @@ function UploadBereavementAdditionalInfoModal({
           patientCd: matched ? matched.patientCd : null,
           recipientName: readExcelValue(excelRow, "recipientName"),
           relationship: readExcelValue(excelRow, "relationship"),
+          address: readExcelValue(excelRow, "address"),
+          phone: readExcelValue(excelRow, "phone"),
         };
       });
 
@@ -294,6 +298,8 @@ function UploadBereavementAdditionalInfoModal({
       patientName: row.patientName,
       bereavementRecipientName: row.recipientName,
       bereavementRecipientRelationship: row.relationship,
+      bereavementRecipientAddress: row.address,
+      bereavementRecipientPhone: row.phone,
     }));
 
     onImport(mapped);
@@ -349,7 +355,8 @@ function UploadBereavementAdditionalInfoModal({
               </Typography>
               <Typography variant="body2">
                 <strong>Patient Code</strong>, <strong>Patient Name</strong>,{" "}
-                <strong>Recipient</strong>, <strong>Relationship</strong>
+                <strong>Recipient</strong>, <strong>Relationship</strong>,{" "}
+                <strong>Address</strong>, <strong>Phone</strong>
               </Typography>
               <Typography
                 variant="body2"
@@ -400,6 +407,12 @@ function UploadBereavementAdditionalInfoModal({
                       Relationship
                     </TableCell>
                     <TableCell className={classes.headerCell} style={{ minWidth: 200 }}>
+                      Address
+                    </TableCell>
+                    <TableCell className={classes.headerCell} style={{ minWidth: 140 }}>
+                      Phone
+                    </TableCell>
+                    <TableCell className={classes.headerCell} style={{ minWidth: 200 }}>
                       Patient Code <span className={classes.requiredStar}>*</span>
                     </TableCell>
                     <TableCell
@@ -427,6 +440,12 @@ function UploadBereavementAdditionalInfoModal({
                         </TableCell>
                         <TableCell className={`${classes.tableCell} ${classes.previewColumn}`}>
                           {row.relationship || "—"}
+                        </TableCell>
+                        <TableCell className={`${classes.tableCell} ${classes.previewColumn}`}>
+                          {row.address || "—"}
+                        </TableCell>
+                        <TableCell className={`${classes.tableCell} ${classes.previewColumn}`}>
+                          {row.phone || "—"}
                         </TableCell>
                         <TableCell className={classes.tableCell}>
                           <FormControl size="small" fullWidth className={classes.selectControl}>

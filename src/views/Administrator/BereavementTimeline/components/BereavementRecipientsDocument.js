@@ -158,6 +158,10 @@ const styles = StyleSheet.create({
   colLastLetter: { width: "13%" },
   colType: { width: "10%" },
   colDod: { width: "14%" },
+  colLogName: { width: "28%" },
+  colLogContact: { width: "24%" },
+  colLogAddress: { width: "32%" },
+  colLogPhone: { width: "16%" },
   emptyRow: {
     paddingVertical: 14,
     alignItems: "center",
@@ -370,6 +374,97 @@ const BereavementRecipientsDocument = ({
             style={styles.footerText}
             render={({ pageNumber, totalPages }) =>
               `ACHC Survey Preparation  \u2022  Bereavement Recipient Register  \u2022  Page ${pageNumber} of ${totalPages}`
+            }
+          />
+        </View>
+      </Page>
+
+      <Page size="LETTER" style={styles.page} wrap>
+        <View style={styles.headerBand}>
+          <View style={styles.headerLeftRow}>
+            <View style={styles.headerAvatar}>
+              <Image src={docLogo} cache={false} style={styles.headerAvatarImage} />
+            </View>
+            <View style={styles.headerLeft}>
+              <Text style={styles.headerEyebrow}>HALOES TOUCH HOSPICE INC.</Text>
+              <Text style={styles.headerSubtitle}>
+                ACHC Medicare Recertification Survey
+              </Text>
+            </View>
+          </View>
+          <View style={styles.headerRight}>
+            <Text style={styles.headerRightLabel}>CCN</Text>
+            <Text style={styles.headerRightValue}>
+              {ccn || "____________"}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.titleBand}>
+          <Text style={styles.titleText}>Contact Logs</Text>
+          <Text style={styles.subtitleText}>
+            Bereavement Recipient Contact Information
+          </Text>
+        </View>
+
+        <View style={styles.content}>
+          <View style={styles.infoBand}>
+            <Text style={styles.infoLabel}>REPORTING PERIOD:</Text>
+            <Text style={styles.infoValue}>{periodLabel}</Text>
+          </View>
+
+          <View style={styles.table}>
+            <View style={styles.tableHeaderRow} fixed>
+              <Text style={[styles.tableHeaderCell, styles.colLogName]}>
+                PATIENT NAME
+              </Text>
+              <Text style={[styles.tableHeaderCell, styles.colLogContact]}>
+                CONTACT PERSON
+              </Text>
+              <Text style={[styles.tableHeaderCell, styles.colLogAddress]}>
+                ADDRESS
+              </Text>
+              <Text style={[styles.tableHeaderCell, styles.colLogPhone]}>
+                PHONE
+              </Text>
+            </View>
+
+            {rows.length === 0 ? (
+              <View style={styles.emptyRow}>
+                <Text style={styles.emptyText}>
+                  No bereavement recipients found for the selected date range.
+                </Text>
+              </View>
+            ) : (
+              rows.map((row, idx) => (
+                <View
+                  key={idx}
+                  style={[styles.tableRow, idx % 2 === 1 ? styles.tableRowAlt : {}]}
+                  wrap={false}
+                >
+                  <Text style={[styles.tableCell, styles.colLogName]}>
+                    {row.patientName}
+                  </Text>
+                  <Text style={[styles.tableCell, styles.colLogContact]}>
+                    {row.bereavementRecipientName || "-"}
+                  </Text>
+                  <Text style={[styles.tableCell, styles.colLogAddress]}>
+                    {row.bereavementRecipientAddress || "-"}
+                  </Text>
+                  <Text style={[styles.tableCell, styles.colLogPhone]}>
+                    {row.bereavementRecipientPhone || "-"}
+                  </Text>
+                </View>
+              ))
+            )}
+          </View>
+        </View>
+
+        <View style={styles.footer} fixed>
+          <Text
+            style={styles.footerText}
+            render={({ pageNumber, totalPages }) =>
+              `ACHC Survey Preparation  \u2022  Contact Logs  \u2022  Page ${pageNumber} of ${totalPages}`
             }
           />
         </View>
