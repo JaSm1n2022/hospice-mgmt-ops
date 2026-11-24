@@ -3,7 +3,7 @@ import moment from "moment";
 class BereavementTimelineHandler {
   /**
    * Map patient data and calculate bereavement milestones
-   * Only includes patients with death discharge within 13 months
+   * Includes all patients with a death discharge, regardless of time since death
    */
   static mapData(items) {
     return items
@@ -21,12 +21,7 @@ class BereavementTimelineHandler {
         const dateOfDeath = item.new_hospice_dod || item.eoc;
         if (!dateOfDeath) return false;
 
-        // Only include patients within 13 months post-death
-        const deathDate = moment(dateOfDeath);
-        const today = moment();
-        const monthsSinceDeath = today.diff(deathDate, "months", true);
-
-        return monthsSinceDeath <= 13;
+        return true;
       })
       .map((item) => {
         const dateOfDeath = item.new_hospice_dod || item.eoc;

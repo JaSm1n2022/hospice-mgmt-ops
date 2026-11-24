@@ -568,7 +568,7 @@ function BereavementTimelineFunction(props) {
                   </h4>
                   <p className={classes.cardCategoryWhite}>
                     Track bereavement support milestones for patients with death
-                    discharge (within 13 months)
+                    discharge
                   </p>
                 </CardHeader>
                 <CardBody>
@@ -728,8 +728,7 @@ function BereavementTimelineFunction(props) {
                         ) : (
                           <TableRow>
                             <TableCell colSpan={13} align="center">
-                              No patients with death discharge found (within 13
-                              months)
+                              No patients with death discharge found
                             </TableCell>
                           </TableRow>
                         )}
